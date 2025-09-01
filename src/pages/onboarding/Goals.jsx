@@ -20,8 +20,11 @@ export default function Goals() {
 
   function toggle(id) {
     setSelected((arr) =>
-      arr.includes(id) ? arr.filter(x => x !== id)
-      : (arr.length < 3 ? [...arr, id] : arr) // cap 3
+      arr.includes(id)
+        ? arr.filter((x) => x !== id)
+        : arr.length < 3
+        ? [...arr, id]
+        : arr // máximo de 3
     );
   }
 
@@ -32,10 +35,43 @@ export default function Goals() {
     nav("/dashboard");
   }
 
+  /* ---------------- LOADER ---------------- */
+  if (goals.length === 0) {
+    return (
+      <div className="min-h-screen grid place-items-center text-brand-700">
+        <div className="flex items-center gap-2">
+          <svg
+            className="h-6 w-6 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+              className="opacity-25"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
+            />
+          </svg>
+          <span>Loading…</span>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------------- MAIN ---------------- */
   return (
     <div className="min-h-screen p-6 bg-brand-50/40">
       <header className="max-w-3xl mx-auto text-center">
-        <div className="mx-auto h-12 w-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center">🎯</div>
+        <div className="mx-auto h-12 w-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center">
+          🎯
+        </div>
         <h1 className="mt-4 text-3xl font-bold">We need some information</h1>
         <p className="text-gray-500">Tell us what you’re looking for.</p>
         <div className="mt-4 h-2 bg-gray-200 rounded">
@@ -45,30 +81,53 @@ export default function Goals() {
 
       <main className="max-w-3xl mx-auto mt-6">
         <div className="bg-white rounded-2xl shadow-soft p-6">
-          <h2 className="text-xl font-semibold mb-4">What Are You Looking For?</h2>
+          <h2 className="text-xl font-semibold mb-2">
+            What Are You Looking For?
+          </h2>
+
+          {/* Mensagem sempre visível no início */}
+          <p className="text-sm text-gray-500 mb-4">* Select up to 3.</p>
+
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {goals.map(g => (
-              <button
-                key={g.id}
-                onClick={() => toggle(g.id)}
-                className={`rounded-xl border px-4 py-3 text-left hover:shadow-soft ${
-                  selected.includes(g.id) ? "border-brand-700 ring-2 ring-brand-500" : "border-gray-200"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-brand-700">{getIcon(GOAL_ICONS, g.name)}</span>
-                  <div className="font-medium">{g.name}</div>
-                </div>
-              </button>
-            ))}
+            {goals.map((g) => {
+              const isSelected = selected.includes(g.id);
+              const isDisabled =
+                selected.length >= 3 && !isSelected; // se já escolheu 3, desativa os outros
+
+              return (
+                <button
+                  key={g.id}
+                  onClick={() => toggle(g.id)}
+                  className={`rounded-xl border px-4 py-3 text-left hover:shadow-soft transition ${
+                    isSelected
+                      ? "border-brand-700 ring-2 ring-brand-500"
+                      : "border-gray-200"
+                  } ${isDisabled ? "opacity-50 pointer-events-none" : ""}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-brand-700">
+                      {getIcon(GOAL_ICONS, g.name)}
+                    </span>
+                    <div className="font-medium">{g.name}</div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
-          <p className="text-xs text-gray-500 mt-3">Select up to 3.</p>
         </div>
 
         <div className="mt-6 flex justify-between">
-          <button onClick={() => nav(-1)} className="rounded-xl border px-4 py-3">Previous</button>
-          <button onClick={onSave} disabled={selected.length === 0}
-            className="rounded-xl bg-brand-700 text-white px-6 py-3 font-semibold disabled:opacity-50">
+          <button
+            onClick={() => nav(-1)}
+            className="rounded-xl border px-4 py-3"
+          >
+            Previous
+          </button>
+          <button
+            onClick={onSave}
+            disabled={selected.length === 0}
+            className="rounded-xl bg-brand-700 text-white px-6 py-3 font-semibold disabled:opacity-50"
+          >
             Save & Join
           </button>
         </div>

@@ -22,7 +22,8 @@ export default function Industry() {
 
   const subToCat = useMemo(() => {
     const m = {};
-    for (const c of cats) for (const s of c.subcategories || []) m[s.id] = c.id;
+    for (const c of cats)
+      for (const s of c.subcategories || []) m[s.id] = c.id;
     return m;
   }, [cats]);
 
@@ -31,21 +32,23 @@ export default function Industry() {
 
     setSubcategoryIds((subSel) => {
       const had = subSel.includes(subId);
-      const nextSubs = had ? subSel.filter((id) => id !== subId) : [...subSel, subId];
+      const nextSubs = had
+        ? subSel.filter((id) => id !== subId)
+        : [...subSel, subId];
 
-      // Ensure parent category is marked when any subcategory is picked
       if (!had && parentCatId && !categoryIds.includes(parentCatId)) {
         setCategoryIds((catSel) =>
           catSel.includes(parentCatId) ? catSel : [...catSel, parentCatId]
         );
       }
 
-      // Auto-unselect parent if no subs remain selected
       if (had && parentCatId) {
-        const siblings = (cats.find((c) => c.id === parentCatId)?.subcategories || []).map(
-          (s) => s.id
+        const siblings = (
+          cats.find((c) => c.id === parentCatId)?.subcategories || []
+        ).map((s) => s.id);
+        const anySiblingSelected = nextSubs.some((sid) =>
+          siblings.includes(sid)
         );
-        const anySiblingSelected = nextSubs.some((sid) => siblings.includes(sid));
         if (!anySiblingSelected) {
           setCategoryIds((catSel) => catSel.filter((id) => id !== parentCatId));
         }
@@ -73,6 +76,37 @@ export default function Industry() {
     return counts;
   }, [cats, subcategoryIds]);
 
+  /* ---------------- LOADER ---------------- */
+  if (cats.length === 0) {
+    return (
+      <div className="min-h-screen grid place-items-center text-brand-700">
+        <div className="flex items-center gap-2">
+          <svg
+            className="h-6 w-6 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+              className="opacity-25"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
+            />
+          </svg>
+          <span>Loading…</span>
+        </div>
+      </div>
+    );
+  }
+
+  /* ---------------- MAIN PAGE ---------------- */
   return (
     <div className="min-h-screen p-6 bg-brand-50/40">
       {/* Header */}
@@ -81,7 +115,9 @@ export default function Industry() {
           🧩
         </div>
         <h1 className="mt-4 text-3xl font-bold">We need some information</h1>
-        <p className="text-gray-500">Select the categories that best describe your field.</p>
+        <p className="text-gray-500">
+          Select the categories that best describe your field.
+        </p>
         <div className="mt-4 h-2 bg-gray-200 rounded">
           <div
             className="h-2 rounded bg-brand-700"
@@ -93,15 +129,18 @@ export default function Industry() {
       {/* Main */}
       <main className="max-w-3xl mx-auto mt-6">
         <div className="bg-white rounded-2xl shadow-soft p-2 sm:p-6">
-          <h2 className="text-xl font-semibold mb-4">Your Industry</h2>
+          <h2 className="text-xl font-semibold mb-2">Your Industry</h2>
+
+          {/* Aviso no topo */}
+          <p className="text-sm text-gray-500 mb-4">
+            * Select at least <b>1 industry</b> and <b>2 subcategories</b>.
+          </p>
 
           <div className="space-y-3">
             {cats.map((cat) => (
               <details key={cat.id} className="group border rounded-xl">
-                {/* WHOLE top line is clickable */}
                 <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
                   <div className="flex items-center gap-2">
-                    {/* Hidden checkbox kept for backend structure */}
                     <input
                       type="checkbox"
                       checked={categoryIds.includes(cat.id)}
@@ -118,10 +157,11 @@ export default function Industry() {
                       </span>
                     )}
                   </div>
-                  <span className="text-gray-400 group-open:rotate-180 transition">▾</span>
+                  <span className="text-gray-400 group-open:rotate-180 transition">
+                    ▾
+                  </span>
                 </summary>
 
-                {/* Subcategories */}
                 <div className="px-4 pb-4 grid sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {cat.subcategories.map((sc) => (
                     <label
@@ -141,14 +181,13 @@ export default function Industry() {
               </details>
             ))}
           </div>
-
-          <p className="text-xs text-gray-500 mt-3">
-            * Select at least <b>1 industry</b> and <b>2 subcategories</b>.
-          </p>
         </div>
 
         <div className="mt-6 flex justify-between">
-          <button onClick={() => nav(-1)} className="rounded-xl border px-4 py-3">
+          <button
+            onClick={() => nav(-1)}
+            className="rounded-xl border px-4 py-3"
+          >
             Previous
           </button>
           <button

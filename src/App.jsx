@@ -11,12 +11,19 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";       // NEW
 import ResetEmailSent from "./pages/ResetEmailSent.jsx";       // NEW
 import ResetPassword from "./pages/ResetPassword.jsx";  
 import ResetSuccess from "./pages/ResetSuccess.jsx";   
+import ProfilePage from "./pages/Profile"; 
+import CreateJobOpportunity from "./pages/CreateJobOpportunity";
 
 // src/pages/onboarding/index.jsx (routes snippet)
 import OnboardingGate from "./pages/onboarding/OnboardingGate";
 import WhoYouAre from "./pages/onboarding/WhoYouAre";
 import Industry from "./pages/onboarding/Industry";
 import Goals from "./pages/onboarding/Goals";
+import FeedExplorePage from "./pages/feed/FeedExplorePage";
+import PeopleFeedPage from './pages/PeopleDiscover.jsx';
+import JobsExplorePage from './pages/jobs/JobsExplorePage.jsx';
+
+
 
 function App() {
 
@@ -25,21 +32,24 @@ function App() {
     <Router>
       <Routes>
          {/**<Route path="/map"  element={<ProtectedRoute redirectTo="/login"><Map/></ProtectedRoute>} /> */}
-         <Route path="/"  element={<Home/>} />
+                  <Route path="/old"  element={<Home/>} /> 
+                  {/**<Route path="/" element={<FeedExplorePage />} /> */}
+                  <Route path="/" element={<Home />} />
+                  <Route path="/people" element={<PeopleFeedPage />} />
          <Route path="/login"  element={<Login/>} />
          <Route
-  path="/dashboard"
-  element={
-    <OnboardingGate>
-      <Dashboard />
-    </OnboardingGate>
-  }
-/>
+          path="/dashboard"
+          element={
+            <OnboardingGate>
+              <Home />
+            </OnboardingGate>
+          }
+        />
          <Route path="/signup"  element={<Signup/>} />
          <Route path="*" element={<NotFound />} />
          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
          <Route path="/verify/:token" element={<VerifyEmail />} />
-
+         <Route path="/jobs/create" element={<CreateJobOpportunity />} />
 
          {/* Forgot / Reset password */}
       <Route path="/reset-success" element={<ResetSuccess />} />
@@ -47,9 +57,13 @@ function App() {
       <Route path="/reset-email-sent" element={<ResetEmailSent />} />
       <Route path="/reset/:token" element={<ResetPassword />} />
 
-<Route path="/onboarding/who-you-are" element={<WhoYouAre />} />
-<Route path="/onboarding/industry"    element={<Industry />} />
-<Route path="/onboarding/goals"       element={<Goals />} />
+      <Route path="/onboarding/who-you-are" element={<WhoYouAre />} />
+      <Route path="/onboarding/industry"    element={<Industry />} />
+      <Route path="/onboarding/goals"       element={<Goals />} />
+
+       <Route path="/profile" element={<ProfilePage />} />
+
+        <Route path="/jobs" element={<JobsExplorePage />} />
 
       
 
