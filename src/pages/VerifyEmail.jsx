@@ -27,7 +27,7 @@ export default function VerifyEmail() {
 
         setStatus("success");
         setMessage("Your email has been verified.");
-        setTimeout(() => navigate("/dashboard"), REDIRECT_DELAY_MS);
+        setTimeout(() => navigate("/login"), REDIRECT_DELAY_MS);
       } catch (err) {
         setStatus("error");
         setMessage(
