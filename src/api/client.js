@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const client = axios.create({
-  baseURL: 'http://18.170.141.120:8005/api',
+  baseURL: 'kaziwani-server.visum.co.mz/api',
   headers: { "Content-Type": "application/json" }
 });
 

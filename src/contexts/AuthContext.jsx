@@ -9,8 +9,8 @@ export const AuthProvider = ({ children }) => {
   let env="pro" 
   const [loading,setLoading]=useState(true)
   const [isLoading,setIsLoading]=useState(false)
-  const DEV_SERVER_URL = 'http://18.170.141.120:8005';
-  const APP_BASE_URL = env == "pro" ? "https://isda-academy-server.derflash.com":  DEV_SERVER_URL
+  const DEV_SERVER_URL = 'kaziwani-server.visum.co.mz';
+  const APP_BASE_URL = env == "pro" ? "kaziwani-server.visum.co.mz":  DEV_SERVER_URL
 
   function takeToLogin(){
       if(!window.location.href.includes('/login')){

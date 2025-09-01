@@ -15,9 +15,9 @@ var vite_config_default = defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "favicon.ico", "robots.txt", "apple-touch-icon.png"],
       manifest: {
-        name: "Derflash",
-        short_name: "Derflash",
-        description: "Derflash - Exciting Technologies",
+        name: "Panafrican bi",
+        short_name: "Panafrican bi",
+        description: "Panafrican bi - Exciting Technologies",
         theme_color: "#ffffff",
         background_color: "#ffffff",
         display: "standalone",
