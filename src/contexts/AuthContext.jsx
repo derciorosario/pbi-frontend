@@ -8,11 +8,11 @@ export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(undefined);
   let env="pro" 
 
-  
+
   const [loading,setLoading]=useState(true)
   const [isLoading,setIsLoading]=useState(false)
-  const DEV_SERVER_URL = 'kaziwani-server.visum.co.mz';
-  const APP_BASE_URL = env == "pro" ? "kaziwani-server.visum.co.mz":  DEV_SERVER_URL
+  const DEV_SERVER_URL = 'https://kaziwani-server.visum.co.mz';
+  const APP_BASE_URL = env == "pro" ? "https://kaziwani-server.visum.co.mz":  DEV_SERVER_URL
 
   function takeToLogin(){
       if(!window.location.href.includes('/login')){
