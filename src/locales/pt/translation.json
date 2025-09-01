@@ -1,0 +1,28 @@
+{
+    "title":"Evento Aquashow",
+    "hero-title":"Transformamos ideias em produtos",
+    "menu":{
+        "home":"Início",
+        "about-us":"Sobre nós",
+        "contact":"Contato",
+        "products": "Produtos"
+    },
+    "ticket":{},
+    "invoice":{},
+    "titles":{},
+    "form":{},
+    "messages":{},
+    "products":{
+        "proconta-text": "Ferramenta de gestão financeira multiplataforma.",
+        "vierp-text": "ERP all-in-one",
+        "arsbeta-text": "Sistema inteligente de contabilidade impulsionado por IA.",
+        "vlms-text": "Sistema de gestão de microcrédito."
+    },
+    "common":{
+        "get-in-touch":"Fale connosco",
+        "have-question":"Tem alguma dúvida ou deseja discutir uma ideia?",
+        "software-development-comapny":"Startup de Desenvolvimento de Software",
+        "about-text":"Derflash é uma startup de desenvolvimento de software dedicada a criar soluções impactantes. Nosso objetivo é transformar ideias em tecnologias que resolvem problemas reais e impulsionam o progresso. Somos apaixonados por transformar ideias em tecnologias.",
+        "lets-build":"Vamos construir algo incrível juntos!"
+    }
+}
