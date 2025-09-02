@@ -1,5 +1,5 @@
-// src/pages/CreateServicePage.jsx
-import React, { useState } from "react";
+// src/pages/CreateServiceRequestPage.jsx
+import React from "react";
 import { useNavigate } from "react-router-dom";
 
 /* ---------------- Shared styles ---------------- */
@@ -8,9 +8,9 @@ const styles = {
     "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-[#8A358A] hover:bg-[#7A2F7A] focus:outline-none focus:ring-2 focus:ring-[#8A358A]/30",
   primaryWide:
     "w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white bg-[#8A358A] hover:bg-[#7A2F7A] focus:outline-none focus:ring-2 focus:ring-[#8A358A]/30",
-  pill:
-    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-white bg-[#8A358A] hover:bg-[#7A2F7A]",
 };
+
+
 
 /* ---------------- Minimal icon set ---------------- */
 const I = {
@@ -101,14 +101,15 @@ const I = {
   close: () => <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg>,
 
 };
-export default function CreateServicePage() {
+
+
+export default function CreateServiceRequestPage() {
   const navigate = useNavigate();
-  const [serviceType, setServiceType] = useState("Consulting");
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
-      {/* ===== Header (compact) ===== */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-200">
+      {/* ===== Header ===== */}
+         <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-200">
         <div className="mx-auto max-w-7xl h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
           <div className="flex items-center gap-2 cursor-pointer" onClick={()=>navigate('/')}>
             <div
@@ -195,145 +196,136 @@ export default function CreateServicePage() {
         >
           ← Back
         </button>
-        <h1 className="text-2xl font-bold mt-3">Create Service Post</h1>
+        <h1 className="text-2xl font-bold mt-3">Create Service Request</h1>
         <p className="text-sm text-gray-600">
-          Share your professional services with the PBI community
+          Tell the community what service you're looking for and connect with
+          professionals who can help.
         </p>
 
         <div className="mt-6 rounded-2xl bg-white border p-6 shadow-sm space-y-8">
-          {/* Service Type */}
+          {/* Category */}
           <section>
-            <h2 className="font-semibold">Service Type</h2>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[
-                { label: "Consulting", desc: "Professional advice and expertise" },
-                { label: "Freelance Work", desc: "Project-based services" },
-                { label: "Product/Service", desc: "Physical or digital products" },
-              ].map((t) => (
-                <button
-                  key={t.label}
-                  onClick={() => setServiceType(t.label)}
-                  className={`border rounded-xl p-4 text-left hover:border-[#8A358A] ${
-                    serviceType === t.label
-                      ? "border-[#8A358A] bg-[#8A358A]/5"
-                      : "border-gray-200 bg-white"
-                  }`}
-                >
-                  <div className="font-medium">{t.label}</div>
-                  <div className="text-xs text-gray-500">{t.desc}</div>
-                </button>
-              ))}
-            </div>
+            <h2 className="font-semibold">
+              What type of service are you looking for?
+            </h2>
+            <select className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full">
+              <option>Select category</option>
+              <option>Technology</option>
+              <option>Marketing</option>
+              <option>Design</option>
+              <option>Consulting</option>
+            </select>
           </section>
 
-          {/* Basic Info */}
+          {/* Title */}
           <section>
             <h2 className="font-semibold">Service Title</h2>
             <input
               type="text"
-              placeholder="e.g. Digital Marketing Strategy"
+              placeholder="e.g., Need a mobile app developer for e-commerce platform"
               className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full"
             />
-            <select className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full">
-              <option>Select category</option>
-              <option>Marketing</option>
-              <option>Technology</option>
-              <option>Design</option>
-            </select>
           </section>
 
           {/* Description */}
           <section>
-            <h2 className="font-semibold">Service Description</h2>
+            <h2 className="font-semibold">Detailed Description</h2>
             <textarea
-              placeholder="Describe your service in detail. What problems do you solve? What value do you provide?"
+              placeholder="Describe your project requirements, timeline, budget range, and any specific skills needed..."
               className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full"
               rows={4}
             />
           </section>
 
-          {/* Pricing */}
+          {/* Budget + Timeline */}
           <section>
-            <h2 className="font-semibold">Pricing</h2>
-            <div className="mt-3 grid gap-4 sm:grid-cols-3">
-              <input
-                type="number"
-                placeholder="$ 0.00"
-                className="rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              />
-              <select className="rounded-xl border border-gray-200 px-3 py-2 text-sm">
-                <option>Fixed Price</option>
-                <option>Hourly</option>
-              </select>
-              <select className="rounded-xl border border-gray-200 px-3 py-2 text-sm">
-                <option>1 Day</option>
-                <option>3 Days</option>
-                <option>1 Week</option>
-                <option>1 Month</option>
-              </select>
-            </div>
-          </section>
-
-          {/* Location & Experience */}
-          <section>
-            <h2 className="font-semibold">Service Location</h2>
+            <h2 className="font-semibold">Budget Range & Timeline</h2>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
               <select className="rounded-xl border border-gray-200 px-3 py-2 text-sm">
-                <option>Remote</option>
-                <option>On-site</option>
+                <option>Select budget range</option>
+                <option>$100 - $500</option>
+                <option>$500 - $2000</option>
+                <option>$2000+</option>
               </select>
               <select className="rounded-xl border border-gray-200 px-3 py-2 text-sm">
-                <option>Entry Level</option>
-                <option>Intermediate</option>
-                <option>Expert</option>
+                <option>Select timeline</option>
+                <option>1 Week</option>
+                <option>1 Month</option>
+                <option>3 Months</option>
               </select>
             </div>
           </section>
 
-          {/* Skills & Tags */}
+          {/* Location + Work Type */}
           <section>
-            <h2 className="font-semibold">Skills & Tags</h2>
-            <div className="mt-2 flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Add skills (e.g., JavaScript, Marketing, Design)"
-                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              />
-              <button className={`${styles.primary} px-4`}>+</button>
+            <h2 className="font-semibold">Preferred Location & Work Type</h2>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <select className="rounded-xl border border-gray-200 px-3 py-2 text-sm">
+                <option>Select country</option>
+                <option>Nigeria</option>
+                <option>Kenya</option>
+                <option>Ghana</option>
+              </select>
+              <div className="flex items-center gap-6 text-sm">
+                {["Remote", "On-site", "Hybrid"].map((opt) => (
+                  <label key={opt} className="flex items-center gap-2">
+                    <input type="radio" name="workType" />
+                    {opt}
+                  </label>
+                ))}
+              </div>
             </div>
           </section>
 
-          {/* Portfolio Upload */}
+          {/* Skills */}
           <section>
-            <h2 className="font-semibold">Portfolio Samples (Optional)</h2>
-            <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-500">
-              <div className="mb-2">
-                <svg
-                  className="mx-auto h-8 w-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              Upload images or documents showcasing your work
-              <div className="mt-3">
-                <button className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700">
-                  Choose Files
-                </button>
-              </div>
+            <h2 className="font-semibold">Required Skills (Optional)</h2>
+            <input
+              type="text"
+              placeholder="Type a skill and press Enter"
+              className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full"
+            />
+          </section>
+
+          {/* Contact Preferences */}
+          <section>
+            <h2 className="font-semibold">How would you like to be contacted?</h2>
+            <div className="mt-2 flex flex-col gap-2 text-sm">
+              <label className="flex items-center gap-2">
+                <input type="checkbox" /> Direct messages on platform
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" /> Email notifications
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" /> Phone calls
+              </label>
             </div>
           </section>
 
           {/* Buttons */}
           <div className="flex justify-end gap-3">
+            <button className={styles.primaryWide}>
+              Post Service Request
+            </button>
             <button className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700">
               Save as Draft
             </button>
-            <button className={styles.primaryWide}>Publish Service</button>
           </div>
+        </div>
+
+        {/* Tips Box */}
+        <div className="mt-6 rounded-2xl border border-purple-200 bg-purple-50 p-6 text-sm text-gray-700">
+          <h3 className="font-semibold text-[#8A358A] mb-2">
+            Tips for a Great Service Request
+          </h3>
+          <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+            <li>Be specific about your requirements and expectations</li>
+            <li>Include your budget range to attract suitable professionals</li>
+            <li>
+              Mention any preferred qualifications or experience levels
+            </li>
+          </ul>
         </div>
       </main>
     </div>

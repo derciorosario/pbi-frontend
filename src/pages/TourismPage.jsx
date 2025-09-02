@@ -197,11 +197,12 @@ function WeatherCard() {
 }
 
 function QuickActions() {
+    const navigate=useNavigate()
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
       <h3 className="font-semibold">Quick Actions</h3>
       <ul className="mt-3 space-y-2 text-sm text-gray-700">
-        <li>
+        <li onClick={()=>navigate('/profile')}>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
@@ -210,7 +211,7 @@ function QuickActions() {
             Edit Profile
           </a>
         </li>
-        <li>
+        <li onClick={()=>navigate('/settings')}>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
@@ -219,7 +220,7 @@ function QuickActions() {
             Boost Profile
           </a>
         </li>
-        <li>
+        <li onClick={()=>navigate('/experience/create')}>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
@@ -229,17 +230,7 @@ function QuickActions() {
           </a>
         </li>
 
-         <li>
-          <a
-            className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
-            href="#"
-          >
-            <ContactIcon size={16} className="text-[#8a358a]" />
-            Contact Guide / Provider
-          </a>
-        </li>
-
-         <li>
+         <li onClick={()=>navigate('/settings/experience')}>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
@@ -518,7 +509,7 @@ export default function PeopleFeedPage() {
         ))}
       </div>
       <div className="relative">
-        <button className={`${styles.primary} inline-flex items-center gap-2`}>
+        <button onClick={()=>navigate('/experience/create')} className={`${styles.primary} inline-flex items-center gap-2`}>
           <I.plus /> Add Experience
         </button>
       </div>

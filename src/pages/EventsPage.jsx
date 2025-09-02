@@ -103,11 +103,12 @@ const I = {
 };
 
 function HostEventCard() {
+    const navigate=useNavigate()
   return (
     <div className="rounded-2xl bg-[#F9F5FF] border border-[#E2D6F9] p-5 shadow-sm text-center">
       <h3 className="font-semibold text-gray-800">Host Your Event</h3>
       <p className="text-sm text-gray-500 mt-1">Share your expertise and connect with professionals in your field.</p>
-      <button className={`mt-4 ${styles.primaryWide}`}>Create Event</button>
+      <button onClick={()=>navigate('/events/create')} className={`mt-4 ${styles.primaryWide}`}>Create Event</button>
     </div>
   );
 }

@@ -28,6 +28,11 @@ import TourismPage from './pages/TourismPage.jsx';
 import CompanyPage from './pages/CompaniesPage.jsx';
 import NotificationsPage from './pages/NotificationsPage.jsx';
 import CreateEventPage from './pages/CreateEventPage.jsx';
+import CreateServicePage from './pages/CreateServicePage.jsx';
+import CreateServiceRequestPage from '../rc/pages/CreateServiceRequestPage.jsx';
+import CreateProductPage from './pages/CreateProductPage.jsx';
+import CreateTourismPostPage from './pages/CreateTourismPostPage.jsx';
+import MessagesPage from './pages/MessagesPage.jsx';
 
 
 
@@ -51,12 +56,18 @@ function App() {
             </OnboardingGate>
           }
         />
+
          <Route path="/signup"  element={<Signup/>} />
          <Route path="*" element={<NotFound />} />
          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
          <Route path="/verify/:token" element={<VerifyEmail />} />
          <Route path="/jobs/create" element={<CreateJobOpportunity />} />
          <Route path="/events/create" element={<CreateEventPage />} />
+         <Route path="/services/offer/create" element={<CreateServicePage />} />
+         <Route path="/services/request/create" element={<CreateServiceRequestPage />} />
+         <Route path="/products/create" element={<CreateProductPage />} />
+         <Route path="/experience/create" element={<CreateTourismPostPage />} />
+         <Route path="/messages" element={<MessagesPage />} />
 
          {/* Forgot / Reset password */}
         <Route path="/reset-success" element={<ResetSuccess />} />
