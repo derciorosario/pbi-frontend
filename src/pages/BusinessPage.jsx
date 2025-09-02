@@ -494,13 +494,13 @@ export default function PeopleFeedPage() {
         </div>
 
         {/* Left column - Full height sidebar */}
-        <aside className="lg:col-span-3 space-y-4 hidden lg:block">
-          <ProfileCard />
-          <QuickActions />
-          <div className="sticky top-24">
-            <FiltersCard />
-          </div>
-        </aside>
+       <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+  <ProfileCard />
+  <QuickActions />
+  <div className="sticky top-0 bg-white z-10">
+    <FiltersCard />
+  </div>
+</aside>
 
         {/* Middle and Right columns container */}
       {/* Middle and Right columns container */}
@@ -613,9 +613,11 @@ export default function PeopleFeedPage() {
   </section>
 
   {/* Right column - Matches sempre no topo */}
-  <aside className="lg:col-span-2 space-y-4">
-    <SuggestedMatches />
-  </aside>
+  <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto space-y-4">
+ 
+  <SuggestedMatches />
+</aside>
+
 </div>
 
       </main>
