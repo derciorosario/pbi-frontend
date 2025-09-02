@@ -22,6 +22,11 @@ import Goals from "./pages/onboarding/Goals";
 import FeedExplorePage from "./pages/feed/FeedExplorePage";
 import PeopleFeedPage from './pages/PeopleDiscover.jsx';
 import JobsExplorePage from './pages/jobs/JobsExplorePage.jsx';
+import EventsPage from './pages/EventsPage.jsx';
+import BusinessPage from './pages/BusinessPage.jsx';
+import TourismPage from './pages/TourismPage.jsx';
+import CompanyPage from './pages/CompaniesPage.jsx';
+import NotificationsPage from './pages/NotificationsPage.jsx';
 
 
 
@@ -32,10 +37,10 @@ function App() {
     <Router>
       <Routes>
          {/**<Route path="/map"  element={<ProtectedRoute redirectTo="/login"><Map/></ProtectedRoute>} /> */}
-                  <Route path="/old"  element={<Home/>} /> 
-                  {/**<Route path="/" element={<FeedExplorePage />} /> */}
-                  <Route path="/" element={<Home />} />
-                  <Route path="/people" element={<PeopleFeedPage />} />
+          <Route path="/old"  element={<Home/>} /> 
+          {/**<Route path="/" element={<FeedExplorePage />} /> */}
+          <Route path="/" element={<Home />} />
+          <Route path="/people" element={<PeopleFeedPage />} />
          <Route path="/login"  element={<Login/>} />
          <Route
           path="/dashboard"
@@ -52,21 +57,25 @@ function App() {
          <Route path="/jobs/create" element={<CreateJobOpportunity />} />
 
          {/* Forgot / Reset password */}
-      <Route path="/reset-success" element={<ResetSuccess />} />
-      <Route path="/forgot" element={<ForgotPassword />} />
-      <Route path="/reset-email-sent" element={<ResetEmailSent />} />
-      <Route path="/reset/:token" element={<ResetPassword />} />
+        <Route path="/reset-success" element={<ResetSuccess />} />
+        <Route path="/forgot" element={<ForgotPassword />} />
+        <Route path="/reset-email-sent" element={<ResetEmailSent />} />
+        <Route path="/reset/:token" element={<ResetPassword />} />
 
-      <Route path="/onboarding/who-you-are" element={<WhoYouAre />} />
-      <Route path="/onboarding/industry"    element={<Industry />} />
-      <Route path="/onboarding/goals"       element={<Goals />} />
+        <Route path="/onboarding/who-you-are" element={<WhoYouAre />} />
+        <Route path="/onboarding/industry"    element={<Industry />} />
+        <Route path="/onboarding/goals"       element={<Goals />} />
 
-       <Route path="/profile" element={<ProfilePage />} />
-
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/events" element={<EventsPage />} />
         <Route path="/jobs" element={<JobsExplorePage />} />
+        <Route path="/business" element={<BusinessPage />} />
+        <Route path="/tourism" element={<TourismPage />} />
 
-      
+        <Route path="/companies" element={<CompanyPage />} />
 
+        
       </Routes>
     </Router>
   );

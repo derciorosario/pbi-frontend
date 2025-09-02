@@ -462,75 +462,99 @@ export default function PeopleFeedPage() {
         </aside>
 
         {/* Middle and Right columns container */}
-      {/* Middle and Right columns container */}
-<div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
-  
-  {/* Middle column - Feed */}
-  <section className="lg:col-span-4 space-y-4">
-    {/* Hero banner agora dentro do meio */}
-    <div
-      className="rounded-2xl p-6 text-white shadow-sm"
-      style={{ background: "linear-gradient(90deg,#8A358A 0%,#9333EA 100%)" }}
-    >
-      <h2 className="text-2xl font-bold">Connect with the World</h2>
-      <p className="mt-1 text-white/90">
-        Discover nearby people who share your interests and expand your professional network globally
-      </p>
+        <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+          {/* Hero banner - spans first 4 columns of the right section */}
+          <section className="lg:col-span-6 mb-4">
+            <div
+              className="rounded-2xl p-6 text-white shadow-sm"
+              style={{ background: "linear-gradient(90deg,#8A358A 0%,#9333EA 100%)" }}
+            >
+              <h2 className="text-2xl font-bold">Connect with the World</h2>
+              <p className="mt-1 text-white/90">
+                Discover nearby people who share your interests and expand your professional network globally
+              </p>
 
-      <div className="mt-4 flex flex-wrap gap-3 text-sm">
-        <span className="rounded-full bg-white/20 px-3 py-1.5">12.5K+ Connections</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">85+ Countries</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">200+ Professions</span>
-      </div>
-    </div>
+              <div className="mt-4 flex flex-wrap gap-3 text-sm">
+                <span className="rounded-full bg-white/20 px-3 py-1.5">12.5K+ Connections</span>
+                <span className="rounded-full bg-white/20 px-3 py-1.5">85+ Countries</span>
+                <span className="rounded-full bg-white/20 px-3 py-1.5">200+ Professions</span>
+              </div>
+            </div>
+          </section>
 
-    {/* Tabs + Add */}
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
-        {["Posts","People","My Connections","News & Articles"].map(t => (
-          <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            className={`pb-2 relative ${activeTab === t ? "text-gray-900" : "hover:text-gray-800"}`}
-          >
-            {t}
-            {activeTab === t && (
-              <span
-                className="absolute left-0 -bottom-[1px] h-[3px] w-full rounded-full"
-                style={{ background: "linear-gradient(90deg,#8A358A,#9333EA)" }}
-              />
-            )}
-          </button>
-        ))}
-      </div>
-      <div className="relative">
-        <button className={`${styles.primary} inline-flex items-center gap-2`}>
-          <I.plus /> Add
-        </button>
-      </div>
-    </div>
+          {/* Middle column - Feed */}
+          <section className="lg:col-span-4 space-y-4">
+            {/* Tabs + Add */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+                {["Posts","People","My Connections","News & Articles"].map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setActiveTab(t)}
+                    className={`pb-2 relative ${activeTab === t ? "text-gray-900" : "hover:text-gray-800"}`}
+                  >
+                    {t}
+                    {activeTab === t && (
+                      <span
+                        className="absolute left-0 -bottom-[1px] h-[3px] w-full rounded-full"
+                        style={{ background: "linear-gradient(90deg,#8A358A,#9333EA)" }}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div className="relative">
+                <button className={`${styles.primary} inline-flex items-center gap-2`}>
+                  <I.plus /> Add
+                </button>
+              </div>
+            </div>
 
-    {/* Feed header */}
-    <h3 className="font-semibold text-2xl mt-1">Feed activities</h3>
+            {/* Feed header */}
+            <h3 className="font-semibold text-2xl mt-1">Feed activities</h3>
 
-    {/* Posts */}
-    {posts.map((p) => (
-      <PostCard key={p.id} p={p} />
-    ))}
-    <button className={`mx-auto max-w-[200px] block mt-4 ${styles.primaryWide}`}>
-      Load More Posts
-    </button>
-  </section>
+            {/* Posts */}
+            {posts.map((p) => (
+              <PostCard key={p.id} p={p} />
+            ))}
+          </section>
 
-  {/* Right column - Matches sempre no topo */}
-  <aside className="lg:col-span-2 space-y-4">
-    <SuggestedMatches />
-  </aside>
-</div>
-
+          {/* Right column - Matches */}
+          <aside className="lg:col-span-2 space-y-4">
+            <SuggestedMatches />
+          </aside>
+        </div>
       </main>
 
-    
+      {/* ===== Footer ===== */}
+      <footer className="mt-6 border-t border-gray-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 grid md:grid-cols-4 gap-8">
+          <div>
+            <div className="font-semibold">PANAFRICAN BI</div>
+            <p className="text-sm text-gray-500 mt-2">Connecting African talent globally</p>
+          </div>
+          <div>
+            <div className="font-semibold">Platform</div>
+            <ul className="mt-2 space-y-2 text-sm text-gray-600">
+              <li><a href="#">About</a></li><li><a href="#">Careers</a></li><li><a href="#">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-semibold">Resources</div>
+            <ul className="mt-2 space-y-2 text-sm text-gray-600">
+              <li><a href="#">Help</a></li><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-semibold">Connect</div>
+            <div className="mt-2 flex items-center gap-3">
+              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">𝕏</a>
+              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">in</a>
+              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">◎</a>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       {/* Mobile Filters Bottom Sheet */}
       {mobileFiltersOpen && (

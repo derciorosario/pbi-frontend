@@ -1,4 +1,4 @@
-import { Crown, Pencil, PlusCircle, Rocket } from "lucide-react";
+import { Building, Crown, Pencil, PlusCircle, Rocket } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -103,35 +103,33 @@ const I = {
 };
 
 /* ---------------- Mock data ---------------- */
-const posts = [
+
+const companies = [
   {
     id: 1,
-    author: "Kwame Asante",
-    subtitle: "Tech Lead • Accra, Ghana • 2h",
-    text:
-      "Looking for React developers for an innovative fintech project. Remote opportunity focused on the African market. #ReactJS #Fintech #RemoteWork",
-    stats: { likes: 24, comments: 8, shares: 3 },
-    image: null,
+    logo: "https://i.pravatar.cc/100?img=2",
+    name: "TechFlow Solutions",
+    verified: true,
+    location: "Lagos, Nigeria",
+    time: "2 hours ago",
+    industry: "Software Development • 50–100 employees",
+    title: "Seeking Investment for AI-Powered Agriculture Platform",
+    desc: "We’re developing an innovative AI platform that helps African farmers optimize crop yields through predictive analytics and IoT sensors. Looking for Series A funding of $2M to expand across West Africa.",
+    tags: ["Agriculture Tech", "AI/ML", "Seeking Investment"],
+    stats: { views: "1.2k", likes: 89, comments: 23 },
   },
   {
     id: 2,
-    author: "Amara Diallo",
-    subtitle: "Marketing Consultant • Lagos, Nigeria • 4h",
-    text:
-      "Networking event in Lagos next week! Connect with entrepreneurs and investors. Limited spots available.",
-    stats: { likes: 42, comments: 15, shares: 8 },
-    image:
-      "https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=1600&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    author: "Amara Okafor",
-    subtitle: "Software Developer • 4 hours ago",
-    text:
-      "Just completed a mobile app for local farmers to connect directly with buyers. Looking for partnerships to scale across West Africa. #MobileApp #Agriculture #Partnership",
-    stats: { likes: 67, comments: 15, shares: 6 },
-    image:
-      "https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=1600&auto=format&fit=crop",
+    llogo: "https://i.pravatar.cc/100?img=5",
+    name: "GreenPower Africa",
+    verified: true,
+    location: "Nairobi, Kenya",
+    time: "5 hours ago",
+    industry: "Renewable Energy • 100–200 employees",
+    title: "Solar Microgrid Project – Seeking Technology Partners",
+    desc: "We’re implementing solar microgrids across rural Kenya and looking for technology partners specializing in energy storage solutions and smart grid management systems.",
+    tags: ["Solar Energy", "Smart Grid", "Partnership"],
+    stats: { views: "856", likes: 67, comments: 15 },
   },
 ];
 
@@ -209,16 +207,18 @@ function QuickActions() {
             href="#"
           >
             <Rocket size={16} className="text-[#8a358a]" />
-            Boost Profile
+            Boost Company profile
           </a>
         </li>
-        <li>
+       
+
+         <li>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
           >
-            <PlusCircle size={16} className="text-[#8a358a]" />
-            Post an Opportunity
+            <Building size={16} className="text-[#8a358a]" />
+            Saved Companies
           </a>
         </li>
       </ul>
@@ -226,53 +226,45 @@ function QuickActions() {
   );
 }
 
+
 function FiltersCard() {
   return (
-    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-      <h3 className="font-semibold flex items-center gap-2">Filters</h3>
-
+    <div className="rounded-2xl bg-white border p-4 shadow-sm">
+      <h3 className="font-semibold">Filters</h3>
       <div className="mt-3">
-        <label className="text-xs text-gray-500">Search People</label>
-        <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
-          <I.search />
-          <input className="w-full text-sm outline-none" placeholder="Name, title, skills..." />
-        </div>
+        <label className="text-xs text-gray-500">Search Companies</label>
+        <input placeholder="Name" className="mt-1 w-full rounded-xl border px-3 py-2 text-sm" />
       </div>
-
       <div className="mt-3">
         <label className="text-xs text-gray-500">Location</label>
-        <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+        <select className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
           <option>Select location</option>
           <option>Lagos</option>
           <option>Accra</option>
-          <option>Luanda</option>
+          <option>Cape Town</option>
           <option>Nairobi</option>
         </select>
       </div>
-
       <div className="mt-3">
         <label className="text-xs text-gray-500">Industry</label>
-        <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+        <select className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
           <option>Select industry</option>
-          <option>Fintech</option>
+          <option>Tech</option>
+          <option>Energy</option>
           <option>Agriculture</option>
-          <option>Education</option>
-          <option>Healthcare</option>
+          <option>Finance</option>
         </select>
       </div>
-
       <div className="mt-3">
-        <label className="text-xs text-gray-500">Experience</label>
-        <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-          <option>Select experience</option>
-          <option>0–2 yrs</option>
-          <option>3–5 yrs</option>
-          <option>6–10 yrs</option>
-          <option>10+ yrs</option>
+        <label className="text-xs text-gray-500">Category</label>
+        <select className="mt-1 w-full rounded-xl border px-3 py-2 text-sm">
+          <option>Select category</option>
+          <option>Startup</option>
+          <option>SME</option>
+          <option>Enterprise</option>
         </select>
       </div>
-
-      <button className={`mt-4 ${styles.primaryWide}`}>Apply Filters</button>
+      <button className={`mt-4 w-full ${styles.primary}`}>Apply Filters</button>
     </div>
   );
 }
@@ -318,35 +310,38 @@ function SuggestedMatches() {
   );
 }
 
-/* ---------------- Post component ---------------- */
-function PostCard({ p }) {
+function CompanyCard({ c }) {
   return (
-    <article className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <img alt="" className="h-10 w-10 rounded-full object-cover" src={`https://i.pravatar.cc/100?img=${p.id + 8}`} />
-          <div>
-            <div className="font-semibold">{p.author}</div>
-            <div className="text-xs text-gray-500">{p.subtitle}</div>
+    <article className="rounded-2xl bg-white border shadow-sm p-5">
+      <div className="flex items-start gap-3">
+        <img src={c.logo} alt="" className="h-10 w-10 rounded-full" />
+        <div className="flex-1">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <span className="font-semibold">{c.name}</span>
+            {c.verified && <span className="text-green-600 text-xs font-medium">✔ Verified</span>}
+            <span>• {c.location}</span>
+            <span>• {c.time}</span>
+          </div>
+          <div className="text-xs text-gray-500">{c.industry}</div>
+          <h3 className="mt-2 font-semibold">{c.title}</h3>
+          <p className="text-sm text-gray-600 mt-1">{c.desc}</p>
+          <div className="flex gap-2 mt-2 flex-wrap">
+            {c.tags.map((t) => (
+              <span key={t} className="px-2 py-1 text-xs rounded-full bg-gray-100">{t}</span>
+            ))}
+          </div>
+          <div className="mt-3 flex items-center justify-between text-sm text-gray-500">
+            <div className="flex gap-4">
+              <span>{c.stats.views} views</span>
+              <span>{c.stats.likes} likes</span>
+              <span>{c.stats.comments} comments</span>
+            </div>
+            <div className="flex gap-2">
+              <button className={styles.secondary}>Save</button>
+              <button className={styles.primary}>Connect</button>
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
-            <I.msg />
-          </button>
-          <button className={styles.primary}>Connect</button>
-        </div>
-      </div>
-
-      <p className="mt-3 text-[15px] text-gray-700">{p.text}</p>
-      {p.image && (
-        <img src={p.image} alt="" className="mt-4 w-full rounded-xl object-cover aspect-[16/9]" />
-      )}
-
-      <div className="mt-4 flex items-center gap-5 text-sm text-gray-500">
-        <div className="flex items-center gap-1"><I.heart />{p.stats.likes}</div>
-        <div className="flex items-center gap-1"><I.comment />{p.stats.comments}</div>
-        <div className="flex items-center gap-1"><I.share />Share</div>
       </div>
     </article>
   );
@@ -356,7 +351,7 @@ function PostCard({ p }) {
 
 /* ---------------- Page ---------------- */
 export default function PeopleFeedPage() {
-  const [activeTab, setActiveTab] = useState("Posts");
+  const [activeTab, setActiveTab] = useState("Projects");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const navigate=useNavigate()
 
@@ -472,22 +467,18 @@ export default function PeopleFeedPage() {
       className="rounded-2xl p-6 text-white shadow-sm"
       style={{ background: "linear-gradient(90deg,#8A358A 0%,#9333EA 100%)" }}
     >
-      <h2 className="text-2xl font-bold">Connect with the World</h2>
+      <h2 className="text-2xl font-bold">Find the Companies You Can Collaborate With</h2>
       <p className="mt-1 text-white/90">
-        Discover nearby people who share your interests and expand your professional network globally
+        Discover innovative companies and organizations that align with your goals. From startups to established enterprises, explore opportunities, partnerships, and collaborations across industries.
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-3 text-sm">
-        <span className="rounded-full bg-white/20 px-3 py-1.5">12.5K+ Connections</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">85+ Countries</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">200+ Professions</span>
-      </div>
+    
     </div>
 
     {/* Tabs + Add */}
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
-        {["Posts","People","My Connections","News & Articles"].map(t => (
+        {["Projects", "Companies", "Suggested"].map(t => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
@@ -514,9 +505,9 @@ export default function PeopleFeedPage() {
     <h3 className="font-semibold text-2xl mt-1">Feed activities</h3>
 
     {/* Posts */}
-    {posts.map((p) => (
-      <PostCard key={p.id} p={p} />
-    ))}
+    {companies.map((c) => (
+              <CompanyCard key={c.id} c={c} />
+   ))}
     <button className={`mx-auto max-w-[200px] block mt-4 ${styles.primaryWide}`}>
       Load More Posts
     </button>

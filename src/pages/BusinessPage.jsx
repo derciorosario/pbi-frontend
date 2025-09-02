@@ -102,38 +102,77 @@ const I = {
 
 };
 
+
+function ServiceCard({ s }) {
+  return (
+    <article className="rounded-2xl bg-white border shadow-sm overflow-hidden">
+      <img src={s.image} alt="" className="w-full h-40 object-cover" />
+      <div className="p-4">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <span className="font-medium text-gray-700">{s.author}</span>
+          <span>• {s.subtitle}</span>
+          {s.verified && (
+            <span className="text-green-600 font-medium ml-2">
+              ✔ Verified Service
+            </span>
+          )}
+        </div>
+        <h3 className="mt-2 font-semibold">{s.title}</h3>
+        <p className="text-sm text-gray-600 mt-1">{s.desc}</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {s.tags.map((t) => (
+            <span
+              key={t}
+              className="text-xs bg-gray-100 px-2 py-1 rounded-full"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+        <div className="mt-4 flex items-center justify-between">
+          <span className="font-semibold text-[#8A358A]">{s.price}</span>
+          <div className="flex gap-2">
+            <button className="rounded-lg border px-3 py-1.5 text-sm bg-white">
+              Message
+            </button>
+            <button className={styles.primary}>{s.cta}</button>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 /* ---------------- Mock data ---------------- */
-const posts = [
+const services = [
   {
     id: 1,
-    author: "Kwame Asante",
-    subtitle: "Tech Lead • Accra, Ghana • 2h",
-    text:
-      "Looking for React developers for an innovative fintech project. Remote opportunity focused on the African market. #ReactJS #Fintech #RemoteWork",
-    stats: { likes: 24, comments: 8, shares: 3 },
-    image: null,
-  },
-  {
-    id: 2,
-    author: "Amara Diallo",
-    subtitle: "Marketing Consultant • Lagos, Nigeria • 4h",
-    text:
-      "Networking event in Lagos next week! Connect with entrepreneurs and investors. Limited spots available.",
-    stats: { likes: 42, comments: 15, shares: 8 },
+    author: "Fatima Al-Rashid",
+    subtitle: "Artisan & Entrepreneur • Morocco",
+    verified: true,
+    title: "Handcrafted Moroccan Leather Goods",
+    desc: "Authentic handcrafted leather bags, wallets, and accessories made with traditional Moroccan techniques.",
+    price: "$45 – $180",
     image:
-      "https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1522336572468-97b06e8ef143?q=80&w=1600&auto=format&fit=crop",
+    tags: ["Handmade", "Leather", "Traditional", "Authentic"],
+    cta: "View Collection",
   },
   {
     id: 3,
-    author: "Amara Okafor",
-    subtitle: "Software Developer • 4 hours ago",
-    text:
-      "Just completed a mobile app for local farmers to connect directly with buyers. Looking for partnerships to scale across West Africa. #MobileApp #Agriculture #Partnership",
-    stats: { likes: 67, comments: 15, shares: 6 },
+    author: "Aisha Patel",
+    subtitle: "Digital Marketing Expert • South Africa",
+    verified: false,
+    title: "Complete Social Media Marketing Strategy",
+    desc: "Comprehensive campaigns that drive engagement and conversions. Includes content creation and analytics.",
+    price: "$800 / month",
     image:
-      "https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1556740749-887f6717d7e4?q=80&w=1600&auto=format&fit=crop",
+    tags: ["Facebook Ads", "Instagram", "Content Strategy", "Analytics"],
+    cta: "Get Started",
   },
 ];
+
 
 const matches = [
   { name: "Michael Chen", title: "Angel Investor", looking: "Fintech Startups" },
@@ -226,50 +265,49 @@ function QuickActions() {
   );
 }
 
+
+
+
 function FiltersCard() {
-  return (
-    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-      <h3 className="font-semibold flex items-center gap-2">Filters</h3>
+return (
+    <div className="rounded-2xl bg-white border p-4 shadow-sm">
+      <h3 className="font-semibold">Service Filters</h3>
 
       <div className="mt-3">
-        <label className="text-xs text-gray-500">Search People</label>
-        <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
-          <I.search />
-          <input className="w-full text-sm outline-none" placeholder="Name, title, skills..." />
-        </div>
+        <label className="text-xs text-gray-500">Search Services</label>
+        <input
+          placeholder="Provider, skill, service..."
+          className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+        />
       </div>
 
       <div className="mt-3">
-        <label className="text-xs text-gray-500">Location</label>
-        <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-          <option>Select location</option>
-          <option>Lagos</option>
-          <option>Accra</option>
-          <option>Luanda</option>
-          <option>Nairobi</option>
-        </select>
+        <label className="text-xs text-gray-500">Category</label>
+        <ul className="mt-2 space-y-1 text-sm">
+          {[
+            "All Services",
+            "Business Consulting",
+            "Web Development",
+            "Design",
+            "Digital Marketing",
+            "Coaching",
+            "Creative Services",
+          ].map((cat) => (
+            <li key={cat}>
+              <button className="w-full text-left rounded-lg px-3 py-2 hover:bg-gray-50 border border-gray-200">
+                {cat}
+              </button>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="mt-3">
-        <label className="text-xs text-gray-500">Industry</label>
-        <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-          <option>Select industry</option>
-          <option>Fintech</option>
-          <option>Agriculture</option>
-          <option>Education</option>
-          <option>Healthcare</option>
-        </select>
-      </div>
-
-      <div className="mt-3">
-        <label className="text-xs text-gray-500">Experience</label>
-        <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-          <option>Select experience</option>
-          <option>0–2 yrs</option>
-          <option>3–5 yrs</option>
-          <option>6–10 yrs</option>
-          <option>10+ yrs</option>
-        </select>
+        <label className="text-xs text-gray-500">Select rate range</label>
+        <input
+          type="range"
+          className="mt-2 w-full"
+        />
       </div>
 
       <button className={`mt-4 ${styles.primaryWide}`}>Apply Filters</button>
@@ -318,39 +356,6 @@ function SuggestedMatches() {
   );
 }
 
-/* ---------------- Post component ---------------- */
-function PostCard({ p }) {
-  return (
-    <article className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <img alt="" className="h-10 w-10 rounded-full object-cover" src={`https://i.pravatar.cc/100?img=${p.id + 8}`} />
-          <div>
-            <div className="font-semibold">{p.author}</div>
-            <div className="text-xs text-gray-500">{p.subtitle}</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
-            <I.msg />
-          </button>
-          <button className={styles.primary}>Connect</button>
-        </div>
-      </div>
-
-      <p className="mt-3 text-[15px] text-gray-700">{p.text}</p>
-      {p.image && (
-        <img src={p.image} alt="" className="mt-4 w-full rounded-xl object-cover aspect-[16/9]" />
-      )}
-
-      <div className="mt-4 flex items-center gap-5 text-sm text-gray-500">
-        <div className="flex items-center gap-1"><I.heart />{p.stats.likes}</div>
-        <div className="flex items-center gap-1"><I.comment />{p.stats.comments}</div>
-        <div className="flex items-center gap-1"><I.share />Share</div>
-      </div>
-    </article>
-  );
-}
 
 
 
@@ -390,8 +395,8 @@ export default function PeopleFeedPage() {
             <a
               href="#"
               onClick={()=>navigate('/people')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white"
-              style={{ background: "#8A358A" }}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
+           
             >
               
               <I.people /> People
@@ -413,7 +418,9 @@ export default function PeopleFeedPage() {
             <a
               href="#"
               onClick={()=>navigate('/business')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
+              
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white"
+              style={{ background: "#8A358A" }}
             >
               <I.biz /> Business
             </a>
@@ -472,22 +479,18 @@ export default function PeopleFeedPage() {
       className="rounded-2xl p-6 text-white shadow-sm"
       style={{ background: "linear-gradient(90deg,#8A358A 0%,#9333EA 100%)" }}
     >
-      <h2 className="text-2xl font-bold">Connect with the World</h2>
+      <h2 className="text-2xl font-bold">Connecting You to the Right Products & Services</h2>
       <p className="mt-1 text-white/90">
-        Discover nearby people who share your interests and expand your professional network globally
+       Connect with employers across Africa and discover career opportunities that match your skills and aspirations
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-3 text-sm">
-        <span className="rounded-full bg-white/20 px-3 py-1.5">12.5K+ Connections</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">85+ Countries</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">200+ Professions</span>
-      </div>
+    
     </div>
 
     {/* Tabs + Add */}
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
-        {["Posts","People","My Connections","News & Articles"].map(t => (
+        {["Posts","Products","Services"].map(t => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
@@ -514,8 +517,8 @@ export default function PeopleFeedPage() {
     <h3 className="font-semibold text-2xl mt-1">Feed activities</h3>
 
     {/* Posts */}
-    {posts.map((p) => (
-      <PostCard key={p.id} p={p} />
+    {services.map((s) => (
+              <ServiceCard key={s.id} s={s} />
     ))}
     <button className={`mx-auto max-w-[200px] block mt-4 ${styles.primaryWide}`}>
       Load More Posts
@@ -530,7 +533,8 @@ export default function PeopleFeedPage() {
 
       </main>
 
-    
+      {/* ===== Footer ===== */}
+     
 
       {/* Mobile Filters Bottom Sheet */}
       {mobileFiltersOpen && (

@@ -1,4 +1,4 @@
-import { Crown, Pencil, PlusCircle, Rocket } from "lucide-react";
+import { AlarmClock, Calendar, Crown, Pencil, PlusCircle, Rocket } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -102,38 +102,44 @@ const I = {
 
 };
 
-/* ---------------- Mock data ---------------- */
-const posts = [
+function HostEventCard() {
+  return (
+    <div className="rounded-2xl bg-[#F9F5FF] border border-[#E2D6F9] p-5 shadow-sm text-center">
+      <h3 className="font-semibold text-gray-800">Host Your Event</h3>
+      <p className="text-sm text-gray-500 mt-1">Share your expertise and connect with professionals in your field.</p>
+      <button className={`mt-4 ${styles.primaryWide}`}>Create Event</button>
+    </div>
+  );
+}
+
+/* ---------------- Mock events ---------------- */
+const events = [
   {
     id: 1,
-    author: "Kwame Asante",
-    subtitle: "Tech Lead • Accra, Ghana • 2h",
-    text:
-      "Looking for React developers for an innovative fintech project. Remote opportunity focused on the African market. #ReactJS #Fintech #RemoteWork",
-    stats: { likes: 24, comments: 8, shares: 3 },
-    image: null,
+    title: "Pan-African Business Summit 2024",
+    tag: "Business",
+    date: "Mar 15, 2024",
+    desc: "Connect with leading entrepreneurs and investors across Africa. Network, learn, and grow your business.",
+    location: "Lagos, Nigeria",
+    price: "$150",
+    cta: "Register",
+    image:
+      "https://images.unsplash.com/photo-1503428593586-e225b39bddfe?q=80&w=1600&auto=format&fit=crop",
   },
   {
     id: 2,
-    author: "Amara Diallo",
-    subtitle: "Marketing Consultant • Lagos, Nigeria • 4h",
-    text:
-      "Networking event in Lagos next week! Connect with entrepreneurs and investors. Limited spots available.",
-    stats: { likes: 42, comments: 15, shares: 8 },
+    title: "AI & Machine Learning Workshop",
+    tag: "Technology",
+    date: "Mar 20, 2024",
+    desc: "Learn cutting-edge AI technologies from industry experts. Hands-on sessions and networking.",
+    location: "Online",
+    price: "Free",
+    cta: "Join",
     image:
-      "https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=1600&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    author: "Amara Okafor",
-    subtitle: "Software Developer • 4 hours ago",
-    text:
-      "Just completed a mobile app for local farmers to connect directly with buyers. Looking for partnerships to scale across West Africa. #MobileApp #Agriculture #Partnership",
-    stats: { likes: 67, comments: 15, shares: 6 },
-    image:
-      "https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=1600&auto=format&fit=crop",
   },
 ];
+
 
 const matches = [
   { name: "Michael Chen", title: "Angel Investor", looking: "Fintech Startups" },
@@ -218,7 +224,27 @@ function QuickActions() {
             href="#"
           >
             <PlusCircle size={16} className="text-[#8a358a]" />
-            Post an Opportunity
+            Post an Event
+          </a>
+        </li>
+
+        <li>
+          <a
+            className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
+            href="#"
+          >
+            <Calendar size={16} className="text-[#8a358a]" />
+            Calendar View
+          </a>
+        </li>
+
+        <li>
+          <a
+            className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
+            href="#"
+          >
+            <AlarmClock size={16} className="text-[#8a358a]" />
+            Set Reminders
           </a>
         </li>
       </ul>
@@ -232,10 +258,10 @@ function FiltersCard() {
       <h3 className="font-semibold flex items-center gap-2">Filters</h3>
 
       <div className="mt-3">
-        <label className="text-xs text-gray-500">Search People</label>
+        <label className="text-xs text-gray-500">Search Events</label>
         <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
           <I.search />
-          <input className="w-full text-sm outline-none" placeholder="Name, title, skills..." />
+          <input className="w-full text-sm outline-none" placeholder="Event name, organizer..." />
         </div>
       </div>
 
@@ -261,16 +287,7 @@ function FiltersCard() {
         </select>
       </div>
 
-      <div className="mt-3">
-        <label className="text-xs text-gray-500">Experience</label>
-        <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-          <option>Select experience</option>
-          <option>0–2 yrs</option>
-          <option>3–5 yrs</option>
-          <option>6–10 yrs</option>
-          <option>10+ yrs</option>
-        </select>
-      </div>
+     
 
       <button className={`mt-4 ${styles.primaryWide}`}>Apply Filters</button>
     </div>
@@ -319,44 +336,36 @@ function SuggestedMatches() {
 }
 
 /* ---------------- Post component ---------------- */
-function PostCard({ p }) {
+
+/* ---------------- Event Card ---------------- */
+function EventCard({ e }) {
   return (
-    <article className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <img alt="" className="h-10 w-10 rounded-full object-cover" src={`https://i.pravatar.cc/100?img=${p.id + 8}`} />
-          <div>
-            <div className="font-semibold">{p.author}</div>
-            <div className="text-xs text-gray-500">{p.subtitle}</div>
-          </div>
+    <div className="rounded-2xl bg-white border shadow-sm overflow-hidden">
+      <img src={e.image} alt="" className="w-full h-40 object-cover" />
+      <div className="p-4">
+        <span className="inline-block text-xs px-2 py-1 bg-gray-100 rounded-full">
+          {e.tag}
+        </span>
+        <h3 className="mt-2 font-semibold">{e.title}</h3>
+        <p className="text-sm text-gray-600 mt-1">{e.desc}</p>
+        <div className="flex items-center text-xs text-gray-500 mt-2 gap-2">
+          <I.pin /> {e.location}
         </div>
-        <div className="flex items-center gap-2">
-          <button className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
-            <I.msg />
-          </button>
-          <button className={styles.primary}>Connect</button>
+        <div className="flex items-center justify-between mt-4">
+          <span className="font-semibold">{e.price}</span>
+          <button className={styles.primary}>{e.cta}</button>
         </div>
       </div>
-
-      <p className="mt-3 text-[15px] text-gray-700">{p.text}</p>
-      {p.image && (
-        <img src={p.image} alt="" className="mt-4 w-full rounded-xl object-cover aspect-[16/9]" />
-      )}
-
-      <div className="mt-4 flex items-center gap-5 text-sm text-gray-500">
-        <div className="flex items-center gap-1"><I.heart />{p.stats.likes}</div>
-        <div className="flex items-center gap-1"><I.comment />{p.stats.comments}</div>
-        <div className="flex items-center gap-1"><I.share />Share</div>
-      </div>
-    </article>
+    </div>
   );
 }
 
 
 
+
 /* ---------------- Page ---------------- */
 export default function PeopleFeedPage() {
-  const [activeTab, setActiveTab] = useState("Posts");
+  const [activeTab, setActiveTab] = useState("Suggested for You");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const navigate=useNavigate()
 
@@ -390,8 +399,8 @@ export default function PeopleFeedPage() {
             <a
               href="#"
               onClick={()=>navigate('/people')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white"
-              style={{ background: "#8A358A" }}
+             className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
+          
             >
               
               <I.people /> People
@@ -406,8 +415,9 @@ export default function PeopleFeedPage() {
             <a
               href="#"
               onClick={()=>navigate('/events')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            >
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white"
+              style={{ background: "#8A358A" }}
+             >
               <I.calendar /> Events
             </a>
             <a
@@ -461,8 +471,8 @@ export default function PeopleFeedPage() {
           </div>
         </aside>
 
-        {/* Middle and Right columns container */}
-      {/* Middle and Right columns container */}
+     
+     {/* Middle and Right columns container */}
 <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
   
   {/* Middle column - Feed */}
@@ -472,22 +482,17 @@ export default function PeopleFeedPage() {
       className="rounded-2xl p-6 text-white shadow-sm"
       style={{ background: "linear-gradient(90deg,#8A358A 0%,#9333EA 100%)" }}
     >
-      <h2 className="text-2xl font-bold">Connect with the World</h2>
+      <h2 className="text-2xl font-bold">Your Path to Knowledge and Connections Starts Here</h2>
       <p className="mt-1 text-white/90">
-        Discover nearby people who share your interests and expand your professional network globally
+        Join thousands of professionals at events designed to inspire, educate, and connect.
+        Explore trainings, conferences, and networking opportunities curated just for you.
       </p>
-
-      <div className="mt-4 flex flex-wrap gap-3 text-sm">
-        <span className="rounded-full bg-white/20 px-3 py-1.5">12.5K+ Connections</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">85+ Countries</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">200+ Professions</span>
-      </div>
     </div>
 
     {/* Tabs + Add */}
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
-        {["Posts","People","My Connections","News & Articles"].map(t => (
+        {["Suggested for You","Events to Attend"].map(t => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
@@ -511,26 +516,56 @@ export default function PeopleFeedPage() {
     </div>
 
     {/* Feed header */}
-    <h3 className="font-semibold text-2xl mt-1">Feed activities</h3>
+    <h3 className="font-semibold text-2xl mt-1">Events & Experiences</h3>
 
-    {/* Posts */}
-    {posts.map((p) => (
-      <PostCard key={p.id} p={p} />
+    {/* Events */}
+    {events.map((e) => (
+      <EventCard key={e.id} e={e} />
     ))}
     <button className={`mx-auto max-w-[200px] block mt-4 ${styles.primaryWide}`}>
-      Load More Posts
+      Load More Events
     </button>
   </section>
 
   {/* Right column - Matches sempre no topo */}
   <aside className="lg:col-span-2 space-y-4">
+    
+    <HostEventCard />
     <SuggestedMatches />
   </aside>
 </div>
 
       </main>
 
-    
+      {/* ===== Footer ===== */}
+      <footer className="mt-6 border-t border-gray-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 grid md:grid-cols-4 gap-8">
+          <div>
+            <div className="font-semibold">PANAFRICAN BI</div>
+            <p className="text-sm text-gray-500 mt-2">Connecting African talent globally</p>
+          </div>
+          <div>
+            <div className="font-semibold">Platform</div>
+            <ul className="mt-2 space-y-2 text-sm text-gray-600">
+              <li><a href="#">About</a></li><li><a href="#">Careers</a></li><li><a href="#">Contact</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-semibold">Resources</div>
+            <ul className="mt-2 space-y-2 text-sm text-gray-600">
+              <li><a href="#">Help</a></li><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-semibold">Connect</div>
+            <div className="mt-2 flex items-center gap-3">
+              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">𝕏</a>
+              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">in</a>
+              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">◎</a>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       {/* Mobile Filters Bottom Sheet */}
       {mobileFiltersOpen && (

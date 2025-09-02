@@ -1,4 +1,4 @@
-import { Crown, Pencil, PlusCircle, Rocket } from "lucide-react";
+import { ContactIcon, Crown, LocateIcon, Pencil, PlusCircle, Rocket } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -103,35 +103,30 @@ const I = {
 };
 
 /* ---------------- Mock data ---------------- */
-const posts = [
+const experiences = [
   {
     id: 1,
-    author: "Kwame Asante",
-    subtitle: "Tech Lead • Accra, Ghana • 2h",
-    text:
-      "Looking for React developers for an innovative fintech project. Remote opportunity focused on the African market. #ReactJS #Fintech #RemoteWork",
-    stats: { likes: 24, comments: 8, shares: 3 },
-    image: null,
+    author: "Safari Adventures Kenya",
+    time: "2 hours ago • Nairobi, Kenya",
+    tag: "Safari",
+    title: "Discover the Magic of Maasai Mara",
+    desc: "Experience the greatest wildlife spectacle on Earth during the Great Migration. Our expert guides will take you on an unforgettable journey through Kenya's most famous national reserve.",
+    stats: { likes: 124, comments: 18 },
+    image:
+      "https://images.unsplash.com/photo-1508672019048-805c876b67e2?q=80&w=1600&auto=format&fit=crop",
+    cta: "Book Now",
   },
   {
     id: 2,
-    author: "Amara Diallo",
-    subtitle: "Marketing Consultant • Lagos, Nigeria • 4h",
-    text:
-      "Networking event in Lagos next week! Connect with entrepreneurs and investors. Limited spots available.",
-    stats: { likes: 42, comments: 15, shares: 8 },
+    author: "Cape Town Explorer",
+    time: "4 hours ago • Cape Town, South Africa",
+    tag: "Adventure",
+    title: "Table Mountain Cable Car Adventure",
+    desc: "Take in breathtaking 360-degree views of Cape Town from the top of Table Mountain with our guided cable car experience.",
+    stats: { likes: 98, comments: 12 },
     image:
-      "https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=1600&auto=format&fit=crop",
-  },
-  {
-    id: 3,
-    author: "Amara Okafor",
-    subtitle: "Software Developer • 4 hours ago",
-    text:
-      "Just completed a mobile app for local farmers to connect directly with buyers. Looking for partnerships to scale across West Africa. #MobileApp #Agriculture #Partnership",
-    stats: { likes: 67, comments: 15, shares: 6 },
-    image:
-      "https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=1600&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1600&auto=format&fit=crop",
+    cta: "Book Now",
   },
 ];
 
@@ -189,6 +184,18 @@ function ProfileCard() {
   );
 }
 
+
+function WeatherCard() {
+  return (
+    <div className="rounded-2xl p-5 text-white shadow-sm"
+      style={{ background: "linear-gradient(135deg,#8A358A,#9333EA)" }}>
+      <h3 className="text-sm font-medium">Cape Town</h3>
+      <div className="mt-2 text-2xl font-bold">24°C</div>
+      <p className="text-sm">Sunny • Perfect for touring</p>
+    </div>
+  );
+}
+
 function QuickActions() {
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
@@ -218,7 +225,27 @@ function QuickActions() {
             href="#"
           >
             <PlusCircle size={16} className="text-[#8a358a]" />
-            Post an Opportunity
+            Share experience
+          </a>
+        </li>
+
+         <li>
+          <a
+            className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
+            href="#"
+          >
+            <ContactIcon size={16} className="text-[#8a358a]" />
+            Contact Guide / Provider
+          </a>
+        </li>
+
+         <li>
+          <a
+            className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
+            href="#"
+          >
+            <LocateIcon size={16} className="text-[#8a358a]" />
+            My Experiences
           </a>
         </li>
       </ul>
@@ -319,34 +346,22 @@ function SuggestedMatches() {
 }
 
 /* ---------------- Post component ---------------- */
-function PostCard({ p }) {
+function ExperienceCard({ exp }) {
   return (
-    <article className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <img alt="" className="h-10 w-10 rounded-full object-cover" src={`https://i.pravatar.cc/100?img=${p.id + 8}`} />
-          <div>
-            <div className="font-semibold">{p.author}</div>
-            <div className="text-xs text-gray-500">{p.subtitle}</div>
+    <article className="rounded-2xl bg-white border shadow-sm overflow-hidden">
+      <img src={exp.image} alt="" className="w-full h-48 object-cover" />
+      <div className="p-4">
+        <div className="text-xs text-gray-500">{exp.author} • {exp.time}</div>
+        <h3 className="mt-2 font-semibold">{exp.title}</h3>
+        <p className="text-sm text-gray-600 mt-1">{exp.desc}</p>
+        <div className="mt-3 flex items-center justify-between">
+          <div className="flex items-center gap-4 text-sm text-gray-500">
+            <span>❤️ {exp.stats.likes}</span>
+            <span>💬 {exp.stats.comments}</span>
+            <span>🔗 Share</span>
           </div>
+          <button className={styles.primary}>{exp.cta}</button>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
-            <I.msg />
-          </button>
-          <button className={styles.primary}>Connect</button>
-        </div>
-      </div>
-
-      <p className="mt-3 text-[15px] text-gray-700">{p.text}</p>
-      {p.image && (
-        <img src={p.image} alt="" className="mt-4 w-full rounded-xl object-cover aspect-[16/9]" />
-      )}
-
-      <div className="mt-4 flex items-center gap-5 text-sm text-gray-500">
-        <div className="flex items-center gap-1"><I.heart />{p.stats.likes}</div>
-        <div className="flex items-center gap-1"><I.comment />{p.stats.comments}</div>
-        <div className="flex items-center gap-1"><I.share />Share</div>
       </div>
     </article>
   );
@@ -356,7 +371,7 @@ function PostCard({ p }) {
 
 /* ---------------- Page ---------------- */
 export default function PeopleFeedPage() {
-  const [activeTab, setActiveTab] = useState("Posts");
+  const [activeTab, setActiveTab] = useState("Experiences");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const navigate=useNavigate()
 
@@ -390,8 +405,8 @@ export default function PeopleFeedPage() {
             <a
               href="#"
               onClick={()=>navigate('/people')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white"
-              style={{ background: "#8A358A" }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
+           
             >
               
               <I.people /> People
@@ -420,8 +435,10 @@ export default function PeopleFeedPage() {
             <a
               href="#"
               onClick={()=>navigate('/tourism')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            >
+              
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white"
+              style={{ background: "#8A358A" }}
+             >
               <I.pin /> Tourism
             </a>
           </nav>
@@ -455,6 +472,7 @@ export default function PeopleFeedPage() {
         {/* Left column - Full height sidebar */}
         <aside className="lg:col-span-3 space-y-4 hidden lg:block">
           <ProfileCard />
+            <WeatherCard />
           <QuickActions />
           <div className="sticky top-24">
             <FiltersCard />
@@ -472,22 +490,18 @@ export default function PeopleFeedPage() {
       className="rounded-2xl p-6 text-white shadow-sm"
       style={{ background: "linear-gradient(90deg,#8A358A 0%,#9333EA 100%)" }}
     >
-      <h2 className="text-2xl font-bold">Connect with the World</h2>
+      <h2 className="text-2xl font-bold">Explore Africa’s Rich Culture & Tourism</h2>
       <p className="mt-1 text-white/90">
-        Discover nearby people who share your interests and expand your professional network globally
+       xperience the diversity of Africa through curated tours, cultural events, and local guides. Explore destinations, learn from experts, and immerse yourself in unique cultural experiences
       </p>
 
-      <div className="mt-4 flex flex-wrap gap-3 text-sm">
-        <span className="rounded-full bg-white/20 px-3 py-1.5">12.5K+ Connections</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">85+ Countries</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">200+ Professions</span>
-      </div>
+    
     </div>
 
     {/* Tabs + Add */}
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
-        {["Posts","People","My Connections","News & Articles"].map(t => (
+        {["Experiences","Suggested","Tour Guides"].map(t => (
           <button
             key={t}
             onClick={() => setActiveTab(t)}
@@ -505,7 +519,7 @@ export default function PeopleFeedPage() {
       </div>
       <div className="relative">
         <button className={`${styles.primary} inline-flex items-center gap-2`}>
-          <I.plus /> Add
+          <I.plus /> Add Experience
         </button>
       </div>
     </div>
@@ -514,8 +528,8 @@ export default function PeopleFeedPage() {
     <h3 className="font-semibold text-2xl mt-1">Feed activities</h3>
 
     {/* Posts */}
-    {posts.map((p) => (
-      <PostCard key={p.id} p={p} />
+     {experiences.map((exp) => (
+              <ExperienceCard key={exp.id} exp={exp} />
     ))}
     <button className={`mx-auto max-w-[200px] block mt-4 ${styles.primaryWide}`}>
       Load More Posts

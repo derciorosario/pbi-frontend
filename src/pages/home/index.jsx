@@ -203,7 +203,7 @@ export default function PbiFeedPage() {
                 placeholder="Search people, jobs, events..."
               />
             </div>
-            <button className="relative">
+            <button className="relative" onClick={()=>navigate('/notifications')}>
               <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-white text-[10px]">
                 3
               </span>

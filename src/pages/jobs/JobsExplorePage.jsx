@@ -1,16 +1,18 @@
-// src/pages/JobsFeedPage.jsx
+import { ArrowDown, Crown, Pencil, PlusCircle, Rocket } from "lucide-react";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Pencil, PlusCircle, Rocket } from "lucide-react";
 
-/* ---------------- Shared styles ---------------- */
+/* ---------------- Shared styles (solid purple buttons) ---------------- */
 const styles = {
   primary:
-    "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-[#8A358A] hover:bg-[#7A2F7A] focus:outline-none",
+    "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-[#8A358A] hover:bg-[#7A2F7A] focus:outline-none focus:ring-2 focus:ring-[#8A358A]/30",
   primaryWide:
-    "w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white bg-[#8A358A] hover:bg-[#7A2F7A]",
+    "w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white bg-[#8A358A] hover:bg-[#7A2F7A] focus:outline-none focus:ring-2 focus:ring-[#8A358A]/30",
+  pill:
+    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-white bg-[#8A358A] hover:bg-[#7A2F7A]",
 };
 
+/* ---------------- Minimal icon set ---------------- */
 const I = {
   search: () => (
     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -100,7 +102,6 @@ const I = {
 
 };
 
-
 /* ---------------- Mock data ---------------- */
 const jobs = [
   {
@@ -142,7 +143,8 @@ const matches = [
   { name: "Amara Diallo", title: "Marketing Consultant", looking: "Fintech Startups" },
 ];
 
-/* ---------------- Left Sidebar ---------------- */
+/* ---------------- Left sidebar cards ---------------- */
+
 function ProfileCard() {
   return (
     <div className="rounded-2xl bg-white border p-4 shadow-sm">
@@ -171,24 +173,54 @@ function ProfileCard() {
           <div className="font-semibold">23</div>
         </div>
       </div>
-      <button className={`mt-4 ${styles.primaryWide}`}>Boost Your Profile</button>
+      <button className={`mt-4 ${styles.primaryWide} flex items-center justify-center`}>
+         <svg width="19" height="16" viewBox="0 0 19 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <g clip-path="url(#clip0_294_101)">
+            <path d="M9.96875 3.3125C10.325 3.09375 10.5625 2.69687 10.5625 2.25C10.5625 1.55937 10.0031 1 9.3125 1C8.62187 1 8.0625 1.55937 8.0625 2.25C8.0625 2.7 8.3 3.09375 8.65625 3.3125L6.86562 6.89375C6.58125 7.4625 5.84375 7.625 5.34688 7.22813L2.5625 5C2.71875 4.79063 2.8125 4.53125 2.8125 4.25C2.8125 3.55938 2.25312 3 1.5625 3C0.871875 3 0.3125 3.55938 0.3125 4.25C0.3125 4.94062 0.871875 5.5 1.5625 5.5C1.56875 5.5 1.57812 5.5 1.58438 5.5L3.0125 13.3562C3.18438 14.3062 4.0125 15 4.98125 15H13.6438C14.6094 15 15.4375 14.3094 15.6125 13.3562L17.0406 5.5C17.0469 5.5 17.0562 5.5 17.0625 5.5C17.7531 5.5 18.3125 4.94062 18.3125 4.25C18.3125 3.55938 17.7531 3 17.0625 3C16.3719 3 15.8125 3.55938 15.8125 4.25C15.8125 4.53125 15.9062 4.79063 16.0625 5L13.2781 7.22813C12.7812 7.625 12.0437 7.4625 11.7594 6.89375L9.96875 3.3125Z" fill="white"/>
+          </g>
+          <defs>
+            <clipPath id="clip0_294_101">
+              <path d="M0.3125 0H18.3125V16H0.3125V0Z" fill="white"/>
+            </clipPath>
+          </defs>
+        </svg>
+        <span className="ml-1">Boost Your Profile</span>
+        </button>
     </div>
   );
 }
 
 function QuickActions() {
   return (
-    <div className="rounded-2xl bg-white border p-4 shadow-sm">
+    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
       <h3 className="font-semibold">Quick Actions</h3>
-      <ul className="mt-3 space-y-2 text-sm">
-        <li className="flex gap-2 items-center">
-          <Pencil size={16} className="text-[#8A358A]" /> Edit Profile
+      <ul className="mt-3 space-y-2 text-sm text-gray-700">
+        <li>
+          <a
+            className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
+            href="#"
+          >
+            <Pencil size={16} className="text-[#8a358a]" />
+            Edit Profile
+          </a>
         </li>
-        <li className="flex gap-2 items-center">
-          <Rocket size={16} className="text-[#8A358A]" /> Boost Job Post
+        <li>
+          <a
+            className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
+            href="#"
+          >
+            <Rocket size={16} className="text-[#8a358a]" />
+            Boost Profile
+          </a>
         </li>
-        <li className="flex gap-2 items-center">
-          <PlusCircle size={16} className="text-[#8A358A]" /> Create Job Post
+        <li>
+          <a
+            className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
+            href="#"
+          >
+            <PlusCircle size={16} className="text-[#8a358a]" />
+            Post an Opportunity
+          </a>
         </li>
       </ul>
     </div>
@@ -197,66 +229,56 @@ function QuickActions() {
 
 function FiltersCard() {
   return (
-    <div className="rounded-2xl bg-white border p-4 shadow-sm">
-      <h3 className="font-semibold">Filters</h3>
+    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+      <h3 className="font-semibold flex items-center gap-2">Filters</h3>
+
       <div className="mt-3">
-        <label className="text-xs text-gray-500">Search Jobs</label>
-        <input className="w-full border rounded-xl mt-1 px-3 py-2 text-sm" placeholder="Job title, company" />
+        <label className="text-xs text-gray-500">Search People</label>
+        <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
+          <I.search />
+          <input className="w-full text-sm outline-none" placeholder="Name, title, skills..." />
+        </div>
       </div>
+
       <div className="mt-3">
         <label className="text-xs text-gray-500">Location</label>
-        <select className="w-full border rounded-xl mt-1 px-3 py-2 text-sm">
+        <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
           <option>Select location</option>
-          <option>Lagos</option><option>Cape Town</option><option>Remote</option>
+          <option>Lagos</option>
+          <option>Accra</option>
+          <option>Luanda</option>
+          <option>Nairobi</option>
         </select>
       </div>
+
       <div className="mt-3">
         <label className="text-xs text-gray-500">Industry</label>
-        <select className="w-full border rounded-xl mt-1 px-3 py-2 text-sm">
+        <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
           <option>Select industry</option>
-          <option>Fintech</option><option>Tech</option><option>Marketing</option>
+          <option>Fintech</option>
+          <option>Agriculture</option>
+          <option>Education</option>
+          <option>Healthcare</option>
         </select>
       </div>
+
       <div className="mt-3">
-        <label className="text-xs text-gray-500">Category</label>
-        <select className="w-full border rounded-xl mt-1 px-3 py-2 text-sm">
-          <option>Select category</option>
-          <option>Engineering</option><option>Design</option><option>Management</option>
+        <label className="text-xs text-gray-500">Experience</label>
+        <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+          <option>Select experience</option>
+          <option>0–2 yrs</option>
+          <option>3–5 yrs</option>
+          <option>6–10 yrs</option>
+          <option>10+ yrs</option>
         </select>
       </div>
+
       <button className={`mt-4 ${styles.primaryWide}`}>Apply Filters</button>
     </div>
   );
 }
 
-/* ---------------- Job Card ---------------- */
-function JobCard({ job }) {
-  return (
-    <div className="rounded-2xl bg-white border p-5 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="font-semibold">{job.title}</h3>
-          <div className="text-sm text-gray-500">{job.company}</div>
-        </div>
-        <button className="text-gray-400">♡</button>
-      </div>
-      <div className="mt-2 flex flex-wrap gap-2 text-xs">
-        {job.tags.map(t => (
-          <span key={t} className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">{t}</span>
-        ))}
-      </div>
-      <p className="mt-3 text-sm text-gray-700">{job.desc}</p>
-      <div className="mt-3 flex justify-between text-sm text-gray-500">
-        <span>{job.location}</span>
-        <span>{job.salary}</span>
-      </div>
-      <div className="text-xs text-gray-400 mt-2">{job.ago}</div>
-    </div>
-  );
-}
-
-/* ---------------- Right Sidebar ---------------- */
-
+/* ---------------- Right: matches ---------------- */
 function SuggestedMatches() {
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
@@ -297,13 +319,46 @@ function SuggestedMatches() {
   );
 }
 
-/* ---------------- Page ---------------- */
-export default function JobsFeedPage() {
-  const navigate = useNavigate();
+
+function JobCard({ job }) {
   return (
-    <div className="min-h-screen bg-[#F7F7FB]">
-      {/* Header */}
-       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-200">
+    <div className="rounded-2xl bg-white border p-5 shadow-sm">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="font-semibold">{job.title}</h3>
+          <div className="text-sm text-gray-500">{job.company}</div>
+        </div>
+        <button className="text-gray-400">♡</button>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2 text-xs">
+        {job.tags.map(t => (
+          <span key={t} className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">{t}</span>
+        ))}
+      </div>
+      <p className="mt-3 text-sm text-gray-700">{job.desc}</p>
+      <div className="mt-3 flex justify-between text-sm text-gray-500">
+        <span>{job.location}</span>
+        <span>{job.salary}</span>
+      </div>
+      <div className="text-xs text-gray-400 mt-2">{job.ago}</div>
+    </div>
+  );
+}
+
+
+
+
+/* ---------------- Page ---------------- */
+export default function PeopleFeedPage() {
+  const [activeTab, setActiveTab] = useState("Posts");
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const navigate=useNavigate()
+  const [showAddMenu, setShowAddMenu] = useState(false); // NEW state
+
+  return (
+    <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
+      {/* ===== Header (compact) ===== */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-200">
         <div className="mx-auto max-w-7xl h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
           <div className="flex items-center gap-2 cursor-pointer" onClick={()=>navigate('/')}>
             <div
@@ -331,8 +386,7 @@ export default function JobsFeedPage() {
               href="#"
               onClick={()=>navigate('/people')}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-          
-              
+           
             >
               
               <I.people /> People
@@ -340,9 +394,10 @@ export default function JobsFeedPage() {
             <a
               href="#"
               onClick={()=>navigate('/jobs')}
-              style={{ background: "#8A358A" }}
+              
               className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white"
-              >
+              style={{ background: "#8A358A" }}
+             >
               <I.jobs /> Jobs
             </a>
             <a
@@ -373,7 +428,7 @@ export default function JobsFeedPage() {
               <I.search />
               <input className="w-full bg-transparent outline-none text-sm" placeholder="Search people, jobs, events..." />
             </div>
-            <button className="relative">
+            <button onClick={()=>navigate('/notifications')} className="relative">
               <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-white text-[10px]">3</span>
               <svg className="h-[18px] w-[18px] text-gray-600" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a2.5 2.5 0 0 0 2.45-2H9.55A2.5 2.5 0 0 0 12 22ZM18 16v-5a6 6 0 1 0-12 0v5l-1.8 1.8A1 1 0 0 0 5 20h14a1 1 0 0 0 .8-1.6Z"/></svg>
             </button>
@@ -382,35 +437,155 @@ export default function JobsFeedPage() {
         </div>
       </header>
 
-      {/* Content */}
-      <main className="mx-auto max-w-7xl grid lg:grid-cols-12 gap-6 px-6 py-8">
-        {/* Left */}
-        <aside className="lg:col-span-3 space-y-4">
+      {/* ===== Content ===== */}
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6">
+        {/* MOBILE button to open filters */}
+        <div className="md:hidden mb-4">
+          <button
+            onClick={() => setMobileFiltersOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm"
+          >
+            <I.filter /> Filters
+          </button>
+        </div>
+
+        {/* Left column - Full height sidebar */}
+        <aside className="lg:col-span-3 space-y-4 hidden lg:block">
           <ProfileCard />
           <QuickActions />
-          <FiltersCard />
+          <div className="sticky top-24">
+            <FiltersCard />
+          </div>
         </aside>
 
-        {/* Middle */}
-        <section className="lg:col-span-6 space-y-4">
-          <div className="rounded-2xl bg-gradient-to-r from-[#8A358A] to-[#9333EA] text-white p-6">
-            <h2 className="text-xl font-bold">Find Your Next Opportunity</h2>
-            <p className="text-sm mt-1">Connect with employers across Africa and discover career opportunities.</p>
-            <div className="mt-4 flex gap-3 text-xs">
+        {/* Middle and Right columns container */}
+      {/* Middle and Right columns container */}
+<div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+  
+  {/* Middle column - Feed */}
+  <section className="lg:col-span-4 space-y-4">
+    {/* Hero banner agora dentro do meio */}
+    <div
+      className="rounded-2xl p-6 text-white shadow-sm"
+      style={{ background: "linear-gradient(90deg,#8A358A 0%,#9333EA 100%)" }}
+    >
+      <h2 className="text-2xl font-bold">Find Your Next Opportunity</h2>
+      <p className="mt-1 text-white/90">
+       Connect with employers across Africa and discover career opportunities that match your skills
+and aspirations
+      </p>
+
+      <div className="mt-4 flex gap-3 text-xs">
               <span className="bg-white/20 px-3 py-1 rounded-full">Active Jobs</span>
               <span className="bg-white/20 px-3 py-1 rounded-full">245+ Companies</span>
               <span className="bg-white/20 px-3 py-1 rounded-full">124,589 Job Seekers</span>
             </div>
-          </div>
-          {jobs.map(j => <JobCard key={j.id} job={j} />)}
-          <button className={`mx-auto block mt-4 ${styles.primaryWide}`}>Load More Jobs</button>
-        </section>
+    </div>
 
-        {/* Right */}
-        <aside className="lg:col-span-3">
-          <SuggestedMatches />
-        </aside>
+    {/* Tabs + Add */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+        {["Posts","Job Seeker","Job Offers"].map(t => (
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            className={`pb-2 relative ${activeTab === t ? "text-gray-900" : "hover:text-gray-800"}`}
+          >
+            {t}
+            {activeTab === t && (
+              <span
+                className="absolute left-0 -bottom-[1px] h-[3px] w-full rounded-full"
+                style={{ background: "linear-gradient(90deg,#8A358A,#9333EA)" }}
+              />
+            )}
+          </button>
+        ))}
+      </div>
+      <div className="relative">
+                <button
+                 __onClick={() => setShowAddMenu(prev => !prev)}
+                  onClick={() => navigate('/jobs/create')}
+                  className={`${styles.primary} inline-flex items-center gap-2`}
+                >
+                  <I.plus /> Add
+                </button>
+
+                {showAddMenu && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-100 bg-white shadow-lg z-50">
+                    <ul className="py-1 text-sm text-gray-700">
+                      <li>
+                        <button className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                          <Pencil size={16} className="text-[#8a358a]" />
+                          Edit Profile
+                        </button>
+                      </li>
+                      <li>
+                        <button className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                          <Rocket size={16} className="text-[#8a358a]" />
+                          Boost Profile
+                        </button>
+                      </li>
+                      <li>
+                        <button className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                          <PlusCircle size={16} className="text-[#8a358a]" />
+                          Post an Opportunity
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+    </div>
+
+    {/* Feed header */}
+    <h3 className="font-semibold text-2xl mt-1">Feed activities</h3>
+
+    {/* Posts */}
+    {jobs.map(j => <JobCard key={j.id} job={j} />)}
+    <button className={`mx-auto max-w-[200px] block mt-4 ${styles.primaryWide}`}>
+      Load More Posts
+    </button>
+  </section>
+
+  {/* Right column - Matches sempre no topo */}
+  <aside className="lg:col-span-2 space-y-4">
+    <SuggestedMatches />
+  </aside>
+</div>
+
       </main>
+
+    
+
+      {/* Mobile Filters Bottom Sheet */}
+      {mobileFiltersOpen && (
+        <div className="fixed inset-0 z-[60]">
+          {/* Overlay */}
+          <button
+            className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"
+            onClick={() => setMobileFiltersOpen(false)}
+            aria-label="Close filters"
+          />
+          {/* Bottom Sheet */}
+          <div className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-auto rounded-t-2xl bg-white p-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-2 border-b">
+              <div className="font-semibold flex items-center gap-2">
+                <I.filter /> Filters
+              </div>
+              <button
+                onClick={() => setMobileFiltersOpen(false)}
+                className="grid h-8 w-8 place-items-center rounded-lg border border-gray-200"
+                aria-label="Close"
+              >
+                <I.close />
+              </button>
+            </div>
+            <div className="pt-3">
+              <FiltersCard />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
