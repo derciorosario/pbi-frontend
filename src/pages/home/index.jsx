@@ -139,7 +139,7 @@ export default function PbiFeedPage() {
               className="h-9 w-9 rounded-xl grid place-items-center text-white font-bold flex-shrink-0"
               style={{ background: "linear-gradient(135deg,#8A358A,#9333EA)" }}
             >
-              F
+              P
             </div>
             <div className="leading-tight">
               <div className="font-semibold">PANAFRICAN</div>
@@ -256,259 +256,244 @@ export default function PbiFeedPage() {
         </div>
 
         {/* Hero Filters Card */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-30">
-          <div className="-mt-10 md:-mt-14 lg:-mt-16 w-full lg:w-[720px] relative z-30">
-            <div className="rounded-[22px] bg-white shadow-xl ring-1 ring-black/5 p-4 md:p-5 relative z-30">
-              <div className="flex items-center gap-6 text-sm font-medium text-gray-500 border-b">
-                {["Opportunities", "Talent", "People", "Companies", "Events"].map((tab, i) => (
-                  <button
-                    key={tab}
-                    className={`pb-3 relative ${i === 0 ? "text-gray-900" : "hover:text-gray-700"}`}
-                  >
-                    {tab}
-                    {i === 0 && (
-                      <span
-                        className="absolute left-0 -bottom-[1px] h-[3px] w-24 rounded-full bg-[#8A358A]"
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-4 grid md:grid-cols-3 gap-3">
-                {[
-                  { label: "Country", value: "Angola" },
-                  { label: "City", value: "Luanda" },
-                  { label: "Category", value: "Agriculture" },
-                ].map((f) => (
-                  <div key={f.label}>
-                    <label className="text-[11px] text-gray-500">{f.label}</label>
-                    <div className="mt-1 flex items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2">
-                      <span className="text-sm text-gray-700">{f.value}</span>
-                      <I.chevron />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3">
-                <div className="flex items-center gap-2 rounded-full bg-gray-50 border border-gray-200 px-3 py-2">
-                  <input
-                    className="flex-1 bg-transparent outline-none text-sm"
-                    placeholder="Search by skills, location, or interest..."
-                  />
-                  <button
-                    className="flex items-center gap-2 rounded-full px-4 py-2 text-white text-sm font-semibold shadow"
-                    style={{ background: "#8A358A" }}
-                  >
-                    <I.search /> Search
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="mt-3 rounded-[22px] h-6 bg-black/0 shadow-[0_20px_35px_-25px_rgba(0,0,0,0.35)] relative z-20" />
-          </div>
+       {/* Hero Filters Card */}
+<div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-30">
+  <div className="-mt-10 md:-mt-14 lg:-mt-16 w-full lg:w-[720px] relative z-30">
+    <div className="rounded-[22px] bg-white shadow-xl ring-1 ring-black/5 p-4 md:p-5 relative z-30">
+      <div className="flex items-center gap-6 text-sm font-medium text-gray-500 border-b">
+        {["Opportunities", "Talent", "People", "Companies", "Events"].map((tab, i) => (
+          <button
+            key={tab}
+            className={`pb-3 relative ${i === 0 ? "text-gray-900" : "hover:text-gray-700"}`}
+          >
+            {tab}
+            {i === 0 && (
+              <span className="absolute left-0 -bottom-[1px] h-[3px] w-24 rounded-full bg-[#8A358A]" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* === Filtros Hero === */}
+      <div className="mt-4 grid md:grid-cols-3 gap-3">
+        {/* País */}
+        <div>
+          <label className="text-[11px] text-gray-500">Country</label>
+          <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+            <option>Select country</option>
+      <option>Angola</option>
+      <option>Ghana</option>
+      <option>Nigeria</option>
+      <option>Kenya</option>
+      <option>South Africa</option>
+      <option>Mozambique</option>
+      <option>Tanzania</option>
+      <option>Uganda</option>
+      <option>Zimbabwe</option>
+      <option>Zambia</option>
+      <option>Namibia</option>
+      <option>Cameroon</option>
+      <option>Senegal</option>
+      <option>Ivory Coast</option>
+      <option>Rwanda</option>
+      <option>Ethiopia</option>
+      <option>Morocco</option>
+      <option>Egypt</option>
+      <option>Sudan</option>
+          </select>
         </div>
+
+        {/* Cidade */}
+        <div>
+          <label className="text-[11px] text-gray-500">City</label>
+          <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+            <option>Select city</option>
+            <option>Luanda</option>
+            <option>Accra</option>
+            <option>Lagos</option>
+            <option>Nairobi</option>
+            <option>Johannesburg</option>
+          </select>
+        </div>
+
+        {/* Categoria */}
+        <div>
+          <label className="text-[11px] text-gray-500">Category</label>
+          <select className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
+            <option>Select category</option>
+    <option>Agriculture</option>
+    <option>Energy</option>
+    <option>Manufacturing</option>
+    <option>Infrastructure & Construction</option>
+    <option>Commerce & Financial Services</option>
+    <option>E-Commerce</option>
+    <option>Technology</option>
+    <option>Fashion</option>
+    <option>Oil & Gas</option>
+    <option>Automobile</option>
+    <option>Media & Entertainment</option>
+    <option>Marketing & Advertising</option>
+    <option>Education</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Campo de busca */}
+      <div className="mt-3">
+        <div className="flex items-center gap-2 rounded-full bg-gray-50 border border-gray-200 px-3 py-2">
+          <input
+            className="flex-1 bg-transparent outline-none text-sm"
+            placeholder="Search by skills, location, or interest..."
+          />
+          <button
+            className="flex items-center gap-2 rounded-full px-4 py-2 text-white text-sm font-semibold shadow"
+            style={{ background: "#8A358A" }}
+          >
+            <I.search /> Search
+          </button>
+        </div>
+      </div>
+    </div>
+    <div className="mt-3 rounded-[22px] h-6 bg-black/0 shadow-[0_20px_35px_-25px_rgba(0,0,0,0.35)] relative z-20" />
+  </div>
+</div>
+
       </section>
 
       {/* ===== Body ===== */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-        {/* MOBILE button to open filters */}
-        <div className="md:hidden mb-4">
-          <button
-            onClick={() => setMobileFiltersOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm"
-          >
-            <I.filter /> Filters
-          </button>
-        </div>
+    
+    {/* ===== Body ===== */}
+<main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+  {/* MOBILE button to open filters */}
+  <div className="md:hidden mb-4">
+    <button
+      onClick={() => setMobileFiltersOpen(true)}
+      className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm"
+    >
+      <I.filter /> Filters
+    </button>
+  </div>
 
-        <div className="grid lg:grid-cols-12 gap-6">
-          {/* LEFT: Filters (sticky on desktop) */}
-          <aside className="lg:col-span-3 self-start sticky top-24 hidden lg:block">
-            <FeedFiltersCard />
-          </aside>
+  <div className="grid lg:grid-cols-12 gap-6">
+    {/* LEFT: Filters com scroll interno */}
+    <aside className="lg:col-span-3 hidden lg:block sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+      <div className="sticky top-0">
+        <FeedFiltersCard />
+      </div>
+    </aside>
 
-          {/* MIDDLE: Feed */}
-          <section className="lg:col-span-6 space-y-4">
-
-            <h3 id="explore" className="font-semibold text-2xl">Activity Feed</h3>
-
-            {posts.map((p) => (
-              <article key={p.id} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
-                {/* Post header */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <img
-                      alt=""
-                      className="h-10 w-10 rounded-full object-cover flex-shrink-0"
-                      src={`https://i.pravatar.cc/100?img=${p.id + 10}`}
-                    />
-                    <div>
-                      <div className="font-semibold">{p.author}</div>
-                      <div className="text-xs text-gray-500">{p.subtitle}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
-                      <I.msg />
-                    </button>
-                    <button
-                      className="rounded-lg px-3 py-1.5 text-sm font-medium text-white"
-                      style={{ background: "#8A358A" }}
-                    >
-                      Connect
-                    </button>
-                  </div>
-                </div>
-
-                {/* Text / image */}
-                <p className="mt-3 text-[15px] text-gray-700">{p.text}</p>
-                {p.image && (
-                  <img
-                    src={p.image}
-                    alt=""
-                    className="mt-4 w-full rounded-xl object-cover aspect-[16/9]"
-                  />
-                )}
-
-                {/* Actions */}
-                <div className="mt-4 flex items-center gap-5 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <I.heart />
-                    {p.stats.likes}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <I.comment />
-                    {p.stats.comments}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <I.share /> Share
-                  </div>
-                </div>
-              </article>
-            ))}
-          </section>
-
-          {/* RIGHT: Suggestions + Nearby */}
-          <aside className="lg:col-span-3 space-y-4">
-            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-              <h3 className="font-semibold">Connection Suggestions (24)</h3>
-
-              <div className="mt-4 space-y-3">
-                {sugestoes.map((s, idx) => (
-                  <div key={s.name} className="rounded-xl border border-gray-100 p-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <img
-                          alt=""
-                          className="h-10 w-10 rounded-full object-cover flex-shrink-0"
-                          src={`https://i.pravatar.cc/100?img=${30 + idx}`}
-                        />
-                        <div>
-                          <div className="font-medium">{s.name}</div>
-                          <div className="text-xs text-gray-500">{s.role}</div>
-                          <div className="text-[11px] text-[#8a358a]">Looking for: {s.tag}</div>
-                        </div>
-                      </div>
-                      <button className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
-                        <I.eye />
-                      </button>
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-2">
-                      <button
-                        className="flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-white"
-                        style={{ background: "#8A358A" }}
-                      >
-                        Connect
-                      </button>
-                      <button className="flex-1 rounded-lg px-3 py-1.5 text-sm border border-gray-200 text-gray-700 bg-white">
-                        Message
-                      </button>
-                    </div>
-                  </div>
-                ))}
+    {/* MIDDLE: Feed */}
+    <section className="lg:col-span-6 space-y-4">
+      <h3 id="explore" className="font-semibold text-2xl">Activity Feed</h3>
+      {posts.map((p) => (
+        <article key={p.id} className="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+          {/* Post header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <img
+                alt=""
+                className="h-10 w-10 rounded-full object-cover flex-shrink-0"
+                src={`https://i.pravatar.cc/100?img=${p.id + 10}`}
+              />
+              <div>
+                <div className="font-semibold">{p.author}</div>
+                <div className="text-xs text-gray-500">{p.subtitle}</div>
               </div>
-
-              <button className="mt-3 w-full rounded-lg py-2 text-sm font-medium text-[#8A358A] hover:underline">
-                View All Connections
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
+                <I.msg />
+              </button>
+              <button
+                className="rounded-lg px-3 py-1.5 text-sm font-medium text-white"
+                style={{ background: "#8A358A" }}
+              >
+                Connect
               </button>
             </div>
+          </div>
+          {/* Text / image */}
+          <p className="mt-3 text-[15px] text-gray-700">{p.text}</p>
+          {p.image && (
+            <img src={p.image} alt="" className="mt-4 w-full rounded-xl object-cover aspect-[16/9]" />
+          )}
+          {/* Actions */}
+          <div className="mt-4 flex items-center gap-5 text-sm text-gray-500">
+            <div className="flex items-center gap-1"><I.heart /> {p.stats.likes}</div>
+            <div className="flex items-center gap-1"><I.comment /> {p.stats.comments}</div>
+            <div className="flex items-center gap-1"><I.share /> Share</div>
+          </div>
+        </article>
+      ))}
+    </section>
 
-            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-              <h3 className="font-semibold">Nearby Professionals</h3>
-              <div className="mt-3 space-y-3">
-                {proximos.map((p) => (
-                  <div key={p.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <img
-                        alt=""
-                        className="h-9 w-9 rounded-full object-cover flex-shrink-0"
-                        src={`https://i.pravatar.cc/100?u=${p.name}`}
-                      />
-                      <div>
-                        <div className="text-sm font-medium">{p.name}</div>
-                        <div className="text-xs text-gray-500">{p.role}</div>
-                      </div>
-                    </div>
-                    <button className="rounded-lg px-3 py-1.5 text-sm border border-gray-200 bg-white">
-                      Connect
-                    </button>
+    {/* RIGHT: Suggestions + Nearby com scroll interno */}
+    <aside className="lg:col-span-3 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto space-y-4">
+      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+        <h3 className="font-semibold">Connection Suggestions (24)</h3>
+        <div className="mt-4 space-y-3">
+          {sugestoes.map((s, idx) => (
+            <div key={s.name} className="rounded-xl border border-gray-100 p-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    alt=""
+                    className="h-10 w-10 rounded-full object-cover flex-shrink-0"
+                    src={`https://i.pravatar.cc/100?img=${30 + idx}`}
+                  />
+                  <div>
+                    <div className="font-medium">{s.name}</div>
+                    <div className="text-xs text-gray-500">{s.role}</div>
+                    <div className="text-[11px] text-[#8a358a]">Looking for: {s.tag}</div>
                   </div>
-                ))}
+                </div>
+                <button className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
+                  <I.eye />
+                </button>
+              </div>
+              <div className="mt-3 flex items-center gap-2">
+                <button className="flex-1 rounded-lg px-3 py-1.5 text-sm font-semibold text-white" style={{ background: "#8A358A" }}>
+                  Connect
+                </button>
+                <button className="flex-1 rounded-lg px-3 py-1.5 text-sm border border-gray-200 text-gray-700 bg-white">
+                  Message
+                </button>
               </div>
             </div>
-          </aside>
+          ))}
         </div>
-      </main>
+        <button className="mt-3 w-full rounded-lg py-2 text-sm font-medium text-[#8A358A] hover:underline">
+          View All Connections
+        </button>
+      </div>
 
-      <footer className="mt-8 border-t border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 grid md:grid-cols-4 gap-8">
-          <div>
-            <div className="font-semibold">PANAFRICAN BI</div>
-            <p className="text-sm text-gray-500 mt-2">Connecting African talent globally</p>
-          </div>
-          <div>
-            <div className="font-semibold">Platform</div>
-            <ul className="mt-2 space-y-2 text-sm text-gray-600">
-              <li><a href="#">About</a></li>
-              <li><a href="#">Careers</a></li>
-              <li><a href="#">Contact</a></li>
-            </ul>
-          </div>
-          <div>
-            <div className="font-semibold">Resources</div>
-            <ul className="mt-2 space-y-2 text-sm text-gray-600">
-              <li><a href="#">Help</a></li>
-              <li><a href="#">Privacy</a></li>
-              <li><a href="#">Terms</a></li>
-            </ul>
-          </div>
-          <div>
-            <div className="font-semibold">Connect</div>
-            <div className="mt-2 flex items-center gap-3">
-              <a
-                className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center flex-shrink-0"
-                href="#"
-              >
-                𝕏
-              </a>
-              <a
-                className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center flex-shrink-0"
-                href="#"
-              >
-                in
-              </a>
-              <a
-                className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center flex-shrink-0"
-                href="#"
-              >
-                ◎
-              </a>
+      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+        <h3 className="font-semibold">Nearby Professionals</h3>
+        <div className="mt-3 space-y-3">
+          {proximos.map((p) => (
+            <div key={p.name} className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img
+                  alt=""
+                  className="h-9 w-9 rounded-full object-cover flex-shrink-0"
+                  src={`https://i.pravatar.cc/100?u=${p.name}`}
+                />
+                <div>
+                  <div className="text-sm font-medium">{p.name}</div>
+                  <div className="text-xs text-gray-500">{p.role}</div>
+                </div>
+              </div>
+              <button className="rounded-lg px-3 py-1.5 text-sm border border-gray-200 bg-white">
+                Connect
+              </button>
             </div>
-          </div>
+          ))}
         </div>
-      </footer>
+      </div>
+    </aside>
+  </div>
+</main>
+
       {mobileFiltersOpen && (
         <div className="fixed inset-0 z-[60]">
           {/* Overlay */}

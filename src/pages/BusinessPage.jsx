@@ -609,9 +609,7 @@ export default function PeopleFeedPage() {
     {services.map((s) => (
               <ServiceCard key={s.id} s={s} />
     ))}
-    <button className={`mx-auto max-w-[200px] block mt-4 ${styles.primaryWide}`}>
-      Load More Posts
-    </button>
+    
   </section>
 
   {/* Right column - Matches sempre no topo */}

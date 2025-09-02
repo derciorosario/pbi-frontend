@@ -466,13 +466,14 @@ export default function PeopleFeedPage() {
         </div>
 
         {/* Left column - Full height sidebar */}
-        <aside className="lg:col-span-3 space-y-4 hidden lg:block">
-          <ProfileCard />
-          <QuickActions />
-          <div className="sticky top-24">
-            <FiltersCard />
-          </div>
-        </aside>
+     <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+  <ProfileCard />
+  <QuickActions />
+  <div className="sticky top-0 bg-white z-10">
+    <FiltersCard />
+  </div>
+</aside>
+
 
      
      {/* Middle and Right columns container */}
@@ -525,50 +526,21 @@ export default function PeopleFeedPage() {
     {events.map((e) => (
       <EventCard key={e.id} e={e} />
     ))}
-    <button className={`mx-auto max-w-[200px] block mt-4 ${styles.primaryWide}`}>
+   {/*** <button className={`mx-auto max-w-[200px] block mt-4 ${styles.primaryWide}`}>
       Load More Events
-    </button>
+    </button> */}
   </section>
 
   {/* Right column - Matches sempre no topo */}
-  <aside className="lg:col-span-2 space-y-4">
-    
-    <HostEventCard />
-    <SuggestedMatches />
-  </aside>
+  <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto space-y-4">
+  <HostEventCard />
+  <SuggestedMatches />
+</aside>
 </div>
 
       </main>
 
-      {/* ===== Footer ===== */}
-      <footer className="mt-6 border-t border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 grid md:grid-cols-4 gap-8">
-          <div>
-            <div className="font-semibold">PANAFRICAN BI</div>
-            <p className="text-sm text-gray-500 mt-2">Connecting African talent globally</p>
-          </div>
-          <div>
-            <div className="font-semibold">Platform</div>
-            <ul className="mt-2 space-y-2 text-sm text-gray-600">
-              <li><a href="#">About</a></li><li><a href="#">Careers</a></li><li><a href="#">Contact</a></li>
-            </ul>
-          </div>
-          <div>
-            <div className="font-semibold">Resources</div>
-            <ul className="mt-2 space-y-2 text-sm text-gray-600">
-              <li><a href="#">Help</a></li><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li>
-            </ul>
-          </div>
-          <div>
-            <div className="font-semibold">Connect</div>
-            <div className="mt-2 flex items-center gap-3">
-              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">𝕏</a>
-              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">in</a>
-              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">◎</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+    
 
       {/* Mobile Filters Bottom Sheet */}
       {mobileFiltersOpen && (

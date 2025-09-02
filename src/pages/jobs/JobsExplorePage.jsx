@@ -297,7 +297,9 @@ function SuggestedMatches() {
                 <div>
                   <div className="font-medium">{m.name}</div>
                   <div className="text-xs text-gray-500">{m.title}</div>
-                  <div className="text-[11px] text-[#8a358a]">Looking for: {m.looking}</div>
+                  <div className="text-[11px] text-[#8a358a]">
+                    Looking for: {m.looking}
+                  </div>
                 </div>
               </div>
               <button className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
@@ -451,13 +453,14 @@ export default function PeopleFeedPage() {
         </div>
 
         {/* Left column - Full height sidebar */}
-        <aside className="lg:col-span-3 space-y-4 hidden lg:block">
-          <ProfileCard />
-          <QuickActions />
-          <div className="sticky top-24">
-            <FiltersCard />
-          </div>
-        </aside>
+       <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+  <ProfileCard />
+  <QuickActions />
+  <div className="sticky top-0 bg-white z-10">
+    <FiltersCard />
+  </div>
+</aside>
+
 
         {/* Middle and Right columns container */}
       {/* Middle and Right columns container */}
@@ -543,15 +546,14 @@ and aspirations
 
     {/* Posts */}
     {jobs.map(j => <JobCard key={j.id} job={j} />)}
-    <button className={`mx-auto max-w-[200px] block mt-4 ${styles.primaryWide}`}>
-      Load More Posts
-    </button>
+    
   </section>
 
   {/* Right column - Matches sempre no topo */}
-  <aside className="lg:col-span-2 space-y-4">
-    <SuggestedMatches />
-  </aside>
+<aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+  <SuggestedMatches />
+</aside>
+
 </div>
 
       </main>
