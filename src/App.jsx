@@ -27,6 +27,7 @@ import BusinessPage from './pages/BusinessPage.jsx';
 import TourismPage from './pages/TourismPage.jsx';
 import CompanyPage from './pages/CompaniesPage.jsx';
 import NotificationsPage from './pages/NotificationsPage.jsx';
+import CreateEventPage from './pages/CreateEventPage.jsx';
 
 
 
@@ -55,6 +56,7 @@ function App() {
          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
          <Route path="/verify/:token" element={<VerifyEmail />} />
          <Route path="/jobs/create" element={<CreateJobOpportunity />} />
+         <Route path="/events/create" element={<CreateEventPage />} />
 
          {/* Forgot / Reset password */}
         <Route path="/reset-success" element={<ResetSuccess />} />

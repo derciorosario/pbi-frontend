@@ -1,5 +1,6 @@
 // src/pages/CreateJobOpportunity.jsx
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 /* --- Ícones inline --- */
 const I = {
@@ -39,6 +40,45 @@ const I = {
     <svg className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
       <path d="M7 2h2v3H7zm8 0h2v3h-2z" />
       <path d="M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2Zm0 5v9h14v-9H5Z" />
+    </svg>
+  ),
+    feed: () => (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z" />
+    </svg>
+  ),
+  people: () => (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4ZM6 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3ZM2 20a6 6 0 0 1 12 0v1H2Zm12.5 1v-1a7.5 7.5 0 0 1 9.5-7.2V21Z" />
+    </svg>
+  ),
+  jobs: () => (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M10 3h4a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v3H3V8a2 2 0 0 1 2-2h3V5a2 2 0 0 1 2-2Zm4 3V5h-4v1h4Z" />
+      <path d="M3 11h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7Zm8 2H5v2h6v-2Z" />
+    </svg>
+  ),
+  calendar: () => (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M7 2h2v3H7zm8 0h2v3h-2z" />
+      <path d="M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2h3V5a2 2 0 0 1 2-2Zm0 5v9h14v-9H5Z" />
+    </svg>
+  ),
+  biz: () => (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3 21V3h8v6h10v12H3Z" />
+      <path d="M7 7h2v2H7zm0 4h2v2H7zm0 4h2v2H7z" />
+    </svg>
+  ),
+  pin: () => (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5Z" />
+    </svg>
+  ),
+  search: () => (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-3.5-3.5" />
     </svg>
   ),
 };
@@ -82,41 +122,91 @@ const Textarea = (props) => (
 );
 
 export default function CreateJobOpportunity() {
+    const navigate=useNavigate()
   return (
     <div className="min-h-screen bg-[#F6F7FB] text-gray-900">
       {/* Topbar simples (opcional: igual às outras páginas) */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200">
-        <div className="mx-auto max-w-6xl h-14 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
-          <div className="flex items-center gap-2">
+     
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-200">
+        <div className="mx-auto max-w-7xl h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <div
-              className="h-8 w-8 rounded-lg grid place-items-center text-white font-bold"
-              style={{ background: "linear-gradient(135deg,#8A358A,#9333EA)" }}
+              className="h-9 w-9 rounded-xl grid place-items-center text-white font-bold"
+              style={{ background: "#8A358A" }}
             >
-              F
+              P
             </div>
-            <div className="leading-none">
-              <div className="text-sm font-semibold">PANAFRICAN</div>
-              <div className="text-[10px] text-gray-500">Business Initiative</div>
+            <div className="leading-tight">
+              <div className="font-semibold">PANAFRICAN</div>
+              <div className="text-[11px] text-gray-500 -mt-1">Business Initiative</div>
             </div>
           </div>
 
-          <nav className="ml-6 hidden md:flex items-center gap-3 text-xs">
-            {["Feed", "People", "Jobs", "Events", "Business", "Tourism"].map((x) => (
-              <a
-                key={x}
-                href="#"
-                className={`px-2 py-1 rounded-full ${x === "Jobs" ? "text-white" : "text-gray-700"}`}
-                style={x === "Jobs" ? { background: "linear-gradient(135deg,#8A358A,#9333EA)" } : {}}
-              >
-                {x}
-              </a>
-            ))}
+              <nav className="hidden md:flex items-center gap-4 text-sm ml-6">
+          
+            <a
+              href="#"
+              onClick={()=>navigate('/')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
+            ><I.feed /> Feed
+              
+            </a>
+            <a
+              href="#"
+              onClick={()=>navigate('/people')}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
+           
+            >
+              
+              <I.people /> People
+            </a>
+            <a
+              href="#"
+              onClick={()=>navigate('/jobs')}
+              
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white"
+              style={{ background: "#8A358A" }}
+        
+             >
+              <I.jobs /> Jobs
+            </a>
+            <a
+              href="#"
+              onClick={()=>navigate('/events')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
+            >
+              <I.calendar /> Events
+            </a>
+            <a
+              href="#"
+              onClick={()=>navigate('/business')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
+            >
+              <I.biz /> Business
+            </a>
+            <a
+              href="#"
+              onClick={()=>navigate('/tourism')}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
+            >
+              <I.pin /> Tourism
+            </a>
           </nav>
 
-          <div className="ml-auto">
-            <div className="hidden md:flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm max-w-sm">
-              <input className="w-full bg-transparent outline-none" placeholder="Search people, jobs, events..." />
+          <div className="ml-auto hidden md:flex items-center gap-2 flex-1 max-w-md">
+            <div className="flex items-center gap-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2">
+              <I.search />
+              <input className="w-full bg-transparent outline-none text-sm" placeholder="Search people, jobs, events..." />
             </div>
+            <button className="relative">
+              <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-white text-[10px]">2</span>
+              <svg className="h-[18px] w-[18px] text-gray-600" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 22a2.5 2.5 0 0 0 2.45-2H9.55A2.5 2.5 0 0 0 12 22ZM18 16v-5a6 6 0 1 0-12 0v5l-1.8 1.8A1 1 0 0 0 5 20h14a1 1 0 0 0 .8-1.6Z" />
+              </svg>
+            </button>
+            <button onClick={() => navigate("/profile")} className="ml-2 h-10 w-10 rounded-full bg-gray-100 grid place-items-center">
+              AB
+            </button>
           </div>
         </div>
       </header>
@@ -124,8 +214,8 @@ export default function CreateJobOpportunity() {
       {/* Conteúdo */}
       <main className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Back link */}
-        <div className="mb-5">
-          <a href="#" className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
+        <div className="mb-5 cursor-pointer">
+          <a onClick={()=>navigate('/jobs')} className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
             <I.back /> Back to Jobs
           </a>
         </div>
@@ -328,22 +418,11 @@ export default function CreateJobOpportunity() {
           </div>
 
           {/* Buttons */}
-          <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button className="rounded-xl px-6 py-3 text-sm font-semibold border border-gray-200 bg-white">
-              Save as Draft
-            </button>
-            <button
-              className="rounded-xl px-6 py-3 text-sm font-semibold text-white"
-              style={{ background: "linear-gradient(135deg,#8A358A,#9333EA)" }}
-            >
-              <span className="inline-flex items-center gap-2">
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M2 21V3l20 9-20 9z" />
-                </svg>
-                Post Job
-              </span>
-            </button>
-          </div>
+       
+           <div className="flex justify-end gap-3 mt-8 ">
+                <button className="px-4 py-2 rounded-xl border border-brand-700 text-brand-700 bg-white">Save Draft</button>
+                <button className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+              </div>
         </section>
       </main>
     </div>

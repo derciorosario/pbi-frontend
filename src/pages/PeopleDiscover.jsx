@@ -1,5 +1,7 @@
-import { Crown, Pencil, PlusCircle, Rocket } from "lucide-react";
+import { Briefcase, Calendar, ChevronDown, Crown, Pencil, PlusCircle, Rocket } from "lucide-react";
 import React, { useState } from "react";
+import { useEffect } from "react";
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 /* ---------------- Shared styles (solid purple buttons) ---------------- */
@@ -190,11 +192,12 @@ function ProfileCard() {
 }
 
 function QuickActions() {
+    const navigate=useNavigate()
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
       <h3 className="font-semibold">Quick Actions</h3>
       <ul className="mt-3 space-y-2 text-sm text-gray-700">
-        <li>
+        <li onClick={()=>navigate('/profile')}>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
@@ -203,7 +206,7 @@ function QuickActions() {
             Edit Profile
           </a>
         </li>
-        <li>
+        <li onClick={()=>navigate('/settings')}>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
@@ -212,13 +215,13 @@ function QuickActions() {
             Boost Profile
           </a>
         </li>
-        <li>
+        <li onClick={()=>navigate('/news/create')}>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
           >
             <PlusCircle size={16} className="text-[#8a358a]" />
-            Post an Opportunity
+            Create News Post 
           </a>
         </li>
       </ul>
@@ -359,6 +362,19 @@ export default function PeopleFeedPage() {
   const [activeTab, setActiveTab] = useState("Posts");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const navigate=useNavigate()
+  const [showAddMenu, setShowAddMenu] = useState(false); // NEW state
+  const addMenuRef = useRef(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (addMenuRef.current && !addMenuRef.current.contains(event.target)) {
+        setShowAddMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
@@ -503,11 +519,45 @@ export default function PeopleFeedPage() {
           </button>
         ))}
       </div>
-      <div className="relative">
-        <button className={`${styles.primary} inline-flex items-center gap-2`}>
-          <I.plus /> Add
-        </button>
-      </div>
+        <div className="relative" ref={addMenuRef}>
+                      <button
+                       onClick={() => setShowAddMenu(prev => !prev)}
+                        className={`${styles.primary} inline-flex items-center gap-2`}
+                      >
+                        <I.plus /> Add <ChevronDown className="w-4 h-4" />
+                      </button>
+      
+                      {showAddMenu && (
+                        <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-100 bg-white shadow-lg z-50">
+                          <ul className="py-1 text-sm text-gray-700">
+                            <li>
+                              <button onClick={()=>navigate('/jobs/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                                <PlusCircle size={16} className="text-[#8a358a]" />
+                                Post an Opportunity
+                              </button>
+                            </li>
+                            <li>
+                              <button onClick={()=>navigate('/events/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                                <PlusCircle size={16} className="text-[#8a358a]" />
+                                Create an Event
+                              </button>
+                            </li>
+                             <li>
+                              <button onClick={()=>navigate('/expirience/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                                <PlusCircle size={16} className="text-[#8a358a]" />
+                             Share an Experience
+                              </button>
+                            </li>
+                            <li>
+                              <button onClick={()=>navigate('/news/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                                <PlusCircle size={16} className="text-[#8a358a]" />
+                                Create News Article
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      )}
+         </div>
     </div>
 
     {/* Feed header */}
