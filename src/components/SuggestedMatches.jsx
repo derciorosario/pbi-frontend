@@ -44,10 +44,21 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
                       <div className="text-[11px] text-[#8a358a]">Looking for: {s.tag}</div>
                     ) : null}
 
+                 
+                  </div>
+                  
+                </div>
+                
+                 <button className="grid shrink-0 place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
+                <I.see />
+              </button>
+              
+              </div>
+                 
                     {/* categories */}
                     {s.cats?.length > 0 && (
                       <div className="mt-1 flex flex-wrap gap-1">
-                        {s.cats.map((c) => (
+                        {s.cats.filter((i,_i)=>_i <= 2).map((c) => (
                           <span
                             key={c}
                             className="inline-block bg-gray-100 text-gray-600 text-[11px] px-2 py-0.5 rounded-full"
@@ -57,12 +68,6 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
                         ))}
                       </div>
                     )}
-                  </div>
-                </div>
-                 <button className="grid shrink-0 place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
-                <I.see />
-              </button>
-              </div>
 
               <div className="mt-3 flex items-center gap-2">
                 <button
@@ -118,10 +123,18 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
                       ) : null}
                     </div>
 
+                  </div>
+                </div>
+                <button className="rounded-lg px-3 py-1.5 text-sm border border-gray-200 bg-white">
+                  Connect
+                </button>
+                
+              </div>
+              
                     {/* categories */}
                     {p.cats?.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {p.cats.map((c) => (
+                      <div className="mt-1 flex  flex-wrap gap-1">
+                        {p.cats.filter((i,_i)=>_i <= 2).map((c) => (
                           <span
                             key={c}
                             className="inline-block bg-gray-100 text-gray-600 text-[11px] px-2 py-0.5 rounded-full"
@@ -131,12 +144,6 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
                         ))}
                       </div>
                     )}
-                  </div>
-                </div>
-                <button className="rounded-lg px-3 py-1.5 text-sm border border-gray-200 bg-white">
-                  Connect
-                </button>
-              </div>
             </div>
           ))}
           {nearby.length === 0 && (
