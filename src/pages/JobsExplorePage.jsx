@@ -12,7 +12,7 @@ import SuggestedMatches from "../components/SuggestedMatches";
 import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
 import EmptyFeedState from "../components/EmptyFeedState";
-import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
+import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 
@@ -25,9 +25,9 @@ function useDebounce(v, ms = 400) {
   return val;
 }
 
-export default function EventsPage() {
-  const [activeTab, setActiveTab] = useState("Suggested for You");
-  const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
+export default function PeopleFeedPage() {
+  const [activeTab, setActiveTab] = useState("Posts");
+  const tabs = useMemo(() => ["Posts", "Job Seeker","Job Offers"], []);
   const navigate=useNavigate()
 
   // Filtros compatíveis com a Home
@@ -71,12 +71,12 @@ export default function EventsPage() {
 
   // Fetch feed (somente na aba Posts)
   const fetchFeed = useCallback(async () => {
-    if (activeTab !== "Suggested for You") return;
+    if (activeTab !== "Posts") return;
     setLoadingFeed(true);
     try {
       // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre “all”
       const params = {
-        tab: "events",
+        tab: "jobs",
         q: debouncedQ || undefined,
         country: country || undefined,
         city: city || undefined,
@@ -144,7 +144,7 @@ export default function EventsPage() {
   };
 
   const renderMiddle = () => {
-    if (activeTab !== "Suggested for You") {
+    if (activeTab !== "Posts") {
       return (
         <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
           {activeTab} tab uses its own API route. Render the specific list here.
@@ -183,25 +183,21 @@ export default function EventsPage() {
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
           <ProfileCard />
-           <div className="_sticky top-0 z-10 bg-white">
+          <div className="_sticky top-0 z-10 bg-white">
             <FiltersCard {...filtersProps} />
           </div>
-          
           <QuickActions title="Quick Actions" items={[
-            { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Post an Event", Icon: PlusCircle, path: "/events/create" },
-            { label: "Calendar View", Icon: Calendar, path: "/calendar/create" },
-            { label: "Set Reminders", Icon: AlarmClock, path: "/calendar/create" },
-        ]} />
-         
+              { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
+              { label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
+              { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+            ]} />
         </aside>
 
     
         <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
           <section className="lg:col-span-4 space-y-4">
-            <h3 className="font-semibold text-2xl mt-1">Your Path to Knowledge</h3>
-            <TabsAndAdd tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
+            <h3 className="font-semibold text-2xl mt-1">Find Your Next Opportunity</h3>
+            <TabsAndAdd tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab}  btnClick={()=>navigate('/jobs/create')} />
             {renderMiddle()}
           </section>
 

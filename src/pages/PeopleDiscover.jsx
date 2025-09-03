@@ -489,22 +489,10 @@ export default function PeopleFeedPage() {
   
   {/* Middle column - Feed */}
   <section className="lg:col-span-4 space-y-4">
-    {/* Hero banner agora dentro do meio */}
-    <div
-      className="rounded-2xl p-6 text-white shadow-sm"
-      style={{ background: "linear-gradient(90deg,#8A358A 0%,#9333EA 100%)" }}
-    >
-      <h2 className="text-2xl font-bold">Connect with the World</h2>
-      <p className="mt-1 text-white/90">
-        Discover nearby people who share your interests and expand your professional network globally
-      </p>
+    {/* Feed header */}
+    <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
 
-      <div className="mt-4 flex flex-wrap gap-3 text-sm">
-        <span className="rounded-full bg-white/20 px-3 py-1.5">12.5K+ Connections</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">85+ Countries</span>
-        <span className="rounded-full bg-white/20 px-3 py-1.5">200+ Professions</span>
-      </div>
-    </div>
+
 
     {/* Tabs + Add */}
     <div className="flex items-center justify-between">
@@ -566,8 +554,6 @@ export default function PeopleFeedPage() {
          </div>
     </div>
 
-    {/* Feed header */}
-    <h3 className="font-semibold text-2xl mt-1">Feed activities</h3>
 
     {/* Posts */}
     {posts.map((p) => (

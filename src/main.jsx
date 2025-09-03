@@ -17,12 +17,10 @@ registerSW()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
  //1097700207306-690d40fdlu7po502ouf72nnql1s1v75l.apps.googleusercontent.com
-      <GoogleOAuthProvider clientId="1097700207306-690d40fdlu7po502ouf72nnql1s1v75l.apps.googleusercontent.com">
-    <AuthProvider>
-      <DataProvider>
-        <ToastProvider />
-        <App />
-      </DataProvider>
-    </AuthProvider>
+        <GoogleOAuthProvider clientId="1097700207306-690d40fdlu7po502ouf72nnql1s1v75l.apps.googleusercontent.com">
+        <AuthProvider>
+            <ToastProvider />
+            <App />
+        </AuthProvider>
         </GoogleOAuthProvider>
 )

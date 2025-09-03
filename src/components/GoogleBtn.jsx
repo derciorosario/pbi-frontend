@@ -22,6 +22,7 @@ export default function GoogleCustomBtn({ page = "signin", showProfile = false }
   const login = useGoogleLogin({
     scope: "openid profile email",
     onSuccess: async (tokenResponse) => {
+
       setError(null);
       setLoading(true);
       try {
@@ -47,7 +48,8 @@ export default function GoogleCustomBtn({ page = "signin", showProfile = false }
 
         const token = res?.data?.token;
         if (token) localStorage.setItem("auth_token", token);
-        navigate("/dashboard");
+        //navigate("/dashboard");
+        window.location.href="/"
       } catch (err) {
         console.error(err);
         setError("Login failed");

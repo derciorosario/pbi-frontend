@@ -86,7 +86,7 @@ export default function Goals() {
           </h2>
 
           {/* Mensagem sempre visível no início */}
-          <p className="text-sm text-gray-500 mb-4">* Select up to 3.</p>
+          <p className="text-sm text-gray-500 mb-4">* Select 3.</p>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
             {goals.map((g) => {

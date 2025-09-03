@@ -69,9 +69,11 @@ export default function Login() {
         localStorage.setItem("token", token);
         setHasToken(true);
       }
-      navigate("/dashboard");
+      //navigate("/dashboard");
+      window.location.href="/"
     } catch {
       /* toast shown by toast.promise */
+      setLoading(false);
     } finally {
       setLoading(false);
     }

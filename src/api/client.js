@@ -1,23 +1,57 @@
+// src/api/client.js
 import axios from "axios";
 
+const API_URL = "https://kaziwani-server.visum.co.mz/api" //import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 const client = axios.create({
-  baseURL: 'https://kaziwani-server.visum.co.mz/api',
-  headers: { "Content-Type": "application/json" }
+  baseURL: API_URL,
+  headers: { "Content-Type": "application/json" },
 });
 
-// Add token automatically if present
+/** Helpers to read/write token consistently */
+export function getStoredToken() {
+  return (
+    localStorage.getItem("auth_token") ||
+    localStorage.getItem("token") ||
+    null
+  );
+}
+
+export function setStoredToken(token) {
+  if (!token) {
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("token");
+    delete client.defaults.headers.common.Authorization;
+    return;
+  }
+  localStorage.setItem("auth_token", token);
+  localStorage.setItem("token", token);
+  client.defaults.headers.common.Authorization = `Bearer ${token}`;
+}
+
+// Initialize default header if a token already exists
+const bootToken = getStoredToken();
+if (bootToken) {
+  client.defaults.headers.common.Authorization = `Bearer ${bootToken}`;
+}
+
+// Ensure Authorization header is present on each request
 client.interceptors.request.use((config) => {
-   const token = localStorage.getItem("token") || localStorage.getItem("auth_token");
-   if (token) config.headers.Authorization = `Bearer ${token}`;
-   return config;
+  if (!config.headers?.Authorization) {
+    const t = getStoredToken();
+    if (t) config.headers.Authorization = `Bearer ${t}`;
+  }
+  return config;
 });
 
-// Handle 401s globally (optional)
+// Handle 401s globally
 client.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem("auth_token");
+    if (err?.response?.status === 401) {
+      setStoredToken(null); // clears storage + axios header
+      // let the app (AuthProvider, etc.) react to logout
+      window.dispatchEvent(new Event("auth:unauthorized"));
     }
     return Promise.reject(err);
   }

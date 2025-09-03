@@ -1,5 +1,7 @@
-import { Crown, Pencil, PlusCircle, Rocket } from "lucide-react";
+import { Briefcase, Calendar, ChevronDown, Crown, Pencil, PlusCircle, Rocket } from "lucide-react";
 import React, { useState } from "react";
+import { useEffect } from "react";
+import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 /* ---------------- Shared styles (solid purple buttons) ---------------- */
@@ -190,11 +192,12 @@ function ProfileCard() {
 }
 
 function QuickActions() {
+    const navigate=useNavigate()
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
       <h3 className="font-semibold">Quick Actions</h3>
       <ul className="mt-3 space-y-2 text-sm text-gray-700">
-        <li>
+        <li onClick={()=>navigate('/profile')}>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
@@ -203,7 +206,7 @@ function QuickActions() {
             Edit Profile
           </a>
         </li>
-        <li>
+        <li onClick={()=>navigate('/settings')}>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
@@ -212,13 +215,13 @@ function QuickActions() {
             Boost Profile
           </a>
         </li>
-        <li>
+        <li onClick={()=>navigate('/news/create')}>
           <a
             className="rounded-lg px-3 py-2 hover:bg-gray-50 flex items-center gap-2"
             href="#"
           >
             <PlusCircle size={16} className="text-[#8a358a]" />
-            Post an Opportunity
+            Create News Post 
           </a>
         </li>
       </ul>
@@ -278,6 +281,7 @@ function FiltersCard() {
 }
 
 /* ---------------- Right: matches ---------------- */
+
 function SuggestedMatches() {
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
@@ -295,7 +299,9 @@ function SuggestedMatches() {
                 <div>
                   <div className="font-medium">{m.name}</div>
                   <div className="text-xs text-gray-500">{m.title}</div>
-                  <div className="text-[11px] text-[#8a358a]">Looking for: {m.looking}</div>
+                  <div className="text-[11px] text-[#8a358a]">
+                    Looking for: {m.looking}
+                  </div>
                 </div>
               </div>
               <button className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600">
@@ -317,6 +323,7 @@ function SuggestedMatches() {
     </div>
   );
 }
+
 
 /* ---------------- Post component ---------------- */
 function PostCard({ p }) {
@@ -359,6 +366,19 @@ export default function PeopleFeedPage() {
   const [activeTab, setActiveTab] = useState("Posts");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const navigate=useNavigate()
+  const [showAddMenu, setShowAddMenu] = useState(false); // NEW state
+  const addMenuRef = useRef(null);
+
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (addMenuRef.current && !addMenuRef.current.contains(event.target)) {
+        setShowAddMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
@@ -453,108 +473,105 @@ export default function PeopleFeedPage() {
         </div>
 
         {/* Left column - Full height sidebar */}
-        <aside className="lg:col-span-3 space-y-4 hidden lg:block">
-          <ProfileCard />
-          <QuickActions />
-          <div className="sticky top-24">
-            <FiltersCard />
-          </div>
-        </aside>
+       <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+  <ProfileCard />
+  <QuickActions />
+  <div className="sticky top-0 z-10 bg-white">
+    <FiltersCard />
+  </div>
+</aside>
+
+
 
         {/* Middle and Right columns container */}
-        <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
-          {/* Hero banner - spans first 4 columns of the right section */}
-          <section className="lg:col-span-6 mb-4">
-            <div
-              className="rounded-2xl p-6 text-white shadow-sm"
-              style={{ background: "linear-gradient(90deg,#8A358A 0%,#9333EA 100%)" }}
-            >
-              <h2 className="text-2xl font-bold">Connect with the World</h2>
-              <p className="mt-1 text-white/90">
-                Discover nearby people who share your interests and expand your professional network globally
-              </p>
+      {/* Middle and Right columns container */}
+<div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+  
+  {/* Middle column - Feed */}
+  <section className="lg:col-span-4 space-y-4">
+    {/* Feed header */}
+    <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
 
-              <div className="mt-4 flex flex-wrap gap-3 text-sm">
-                <span className="rounded-full bg-white/20 px-3 py-1.5">12.5K+ Connections</span>
-                <span className="rounded-full bg-white/20 px-3 py-1.5">85+ Countries</span>
-                <span className="rounded-full bg-white/20 px-3 py-1.5">200+ Professions</span>
-              </div>
-            </div>
-          </section>
 
-          {/* Middle column - Feed */}
-          <section className="lg:col-span-4 space-y-4">
-            {/* Tabs + Add */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
-                {["Posts","People","My Connections","News & Articles"].map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setActiveTab(t)}
-                    className={`pb-2 relative ${activeTab === t ? "text-gray-900" : "hover:text-gray-800"}`}
-                  >
-                    {t}
-                    {activeTab === t && (
-                      <span
-                        className="absolute left-0 -bottom-[1px] h-[3px] w-full rounded-full"
-                        style={{ background: "linear-gradient(90deg,#8A358A,#9333EA)" }}
-                      />
-                    )}
-                  </button>
-                ))}
-              </div>
-              <div className="relative">
-                <button className={`${styles.primary} inline-flex items-center gap-2`}>
-                  <I.plus /> Add
-                </button>
-              </div>
-            </div>
 
-            {/* Feed header */}
-            <h3 className="font-semibold text-2xl mt-1">Feed activities</h3>
+    {/* Tabs + Add */}
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+        {["Posts","People","My Connections","News & Articles"].map(t => (
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            className={`pb-2 relative ${activeTab === t ? "text-gray-900" : "hover:text-gray-800"}`}
+          >
+            {t}
+            {activeTab === t && (
+              <span
+                className="absolute left-0 -bottom-[1px] h-[3px] w-full rounded-full"
+                style={{ background: "linear-gradient(90deg,#8A358A,#9333EA)" }}
+              />
+            )}
+          </button>
+        ))}
+      </div>
+        <div className="relative" ref={addMenuRef}>
+                      <button
+                       onClick={() => setShowAddMenu(prev => !prev)}
+                        className={`${styles.primary} inline-flex items-center gap-2`}
+                      >
+                        <I.plus /> Add <ChevronDown className="w-4 h-4" />
+                      </button>
+      
+                      {showAddMenu && (
+                        <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-100 bg-white shadow-lg z-50">
+                          <ul className="py-1 text-sm text-gray-700">
+                            <li>
+                              <button onClick={()=>navigate('/jobs/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                                <PlusCircle size={16} className="text-[#8a358a]" />
+                                Post an Opportunity
+                              </button>
+                            </li>
+                            <li>
+                              <button onClick={()=>navigate('/events/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                                <PlusCircle size={16} className="text-[#8a358a]" />
+                                Create an Event
+                              </button>
+                            </li>
+                             <li>
+                              <button onClick={()=>navigate('/expirience/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                                <PlusCircle size={16} className="text-[#8a358a]" />
+                             Share an Experience
+                              </button>
+                            </li>
+                            <li>
+                              <button onClick={()=>navigate('/news/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                                <PlusCircle size={16} className="text-[#8a358a]" />
+                                Create News Article
+                              </button>
+                            </li>
+                          </ul>
+                        </div>
+                      )}
+         </div>
+    </div>
 
-            {/* Posts */}
-            {posts.map((p) => (
-              <PostCard key={p.id} p={p} />
-            ))}
-          </section>
 
-          {/* Right column - Matches */}
-          <aside className="lg:col-span-2 space-y-4">
-            <SuggestedMatches />
-          </aside>
-        </div>
+    {/* Posts */}
+    {posts.map((p) => (
+      <PostCard key={p.id} p={p} />
+    ))}
+    
+  </section>
+
+  {/* Right column - Matches sempre no topo */}
+ <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+  <SuggestedMatches />
+</aside>
+
+</div>
+
       </main>
 
-      {/* ===== Footer ===== */}
-      <footer className="mt-6 border-t border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10 grid md:grid-cols-4 gap-8">
-          <div>
-            <div className="font-semibold">PANAFRICAN BI</div>
-            <p className="text-sm text-gray-500 mt-2">Connecting African talent globally</p>
-          </div>
-          <div>
-            <div className="font-semibold">Platform</div>
-            <ul className="mt-2 space-y-2 text-sm text-gray-600">
-              <li><a href="#">About</a></li><li><a href="#">Careers</a></li><li><a href="#">Contact</a></li>
-            </ul>
-          </div>
-          <div>
-            <div className="font-semibold">Resources</div>
-            <ul className="mt-2 space-y-2 text-sm text-gray-600">
-              <li><a href="#">Help</a></li><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li>
-            </ul>
-          </div>
-          <div>
-            <div className="font-semibold">Connect</div>
-            <div className="mt-2 flex items-center gap-3">
-              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">𝕏</a>
-              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">in</a>
-              <a className="h-9 w-9 rounded-full bg-gray-100 grid place-items-center" href="#">◎</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+    
 
       {/* Mobile Filters Bottom Sheet */}
       {mobileFiltersOpen && (

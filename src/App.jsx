@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import Home from './pages/home/index';
+import OldHome from './pages/home/index.old.jsx';
 import NotFound from './pages/404';
 import Login from './pages/login'
 import Signup from './pages/signup'
@@ -20,8 +21,8 @@ import WhoYouAre from "./pages/onboarding/WhoYouAre";
 import Industry from "./pages/onboarding/Industry";
 import Goals from "./pages/onboarding/Goals";
 import FeedExplorePage from "./pages/feed/FeedExplorePage";
-import PeopleFeedPage from './pages/PeopleDiscover.jsx';
-import JobsExplorePage from './pages/jobs/JobsExplorePage.jsx';
+import PeopleFeedPage2 from './pages/PeopleDiscover.jsx';
+import JobsExplorePage from './pages/JobsExplorePage.jsx';
 import EventsPage from './pages/EventsPage.jsx';
 import BusinessPage from './pages/BusinessPage.jsx';
 import TourismPage from './pages/TourismPage.jsx';
@@ -29,10 +30,12 @@ import CompanyPage from './pages/CompaniesPage.jsx';
 import NotificationsPage from './pages/NotificationsPage.jsx';
 import CreateEventPage from './pages/CreateEventPage.jsx';
 import CreateServicePage from './pages/CreateServicePage.jsx';
-import CreateServiceRequestPage from '../rc/pages/CreateServiceRequestPage.jsx';
+import CreateServiceRequestPage from './pages/CreateServicePage.jsx';
 import CreateProductPage from './pages/CreateProductPage.jsx';
 import CreateTourismPostPage from './pages/CreateTourismPostPage.jsx';
 import MessagesPage from './pages/MessagesPage.jsx';
+import PeopleFeedPage from './pages/PeopleFeedPage.jsx';
+import ProtectedRoute from './components/routing/ProtectedRoute.jsx';
 
 
 
@@ -42,10 +45,7 @@ function App() {
   return (
     <Router>
       <Routes>
-         {/**<Route path="/map"  element={<ProtectedRoute redirectTo="/login"><Map/></ProtectedRoute>} /> */}
-          <Route path="/old"  element={<Home/>} /> 
-          {/**<Route path="/" element={<FeedExplorePage />} /> */}
-          <Route path="/" element={<Home />} />
+          <Route path="/old"  element={<OldHome/>} /> 
           <Route path="/people" element={<PeopleFeedPage />} />
          <Route path="/login"  element={<Login/>} />
          <Route
@@ -57,11 +57,21 @@ function App() {
           }
         />
 
+         <Route
+          path="/"
+          element={
+            <OnboardingGate>
+              <Home />
+            </OnboardingGate>
+          }
+        />
+
+
+        <Route path="/feed-test"  element={<PeopleFeedPage2/>} />
          <Route path="/signup"  element={<Signup/>} />
          <Route path="*" element={<NotFound />} />
          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
          <Route path="/verify/:token" element={<VerifyEmail />} />
-         <Route path="/jobs/create" element={<CreateJobOpportunity />} />
          <Route path="/events/create" element={<CreateEventPage />} />
          <Route path="/services/offer/create" element={<CreateServicePage />} />
          <Route path="/services/request/create" element={<CreateServiceRequestPage />} />
@@ -79,7 +89,6 @@ function App() {
         <Route path="/onboarding/industry"    element={<Industry />} />
         <Route path="/onboarding/goals"       element={<Goals />} />
 
-        <Route path="/profile" element={<ProfilePage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/jobs" element={<JobsExplorePage />} />
@@ -87,6 +96,12 @@ function App() {
         <Route path="/tourism" element={<TourismPage />} />
 
         <Route path="/companies" element={<CompanyPage />} />
+
+
+        <Route element={<ProtectedRoute />}>
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/jobs/create" element={<CreateJobOpportunity />} />
+        </Route>
 
         
       </Routes>

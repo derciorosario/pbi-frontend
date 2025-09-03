@@ -12,9 +12,10 @@ import SuggestedMatches from "../components/SuggestedMatches";
 import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
 import EmptyFeedState from "../components/EmptyFeedState";
-import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
+import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
+import PeopleProfileCard from "./PeopleCards";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -25,9 +26,9 @@ function useDebounce(v, ms = 400) {
   return val;
 }
 
-export default function EventsPage() {
-  const [activeTab, setActiveTab] = useState("Suggested for You");
-  const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
+export default function PeopleFeedPage() {
+  const [activeTab, setActiveTab] = useState("Posts");
+  const tabs = useMemo(() => ["Posts", "People", "My Connections", "News & Articles"], []);
   const navigate=useNavigate()
 
   // Filtros compatíveis com a Home
@@ -71,12 +72,12 @@ export default function EventsPage() {
 
   // Fetch feed (somente na aba Posts)
   const fetchFeed = useCallback(async () => {
-    if (activeTab !== "Suggested for You") return;
+    if (activeTab !== "Posts" && activeTab !== "People") return;
     setLoadingFeed(true);
     try {
       // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre “all”
       const params = {
-        tab: "events",
+        tab: "all",
         q: debouncedQ || undefined,
         country: country || undefined,
         city: city || undefined,
@@ -86,7 +87,7 @@ export default function EventsPage() {
         limit: 20,
         offset: 0,
       };
-      const { data } = await client.get("/feed", { params });
+      const { data } = await client.get(activeTab == "Posts" ? "/feed" : '/people', { params });
       setItems(Array.isArray(data.items) ? data.items : []);
     } catch (e) {
       console.error("Failed to load feed:", e);
@@ -144,7 +145,7 @@ export default function EventsPage() {
   };
 
   const renderMiddle = () => {
-    if (activeTab !== "Suggested for You") {
+    if (activeTab !== "Posts" && activeTab !== "People") {
       return (
         <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
           {activeTab} tab uses its own API route. Render the specific list here.
@@ -162,6 +163,8 @@ export default function EventsPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
+         
+
         {!loadingFeed &&
           items.map((item) =>
             item.kind === "job" ? (
@@ -170,6 +173,10 @@ export default function EventsPage() {
               <EventCard key={`event-${item.id}`} e={item} />
             ) : null
           )}
+
+          {!loadingFeed && activeTab == "People" && items.map((item) =><PeopleProfileCard {...item}/>)}
+
+      
       </>
     );
   };
@@ -188,20 +195,23 @@ export default function EventsPage() {
           </div>
           
           <QuickActions title="Quick Actions" items={[
-            { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Post an Event", Icon: PlusCircle, path: "/events/create" },
-            { label: "Calendar View", Icon: Calendar, path: "/calendar/create" },
-            { label: "Set Reminders", Icon: AlarmClock, path: "/calendar/create" },
-        ]} />
+              { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
+              { label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
+              { label: "Create News Post", Icon: PlusCircle, onClick: () => navigate("/news/create") },
+            ]} />
          
         </aside>
 
     
         <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
           <section className="lg:col-span-4 space-y-4">
-            <h3 className="font-semibold text-2xl mt-1">Your Path to Knowledge</h3>
-            <TabsAndAdd tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
+            <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
+            <TabsAndAdd tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
+                { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+                { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
+                { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
+                { label: "Create News Article", Icon: PlusCircle, onClick: () => navigate("/news/create") },
+            ]} />
             {renderMiddle()}
           </section>
 

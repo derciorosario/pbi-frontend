@@ -7,6 +7,8 @@ import {
 } from "../api/profile";
 import ProfilePhoto from "../components/ProfilePhoto";
 import { useNavigate } from "react-router-dom";
+import COUNTRIES from "../constants/countries.js";
+import Header from "../components/Header.jsx";
 
 /* ---------------- SVG icons ---------------- */
 const I = {
@@ -175,81 +177,8 @@ export default function ProfilePage() {
 
   return (
     <div>
-          <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-200">
-        <div className="mx-auto max-w-7xl h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={()=>navigate('/')}>
-            <div
-              className="h-9 w-9 rounded-xl grid place-items-center text-white font-bold"
-              style={{ background: "linear-gradient(135deg,#8A358A,#9333EA)" }}
-            >
-              P
-            </div>
-            <div className="leading-tight">
-              <div className="font-semibold">PANAFRICAN</div>
-              <div className="text-[11px] text-gray-500 -mt-1">Business Initiative</div>
-            </div>
-          </div>
-
-           <nav className="hidden md:flex items-center gap-4 text-sm ml-6">
-          
-            <a
-              href="#"
-              onClick={()=>navigate('/')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            ><I.feed /> Feed
-              
-            </a>
-             <a
-              href="#"
-              onClick={()=>navigate('/people')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            >
-              
-              <I.people /> People
-            </a>
-            <a
-              href="#"
-              onClick={()=>navigate('/jobs')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            >
-              <I.jobs /> Jobs
-            </a>
-            <a
-              href="#"
-              onClick={()=>navigate('/events')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            >
-              <I.calendar /> Events
-            </a>
-            <a
-              href="#"
-              onClick={()=>navigate('/business')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            >
-              <I.biz /> Business
-            </a>
-            <a
-              href="#"
-              onClick={()=>navigate('/tourism')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            >
-              <I.pin /> Tourism
-            </a>
-          </nav>
-
-          <div className="ml-auto hidden md:flex items-center gap-2 flex-1 max-w-md">
-            <div className="flex items-center gap-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2">
-              <I.search />
-              <input className="w-full bg-transparent outline-none text-sm" placeholder="Search people, jobs, events..." />
-            </div>
-            <button className="relative">
-              <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-white text-[10px]">3</span>
-              <svg className="h-[18px] w-[18px] text-gray-600" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a2.5 2.5 0 0 0 2.45-2H9.55A2.5 2.5 0 0 0 12 22ZM18 16v-5a6 6 0 1 0-12 0v5l-1.8 1.8A1 1 0 0 0 5 20h14a1 1 0 0 0 .8-1.6Z"/></svg>
-            </button>
-            <button onClick={()=>navigate('/profile')} className="ml-2 h-10 w-10 rounded-full bg-gray-100 grid place-items-center flex-shrink-0">AB</button>
-          </div>
-        </div>
-      </header>
+      
+      <Header/>
 
     <div className="max-w-5xl mx-auto p-4 md:p-8">
       {/* Header + progress */}
@@ -351,19 +280,33 @@ export default function ProfilePage() {
                 <div className="grid md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium mb-1">Country (Nationality)</label>
-                            <input
-                            className="w-full border rounded-lg px-3 py-2"
-                            value={personal.country}
-                            onChange={e => setPersonal({ ...personal, country: e.target.value })}
-                            />
+                           
+                             <select
+                                name="country"
+                                value={personal.country}
+                                onChange={e => setPersonal({ ...personal, country: e.target.value })}
+                                className="w-full border rounded-lg px-3 py-2"
+                            >
+                                <option value="" disabled>Select country</option>
+                                {COUNTRIES.map((c) => (
+                                <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
                         </div>
                         <div>
                             <label className="block text-sm font-medium mb-1">Country of Residence</label>
-                            <input
-                            className="w-full border rounded-lg px-3 py-2"
-                            value={personal.countryOfResidence}
-                            onChange={e => setPersonal({ ...personal, countryOfResidence: e.target.value })}
-                            />
+                          
+                             <select
+                                name="country"
+                                value={personal.countryOfResidence}
+                                onChange={e => setPersonal({ ...personal, countryOfResidence: e.target.value })}
+                                className="w-full border rounded-lg px-3 py-2"
+                            >
+                                <option value="" disabled>Select country</option>
+                                {COUNTRIES.map((c) => (
+                                <option key={c} value={c}>{c}</option>
+                                ))}
+                            </select>
                         </div>
                 </div>
 
