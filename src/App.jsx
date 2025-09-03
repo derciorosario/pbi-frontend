@@ -72,7 +72,7 @@ function App() {
          <Route path="*" element={<NotFound />} />
          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
          <Route path="/verify/:token" element={<VerifyEmail />} />
-         <Route path="/events/create" element={<CreateEventPage />} />
+         
          <Route path="/services/offer/create" element={<CreateServicePage />} />
          <Route path="/services/request/create" element={<CreateServiceRequestPage />} />
          <Route path="/products/create" element={<CreateProductPage />} />
@@ -101,6 +101,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/jobs/create" element={<CreateJobOpportunity />} />
+            <Route path="/events/create" element={<CreateEventPage />} />
         </Route>
 
         
