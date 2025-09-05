@@ -15,7 +15,7 @@ export default function ToastProvider() {
         position="top-right"
         toastOptions={{
           style: { fontSize: "14px" },
-          success: { iconTheme: { primary: "#8A358A", secondary: "#fff" } }
+          success: { iconTheme: { primary: "#0a66c2", secondary: "#fff" } }
         }}
       />
     );

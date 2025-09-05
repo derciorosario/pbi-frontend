@@ -4,30 +4,37 @@ import client from "../../api/client";
 import { useAuth } from "../../contexts/AuthContext";
 
 /**
- * TwoStepOnboarding.jsx
+ * ThreeStepOnboarding.jsx (updated)
  * - Step 1: pick identities (multi)
  * - Step 2: pick categories/subcategories/level-3
  *   * Only categories are mandatory (≥1)
  *   * Sub-subcategories show ONLY if their parent subcategory is OPEN (chevron) OR SELECTED
+ * - Step 3: pick goals (≥1)
  */
-export default function TwoStepOnboarding() {
+export default function ThreeStepOnboarding() {
   const nav = useNavigate();
-  const userAuth = useAuth();
+  const userAuth = useAuth()
+
+
+  console.log(userAuth)
 
   // flow
   const [step, setStep] = useState(1);
-  const progress = step === 1 ? 50 : 100;
+  const progress = step === 1 ? 33 : step === 2 ? 66 : 100;
+
 
   // data
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [identities, setIdentities] = useState([]); // [{id?,name,categories:[...]}]
+  const [goals, setGoals] = useState([]); // [{id,name}]
 
   // selections
   const [identityIds, setIdentityIds] = useState([]);
   const [categoryIds, setCategoryIds] = useState([]);
   const [subcategoryIds, setSubcategoryIds] = useState([]);
   const [subsubCategoryIds, setSubsubCategoryIds] = useState([]);
+  const [goalIds, setGoalIds] = useState([]);
 
   // UI expand/collapse
   const [openCats, setOpenCats] = useState(() => new Set()); // Set<categoryId>
@@ -40,6 +47,7 @@ export default function TwoStepOnboarding() {
         setError("");
         const { data } = await client.get("/public/identities");
         setIdentities(Array.isArray(data?.identities) ? data.identities : []);
+        setGoals(Array.isArray(data?.goals) ? data.goals : []);
       } catch (e) {
         console.error(e);
         setError("Failed to load onboarding data.");
@@ -49,11 +57,11 @@ export default function TwoStepOnboarding() {
     })();
   }, []);
 
-  useEffect(() => {
-    if (!userAuth.user && !userAuth?.loading) {
-      nav("/login");
-    }
-  }, [userAuth.user, userAuth?.loading, nav]);
+  useEffect(()=>{
+        if(!userAuth.user && !userAuth?.loading){
+           nav('/login')
+        }
+  },[userAuth.user])
 
   const getIdentityKey = (iden) => iden.id || `name:${iden.name}`;
 
@@ -295,14 +303,37 @@ export default function TwoStepOnboarding() {
     });
   };
 
+  // goals
+  function toggleGoal(goalId) {
+    setGoalIds((prev) => (prev.includes(goalId) ? prev.filter((g) => g !== goalId) : [...prev, goalId]));
+  }
+
   // guards
   const canContinueStep1 = identityIds.length >= 1;
-  const canFinish = categoryIds.length >= 1; // subcategories optional
+  const canContinueStep2 = categoryIds.length >= 1; // subcategories optional
+  const canSave = goalIds.length >= 1;
 
   const selectedIdentities = useMemo(() => {
     const keys = new Set(identityIds);
     return identities.filter((iden) => keys.has(getIdentityKey(iden)));
   }, [identities, identityIds]);
+
+  async function onSave() {
+    if (!canSave) return;
+    try {
+      await client.post("/onboarding/oneshot", {
+        identityIds,
+        categoryIds,
+        subcategoryIds,
+        subsubCategoryIds,
+        goalIds,
+      });
+      nav("/dashboard");
+    } catch (e) {
+      console.error(e);
+      alert("Failed to save. Please try again.");
+    }
+  }
 
   const Loading = () => (
     <div className="min-h-screen grid place-items-center text-brand-700">
@@ -352,10 +383,10 @@ export default function TwoStepOnboarding() {
             title="We need some information"
             subtitle="Help us connect you with the right opportunities."
           />
-
+          
           <main className="max-w-3xl mx-auto mt-6">
             <div className="bg-white rounded-2xl shadow-soft p-6">
-              <p className="text-gray-500 mb-5">Choose the identities that best represent you.</p>
+                <p className="text-gray-500 mb-5">Choose the identities that best represent you.</p>
               <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {identities.map((iden, i) => {
                   const key = getIdentityKey(iden);
@@ -371,15 +402,14 @@ export default function TwoStepOnboarding() {
                       <div>
                         <div className="font-medium">{iden.name}</div>
                         <div className="text-xs text-gray-500">
-                          {(iden.categories || []).length} categories
+                            {(iden.categories || []).length} categories
                         </div>
                       </div>
                       <input
-                        type="checkbox"
-                        className="h-4 w-4 pointer-events-none"
-                        checked={identityIds.includes(key)}
-                        readOnly
-                      />
+                            type="checkbox"
+                            className="h-4 w-4 pointer-events-none"
+                            checked={identityIds.includes(key)}
+                       />
                     </button>
                   );
                 })}
@@ -415,7 +445,9 @@ export default function TwoStepOnboarding() {
                 </div>
               ) : (
                 <>
-                  <p className="text-sm text-gray-500 mb-4">Choose at least one to finish.</p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Choose at least one to continue
+                  </p>
 
                   <div className="space-y-4">
                     {selectedIdentities.map((iden, iIdx) => (
@@ -523,22 +555,81 @@ export default function TwoStepOnboarding() {
                 Previous
               </button>
               <button
+                onClick={() => setStep(3)}
+                disabled={!canContinueStep2}
+                className="rounded-xl bg-brand-700 text-white px-6 py-3 font-semibold disabled:opacity-50"
+              >
+                Continue
+              </button>
+            </div>
+          </main>
+        </>
+      )}
+
+      {/* STEP 3 */}
+      {step === 3 && (
+        <>
+          <Header
+            icon={"🎯"}
+            title="What are you looking for?"
+            subtitle="Define your path forward"
+          />
+          <main className="max-w-3xl mx-auto mt-6">
+            <div className="bg-white rounded-2xl shadow-soft p-6">
+              <h2 className="text-xl font-semibold mb-2">Your Goals</h2>
+              <p className="text-sm text-gray-500 mb-4">Pick at least 1.</p>
+
+              {goals.length === 0 ? (
+                <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">Loading goals…</div>
+              ) : (
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {goals.map((g) => {
+                    const isSelected = goalIds.includes(g.id);
+                    return (
+                      <button
+                        key={g.id}
+                        onClick={() => toggleGoal(g.id)}
+                        className={`rounded-xl border flex items-center justify-between px-4 py-3 text-left hover:shadow-soft transition ${
+                          isSelected ? "border-brand-700 ring-2 ring-brand-500" : "border-gray-200"
+                        }`}
+                        title={g.name}
+                      >
+                        <div className="font-medium">{g.name}</div>
+
+                        <input
+                            type="checkbox"
+                            className="h-4 w-4 pointer-events-none"
+                            checked={isSelected}
+                       />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-between">
+              <button onClick={() => setStep(2)} className="rounded-xl border px-4 py-3">
+                Previous
+              </button>
+              <button
                 onClick={async () => {
-                  if (!canFinish) return;
+                  if (!canSave) return;
                   try {
                     await client.post("/onboarding/oneshot", {
                       identityIds,
                       categoryIds,
                       subcategoryIds,
                       subsubCategoryIds,
+                      goalIds,
                     });
-                    window.location.href = "/";
+                    window.location.href="/"
                   } catch (e) {
                     console.error(e);
                     alert("Failed to save. Please try again.");
                   }
                 }}
-                disabled={!canFinish}
+                disabled={!canSave}
                 className="rounded-xl bg-brand-700 text-white px-6 py-3 font-semibold disabled:opacity-50"
               >
                 Save & Finish
@@ -550,3 +641,6 @@ export default function TwoStepOnboarding() {
     </div>
   );
 }
+
+
+

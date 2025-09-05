@@ -1,5 +1,7 @@
 // src/components/JobCard.jsx
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { MoreVertical } from "lucide-react"; // 3 dots icon
 
 function formatTimeAgo(timeAgo, createdAt) {
   if (timeAgo) return timeAgo;
@@ -13,12 +15,29 @@ function formatTimeAgo(timeAgo, createdAt) {
   return `${days} day${days !== 1 ? "s" : ""} ago`;
 }
 
-export default function JobCard({ job }) {
+export default function JobCard({ job, onEdit, onDelete }) {
+  const { user } = useAuth();
+  const [openMenu, setOpenMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  const isOwner = user?.id && job?.createdById && user.id === job.createdById;
+
+  // close menu if clicked outside
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const tags = [
     job.jobType,
     job.workMode,
-    job.categoryName,     // mostra nome da categoria (se existir)
-    job.subcategoryName,  // mostra nome da subcategoria (se existir)
+    job.categoryName,
+    job.subcategoryName,
   ].filter(Boolean);
 
   const salaryText =
@@ -35,20 +54,73 @@ export default function JobCard({ job }) {
           <h3 className="font-semibold">{job.title}</h3>
           <div className="text-sm text-gray-500">{job.companyName}</div>
         </div>
-        <button className="text-gray-400 text-[1.1rem]" aria-label="Save job">♡</button>
+
+        <div className="flex items-center gap-2 relative" ref={menuRef}>
+          {isOwner && (
+            <>
+              <button
+                onClick={() => setOpenMenu((p) => !p)}
+                className="p-1 rounded-full text-gray-500 hover:bg-gray-100"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+
+              {openMenu && (
+                <div className="absolute right-0 top-8 w-36 rounded-lg border border-gray-100 bg-white shadow-lg z-50">
+                  <ul className="py-1 text-sm text-gray-700">
+                    <li>
+                      <button
+                        onClick={() => {
+                          setOpenMenu(false);
+                          onEdit?.(job);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-50"
+                      >
+                        Edit
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => {
+                          setOpenMenu(false);
+                          if (
+                            window.confirm("Are you sure you want to delete this job?")
+                          ) {
+                            onDelete?.(job);
+                          }
+                        }}
+                        className="w-full px-3 py-2 text-left text-red-600 hover:bg-gray-50"
+                      >
+                        Delete
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+          <button className="text-gray-400 text-[1.1rem]" aria-label="Save job">
+            ♡
+          </button>
+        </div>
       </div>
 
       {!!tags.length && (
         <div className="mt-2 flex flex-wrap gap-2 text-xs">
           {tags.map((t) => (
-            <span key={t} className="px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+            <span
+              key={t}
+              className="px-2 py-1 rounded-full bg-gray-100 text-gray-600"
+            >
               {t}
             </span>
           ))}
         </div>
       )}
 
-      <p className="mt-3 text-sm text-gray-700 line-clamp-3">{job.description}</p>
+      <p className="mt-3 text-sm text-gray-700 line-clamp-3">
+        {job.description}
+      </p>
 
       <div className="mt-3 flex justify-between text-sm text-gray-500">
         <span>

@@ -44,7 +44,7 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-10
-      bg-[conic-gradient(at_10%_-10%,#FDF2FF_0%,#FFF7ED_30%,#FFFFFF_60%)] sm:px-6 md:px-8">
+      bg-gradient-to-br from-brand-50 via-white to-brand-50 sm:px-6 md:px-8">
       <div className="w-full max-w-md rounded-3xl bg-white/90 shadow-2xl ring-1 ring-black/5 backdrop-blur p-6 sm:p-8 md:p-10">
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 text-center">Create a new password</h1>
 

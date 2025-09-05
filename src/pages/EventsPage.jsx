@@ -205,7 +205,7 @@ export default function EventsPage() {
             { label: "Post an Event", Icon: PlusCircle, path: "/events/create" },
             { label: "Calendar View", Icon: Calendar, path: "/calendar/create" },
             { label: "Set Reminders", Icon: AlarmClock, path: "/calendar/create" },
-        ]} />
+          ]} />
          
         </aside>
 

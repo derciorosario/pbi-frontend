@@ -41,25 +41,28 @@ export default function CoverImagePicker({
       />
 
       {/* Pretty card */}
-      <div className="mt-2 rounded-2xl border border-dashed border-gray-300 bg-gray-50/60 p-4">
+      <div className="mt-2 rounded-2xl border border-dashed border-gray-300 bg-gray-50/60 p-4 hover:border-brand-400 transition-colors">
         {!value ? (
           <div className="text-center py-10">
             <div className="mx-auto w-10 h-10 rounded-full bg-white shadow grid place-items-center">
               {/* Cloud icon */}
-              <svg className="h-6 w-6 text-gray-400" viewBox="0 0 24 24" fill="currentColor">
+              <svg className="h-6 w-6 text-brand-600" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M19 18H6a4 4 0 1 1 .8-7.93A5 5 0 0 1 20 9a4 4 0 0 1-1 9Zm-7-9v4H9l3 3 3-3h-3V9Z" />
               </svg>
             </div>
-            <p className="mt-3 text-sm text-gray-600">Drag & drop your image here, or</p>
+            <p className="mt-3 text-sm text-gray-600">
+              Drag & drop your image here, or
+            </p>
             <button
               type="button"
               onClick={pick}
-              className="mt-2 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white"
-              style={{ background: "linear-gradient(135deg,#8A358A,#9333EA)" }}
+              className="mt-2 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
             >
               Browse
             </button>
-            <p className="mt-2 text-[11px] text-gray-400">PNG / JPG • up to {maxSizeMB}MB</p>
+            <p className="mt-2 text-[11px] text-gray-400">
+              PNG / JPG • up to {maxSizeMB}MB
+            </p>
           </div>
         ) : (
           <div className="grid gap-3">
@@ -72,15 +75,14 @@ export default function CoverImagePicker({
               <button
                 type="button"
                 onClick={pick}
-                className="rounded-lg px-3 py-2 text-sm font-semibold text-white"
-                style={{ background: "#8A358A" }}
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
               >
                 Change
               </button>
               <button
                 type="button"
                 onClick={remove}
-                className="rounded-lg px-3 py-2 text-sm border border-gray-200 bg-white"
+                className="rounded-lg px-3 py-2 text-sm border border-gray-200 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
               >
                 Remove
               </button>

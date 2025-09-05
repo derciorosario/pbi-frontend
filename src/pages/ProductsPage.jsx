@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
-import ExperienceCard from "../components/ExperienceCard";
+import ProductCard from "../components/ProductCard";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -28,7 +28,9 @@ function useDebounce(v, ms = 400) {
   return val;
 }
 
-export default function EventsPage() {
+
+
+export default function ProductsPage() {
   const [activeTab, setActiveTab] = useState("Suggested for You");
   const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
   const navigate=useNavigate()
@@ -156,35 +158,86 @@ export default function EventsPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
-  const experiences = [
+  const products = [
   {
     id: 1,
-    author: "Safari Adventures Kenya",
-    time: "2 hours ago • Nairobi, Kenya",
-    tag: "Safari",
-    title: "Discover the Magic of Maasai Mara",
-    desc: "Experience the greatest wildlife spectacle on Earth during the Great Migration. Our expert guides will take you on an unforgettable journey through Kenya's most famous national reserve.",
-    stats: { likes: 124, comments: 18 },
-    image:
-      "https://images.unsplash.com/photo-1508672019048-805c876b67e2?q=80&w=1600&auto=format&fit=crop",
-    cta: "Book Now",
+    image: "https://i.ibb.co/j5PzN9R/handbag.jpg",
+    title: "Premium Leather Handbags",
+    description: "Handcrafted leather bags with traditional African patterns.",
+    price: 149,
+    location: "Lagos, Nigeria",
+    rating: 4.8,
+    reviews: 24,
+    featured: true,
   },
   {
     id: 2,
-    author: "Cape Town Explorer",
-    time: "4 hours ago • Cape Town, South Africa",
-    tag: "Adventure",
-    title: "Table Mountain Cable Car Adventure",
-    desc: "Take in breathtaking 360-degree views of Cape Town from the top of Table Mountain with our guided cable car experience.",
-    stats: { likes: 98, comments: 12 },
-    image:
-      "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1600&auto=format&fit=crop",
-    cta: "Book Now",
+    image: "https://i.ibb.co/kS8n2GN/coffee.jpg",
+    title: "Organic Coffee Beans",
+    description: "Premium roasted coffee beans from Ethiopian highlands.",
+    price: 32,
+    location: "Addis Ababa",
+    rating: 4.9,
+    reviews: 156,
+  },
+  {
+    id: 3,
+    image: "https://i.ibb.co/pLk7Fcf/solar.jpg",
+    title: "Solar Charging Station",
+    description: "Portable solar-powered mobile device charging solution.",
+    price: 89,
+    location: "Nairobi, Kenya",
+    rating: 4.7,
+    reviews: 42,
+  },
+  {
+    id: 4,
+    image: "https://i.ibb.co/7V7f8Z7/kente.jpg",
+    title: "Traditional Kente Cloth",
+    description: "Authentic handwoven kente fabric with traditional patterns.",
+    price: 75,
+    location: "Accra, Ghana",
+    rating: 4.6,
+    reviews: 18,
+  },
+  {
+    id: 5,
+    image: "https://i.ibb.co/wKzYj2F/shea.jpg",
+    title: "Organic Shea Butter Set",
+    description: "Natural skincare products made from pure African shea butter.",
+    price: 45,
+    location: "Tamale, Ghana",
+    rating: 4.8,
+    reviews: 89,
+  },
+  {
+    id: 6,
+    image: "https://i.ibb.co/ygXHjD7/wooden-art.jpg",
+    title: "Handcarved Wooden Art",
+    description: "Beautiful handcrafted wooden sculptures and decorative pieces.",
+    price: 120,
+    location: "Cape Town",
+    rating: 4.7,
+    reviews: 31,
   },
 ];
 
   const renderMiddle = () => {
 
+    return (
+     <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2  gap-6">
+        {products.map((p) => (
+          <ProductCard
+            key={p.id}
+            {...p}
+            onContact={() => alert(`Contact seller of ${p.title}`)}
+            onSave={() => alert(`Saved ${p.title}`)}
+          />
+        ))}
+      </div>
+    </div>
+    )
     if (activeTab !== "Suggested for You") {
       return (
         <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
@@ -203,10 +256,14 @@ export default function EventsPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        {!loadingFeed && experiences.map((exp) => (
-              <ExperienceCard key={exp.id} exp={exp} />
-          ))
-        }
+        {!loadingFeed &&
+          items.map((item) =>
+            item.kind === "job" ? (
+              <JobCard key={`job-${item.id}`} job={item} />
+            ) : item.kind === "event" ? (
+              <EventCard key={`event-${item.id}`} e={item} />
+            ) : null
+          )}
       </>
     );
   };
@@ -227,7 +284,9 @@ export default function EventsPage() {
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
             { label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Share experience", Icon: PlusCircle, path: "/experience/create" }
+            { label: "Post an Event", Icon: PlusCircle, path: "/events/create" },
+            { label: "Calendar View", Icon: Calendar, path: "/calendar/create" },
+            { label: "Set Reminders", Icon: AlarmClock, path: "/calendar/create" },
         ]} />
          
         </aside>
@@ -236,9 +295,9 @@ export default function EventsPage() {
           <section className="lg:col-span-4 space-y-4 mt-5">
           
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              <h3 className="font-semibold text-2xl mt-1">Explore Africa’s Rich Culture & Tourism</h3>
+              <h3 className="font-semibold text-2xl mt-1">Your Path to Knowledge</h3>
           
-            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/products/create')} />
+            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
             </div>
               {renderMiddle()}
           </section>

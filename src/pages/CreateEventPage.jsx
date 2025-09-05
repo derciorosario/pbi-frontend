@@ -7,12 +7,22 @@ import CoverImagePicker from "../components/CoverImagePicker";
 import Header from "../components/Header";
 
 const styles = {
-  primary: "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-[#8A358A] hover:bg-[#7A2F7A] focus:outline-none focus:ring-2 focus:ring-[#8A358A]/30",
-  primaryGhost: "rounded-lg px-3 py-1.5 text-sm font-semibold border border-[#8A358A] text-[#8A358A] bg-white hover:bg-[#8A358A]/5",
+  primary:
+    "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+  primaryGhost:
+    "rounded-lg px-3 py-1.5 text-sm font-semibold border border-brand-600 text-brand-600 bg-white hover:bg-brand-50",
 };
 
 const I = {
-  chevron: () => <svg className="h-4 w-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor"><path d="m6 9 6 6 6-6"/></svg>,
+  chevron: () => (
+    <svg
+      className="h-4 w-4 text-gray-500"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  ),
 };
 
 export default function CreateEventPage() {
@@ -42,7 +52,11 @@ export default function CreateEventPage() {
     coverImageUrl: "",
   });
 
-  const [meta, setMeta] = useState({ categories: [], currencies: [], timezones: [] });
+  const [meta, setMeta] = useState({
+    categories: [],
+    currencies: [],
+    timezones: [],
+  });
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [saving, setSaving] = useState(false);
   const [coverImageBase64, setCoverImageBase64] = useState(null);
@@ -53,8 +67,11 @@ export default function CreateEventPage() {
       try {
         const { data } = await client.get("/events/meta");
         setMeta(data);
-        // Pick a sensible default country (optional)
-        setForm((f) => ({ ...f, country: f.country || "Nigeria", timezone: f.timezone || (data.timezones[0] || "Africa/Lagos") }));
+        setForm((f) => ({
+          ...f,
+          country: f.country || "Nigeria",
+          timezone: f.timezone || data.timezones[0] || "Africa/Lagos",
+        }));
       } catch (e) {
         console.error(e);
         alert(e?.response?.data?.message || "Failed to load form metadata");
@@ -73,12 +90,11 @@ export default function CreateEventPage() {
   function setField(name, value) {
     setForm((f) => {
       const next = { ...f, [name]: value };
-      // If category changes and current subcategory doesn't belong, reset it
+      // reset invalid subcategory if category changes
       if (name === "categoryId") next.subcategoryId = "";
-      // If switching to Free, clear price/currency
+      // clear price if switching back to Free
       if (name === "registrationType" && value === "Free") {
         next.price = "";
-        // keep currency but it won't be sent by BE since Free
       }
       // Location toggles
       if (name === "locationType") {
@@ -112,7 +128,7 @@ export default function CreateEventPage() {
 
     setSaving(true);
     try {
-      const payload = { ...form,coverImageBase64 };
+      const payload = { ...form, coverImageBase64 };
       // Clean optional fields
       if (!payload.subcategoryId) delete payload.subcategoryId;
       if (payload.registrationType === "Free") {
@@ -120,7 +136,9 @@ export default function CreateEventPage() {
         delete payload.currency;
       }
       if (payload.locationType === "Virtual") {
-        delete payload.address; delete payload.city; delete payload.country;
+        delete payload.address;
+        delete payload.city;
+        delete payload.country;
       } else {
         delete payload.onlineUrl;
       }
@@ -137,36 +155,57 @@ export default function CreateEventPage() {
   }
 
   if (loadingMeta) {
-    return <FullPageLoader message="Loading event form…" tip="Fetching categories and preferences" />;
+    return (
+      <FullPageLoader
+        message="Loading event form…"
+        tip="Fetching categories and preferences"
+      />
+    );
   }
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
-     <Header page={'events'}/>
+      <Header page={"events"} />
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
-        <button onClick={() => navigate("/events")} className="flex items-center gap-2 text-sm text-gray-600 hover:underline">
+        <button
+          onClick={() => navigate("/events")}
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
+        >
           ← Go to Events
         </button>
 
         <h1 className="text-2xl font-bold mt-3">Create Event</h1>
-        <p className="text-sm text-gray-600">Share your event with the community</p>
+        <p className="text-sm text-gray-600">
+          Share your event with the community
+        </p>
 
-        <form onSubmit={onSubmit} className="mt-6 rounded-2xl bg-white border p-6 shadow-sm space-y-8">
+        <form
+          onSubmit={onSubmit}
+          className="mt-6 rounded-2xl bg-white border p-6 shadow-sm space-y-8"
+        >
           {/* Event Type */}
           <section>
-            <h2 className="font-semibold">Event Type</h2>
+            <h2 className="font-semibold text-brand-600">Event Type</h2>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
               {["Workshop", "Conference", "Networking"].map((t) => (
                 <button
                   type="button"
                   key={t}
                   onClick={() => setField("eventType", t)}
-                  className={`border rounded-xl p-4 text-left hover:border-[#8A358A] ${
-                    form.eventType === t ? "border-[#8A358A] bg-[#8A358A]/5" : "border-gray-200 bg-white"
+                  className={`border rounded-xl p-4 text-left transition-colors ${
+                    form.eventType === t
+                      ? "border-brand-600 bg-brand-50"
+                      : "border-gray-200 bg-white hover:border-brand-600"
                   }`}
                 >
                   <div className="font-medium">{t}</div>
-                  <div className="text-xs text-gray-500">{t === "Workshop" ? "Interactive learning session" : t === "Conference" ? "Large-scale gathering" : "Connect with peers"}</div>
+                  <div className="text-xs text-gray-500">
+                    {t === "Workshop"
+                      ? "Interactive learning session"
+                      : t === "Conference"
+                      ? "Large-scale gathering"
+                      : "Connect with peers"}
+                  </div>
                 </button>
               ))}
             </div>
@@ -174,14 +213,14 @@ export default function CreateEventPage() {
 
           {/* Basic Info */}
           <section>
-            <h2 className="font-semibold">Basic Information</h2>
+            <h2 className="font-semibold text-brand-600">Basic Information</h2>
             <div className="mt-3 grid gap-4">
               <input
                 type="text"
                 value={form.title}
                 onChange={(e) => setField("title", e.target.value)}
                 placeholder="Enter event title"
-                className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full"
+                className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                 required
               />
               {/* Category (Industry) */}
@@ -190,11 +229,13 @@ export default function CreateEventPage() {
                   <select
                     value={form.categoryId}
                     onChange={(e) => setField("categoryId", e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8"
+                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
                   >
                     <option value="">Select category (industry)</option>
                     {meta.categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
                     ))}
                   </select>
                   <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
@@ -207,12 +248,18 @@ export default function CreateEventPage() {
                   <select
                     value={form.subcategoryId}
                     onChange={(e) => setField("subcategoryId", e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8"
+                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
                     disabled={!form.categoryId || subcategoryOptions.length === 0}
                   >
-                    <option value="">{subcategoryOptions.length ? "Select subcategory (optional)" : "No subcategories"}</option>
+                    <option value="">
+                      {subcategoryOptions.length
+                        ? "Select subcategory (optional)"
+                        : "No subcategories"}
+                    </option>
                     {subcategoryOptions.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
                     ))}
                   </select>
                   <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
@@ -225,7 +272,7 @@ export default function CreateEventPage() {
                 value={form.description}
                 onChange={(e) => setField("description", e.target.value)}
                 placeholder="Describe your event..."
-                className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full"
+                className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                 rows={4}
                 required
               />
@@ -234,20 +281,39 @@ export default function CreateEventPage() {
 
           {/* Date & Time */}
           <section>
-            <h2 className="font-semibold">Date & Time</h2>
+            <h2 className="font-semibold text-brand-600">Date & Time</h2>
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
-              <input type="date" value={form.date} onChange={(e) => setField("date", e.target.value)} className="rounded-xl border border-gray-200 px-3 py-2 text-sm" required />
-              <input type="time" value={form.startTime} onChange={(e) => setField("startTime", e.target.value)} className="rounded-xl border border-gray-200 px-3 py-2 text-sm" required />
-              <input type="time" value={form.endTime} onChange={(e) => setField("endTime", e.target.value)} className="rounded-xl border border-gray-200 px-3 py-2 text-sm" />
+              <input
+                type="date"
+                value={form.date}
+                onChange={(e) => setField("date", e.target.value)}
+                className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+                required
+              />
+              <input
+                type="time"
+                value={form.startTime}
+                onChange={(e) => setField("startTime", e.target.value)}
+                className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+                required
+              />
+              <input
+                type="time"
+                value={form.endTime}
+                onChange={(e) => setField("endTime", e.target.value)}
+                className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+              />
             </div>
             <div className="relative mt-3">
               <select
                 value={form.timezone}
                 onChange={(e) => setField("timezone", e.target.value)}
-                className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8"
+                className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
               >
                 {meta.timezones.map((tz) => (
-                  <option key={tz} value={tz}>{tz}</option>
+                  <option key={tz} value={tz}>
+                    {tz}
+                  </option>
                 ))}
               </select>
               <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
@@ -258,7 +324,7 @@ export default function CreateEventPage() {
 
           {/* Location */}
           <section>
-            <h2 className="font-semibold">Location</h2>
+            <h2 className="font-semibold text-brand-600">Location</h2>
             <div className="mt-3 flex gap-6 text-sm">
               {["In-Person", "Virtual", "Hybrid"].map((opt) => (
                 <label key={opt} className="flex items-center gap-2">
@@ -280,11 +346,13 @@ export default function CreateEventPage() {
                     <select
                       value={form.country}
                       onChange={(e) => setField("country", e.target.value)}
-                      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8"
+                      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
                     >
                       <option value="">Select country</option>
                       {COUNTRIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
                       ))}
                     </select>
                     <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
@@ -297,7 +365,7 @@ export default function CreateEventPage() {
                     value={form.city}
                     onChange={(e) => setField("city", e.target.value)}
                     placeholder="City"
-                    className="rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                    className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
                   />
                 </div>
 
@@ -306,7 +374,7 @@ export default function CreateEventPage() {
                   value={form.address}
                   onChange={(e) => setField("address", e.target.value)}
                   placeholder="Full address"
-                  className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full"
+                  className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                 />
               </>
             ) : (
@@ -315,20 +383,20 @@ export default function CreateEventPage() {
                 value={form.onlineUrl}
                 onChange={(e) => setField("onlineUrl", e.target.value)}
                 placeholder="Meeting link (Zoom/Meet/etc.)"
-                className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full"
+                className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
               />
             )}
           </section>
 
           {/* Registration */}
           <section>
-            <h2 className="font-semibold">Registration</h2>
+            <h2 className="font-semibold text-brand-600">Registration</h2>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
               <div className="relative">
                 <select
                   value={form.registrationType}
                   onChange={(e) => setField("registrationType", e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8"
+                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
                 >
                   <option>Free</option>
                   <option>Paid</option>
@@ -344,7 +412,7 @@ export default function CreateEventPage() {
                 value={form.capacity}
                 onChange={(e) => setField("capacity", e.target.value)}
                 placeholder="Seats / capacity (optional)"
-                className="rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
               />
             </div>
 
@@ -356,17 +424,19 @@ export default function CreateEventPage() {
                   value={form.price}
                   onChange={(e) => setField("price", e.target.value)}
                   placeholder="Price"
-                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
                   required
                 />
                 <div className="relative">
                   <select
                     value={form.currency}
                     onChange={(e) => setField("currency", e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8"
+                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
                   >
                     {meta.currencies.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
                     ))}
                   </select>
                   <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
@@ -380,18 +450,18 @@ export default function CreateEventPage() {
               type="date"
               value={form.registrationDeadline}
               onChange={(e) => setField("registrationDeadline", e.target.value)}
-              className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full"
+              className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
           </section>
 
           {/* Cover image (optional) */}
           <section>
-            <h2 className="font-semibold">Cover Image</h2>
+            <h2 className="font-semibold text-brand-600">Cover Image</h2>
             <CoverImagePicker
-        label="Cover Image (optional)"
-        value={coverImageBase64}
-        onChange={setCoverImageBase64}
-      />
+              label="Cover Image (optional)"
+              value={coverImageBase64}
+              onChange={setCoverImageBase64}
+            />
           </section>
 
           {/* Actions */}

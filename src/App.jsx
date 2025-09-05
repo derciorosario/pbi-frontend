@@ -38,6 +38,8 @@ import ProtectedRoute from './components/routing/ProtectedRoute.jsx';
 import OneShotOnboarding from './pages/onboarding/OneShotOnboarding.jsx';
 import TwoStepOnboarding from './pages/onboarding/TwoStepOnboarding.jsx';
 import ProtectedRouteOnboarding from '../ProtectedRouteOnBoarding.jsx';
+import ServicesPage from './pages/ServicePage.jsx';
+import ProductsPage from './pages/ProductsPage.jsx';
 
 
 
@@ -88,9 +90,12 @@ function App() {
             <Route path="/people" element={<PeopleFeedPage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/jobs" element={<JobsExplorePage />} />
-            {/**<Route path="/business" element={<BusinessPage />} />
-            <Route path="/tourism" element={<TourismPage />} /> */}
+            <Route path="/job/:id" element={<CreateJobOpportunity />} />
+            <Route path="/tourism" element={<TourismPage />} /> 
             <Route path="/companies" element={<CompanyPage />} />
+
+            <Route path="/services" element={<ServicesPage/>} />
+            <Route path="/products" element={<ProductsPage />} />
         </Route>
 
       </Routes>

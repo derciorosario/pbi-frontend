@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
-import ExperienceCard from "../components/ExperienceCard";
+import ServiceCard from "../components/ServiceCard";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -28,7 +28,7 @@ function useDebounce(v, ms = 400) {
   return val;
 }
 
-export default function EventsPage() {
+export default function ServicesPage() {
   const [activeTab, setActiveTab] = useState("Suggested for You");
   const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
   const navigate=useNavigate()
@@ -156,35 +156,69 @@ export default function EventsPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
-  const experiences = [
+    const services = [
   {
     id: 1,
-    author: "Safari Adventures Kenya",
-    time: "2 hours ago • Nairobi, Kenya",
-    tag: "Safari",
-    title: "Discover the Magic of Maasai Mara",
-    desc: "Experience the greatest wildlife spectacle on Earth during the Great Migration. Our expert guides will take you on an unforgettable journey through Kenya's most famous national reserve.",
-    stats: { likes: 124, comments: 18 },
-    image:
-      "https://images.unsplash.com/photo-1508672019048-805c876b67e2?q=80&w=1600&auto=format&fit=crop",
-    cta: "Book Now",
+    avatar: "https://i.pravatar.cc/100?img=12",
+    title: "Mobile App Development",
+    description:
+      "Expert iOS and Android app development with modern UI/UX design. 5+ years in fintech and e-commerce applications.",
+    provider: "Kwame Asante",
+    country: "Ghana",
+    rating: 4.9,
+    reviews: 127,
+    price: "$2,500",
+    priceUnit: "project",
+    type: "Offering",
+    tags: ["Mobile Development", "iOS", "Android"],
   },
   {
     id: 2,
-    author: "Cape Town Explorer",
-    time: "4 hours ago • Cape Town, South Africa",
-    tag: "Adventure",
-    title: "Table Mountain Cable Car Adventure",
-    desc: "Take in breathtaking 360-degree views of Cape Town from the top of Table Mountain with our guided cable car experience.",
-    stats: { likes: 98, comments: 12 },
-    image:
-      "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1600&auto=format&fit=crop",
-    cta: "Book Now",
+    avatar: "https://i.pravatar.cc/100?img=32",
+    title: "Digital Marketing Strategy",
+    description:
+      "Comprehensive digital marketing services including SEO, social media management, and content creation for African businesses.",
+    provider: "Amara Diallo",
+    country: "Senegal",
+    rating: 4.8,
+    reviews: 89,
+    price: "$800",
+    priceUnit: "month",
+    type: "Offering",
+    tags: ["Digital Marketing", "SEO", "Social Media"],
+  },
+  {
+    id: 3,
+    avatar: "https://i.pravatar.cc/100?img=44",
+    title: "Financial Consulting",
+    description:
+      "Expert financial advisory services for startups and SMEs. Specializing in investment planning, modeling, and valuation.",
+    provider: "Olumide Adebayo",
+    country: "Nigeria",
+    rating: 4.9,
+    reviews: 156,
+    price: "$150",
+    priceUnit: "hour",
+    type: "Seeking",
+    tags: ["Finance", "Consulting", "Investment"],
   },
 ];
 
+
   const renderMiddle = () => {
 
+    return (
+            <div className="max-w-4xl mx-auto p-6 space-y-5">
+        {services.map((s) => (
+            <ServiceCard
+            key={s.id}
+            {...s}
+            onDetails={() => alert(`Details of ${s.title}`)}
+            onContact={() => alert(`${s.type} - Contact ${s.provider}`)}
+            />
+        ))}
+        </div>
+    )
     if (activeTab !== "Suggested for You") {
       return (
         <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
@@ -203,13 +237,19 @@ export default function EventsPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        {!loadingFeed && experiences.map((exp) => (
-              <ExperienceCard key={exp.id} exp={exp} />
-          ))
-        }
+        {!loadingFeed &&
+          items.map((item) =>
+            item.kind === "job" ? (
+              <JobCard key={`job-${item.id}`} job={item} />
+            ) : item.kind === "event" ? (
+              <EventCard key={`event-${item.id}`} e={item} />
+            ) : null
+          )}
       </>
     );
   };
+
+
 
   return (
    <DefaultLayout>
@@ -227,7 +267,7 @@ export default function EventsPage() {
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
             { label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Share experience", Icon: PlusCircle, path: "/experience/create" }
+            { label: "Post a Service", Icon: PlusCircle, path: "/services/create" },
         ]} />
          
         </aside>
@@ -236,9 +276,9 @@ export default function EventsPage() {
           <section className="lg:col-span-4 space-y-4 mt-5">
           
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              <h3 className="font-semibold text-2xl mt-1">Explore Africa’s Rich Culture & Tourism</h3>
+              <h3 className="font-semibold text-2xl mt-1">Professional Services</h3>
           
-            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/products/create')} />
+            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
             </div>
               {renderMiddle()}
           </section>

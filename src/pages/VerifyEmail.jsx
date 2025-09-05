@@ -42,7 +42,7 @@ export default function VerifyEmail() {
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4 py-10
-                 bg-[conic-gradient(at_10%_-10%,#FDF2FF_0%,#FFF7ED_30%,#FFFFFF_60%)]
+                 bg-gradient-to-br from-brand-50 via-white to-brand-50
                  sm:px-6 md:px-8"
     >
       <div className="w-full max-w-xl">
@@ -55,10 +55,10 @@ export default function VerifyEmail() {
             className={`mx-auto mb-5 sm:mb-6 grid h-14 w-14 place-items-center rounded-full
               ${
                 status === "success"
-                  ? "bg-green-100 text-green-600"
+                  ? "bg-brand-100 text-brand-600"
                   : status === "error"
                   ? "bg-red-100 text-red-600"
-                  : "bg-purple-100 text-purple-600"
+                  : "bg-brand-100 text-brand-600"
               }`}
           >
             {status === "verifying" && (

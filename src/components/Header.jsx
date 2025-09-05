@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import I from "../lib/icons";
 import styles from "../lib/styles";
 import { useAuth } from "../contexts/AuthContext";
+import { useData } from "../contexts/DataContext";
 
 function Header({ page }) {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ function Header({ page }) {
   const { user, profile, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const data=useData()
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -51,7 +53,7 @@ function Header({ page }) {
   const initials = getInitials(user?.name || profile?.name);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-200">
+    <header className={`sticky z-50 top-0  bg-white/90 backdrop-blur border-b border-gray-200`}>
       <div className="mx-auto max-w-7xl h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
         {/* Logo */}
         <div
