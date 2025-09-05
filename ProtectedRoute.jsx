@@ -1,33 +1,37 @@
 import React from 'react';
-import { Navigate, useLocation} from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import Preloader from './components/loaders/preloader';
-import { useAuth } from './contexts/AuthContext';
+import { useAuth } from './src/contexts/AuthContext';
+import FullPageLoader from './src/components/ui/FullPageLoader';
 
-const ProtectedRoute = ({ children, redirectTo = '/', path }) => {
-  const { isAuthenticated, user, loading, token, logout } = useAuth();
+const ProtectedRoute = ({ redirectTo = '/' }) => {
+  const { user, loading, token, logout } = useAuth();
 
-  if(redirectTo=="/logout" && token && user){
-        logout() 
-        toast.remove()
-        toast.success('Logout successfuly!')
-        return <Navigate to={'/login'} replace />
+  // Special logout handler
+  if (redirectTo === "/logout" && token && user) {
+    logout();
+    toast.remove();
+    toast.success('Logout successfully!');
+    return <Navigate to="/login" replace />;
   }
 
+  // Handle loading state
   if (loading) {
-
-      return <Preloader showAnyway={true}/>;
-
-  }else if(!user && !loading){
-      return <Navigate to={'/login'} replace />
-  }else{
-
-     return isAuthenticated ? children : <Navigate to={redirectTo} replace />;
+    return <FullPageLoader/>;
   }
+
+  // Redirect if not authenticated
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Redirect if onboarding not completed
+  if (user && !user?.profile?.onboardingDone) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // ✅ Use <Outlet /> for nested routes
+  return user ? <Outlet /> : <Navigate to={redirectTo} replace />;
 };
 
-
 export default ProtectedRoute;
-
-
-

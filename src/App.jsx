@@ -20,7 +20,6 @@ import OnboardingGate from "./pages/onboarding/OnboardingGate";
 import WhoYouAre from "./pages/onboarding/WhoYouAre";
 import Industry from "./pages/onboarding/Industry";
 import Goals from "./pages/onboarding/Goals";
-import FeedExplorePage from "./pages/feed/FeedExplorePage";
 import PeopleFeedPage2 from './pages/PeopleDiscover.jsx';
 import JobsExplorePage from './pages/JobsExplorePage.jsx';
 import EventsPage from './pages/EventsPage.jsx';
@@ -36,6 +35,9 @@ import CreateTourismPostPage from './pages/CreateTourismPostPage.jsx';
 import MessagesPage from './pages/MessagesPage.jsx';
 import PeopleFeedPage from './pages/PeopleFeedPage.jsx';
 import ProtectedRoute from './components/routing/ProtectedRoute.jsx';
+import OneShotOnboarding from './pages/onboarding/OneShotOnboarding.jsx';
+import TwoStepOnboarding from './pages/onboarding/TwoStepOnboarding.jsx';
+import ProtectedRouteOnboarding from '../ProtectedRouteOnBoarding.jsx';
 
 
 
@@ -45,40 +47,17 @@ function App() {
   return (
     <Router>
       <Routes>
-          <Route path="/old"  element={<OldHome/>} /> 
-          <Route path="/people" element={<PeopleFeedPage />} />
+        
          <Route path="/login"  element={<Login/>} />
-         <Route
-          path="/dashboard"
-          element={
-            <OnboardingGate>
-              <Home />
-            </OnboardingGate>
-          }
-        />
-
-         <Route
-          path="/"
-          element={
-            <OnboardingGate>
-              <Home />
-            </OnboardingGate>
-          }
-        />
-
-
-        <Route path="/feed-test"  element={<PeopleFeedPage2/>} />
+         <Route path="/onboarding"  element={<TwoStepOnboarding/>} />
+         <Route path="/onboarding-one"  element={<OneShotOnboarding/>} />
          <Route path="/signup"  element={<Signup/>} />
          <Route path="*" element={<NotFound />} />
          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
          <Route path="/verify/:token" element={<VerifyEmail />} />
          
-         <Route path="/services/offer/create" element={<CreateServicePage />} />
-         <Route path="/services/request/create" element={<CreateServiceRequestPage />} />
-         <Route path="/products/create" element={<CreateProductPage />} />
-         <Route path="/experience/create" element={<CreateTourismPostPage />} />
-         <Route path="/messages" element={<MessagesPage />} />
-
+      
+         
          {/* Forgot / Reset password */}
         <Route path="/reset-success" element={<ResetSuccess />} />
         <Route path="/forgot" element={<ForgotPassword />} />
@@ -89,22 +68,31 @@ function App() {
         <Route path="/onboarding/industry"    element={<Industry />} />
         <Route path="/onboarding/goals"       element={<Goals />} />
 
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/events" element={<EventsPage />} />
-        <Route path="/jobs" element={<JobsExplorePage />} />
-        <Route path="/business" element={<BusinessPage />} />
-        <Route path="/tourism" element={<TourismPage />} />
-
-        <Route path="/companies" element={<CompanyPage />} />
-
+      
 
         <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/jobs/create" element={<CreateJobOpportunity />} />
             <Route path="/events/create" element={<CreateEventPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
+            <Route path="/services/offer/create" element={<CreateServicePage />} />
+            <Route path="/services/request/create" element={<CreateServiceRequestPage />} />
+            <Route path="/products/create" element={<CreateProductPage />} />
+            <Route path="/experience/create" element={<CreateTourismPostPage />} />
+            <Route path="/messages" element={<MessagesPage />} />
         </Route>
 
-        
+        <Route element={<ProtectedRouteOnboarding/>}>
+            <Route path="/" element={<Home/>} />
+            <Route path="/dashboard" element={<Home/>} />
+            <Route path="/people" element={<PeopleFeedPage />} />
+            <Route path="/events" element={<EventsPage />} />
+            <Route path="/jobs" element={<JobsExplorePage />} />
+            {/**<Route path="/business" element={<BusinessPage />} />
+            <Route path="/tourism" element={<TourismPage />} /> */}
+            <Route path="/companies" element={<CompanyPage />} />
+        </Route>
+
       </Routes>
     </Router>
   );

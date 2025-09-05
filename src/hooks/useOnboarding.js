@@ -12,5 +12,5 @@ export default function useOnboarding() {
 
   useEffect(() => { refresh(); }, []);
 
-  return { state, refresh, saveProfileType: api.saveProfileType, saveCategories: api.saveCategories, saveGoals: api.saveGoals };
+  return { state, refresh, saveProfileType: api.saveProfileType,saveIdentities:api.saveProfileType, saveCategories: api.saveCategories, saveGoals: api.saveGoals };
 }

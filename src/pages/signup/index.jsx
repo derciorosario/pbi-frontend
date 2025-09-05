@@ -7,6 +7,7 @@ import LeftPanel from "../../components/LeftPanel.jsx";
 import { toast } from "../../lib/toast";
 import client from "../../api/client.js";
 import COUNTRIES from "../../constants/countries.js";
+import GoogleCustomBtn from "../../components/GoogleBtn.jsx";
 
 const emailOK = (v) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").toLowerCase());
@@ -131,6 +132,27 @@ export default function Signup() {
 
       <div className="flex items-center justify-center p-6 md:p-10">
         <div className="w-full max-w-2xl">
+
+
+           <div
+        className="md:hidden  mb-7 top-6 left-6 flex items-center gap-2 cursor-pointer z-10"
+        onClick={() => navigate("/")}
+      >
+        <div
+          className="h-9 w-9 rounded-xl grid place-items-center text-white font-bold"
+          style={{ background: "linear-gradient(135deg,#8A358A,#9333EA)" }}
+        >
+          P
+        </div>
+        <div className="leading-tight">
+          <div className="font-semibold text-gray-900">PANAFRICAN</div>
+          <div className="text-[11px] text-gray-500 -mt-1">
+            Business Initiative
+          </div>
+        </div>
+      </div>
+
+
           <h2 className="text-3xl font-bold text-gray-900">Join PANAFRICAN BI</h2>
           <p className="mt-1 text-gray-500">Join the global networking community</p>
 
@@ -332,7 +354,7 @@ export default function Signup() {
               </button>
 
               {/* Optional Google button */}
-              {/* <GoogleCustomBtn page="signup" /> */}
+               <GoogleCustomBtn page="signup" /> 
             </div>
           </form>
         </div>

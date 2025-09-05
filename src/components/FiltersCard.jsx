@@ -13,14 +13,23 @@ export default function FiltersCard({
   setCategoryId,
   subcategoryId,
   setSubcategoryId,
+  setRole,
+  setGoalId,
   categories = [],
   countries = [],
+  goals=[],
+  goalId,
+  role,
   onApply,
 }) {
   const currentCategory = categories.find((c) => String(c.id) === String(categoryId));
   const visibleSubs = currentCategory?.subcategories || [];
 
-  console.log({query})
+  const roles = [
+  "Entrepreneur","Seller","Buyer","Job Seeker","Professional","Partnership",
+  "Investor","Event Organizer","Government Official","Traveler","NGO",
+  "Support Role","Freelancer","Student"
+ ];
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
@@ -101,6 +110,41 @@ export default function FiltersCard({
           ))}
         </select>
       </div>
+
+       <div className="mt-3">
+        <label className="text-xs text-gray-500">Goal</label>
+        <select
+          className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+          value={goalId || ""}
+          onChange={(e) => setGoalId(e.target.value || undefined)}
+        >
+          <option value="">All goals</option>
+          {goals.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+
+      <div className="mt-3">
+        <label className="text-xs text-gray-500">Role</label>
+        <select
+          className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+          value={role || ""}
+          onChange={(e) => setRole(e.target.value || undefined)}
+        >
+          <option value="">All roles</option>
+          {roles.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      
 
       {/**<button className={`mt-4 ${styles.primaryWide}`} onClick={onApply}>
         Apply Filters

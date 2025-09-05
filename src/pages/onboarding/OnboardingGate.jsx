@@ -9,8 +9,8 @@ export default function OnboardingGate({ children }) {
 
   useEffect(() => {
     if (!state.loading) {
-      if (state.nextStep === "profileType") nav("/onboarding/who-you-are", { replace: true });
-      else if (state.nextStep === "industry") nav("/onboarding/industry", { replace: true });
+      if (state.nextStep === "identities") nav("/onboarding/who-you-are", { replace: true });
+      else if (state.nextStep === "categories") nav("/onboarding/industry", { replace: true });
       else if (state.nextStep === "goals") nav("/onboarding/goals", { replace: true });
     }
   }, [state.loading, state.nextStep]);

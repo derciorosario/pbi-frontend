@@ -15,6 +15,7 @@ import EmptyFeedState from "../components/EmptyFeedState";
 import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
+import DefaultLayout from "../layout/DefaultLayout";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -39,10 +40,13 @@ export default function EventsPage() {
   const [categoryId, setCategoryId] = useState();
   const [subcategoryId, setSubcategoryId] = useState();
   const [goalId, setGoalId] = useState();
+  const [role, setRole] = useState();
 
   // Metadados
   const [categories, setCategories] = useState([]);
   const [countries, setCountries] = useState([]);
+  const [goals, setGoals] = useState([]);
+
 
   // Feed
   const [items, setItems] = useState([]);
@@ -63,6 +67,7 @@ export default function EventsPage() {
         const { data } = await client.get("/feed/meta");
         setCategories(data.categories || []);
         setCountries(data.countries || []);
+        setGoals(data.goals || [])
       } catch (e) {
         console.error("Failed to load meta:", e);
       }
@@ -83,6 +88,7 @@ export default function EventsPage() {
         categoryId: categoryId || undefined,
         subcategoryId: subcategoryId || undefined,
         goalId: goalId || undefined,
+        role:role || undefined,
         limit: 20,
         offset: 0,
       };
@@ -94,7 +100,7 @@ export default function EventsPage() {
     } finally {
       setLoadingFeed(false);
     }
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId]);
+  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role]);
 
   useEffect(() => {
     fetchFeed();
@@ -112,6 +118,7 @@ export default function EventsPage() {
           categoryId: categoryId || undefined,
           subcategoryId: subcategoryId || undefined,
           goalId: goalId || undefined,
+          role:role || undefined,
           limit: 10,
         };
         const { data } = await client.get("/feed/suggestions", { params });
@@ -123,7 +130,7 @@ export default function EventsPage() {
         setLoadingSuggestions(false);
       }
     })();
-  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId]);
+  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId,role]);
 
   const filtersProps = {
     query,
@@ -137,6 +144,9 @@ export default function EventsPage() {
     subcategoryId,
     setSubcategoryId,
     goalId,
+    goals,
+    role,
+    setRole,
     setGoalId,
     categories,
     countries,
@@ -175,8 +185,8 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
-      <Header />
+   <DefaultLayout>
+     <Header />
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6">
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
@@ -222,6 +232,6 @@ export default function EventsPage() {
         onClose={() => setMobileFiltersOpen(false)}
         filtersProps={filtersProps}
       />
-    </div>
+   </DefaultLayout>
   );
 }

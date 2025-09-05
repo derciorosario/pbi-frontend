@@ -81,20 +81,20 @@ export default function Login() {
 
   return (
     <div className="min-h-screen grid md:grid-cols-2">
-      {/* Left panel */}
+     
+       {/* Home button at top-left */}
+     
+
       <div className="hidden md:block">
         <LeftPanel />
       </div>
 
       {/* Right */}
       <div className="flex items-center justify-center p-6 md:p-10">
+        
         <div className="w-full max-w-md">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 text-brand-700">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M10 2h4a2 2 0 0 1 2 2v2h3a2 2 0 0 1 2 2v3H3V8a2 2 0 0 1 2-2h3V4a2 2 0 0 1 2-2Zm4 4V4h-4v2h4Z"/>
-              <path d="M3 11h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7Zm8 3H5v2h6v-2Z"/>
-            </svg>
-          </div>
+          
+        
 
           {/* Dynamic header based on token presence */}
           {hasToken ? (
@@ -170,17 +170,17 @@ export default function Login() {
                   type="checkbox"
                   checked={form.remember}
                   onChange={onChange}
-                  className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                 />
                 <span className="text-gray-600">Remember me</span>
               </label>
-              <Link to="/forgot" className="text-brand-600 hover:underline">Forgot password?</Link>
+              <Link to="/forgot" className="text-brand-500 hover:underline">Forgot password?</Link>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-1 w-full rounded-xl bg-gradient-to-r from-brand-700 to-brand-500 py-3 font-semibold text-white shadow-soft hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mt-1 w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 py-3 font-semibold text-white shadow-soft hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading && (
                 <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">

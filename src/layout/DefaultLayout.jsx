@@ -1,24 +1,19 @@
 import React,{useState} from 'react'
-import { useData } from '../contexts/DataContext'
-import Preloader from '../components/loaders/preloader'
-import Header from '../components/header'
-import Footer from '../components/Footer'
-import Sidebar from '../components/Sidebar'
-import Contact from '../components/modals/contact'
+import { useAuth } from '../contexts/AuthContext'
+import FullPageLoader from '../components/ui/FullPageLoader'
+import LoginPrompt from '../components/LoginPrompt'
+function DefaultLayout({children}) {
+  const {loading}=useAuth()
 
-function DefaultLayout({children,page}) {
-  const data=useData()
-
+  if(loading) {
+    return <FullPageLoader/>
+  }
   return (
    <>
-    { <Preloader/>}
-    <div id={'top'} className="min-h-[100vh] relative overflow-hidden">
-        <Contact/>
-        <Header/>
-        <Sidebar/>
-        {children}
-        <Footer/>
-    </div>
+      <LoginPrompt/>
+      <div id={'top'} className="min-h-screen bg-[#F7F7FB] text-gray-900">
+         {children}
+      </div> 
    </>
   )
 }

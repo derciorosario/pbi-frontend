@@ -5,6 +5,8 @@
   text-align: center;
 }
 
+/* Animations (add in globals.css or tailwind config if using JIT) */
+
 .logo {
   height: 6em;
   padding: 1.5em;

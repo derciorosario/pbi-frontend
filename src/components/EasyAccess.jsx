@@ -1,9 +1,10 @@
 // src/components/QuickActionsPanel.jsx
 import { X } from "lucide-react";
 import React, { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 /* brand */
-const BRAND = "#8A358A";
+const BRAND = "#0a66c2";
 
 /* tiny inline icons */
 const I = {
@@ -73,8 +74,9 @@ const CircleBtn = ({children, className="", style, ...rest}) => (
 
 /* component */
 export default function QuickActionsPanel() {
+  const {user}=useAuth()
   return (
-    <aside className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white shadow-sm mb-4">
+    <aside className={`w-full ${!user ? 'hidden':''} max-w-sm rounded-2xl border border-gray-200 bg-white shadow-sm my-2`}>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100">
         <div className="flex items-center gap-2">

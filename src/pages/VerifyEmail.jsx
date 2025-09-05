@@ -26,8 +26,7 @@ export default function VerifyEmail() {
         );
 
         setStatus("success");
-        setMessage("Your email has been verified.");
-        setTimeout(() => navigate("/login"), REDIRECT_DELAY_MS);
+        setMessage("Your email has been successfully verified. You can now sign in and start using your account.");
       } catch (err) {
         setStatus("error");
         setMessage(
@@ -127,9 +126,17 @@ export default function VerifyEmail() {
           )}
 
           {status === "success" && (
-            <p className="mt-6 text-center text-sm text-gray-500">
-              Redirecting to your dashboard…
-            </p>
+             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                to="/login"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-brand-700 to-brand-500
+                           px-5 py-3 text-sm font-semibold text-white shadow-soft hover:opacity-95 w-full sm:w-auto"
+              >
+                Sign in to Start
+              </Link>
+            </div>
+
+
           )}
         </div>
       </div>

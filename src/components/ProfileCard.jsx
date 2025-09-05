@@ -1,13 +1,13 @@
 import React from 'react';
 import styles from '../lib/styles.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import EasyAccess from "./EasyAccess";
 
 
 function ProfileCard() {
     const {user,profile} = useAuth()
-    console.log({user,profile})
-
   return (
+   <>
     <div className={`rounded-2xl bg-white border p-4 shadow-sm ${!Boolean(user) ? 'hidden':''}`}>
       <div className="flex items-center gap-3">
         <img
@@ -48,6 +48,10 @@ function ProfileCard() {
         <span className="ml-1">Boost Your Profile</span>
       </button>
     </div>
+     <EasyAccess/>
+   </>
+    
+   
   );
 }
 

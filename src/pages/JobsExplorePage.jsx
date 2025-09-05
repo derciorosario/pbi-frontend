@@ -15,6 +15,7 @@ import EmptyFeedState from "../components/EmptyFeedState";
 import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
+import DefaultLayout from "../layout/DefaultLayout";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -175,8 +176,9 @@ export default function PeopleFeedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
-      <Header />
+   
+   <DefaultLayout>
+     <Header />
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6">
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
@@ -218,6 +220,6 @@ export default function PeopleFeedPage() {
         onClose={() => setMobileFiltersOpen(false)}
         filtersProps={filtersProps}
       />
-    </div>
+   </DefaultLayout>
   );
 }

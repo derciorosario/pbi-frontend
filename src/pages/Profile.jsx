@@ -28,7 +28,6 @@ const I = {
   filter: () => <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2l-7 7v5l-4 2v-7L3 7z"/></svg>,
   close: () => <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg>,
 };
-
 const Tab = { PERSONAL: "personal", PROFESSIONAL: "professional", INTERESTS: "interests" };
 
 export default function ProfilePage() {

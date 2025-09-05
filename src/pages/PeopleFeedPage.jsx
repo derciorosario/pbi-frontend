@@ -16,6 +16,8 @@ import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import PeopleProfileCard from "./PeopleCards";
+import DefaultLayout from "../layout/DefaultLayout";
+import { useAuth } from "../contexts/AuthContext";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -27,9 +29,17 @@ function useDebounce(v, ms = 400) {
 }
 
 export default function PeopleFeedPage() {
+  const {user}=useAuth()
   const [activeTab, setActiveTab] = useState("Posts");
-  const tabs = useMemo(() => ["Posts", "People", "My Connections", "News & Articles"], []);
+  
+  const tabs = useMemo(() => {
+    const base = ["Posts", "People", "News & Articles"];
+    if (user) base.splice(2, 0, "My Connections"); // insert before News
+    return base;
+  }, [user]);
+
   const navigate=useNavigate()
+  const [showPendingRequests, setShowPendingRequests] = useState(false);
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -40,6 +50,8 @@ export default function PeopleFeedPage() {
   const [categoryId, setCategoryId] = useState();
   const [subcategoryId, setSubcategoryId] = useState();
   const [goalId, setGoalId] = useState();
+  const [role, setRole] = useState();
+  const [goals, setGoals] = useState([]);
 
   // Metadados
   const [categories, setCategories] = useState([]);
@@ -64,6 +76,7 @@ export default function PeopleFeedPage() {
         const { data } = await client.get("/feed/meta");
         setCategories(data.categories || []);
         setCountries(data.countries || []);
+        setGoals(data.goals || []);
       } catch (e) {
         console.error("Failed to load meta:", e);
       }
@@ -72,7 +85,6 @@ export default function PeopleFeedPage() {
 
   // Fetch feed (somente na aba Posts)
   const fetchFeed = useCallback(async () => {
-    if (activeTab !== "Posts" && activeTab !== "People") return;
     setLoadingFeed(true);
     try {
       // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre “all”
@@ -83,7 +95,9 @@ export default function PeopleFeedPage() {
         city: city || undefined,
         categoryId: categoryId || undefined,
         subcategoryId: subcategoryId || undefined,
-        goalId: goalId || undefined,
+        goalId:goalId || undefined,
+        role:role || undefined,
+        connectionStatus:activeTab=="My Connections" && showPendingRequests ? 'outgoing_pending,incoming_pending' :  activeTab=="My Connections" && !showPendingRequests ? 'connected' : null,
         limit: 20,
         offset: 0,
       };
@@ -95,7 +109,7 @@ export default function PeopleFeedPage() {
     } finally {
       setLoadingFeed(false);
     }
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId]);
+  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,showPendingRequests]);
 
   useEffect(() => {
     fetchFeed();
@@ -113,6 +127,7 @@ export default function PeopleFeedPage() {
           categoryId: categoryId || undefined,
           subcategoryId: subcategoryId || undefined,
           goalId: goalId || undefined,
+          role:role || undefined,
           limit: 10,
         };
         const { data } = await client.get("/feed/suggestions", { params });
@@ -124,7 +139,7 @@ export default function PeopleFeedPage() {
         setLoadingSuggestions(false);
       }
     })();
-  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId]);
+  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId,role]);
 
   const filtersProps = {
     query,
@@ -139,20 +154,17 @@ export default function PeopleFeedPage() {
     setSubcategoryId,
     goalId,
     setGoalId,
+    goals,
+    role,
+    setRole,
     categories,
     countries,
     onApply: () => setMobileFiltersOpen(false),
   };
 
-  const renderMiddle = () => {
-    if (activeTab !== "Posts" && activeTab !== "People") {
-      return (
-        <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
-          {activeTab} tab uses its own API route. Render the specific list here.
-        </div>
-      );
-    }
 
+  const renderMiddle = () => {
+   
     return (
       <>
         {loadingFeed && (
@@ -160,6 +172,7 @@ export default function PeopleFeedPage() {
              <FullPageLoader notFull={true}/>
           </div>
         )}
+        
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
@@ -176,13 +189,16 @@ export default function PeopleFeedPage() {
 
           {!loadingFeed && activeTab == "People" && items.map((item) =><PeopleProfileCard {...item}/>)}
 
+          {!loadingFeed && activeTab == "My Connections" && items.map((item) =><PeopleProfileCard {...item}/>)}
+
       
       </>
     );
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
+    <DefaultLayout>
+      
       <Header />
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6">
@@ -201,17 +217,41 @@ export default function PeopleFeedPage() {
             ]} />
          
         </aside>
-
-    
-        <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+    <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
           <section className="lg:col-span-4 space-y-4">
             <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
+            
             <TabsAndAdd tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                 { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                 { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                 { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
                 { label: "Create News Article", Icon: PlusCircle, onClick: () => navigate("/news/create") },
             ]} />
+
+          {activeTab === "My Connections" && (
+          <div className="mb-3">
+            <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-3 flex items-center justify-between">
+              <div>
+                <h4 className="font-semibold text-gray-800">Connection Requests</h4>
+                <p className="text-xs text-gray-500">
+                  View pending requests you sent or received
+                </p>
+              </div>
+
+              <button
+  onClick={() => setShowPendingRequests(!showPendingRequests)}
+  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm border ${
+    showPendingRequests
+      ? "bg-purple-600 text-white border-purple-600 hover:bg-purple-700"
+      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+  }`}
+>
+  {showPendingRequests ? "Showing Pending" : "Show Pending"}
+</button>
+            </div>
+          </div>
+        )}
+
             {renderMiddle()}
           </section>
 
@@ -232,6 +272,7 @@ export default function PeopleFeedPage() {
         onClose={() => setMobileFiltersOpen(false)}
         filtersProps={filtersProps}
       />
-    </div>
+  
+    </DefaultLayout>
   );
 }

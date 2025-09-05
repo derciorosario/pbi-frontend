@@ -28,16 +28,26 @@ function EmptyFeedState({ activeTab }) {
   return (
     <div className="rounded-2xl border bg-white p-8 text-gray-700">
       <div className="flex flex-col items-center text-center gap-4">
-        <div className="h-16 w-16 rounded-2xl grid place-items-center" style={{ background: "rgba(138,53,138,0.08)" }}>
-          <svg className="h-8 w-8 text-[#8A358A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        {/* Icon container */}
+        <div className="h-16 w-16 rounded-2xl grid place-items-center bg-brand-50">
+          <svg
+            className="h-8 w-8 text-brand-500"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+          >
             <circle cx="11" cy="11" r="7" />
             <path d="M21 21l-3.5-3.5" />
           </svg>
         </div>
 
-        <h3 className="text-lg font-semibold">{title}</h3>
+        {/* Title & description */}
+        <h3 className="text-lg font-semibold text-brand-600">{title}</h3>
         <p className="text-sm text-gray-500 max-w-md">{desc}</p>
-        <br/><br/><br/>
+        <br />
+        <br />
+        <br />
       </div>
     </div>
   );
