@@ -33,6 +33,8 @@ function Header({ page }) {
     { name: "tourism", label: "Tourism", path: "/tourism", icon: <I.pin /> },
   ];
 
+
+  
   function isActive(item) {
     if (page) return page === item.name;
     return pathname === item.path;

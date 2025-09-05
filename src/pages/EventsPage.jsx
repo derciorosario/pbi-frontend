@@ -16,6 +16,7 @@ import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
+import { useData } from "../contexts/DataContext";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -30,6 +31,7 @@ export default function EventsPage() {
   const [activeTab, setActiveTab] = useState("Suggested for You");
   const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
   const navigate=useNavigate()
+  const data=useData()
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -188,7 +190,7 @@ export default function EventsPage() {
    <DefaultLayout>
      <Header />
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6">
+      <main className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">

@@ -52,9 +52,7 @@ const I = {
     </svg>
   ),
   services: () => (
-    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2a10 10 0 0 0-3 19.5V22h6v-.5A10 10 0 0 0 12 2Zm1 16h-2v-2h2v2Zm0-4h-2V7h2v7Z" />
-    </svg>
+     <svg className="h-[18px] w-[18px]" fill="currentColor" xmlns="http://www.w3.org/2000/svg"  viewBox="0 -960 960 960" width="24px" ><path d="M360-640h240v-80H360v80ZM80-160v-200h160v40h80v-40h320v40h80v-40h160v200H80Zm0-240v-160q0-33 23.5-56.5T160-640h120v-80q0-33 23.5-56.5T360-800h240q33 0 56.5 23.5T680-720v80h120q33 0 56.5 23.5T880-560v160H720v-80h-80v80H320v-80h-80v80H80Z"/></svg>
   ),
   boost: () => (
     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -62,10 +60,8 @@ const I = {
     </svg>
   ),
   briefcase: () => (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/>
-      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-    </svg>
+    <svg className="h-[18px] w-[18px]" fill="currentColor" xmlns="http://www.w3.org/2000/svg"  viewBox="0 -960 960 960" width="24px" ><path d="M360-640h240v-80H360v80ZM80-160v-200h160v40h80v-40h320v40h80v-40h160v200H80Zm0-240v-160q0-33 23.5-56.5T160-640h120v-80q0-33 23.5-56.5T360-800h240q33 0 56.5 23.5T680-720v80h120q33 0 56.5 23.5T880-560v160H720v-80h-80v80H320v-80h-80v80H80Z"/></svg>
+  
   ),
   filter: () => (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">

@@ -18,6 +18,7 @@ import FullPageLoader from "../components/ui/FullPageLoader";
 import PeopleProfileCard from "./PeopleCards";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useAuth } from "../contexts/AuthContext";
+import { useData } from "../contexts/DataContext";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -31,6 +32,7 @@ function useDebounce(v, ms = 400) {
 export default function PeopleFeedPage() {
   const {user}=useAuth()
   const [activeTab, setActiveTab] = useState("Posts");
+  const data=useData()
   
   const tabs = useMemo(() => {
     const base = ["Posts", "People", "News & Articles"];
@@ -201,7 +203,7 @@ export default function PeopleFeedPage() {
       
       <Header />
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6">
+      <main className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
