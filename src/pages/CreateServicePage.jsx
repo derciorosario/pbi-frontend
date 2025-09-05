@@ -1,209 +1,306 @@
 // src/pages/CreateServicePage.jsx
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import client from "../api/client";
+import COUNTRIES from "../constants/countries";
+import AudienceTree from "../components/AudienceTree";
+import Header from "../components/Header";
+import { toast } from "../lib/toast";
 
-/* ---------------- Shared styles ---------------- */
+/* -------------- Shared styles (brand) -------------- */
 const styles = {
   primary:
-    "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-[#8A358A] hover:bg-[#7A2F7A] focus:outline-none focus:ring-2 focus:ring-[#8A358A]/30",
+    "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
   primaryWide:
-    "w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white bg-[#8A358A] hover:bg-[#7A2F7A] focus:outline-none focus:ring-2 focus:ring-[#8A358A]/30",
-  pill:
-    "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-white bg-[#8A358A] hover:bg-[#7A2F7A]",
+    "w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
+  ghost:
+    "rounded-lg px-3 py-1.5 text-sm font-semibold border border-brand-600 text-brand-600 bg-white hover:bg-brand-50",
 };
 
-/* ---------------- Minimal icon set ---------------- */
+/* -------------- Small helpers -------------- */
+const Label = ({ children, required }) => (
+  <label className="text-[12px] font-medium text-gray-700">
+    {children} {required && <span className="text-pink-600">*</span>}
+  </label>
+);
+
 const I = {
-  search: () => (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="11" cy="11" r="7" /><path d="M21 21l-3.5-3.5" />
-    </svg>
-  ),
-  see: () => (
-    <svg stroke="currentColor" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" width="24px" fill="#5f6368">
-      <path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z"/>
-    </svg>
-  ),
-  msg: () => (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 -960 960 960" fill="currentColor">
-      <path d="M80-80v-720q0-33 23.5-56.5T160-880h640q33 0 56.5 23.5T880-800v480q0 33-23.5 56.5T800-240H240L80-80Zm126-240h594v-480H160v525l46-45Zm-46 0v-480 480Z"/>
-    </svg>
-  ),
-  heart: () => (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 21s-6.7-4.35-9.43-7.06A5.5 5.5 0 0 1 11.5 6.5L12 7l.5-.5a5.5 5.5 0 0 1 8.93 7.44C18.72 16.65 12 21 12 21z" />
-    </svg>
-  ),
-  comment: () => (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  ),
-  share: () => (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
-      <path d="M16 6l-4-4-4 4M12 2v14" />
-    </svg>
-  ),
-  dots: () => (
-    <svg className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
-      <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
-    </svg>
-  ),
   plus: () => (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  ),
+  trash: () => (
     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M11 5h2v14h-2z"/><path d="M5 11h14v2H5z"/>
+      <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v9h-2V9Zm4 0h2v9h-2V9ZM6 9h2v9H6V9Z" />
     </svg>
   ),
-  edit: () => (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-      <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/>
+  chevron: () => (
+    <svg className="h-4 w-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+      <path d="m6 9 6 6 6-6" />
     </svg>
   ),
-  boost: () => (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-    </svg>
-  ),
-  briefcase: () => (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect width="20" height="14" x="2" y="7" rx="2" ry="2"/>
-      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-    </svg>
-  ),
-  filter: () => (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M3 5h18v2l-7 7v5l-4 2v-7L3 7z"/>
-    </svg>
-  ),
-  close: () => (
-    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="#000">
-      <path d="M18 6 6 18M6 6l12 12"/>
-    </svg>
-  ),
-
- 
-  feed: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/></svg>,
-  people: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4ZM6 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3ZM2 20a6 6 0 0 1 12 0v1H2Zm12.5 1v-1a7.5 7.5 0 0 1 9.5-7.2V21Z"/></svg>,
-  jobs: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M10 3h4a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v3H3V8a2 2 0 0 1 2-2h3V5a2 2 0 0 1 2-2Zm4 3V5h-4v1h4Z"/><path d="M3 11h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7Zm8 2H5v2h6v-2Z"/></svg>,
-  calendar: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v3H7zm8 0h2v3h-2z"/><path d="M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2h3V5a2 2 0 0 1 2-2Zm0 5v9h14v-9H5Z"/></svg>,
-  biz: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21V3h8v6h10v12H3Z"/><path d="M7 7h2v2H7zm0 4h2v2H7zm0 4h2v2H7z"/></svg>,
-  pin: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5Z"/></svg>,
-  chevron: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="m6 9 6 6 6-6"/></svg>,
-  search: () => <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3.5-3.5"/></svg>,
-  heart: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-6.716-4.349-9.428-7.061A5.5 5.5 0 0 1 11.5 6.5L12 7l.5-.5a5.5 5.5 0 0 1 8.928 7.439C18.716 16.651 12 21 12 21z"/></svg>,
-  comment: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-  share: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4M12 2v14"/></svg>,
-  msg: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-  eye: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5c5 0 9.3 3.1 11 7-1.7 3.9-6 7-11 7S2.7 15.9 1 12c1.7-3.9 6-7 11-7Zm0 10a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z"/></svg>,
-  filter: () => <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2l-7 7v5l-4 2v-7L3 7z"/></svg>,
-  close: () => <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg>,
-
 };
+
+/* Convert a File to a data URL (base64) */
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+/* -------------- Page -------------- */
 export default function CreateServicePage() {
   const navigate = useNavigate();
-  const [serviceType, setServiceType] = useState("Consulting");
+  const { id } = useParams(); // optional edit mode (services/:id)
+  const isEditMode = Boolean(id);
 
+  // AudienceTree data + selections (Sets, like Events page)
+  const [audTree, setAudTree] = useState([]);
+  const [audSel, setAudSel] = useState({
+    identityIds: new Set(),
+    categoryIds: new Set(),
+    subcategoryIds: new Set(),
+    subsubCategoryIds: new Set(),
+  });
+
+  // Form state
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    serviceType: "Consulting",
+    description: "",
+    priceAmount: "",
+    priceType: "Fixed Price", // Fixed Price | Hourly
+    deliveryTime: "1 Week",
+    locationType: "Remote", // Remote | On-site
+    experienceLevel: "Intermediate",
+    country: "",
+    city: "",
+    skills: [], // array of strings
+  });
+
+  const [skillInput, setSkillInput] = useState("");
+
+  // Attachments: [{ name, base64url }]
+  const [attachments, setAttachments] = useState([]);
+  const fileInputRef = useRef(null);
+
+  /* ---------- Effects ---------- */
+
+  // Load identities tree (for AudienceTree)
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/public/identities");
+        setAudTree(data.identities || []);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
+
+  // If editing, fetch existing service
+  useEffect(() => {
+    if (!isEditMode) return;
+    (async () => {
+      try {
+        const { data } = await client.get(`/services/${id}`);
+        // hydrate form
+        setForm((f) => ({
+          ...f,
+          title: data.title || "",
+          serviceType: data.serviceType || "Consulting",
+          description: data.description || "",
+          priceAmount: data.priceAmount?.toString() || "",
+          priceType: data.priceType || "Fixed Price",
+          deliveryTime: data.deliveryTime || "1 Week",
+          locationType: data.locationType || "Remote",
+          experienceLevel: data.experienceLevel || "Intermediate",
+          country: data.country || "",
+          city: data.city || "",
+          skills: Array.isArray(data.skills) ? data.skills : [],
+        }));
+
+        // attachments
+        if (Array.isArray(data.attachments)) {
+          setAttachments(
+            data.attachments
+              .filter((a) => a?.name && a?.base64url)
+              .map((a) => ({ name: a.name, base64url: a.base64url }))
+          );
+        }
+
+        // audience selections
+        setAudSel({
+          identityIds: new Set((data.audienceIdentities || []).map((x) => x.id)),
+          categoryIds: new Set((data.audienceCategories || []).map((x) => x.id)),
+          subcategoryIds: new Set((data.audienceSubcategories || []).map((x) => x.id)),
+          subsubCategoryIds: new Set((data.audienceSubsubs || []).map((x) => x.id)),
+        });
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load service");
+        navigate("/services");
+      }
+    })();
+  }, [isEditMode, id, navigate]);
+
+  /* ---------- Handlers ---------- */
+
+  function setField(name, value) {
+    setForm((f) => {
+      const next = { ...f, [name]: value };
+      // Clear country/city if Remote
+      if (name === "locationType" && value === "Remote") {
+        next.country = "";
+        next.city = "";
+      }
+      return next;
+    });
+  }
+
+  function addSkill() {
+    const v = (skillInput || "").trim();
+    if (!v) return;
+    setForm((f) =>
+      f.skills.includes(v) ? f : { ...f, skills: [...f.skills, v] }
+    );
+    setSkillInput("");
+  }
+
+  function removeSkill(idx) {
+    setForm((f) => ({ ...f, skills: f.skills.filter((_, i) => i !== idx) }));
+  }
+
+  async function handleFilesChosen(files) {
+    const arr = Array.from(files || []);
+    if (!arr.length) return;
+
+    // Optionally cap total
+    const remainingSlots = 20 - attachments.length;
+    const slice = remainingSlots > 0 ? arr.slice(0, remainingSlots) : [];
+
+    try {
+      const mapped = await Promise.all(
+        slice.map(async (file) => {
+          const base64url = await fileToDataURL(file);
+          return { name: file.name, base64url };
+        })
+      );
+      setAttachments((prev) => [...prev, ...mapped]);
+    } catch (err) {
+      console.error(err);
+      toast.error("Some files could not be read.");
+    }
+  }
+
+  function removeAttachment(idx) {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function isImage(base64url) {
+    return typeof base64url === "string" && base64url.startsWith("data:image");
+  }
+
+  function validate() {
+    if (!form.title.trim()) return "Title is required";
+    if (!form.description.trim()) return "Description is required";
+    if (form.priceType !== "Fixed Price" && form.priceType !== "Hourly")
+      return "Invalid price type";
+    if (form.priceAmount && Number(form.priceAmount) < 0)
+      return "Price cannot be negative";
+    if (form.locationType === "On-site" && !form.country)
+      return "Country is required for On-site services";
+    return null;
+  }
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    const err = validate();
+    if (err) {
+      toast.error(err);
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const identityIds = Array.from(audSel.identityIds);
+      const categoryIds = Array.from(audSel.categoryIds);
+      const subcategoryIds = Array.from(audSel.subcategoryIds);
+      const subsubCategoryIds = Array.from(audSel.subsubCategoryIds);
+
+      const payload = {
+        ...form,
+        // Normalize numbers
+        priceAmount:
+          form.priceAmount !== "" && !Number.isNaN(Number(form.priceAmount))
+            ? Number(form.priceAmount)
+            : undefined,
+        // Attachments array of { name, base64url }
+        attachments,
+        // AudienceTree selections
+        identityIds,
+        categoryIds,
+        subcategoryIds,
+        subsubCategoryIds,
+      };
+
+      // Clean fields depending on location
+      if (form.locationType === "Remote") {
+        delete payload.country;
+        delete payload.city;
+      }
+
+      let res;
+      if (isEditMode) {
+        res = await client.put(`/services/${id}`, payload);
+        toast.success("Service updated!");
+      } else {
+        res = await client.post("/services", payload);
+        toast.success("Service published!");
+      }
+
+      navigate("/services");
+      return res?.data;
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Could not save service");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /* ---------- UI ---------- */
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
-      {/* ===== Header (compact) ===== */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-200">
-        <div className="mx-auto max-w-7xl h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={()=>navigate('/')}>
-            <div
-              className="h-9 w-9 rounded-xl grid place-items-center text-white font-bold"
-              style={{ background: "linear-gradient(135deg,#8A358A,#9333EA)" }}
-            >
-              P
-            </div>
-            <div className="leading-tight">
-              <div className="font-semibold">PANAFRICAN</div>
-              <div className="text-[11px] text-gray-500 -mt-1">Business Initiative</div>
-            </div>
-          </div>
-
-           <nav className="hidden md:flex items-center gap-4 text-sm ml-6">
-          
-            <a
-              href="#"
-              onClick={()=>navigate('/')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            ><I.feed /> Feed
-              
-            </a>
-            <a
-              href="#"
-              onClick={()=>navigate('/people')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-           
-            >
-              
-              <I.people /> People
-            </a>
-            <a
-              href="#"
-              onClick={()=>navigate('/jobs')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            >
-              <I.jobs /> Jobs
-            </a>
-            <a
-              href="#"
-              onClick={()=>navigate('/events')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            >
-              <I.calendar /> Events
-            </a>
-            <a
-              href="#"
-              onClick={()=>navigate('/business')}
-              
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white"
-              style={{ background: "#8A358A" }}
-            >
-              <I.biz /> Business
-            </a>
-            <a
-              href="#"
-              onClick={()=>navigate('/tourism')}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100"
-            >
-              <I.pin /> Tourism
-            </a>
-          </nav>
-
-          <div className="ml-auto hidden md:flex items-center gap-2 flex-1 max-w-md">
-            <div className="flex items-center gap-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2">
-              <I.search />
-              <input className="w-full bg-transparent outline-none text-sm" placeholder="Search people, jobs, events..." />
-            </div>
-            <button onClick={()=>navigate('/notifications')} className="relative">
-              <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-white text-[10px]">3</span>
-              <svg className="h-[18px] w-[18px] text-gray-600" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a2.5 2.5 0 0 0 2.45-2H9.55A2.5 2.5 0 0 0 12 22ZM18 16v-5a6 6 0 1 0-12 0v5l-1.8 1.8A1 1 0 0 0 5 20h14a1 1 0 0 0 .8-1.6Z"/></svg>
-            </button>
-            <button onClick={()=>navigate('/profile')} className="ml-2 h-10 w-10 rounded-full bg-gray-100 grid place-items-center flex-shrink-0">AB</button>
-          </div>
-        </div>
-      </header>
-
-      {/* ===== Content ===== */}
+      <Header page={"services"} />
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
         <button
-          onClick={() => navigate("/business")}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:underline"
+          onClick={() => navigate("/services")}
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
+          type="button"
         >
-          ← Back
+          ← Back to services
         </button>
-        <h1 className="text-2xl font-bold mt-3">Create Service Post</h1>
+
+        <h1 className="text-2xl font-bold mt-3">
+          {isEditMode ? "Edit Service" : "Create Service Post"}
+        </h1>
         <p className="text-sm text-gray-600">
-          Share your professional services with the PBI community
+          Share your professional services with the PBI community.
         </p>
 
-        <div className="mt-6 rounded-2xl bg-white border p-6 shadow-sm space-y-8">
+        <form
+          onSubmit={onSubmit}
+          className="mt-6 rounded-2xl bg-white border p-6 shadow-sm space-y-8"
+        >
           {/* Service Type */}
           <section>
-            <h2 className="font-semibold">Service Type</h2>
+            <h2 className="font-semibold text-brand-600">Service Type</h2>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
                 { label: "Consulting", desc: "Professional advice and expertise" },
@@ -211,12 +308,13 @@ export default function CreateServicePage() {
                 { label: "Product/Service", desc: "Physical or digital products" },
               ].map((t) => (
                 <button
+                  type="button"
                   key={t.label}
-                  onClick={() => setServiceType(t.label)}
-                  className={`border rounded-xl p-4 text-left hover:border-[#8A358A] ${
-                    serviceType === t.label
-                      ? "border-[#8A358A] bg-[#8A358A]/5"
-                      : "border-gray-200 bg-white"
+                  onClick={() => setField("serviceType", t.label)}
+                  className={`border rounded-xl p-4 text-left transition-colors ${
+                    form.serviceType === t.label
+                      ? "border-brand-600 bg-brand-50"
+                      : "border-gray-200 bg-white hover:border-brand-600"
                   }`}
                 >
                   <div className="font-medium">{t.label}</div>
@@ -228,113 +326,288 @@ export default function CreateServicePage() {
 
           {/* Basic Info */}
           <section>
-            <h2 className="font-semibold">Service Title</h2>
-            <input
-              type="text"
-              placeholder="e.g. Digital Marketing Strategy"
-              className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full"
-            />
-            <select className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full">
-              <option>Select category</option>
-              <option>Marketing</option>
-              <option>Technology</option>
-              <option>Design</option>
-            </select>
-          </section>
-
-          {/* Description */}
-          <section>
-            <h2 className="font-semibold">Service Description</h2>
-            <textarea
-              placeholder="Describe your service in detail. What problems do you solve? What value do you provide?"
-              className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full"
-              rows={4}
-            />
+            <h2 className="font-semibold text-brand-600">Basic Information</h2>
+            <div className="mt-3 grid gap-4">
+              <div>
+                <Label required>Title</Label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) => setField("title", e.target.value)}
+                  placeholder="e.g., Growth Marketing Strategy Sprint"
+                  className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  required
+                />
+              </div>
+              <div>
+                <Label required>Description</Label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setField("description", e.target.value)}
+                  placeholder="Describe your service in detail. What problems do you solve? What value do you provide?"
+                  className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  rows={4}
+                  required
+                />
+              </div>
+            </div>
           </section>
 
           {/* Pricing */}
           <section>
-            <h2 className="font-semibold">Pricing</h2>
+            <h2 className="font-semibold text-brand-600">Pricing</h2>
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
-              <input
-                type="number"
-                placeholder="$ 0.00"
-                className="rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              />
-              <select className="rounded-xl border border-gray-200 px-3 py-2 text-sm">
-                <option>Fixed Price</option>
-                <option>Hourly</option>
-              </select>
-              <select className="rounded-xl border border-gray-200 px-3 py-2 text-sm">
-                <option>1 Day</option>
-                <option>3 Days</option>
-                <option>1 Week</option>
-                <option>1 Month</option>
-              </select>
+              <div>
+                <Label>Amount</Label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.priceAmount}
+                  onChange={(e) => setField("priceAmount", e.target.value)}
+                  placeholder="0.00"
+                  className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                />
+              </div>
+              <div className="relative">
+                <Label>Price Type</Label>
+                <select
+                  value={form.priceType}
+                  onChange={(e) => setField("priceType", e.target.value)}
+                  className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                >
+                  <option>Fixed Price</option>
+                  <option>Hourly</option>
+                </select>
+                <span className="pointer-events-none absolute right-2 bottom-3">
+                  <I.chevron />
+                </span>
+              </div>
+              <div className="relative">
+                <Label>Typical Delivery</Label>
+                <select
+                  value={form.deliveryTime}
+                  onChange={(e) => setField("deliveryTime", e.target.value)}
+                  className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                >
+                  <option>1 Day</option>
+                  <option>3 Days</option>
+                  <option>1 Week</option>
+                  <option>2 Weeks</option>
+                  <option>1 Month</option>
+                </select>
+                <span className="pointer-events-none absolute right-2 bottom-3">
+                  <I.chevron />
+                </span>
+              </div>
             </div>
           </section>
 
           {/* Location & Experience */}
           <section>
-            <h2 className="font-semibold">Service Location</h2>
+            <h2 className="font-semibold text-brand-600">Location & Experience</h2>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <select className="rounded-xl border border-gray-200 px-3 py-2 text-sm">
-                <option>Remote</option>
-                <option>On-site</option>
-              </select>
-              <select className="rounded-xl border border-gray-200 px-3 py-2 text-sm">
-                <option>Entry Level</option>
-                <option>Intermediate</option>
-                <option>Expert</option>
-              </select>
+              <div className="relative">
+                <Label>Location Type</Label>
+                <select
+                  value={form.locationType}
+                  onChange={(e) => setField("locationType", e.target.value)}
+                  className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                >
+                  <option>Remote</option>
+                  <option>On-site</option>
+                </select>
+                <span className="pointer-events-none absolute right-2 bottom-3">
+                  <I.chevron />
+                </span>
+              </div>
+
+              <div className="relative">
+                <Label>Experience Level</Label>
+                <select
+                  value={form.experienceLevel}
+                  onChange={(e) => setField("experienceLevel", e.target.value)}
+                  className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                >
+                  <option>Entry Level</option>
+                  <option>Intermediate</option>
+                  <option>Expert</option>
+                </select>
+                <span className="pointer-events-none absolute right-2 bottom-3">
+                  <I.chevron />
+                </span>
+              </div>
             </div>
+
+            {form.locationType === "On-site" && (
+              <div className="mt-3 grid md:grid-cols-2 gap-4">
+                <div className="relative">
+                  <Label required>Country</Label>
+                  <select
+                    value={form.country}
+                    onChange={(e) => setField("country", e.target.value)}
+                    className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                    required
+                  >
+                    <option value="">Select country</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute right-2 bottom-3">
+                    <I.chevron />
+                  </span>
+                </div>
+                <div>
+                  <Label>City</Label>
+                  <input
+                    type="text"
+                    value={form.city}
+                    onChange={(e) => setField("city", e.target.value)}
+                    placeholder="City"
+                    className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  />
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Skills & Tags */}
           <section>
-            <h2 className="font-semibold">Skills & Tags</h2>
+            <h2 className="font-semibold text-brand-600">Skills & Tags</h2>
             <div className="mt-2 flex items-center gap-2">
               <input
                 type="text"
+                value={skillInput}
+                onChange={(e) => setSkillInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addSkill();
+                  }
+                }}
                 placeholder="Add skills (e.g., JavaScript, Marketing, Design)"
-                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
               />
-              <button className={`${styles.primary} px-4`}>+</button>
+              <button
+                type="button"
+                onClick={addSkill}
+                className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700"
+                aria-label="Add skill"
+              >
+                <I.plus /> Add
+              </button>
             </div>
+
+            {form.skills.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {form.skills.map((s, idx) => (
+                  <span
+                    key={`${s}-${idx}`}
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-50 text-brand-700 px-3 py-1 text-xs border border-brand-100"
+                  >
+                    {s}
+                    <button
+                      type="button"
+                      className="text-gray-500 hover:text-gray-700"
+                      onClick={() => removeSkill(idx)}
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </section>
 
-          {/* Portfolio Upload */}
+          {/* Share With (Audience) */}
           <section>
-            <h2 className="font-semibold">Portfolio Samples (Optional)</h2>
-            <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-500">
+            <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
+            <p className="text-xs text-gray-600 mb-3">
+              Select who should see this service. Choose multiple identities, categories, subcategories, and sub-subs.
+            </p>
+            <AudienceTree
+              tree={audTree}
+              selected={audSel}
+              onChange={(next) => setAudSel(next)}
+            />
+          </section>
+
+          {/* Portfolio / Attachments */}
+          <section>
+            <h2 className="font-semibold text-brand-600">Portfolio Samples (Optional)</h2>
+            <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
               <div className="mb-2">
-                <svg
-                  className="mx-auto h-8 w-8 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M12 4v16m8-8H4" />
                 </svg>
               </div>
               Upload images or documents showcasing your work
               <div className="mt-3">
-                <button className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                  className="hidden"
+                  onChange={(e) => handleFilesChosen(e.target.files)}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                >
                   Choose Files
                 </button>
               </div>
+
+              {attachments.length > 0 && (
+                <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
+                  {attachments.map((a, idx) => (
+                    <div key={`${a.name}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                      <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
+                        {isImage(a.base64url) ? (
+                          <img src={a.base64url} alt={a.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-xs text-gray-500">DOC</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate text-sm font-medium">{a.name}</div>
+                        <div className="text-[11px] text-gray-500 truncate">Attached</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(idx)}
+                        className="p-1 rounded hover:bg-gray-100"
+                        title="Remove"
+                      >
+                        <I.trash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 
-          {/* Buttons */}
+          {/* Actions */}
           <div className="flex justify-end gap-3">
-            <button className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700">
-              Save as Draft
+            <button
+              type="button"
+              className={styles.ghost}
+              onClick={() => navigate("/services")}
+            >
+              Cancel
             </button>
-            <button className={styles.primaryWide}>Publish Service</button>
+            <button type="submit" className={styles.primary} disabled={saving}>
+              {saving ? "Saving…" : isEditMode ? "Update Service" : "Publish Service"}
+            </button>
           </div>
-        </div>
+        </form>
       </main>
     </div>
   );

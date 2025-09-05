@@ -145,7 +145,7 @@ export default function Signup() {
           P
         </div>
         <div className="leading-tight">
-          <div className="font-semibold text-gray-900">PANAFRICAN</div>
+          <div className="font-semibold text-gray-900">54LINKS</div>
           <div className="text-[11px] text-gray-500 -mt-1">
             Business Initiative
           </div>
@@ -153,7 +153,7 @@ export default function Signup() {
       </div>
 
 
-          <h2 className="text-3xl font-bold text-gray-900">Join PANAFRICAN BI</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Join 54LINKS BI</h2>
           <p className="mt-1 text-gray-500">Join the global networking community</p>
 
           <div className="max-w-xs">

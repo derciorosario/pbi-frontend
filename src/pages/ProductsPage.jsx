@@ -284,9 +284,7 @@ export default function ProductsPage() {
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
             { label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Post an Event", Icon: PlusCircle, path: "/events/create" },
-            { label: "Calendar View", Icon: Calendar, path: "/calendar/create" },
-            { label: "Set Reminders", Icon: AlarmClock, path: "/calendar/create" },
+            { label: "Post a Product", Icon: PlusCircle, path: "/products/create" },
         ]} />
          
         </aside>
@@ -297,7 +295,7 @@ export default function ProductsPage() {
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
               <h3 className="font-semibold text-2xl mt-1">Your Path to Knowledge</h3>
           
-            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
+            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/products/create')} />
             </div>
               {renderMiddle()}
           </section>

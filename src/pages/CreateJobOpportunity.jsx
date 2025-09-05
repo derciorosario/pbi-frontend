@@ -76,7 +76,7 @@ export default function CreateJobOpportunity() {
   const [form, setForm] = useState({
     title: "", companyName: "", make_company_name_private: false, department: "", experienceLevel: "",
     jobType: "", workMode: "", description: "", requiredSkills: "",
-    country: COUNTRIES[0] || "", city: "",
+    country:"", city: "",
     minSalary: "", maxSalary: "", currency: "USD", benefits: "",
     applicationDeadline: "", positions: 1, applicationInstructions: "", contactEmail: "",
     categoryId: "", subcategoryId: "",
@@ -227,12 +227,13 @@ export default function CreateJobOpportunity() {
         toast.success('Job updated successfully!');
       } else {
         // Create new job
+        
+        navigate("/jobs");
         await client.post("/jobs", payload);
         toast.success('Job created successfully!');
       }
       
       setIsLoading(false);
-      navigate("/jobs");
     } catch (error) {
       console.error("Error saving job:", error);
       toast.error(isEditMode ? "Failed to update job" : "Failed to create job");
@@ -335,10 +336,10 @@ export default function CreateJobOpportunity() {
           {/* ===== Share With (Audience selection) ===== */}
           <div className="mb-2 flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
-            <h3 className="font-semibold">Share with (identities & industry tree)</h3>
+            <h3 className="font-semibold">Share with (identities & industries)</h3>
           </div>
           <p className="text-xs text-gray-600 mb-3">
-            Pick **who** should see this job. You can select multiple identities, industries, sub-industries, and sub-subcategories.
+            Pick who should see this job. You can select multiple identities, industries and roles.
           </p>
 
           <AudienceTree

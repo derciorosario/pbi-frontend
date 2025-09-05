@@ -17,7 +17,7 @@ export default function LeftPanel() {
           P
         </div>
         <div className="leading-tight">
-          <div className="font-semibold">PANAFRICAN</div>
+          <div className="font-semibold">54LINKS</div>
           <div className="text-[11px] text-white/70 -mt-1">
             Business Initiative
           </div>

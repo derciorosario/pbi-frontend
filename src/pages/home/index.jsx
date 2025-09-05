@@ -19,6 +19,7 @@ import DefaultLayout from "../../layout/DefaultLayout.jsx";
 import QuickActions from "../../components/QuickActions.jsx";
 import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import ProfileCard from "../../components/ProfileCard.jsx";
+import ServiceCard from "../../components/ServiceCard.jsx";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -33,7 +34,7 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState("All");
-  const tabs = useMemo(() => ["All", "Events", "Job Opportunities"], []);
+  const tabs = useMemo(() => ["All", "Events", "Job Opportunities","Services","Products"], []);
 
   const [query, setQuery] = useState("");
   const debouncedQ = useDebounce(query, 400);
@@ -80,8 +81,7 @@ export default function HomePage() {
       setLoadingFeed(true);
       try {
         const tabParam =
-          activeTab === "Events" ? "events" : activeTab === "Job Opportunities" ? "jobs" : "all";
-
+          activeTab === "Events" ? "events" : activeTab === "Job Opportunities" ? "jobs" : activeTab === "Services" ?  "service" :  activeTab === "Products" ? "product" : "all";
         const params = {
           tab: tabParam,
           q: debouncedQ || undefined,
@@ -212,7 +212,7 @@ export default function HomePage() {
       <div className="rounded-[22px] bg-white shadow-xl ring-1 ring-black/5 p-4 md:p-5 relative z-30">
         {/* Tabs */}
         <div className="flex items-center gap-6 text-sm font-medium text-gray-500 border-b">
-          {["All", "Events", "Job Opportunities"].map((tab) => (
+          {["All", "Events", "Job Opportunities","Services","Products"].map((tab) => (
             <button
               key={tab}
               className={`pb-3 relative ${
@@ -353,6 +353,10 @@ export default function HomePage() {
                       }}
                     />
                   );
+                }
+
+                if(item.kind=="service"){
+                       return   <ServiceCard item={item} currentUserId={user?.id}/>
                 }
                 return <EventCard key={`event-${item.id}`} e={item} />;
               })}

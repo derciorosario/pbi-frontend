@@ -77,11 +77,14 @@ function App() {
             <Route path="/jobs/create" element={<CreateJobOpportunity />} />
             <Route path="/events/create" element={<CreateEventPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="/services/offer/create" element={<CreateServicePage />} />
+            <Route path="/services/create" element={<CreateServicePage />} />
             <Route path="/services/request/create" element={<CreateServiceRequestPage />} />
             <Route path="/products/create" element={<CreateProductPage />} />
             <Route path="/experience/create" element={<CreateTourismPostPage />} />
             <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/job/:id" element={<CreateJobOpportunity />} />
+            <Route path="/event/:id" element={<CreateEventPage />} />
+            
         </Route>
 
         <Route element={<ProtectedRouteOnboarding/>}>
@@ -90,7 +93,6 @@ function App() {
             <Route path="/people" element={<PeopleFeedPage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/jobs" element={<JobsExplorePage />} />
-            <Route path="/job/:id" element={<CreateJobOpportunity />} />
             <Route path="/tourism" element={<TourismPage />} /> 
             <Route path="/companies" element={<CompanyPage />} />
 

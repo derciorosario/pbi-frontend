@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import client from "../api/client";
 import COUNTRIES from "../constants/countries";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import CoverImagePicker from "../components/CoverImagePicker";
 import Header from "../components/Header";
+import AudienceTree from "../components/AudienceTree";
+import { toast } from "../lib/toast";
 
 const styles = {
   primary:
@@ -27,6 +29,20 @@ const I = {
 
 export default function CreateEventPage() {
   const navigate = useNavigate();
+  const { id } = useParams(); // Get event ID from URL if editing
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Audience tree data
+  const [audTree, setAudTree] = useState([]);
+  
+  // Audience selections (using Sets for easy toggling)
+  const [audSel, setAudSel] = useState({
+    identityIds: new Set(),
+    categoryIds: new Set(),
+    subcategoryIds: new Set(),
+    subsubCategoryIds: new Set(),
+  });
 
   // form state
   const [form, setForm] = useState({
@@ -58,8 +74,66 @@ export default function CreateEventPage() {
     timezones: [],
   });
   const [loadingMeta, setLoadingMeta] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [coverImageBase64, setCoverImageBase64] = useState(null);
+
+  // Check if we're in edit mode and fetch event data if we are
+  useEffect(() => {
+    if (id) {
+      setIsEditMode(true);
+      setLoadingMeta(true);
+      
+      const fetchEventData = async () => {
+        try {
+          const { data } = await client.get(`/events/${id}`);
+          
+          // Update form with event data
+          setForm({
+            eventType: data.eventType || "Workshop",
+            title: data.title || "",
+            description: data.description || "",
+            categoryId: data.categoryId || "",
+            subcategoryId: data.subcategoryId || "",
+            date: data.startAt ? new Date(data.startAt).toISOString().split('T')[0] : "",
+            startTime: data.startAt ? new Date(data.startAt).toISOString().split('T')[1].substring(0, 5) : "",
+            endTime: data.endAt ? new Date(data.endAt).toISOString().split('T')[1].substring(0, 5) : "",
+            timezone: data.timezone || "Africa/Lagos",
+            locationType: data.locationType || "In-Person",
+            country: data.country || "",
+            city: data.city || "",
+            address: data.address || "",
+            onlineUrl: data.onlineUrl || "",
+            registrationType: data.registrationType || "Free",
+            price: data.price?.toString() || "",
+            currency: data.currency || "USD",
+            capacity: data.capacity?.toString() || "",
+            registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline).toISOString().split('T')[0] : "",
+            coverImageUrl: data.coverImageUrl || "",
+          });
+          
+          if (data.coverImageBase64) {
+            setCoverImageBase64(data.coverImageBase64);
+          }
+          
+          // Set audience selections
+          if (data.audienceIdentities?.length || data.audienceCategories?.length ||
+              data.audienceSubcategories?.length || data.audienceSubsubs?.length) {
+            setAudSel({
+              identityIds: new Set(data.audienceIdentities?.map(i => i.id) || []),
+              categoryIds: new Set(data.audienceCategories?.map(c => c.id) || []),
+              subcategoryIds: new Set(data.audienceSubcategories?.map(s => s.id) || []),
+              subsubCategoryIds: new Set(data.audienceSubsubs?.map(s => s.id) || []),
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching event data:", error);
+          alert("Failed to load event data");
+          navigate("/events");
+        }
+      };
+      
+      fetchEventData();
+    }
+  }, [id, navigate]);
 
   // Fetch categories/subcategories/currencies/timezones
   useEffect(() => {
@@ -77,6 +151,18 @@ export default function CreateEventPage() {
         alert(e?.response?.data?.message || "Failed to load form metadata");
       } finally {
         setLoadingMeta(false);
+      }
+    })();
+  }, []);
+  
+  // Load full identities tree (who to share with)
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/public/identities");
+        setAudTree(data.identities || []);
+      } catch (error) {
+        console.error("Error loading identities:", error);
       }
     })();
   }, []);
@@ -128,7 +214,22 @@ export default function CreateEventPage() {
 
     setSaving(true);
     try {
-      const payload = { ...form, coverImageBase64 };
+      // Convert Set → Array for audience selections
+      const identityIds = Array.from(audSel.identityIds);
+      const categoryIds = Array.from(audSel.categoryIds);
+      const subcategoryIds = Array.from(audSel.subcategoryIds);
+      const subsubCategoryIds = Array.from(audSel.subsubCategoryIds);
+
+      const payload = {
+        ...form,
+        coverImageBase64,
+        // Include audience selections
+        identityIds,
+        categoryIds,
+        subcategoryIds,
+        subsubCategoryIds
+      };
+      
       // Clean optional fields
       if (!payload.subcategoryId) delete payload.subcategoryId;
       if (payload.registrationType === "Free") {
@@ -143,9 +244,23 @@ export default function CreateEventPage() {
         delete payload.onlineUrl;
       }
 
-      const { data } = await client.post("/events", payload);
+      let data;
+      if (isEditMode) {
+        // Update existing event
+        const response = await client.put(`/events/${id}`, payload);
+        data = response.data;
+         toast.success('Event updated successfully!');
+      } else {
+        // Create new event
+        const response = await client.post("/events", payload);
+        data = response.data;
+        toast.success('Event created successfully!');
+        navigate(`/events`);
+      }
+
+
       // success
-      navigate(`/events/${data.id}`);
+      
     } catch (err) {
       console.error(err);
       alert(err?.response?.data?.message || "Could not create event");
@@ -174,9 +289,9 @@ export default function CreateEventPage() {
           ← Go to Events
         </button>
 
-        <h1 className="text-2xl font-bold mt-3">Create Event</h1>
+        <h1 className="text-2xl font-bold mt-3">{isEditMode ? "Edit Event" : "Create Event"}</h1>
         <p className="text-sm text-gray-600">
-          Share your event with the community
+          {isEditMode ? "Update your event details" : "Share your event with the community"}
         </p>
 
         <form
@@ -224,49 +339,7 @@ export default function CreateEventPage() {
                 required
               />
               {/* Category (Industry) */}
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="relative">
-                  <select
-                    value={form.categoryId}
-                    onChange={(e) => setField("categoryId", e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  >
-                    <option value="">Select category (industry)</option>
-                    {meta.categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-                    <I.chevron />
-                  </span>
-                </div>
-
-                {/* Optional Subcategory */}
-                <div className="relative">
-                  <select
-                    value={form.subcategoryId}
-                    onChange={(e) => setField("subcategoryId", e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                    disabled={!form.categoryId || subcategoryOptions.length === 0}
-                  >
-                    <option value="">
-                      {subcategoryOptions.length
-                        ? "Select subcategory (optional)"
-                        : "No subcategories"}
-                    </option>
-                    {subcategoryOptions.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-                    <I.chevron />
-                  </span>
-                </div>
-              </div>
+           
 
               <textarea
                 value={form.description}
@@ -454,9 +527,22 @@ export default function CreateEventPage() {
             />
           </section>
 
+          {/* ===== Share With (Audience selection) ===== */}
+          <section>
+            <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
+            <p className="text-xs text-gray-600 mb-3">
+              Select who should see this event. You can choose multiple identities, categories, subcategories, and sub-subcategories.
+            </p>
+            <AudienceTree
+              tree={audTree}
+              selected={audSel}
+              onChange={(next) => setAudSel(next)}
+            />
+          </section>
+
           {/* Cover image (optional) */}
           <section>
-            <h2 className="font-semibold text-brand-600">Cover Image</h2>
+            <h2 className="font-semibold text-brand-600 mt-8">Cover Image</h2>
             <CoverImagePicker
               label="Cover Image (optional)"
               value={coverImageBase64}
@@ -474,7 +560,7 @@ export default function CreateEventPage() {
               Cancel
             </button>
             <button type="submit" className={styles.primary} disabled={saving}>
-              {saving ? "Publishing…" : "Publish Event"}
+              {saving ? "Saving…" : isEditMode ? "Update Event" : "Publish Event"}
             </button>
           </div>
         </form>

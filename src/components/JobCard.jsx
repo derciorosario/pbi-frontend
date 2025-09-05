@@ -20,7 +20,7 @@ export default function JobCard({ job, onEdit, onDelete }) {
   const [openMenu, setOpenMenu] = useState(false);
   const menuRef = useRef(null);
 
-  const isOwner = user?.id && job?.createdById && user.id === job.createdById;
+  const isOwner = user?.id && job?.postedByUserId && user.id === job.postedByUserId;
 
   // close menu if clicked outside
   useEffect(() => {
@@ -53,6 +53,8 @@ export default function JobCard({ job, onEdit, onDelete }) {
         <div>
           <h3 className="font-semibold">{job.title}</h3>
           <div className="text-sm text-gray-500">{job.companyName}</div>
+
+          {/* NEW: show the creator */}
         </div>
 
         <div className="flex items-center gap-2 relative" ref={menuRef}>
@@ -64,7 +66,9 @@ export default function JobCard({ job, onEdit, onDelete }) {
               >
                 <MoreVertical className="w-5 h-5" />
               </button>
-
+            <button className="text-gray-400 text-[1.1rem]" aria-label="Save job">
+              ♡
+            </button>
               {openMenu && (
                 <div className="absolute right-0 top-8 w-36 rounded-lg border border-gray-100 bg-white shadow-lg z-50">
                   <ul className="py-1 text-sm text-gray-700">
@@ -99,9 +103,7 @@ export default function JobCard({ job, onEdit, onDelete }) {
               )}
             </>
           )}
-          <button className="text-gray-400 text-[1.1rem]" aria-label="Save job">
-            ♡
-          </button>
+          
         </div>
       </div>
 
@@ -130,8 +132,17 @@ export default function JobCard({ job, onEdit, onDelete }) {
         <span>{salaryText}</span>
       </div>
 
-      <div className="text-xs text-gray-400 mt-2">
-        {formatTimeAgo(job.timeAgo, job.createdAt)}
+      <div className="text-xs text-gray-400 mt-2 flex items-center justify-between">
+        <div>
+           {formatTimeAgo(job.timeAgo, job.createdAt)}
+        </div>
+        <div>
+           {job.postedByUserName && (
+            <div className="text-xs text-gray-400">
+              By <span className="font-medium">{job.postedByUserName}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -156,69 +156,27 @@ export default function ServicesPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
-    const services = [
-  {
-    id: 1,
-    avatar: "https://i.pravatar.cc/100?img=12",
-    title: "Mobile App Development",
-    description:
-      "Expert iOS and Android app development with modern UI/UX design. 5+ years in fintech and e-commerce applications.",
-    provider: "Kwame Asante",
-    country: "Ghana",
-    rating: 4.9,
-    reviews: 127,
-    price: "$2,500",
-    priceUnit: "project",
-    type: "Offering",
-    tags: ["Mobile Development", "iOS", "Android"],
-  },
-  {
-    id: 2,
-    avatar: "https://i.pravatar.cc/100?img=32",
-    title: "Digital Marketing Strategy",
-    description:
-      "Comprehensive digital marketing services including SEO, social media management, and content creation for African businesses.",
-    provider: "Amara Diallo",
-    country: "Senegal",
-    rating: 4.8,
-    reviews: 89,
-    price: "$800",
-    priceUnit: "month",
-    type: "Offering",
-    tags: ["Digital Marketing", "SEO", "Social Media"],
-  },
-  {
-    id: 3,
-    avatar: "https://i.pravatar.cc/100?img=44",
-    title: "Financial Consulting",
-    description:
-      "Expert financial advisory services for startups and SMEs. Specializing in investment planning, modeling, and valuation.",
-    provider: "Olumide Adebayo",
-    country: "Nigeria",
-    rating: 4.9,
-    reviews: 156,
-    price: "$150",
-    priceUnit: "hour",
-    type: "Seeking",
-    tags: ["Finance", "Consulting", "Investment"],
-  },
-];
+  
 
 
   const renderMiddle = () => {
 
-    return (
-            <div className="max-w-4xl mx-auto p-6 space-y-5">
-        {services.map((s) => (
+    
+    if(!loadingFeed){
+      return (
+      <div className="max-w-4xl mx-auto space-y-5">
+        {items.map((s) => (
             <ServiceCard
-            key={s.id}
-            {...s}
+            item={s} currentUserId={s?.id}
             onDetails={() => alert(`Details of ${s.title}`)}
             onContact={() => alert(`${s.type} - Contact ${s.provider}`)}
             />
         ))}
-        </div>
+      </div>
     )
+
+    }
+    
     if (activeTab !== "Suggested for You") {
       return (
         <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
@@ -278,7 +236,7 @@ export default function ServicesPage() {
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
               <h3 className="font-semibold text-2xl mt-1">Professional Services</h3>
           
-            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
+            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/services/create')} />
             </div>
               {renderMiddle()}
           </section>

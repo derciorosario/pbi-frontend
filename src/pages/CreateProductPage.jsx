@@ -40,7 +40,7 @@ export default function CreateProductPage() {
               P
             </div>
             <div className="leading-tight">
-              <div className="font-semibold">PANAFRICAN</div>
+              <div className="font-semibold">54LINKS</div>
               <div className="text-[11px] text-gray-500 -mt-1">
                 Business Initiative
               </div>

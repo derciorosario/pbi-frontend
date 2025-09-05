@@ -51,6 +51,11 @@ const I = {
       <path d="M3 7l9-4 9 4-9 4-9-4Zm0 4l9 4 9-4v6l-9 4-9-4v-6Z" />
     </svg>
   ),
+  funding: () => (
+    <svg className="h-[18px] w-[18px]" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 -960 960 960" width="24px"><path d="M200-120q-33 0-56.5-23.5T120-200v-640h80v640h640v80H200Zm40-120v-360h160v360H240Zm200 0v-560h160v560H440Zm200 0v-200h160v200H640Z"/></svg>
+  ),
+  
+  
   services: () => (
      <svg className="h-[18px] w-[18px]" fill="currentColor" xmlns="http://www.w3.org/2000/svg"  viewBox="0 -960 960 960" width="24px" ><path d="M360-640h240v-80H360v80ZM80-160v-200h160v40h80v-40h320v40h80v-40h160v200H80Zm0-240v-160q0-33 23.5-56.5T160-640h120v-80q0-33 23.5-56.5T360-800h240q33 0 56.5 23.5T680-720v80h120q33 0 56.5 23.5T880-560v160H720v-80h-80v80H320v-80h-80v80H80Z"/></svg>
   ),

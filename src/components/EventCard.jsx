@@ -68,9 +68,22 @@ export default function EventCard({ e }) {
           </div>
         </div>
 
-        <div className="text-xs text-gray-400 mt-3">
+        <div className="flex items-center justify-between mt-3">
+          <div className="text-xs text-gray-400 mt-3">
           {formatTimeAgo(e.timeAgo, e.createdAt)}
         </div>
+          <div>
+           {e.organizerUserName && (
+            <div className="text-xs text-gray-400">
+              By <span className="font-medium">{e.organizerUserName}</span>
+            </div>
+          )}
+        </div>
+
+        </div>
+
+       
+
       </div>
     </div>
   );
