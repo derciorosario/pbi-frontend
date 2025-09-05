@@ -46,6 +46,16 @@ const I = {
       <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/>
     </svg>
   ),
+  products: () => (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M3 7l9-4 9 4-9 4-9-4Zm0 4l9 4 9-4v6l-9 4-9-4v-6Z" />
+    </svg>
+  ),
+  services: () => (
+    <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2a10 10 0 0 0-3 19.5V22h6v-.5A10 10 0 0 0 12 2Zm1 16h-2v-2h2v2Zm0-4h-2V7h2v7Z" />
+    </svg>
+  ),
   boost: () => (
     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>

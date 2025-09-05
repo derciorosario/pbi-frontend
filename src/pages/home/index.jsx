@@ -317,15 +317,16 @@ export default function HomePage() {
 
           <section className="lg:col-span-6 space-y-4">
 
-          <section className="lg:col-span-4 space-y-4">
+          <section className="lg:col-span-4 space-y-4 flex items-center justify-between gap-y-2 flex-wrap">
             <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
            
-              <TabsAndAdd tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
+              <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                 { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                 { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                 { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
                 { label: "Create News Article", Icon: PlusCircle, onClick: () => navigate("/news/create") },
             ]} />
+
           </section>
             
             {loadingFeed && (

@@ -8,16 +8,19 @@ export default function LoginPrompt() {
   const navigate = useNavigate();
   const data = useData();
 
-
   return (
-    <div className={`fixed  inset-0 ${!data._openPopUps.login_prompt ? 'opacity-0 pointer-events-none':''} transition-all z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm`}>
+    <div
+      className={`fixed inset-0 ${
+        !data._openPopUps.login_prompt ? "opacity-0 pointer-events-none" : ""
+      } transition-all z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm`}
+    >
       <div className="bg-white _login_prompt w-full max-w-lg rounded-2xl shadow-xl overflow-hidden animate-fadeIn">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-semibold">Sign in to continue</h3>
           <button
-            onClick={()=>{
-                data._closeAllPopUps()
+            onClick={() => {
+              data._closeAllPopUps();
             }}
             className="text-gray-400 hover:text-gray-600 transition"
           >
@@ -27,9 +30,9 @@ export default function LoginPrompt() {
 
         {/* Content */}
         <div className="p-6 text-center space-y-4">
-          <div className="mx-auto h-14 w-14 rounded-full bg-[#8A358A]/10 flex items-center justify-center">
+          <div className="mx-auto h-14 w-14 rounded-full bg-brand-600/10 flex items-center justify-center">
             <svg
-              className="h-7 w-7 text-[#8A358A]"
+              className="h-7 w-7 text-brand-600"
               fill="currentColor"
               viewBox="0 0 24 24"
             >
@@ -42,10 +45,11 @@ export default function LoginPrompt() {
 
           <p className="text-sm text-gray-600">
             Join the Pan-African Business Initiative to explore{" "}
-            <span className="font-medium text-[#8A358A]">connections</span>,{" "}
-            <span className="font-medium text-[#8A358A]">opportunities</span>,{" "}
-            <span className="font-medium text-[#8A358A]">jobs</span>, and{" "}
-            <span className="font-medium text-[#8A358A]">events</span> across Africa.
+            <span className="font-medium text-brand-600">connections</span>,{" "}
+            <span className="font-medium text-brand-600">opportunities</span>,{" "}
+            <span className="font-medium text-brand-600">jobs</span>, and{" "}
+            <span className="font-medium text-brand-600">events</span> across
+            Africa.
           </p>
         </div>
 
@@ -54,8 +58,7 @@ export default function LoginPrompt() {
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => navigate("/login")}
-              className="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition transform hover:scale-[1.02]"
-              style={{ background: "linear-gradient(135deg,#8A358A,#A855A8)" }}
+              className="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition transform hover:scale-[1.02]"
             >
               Log in
             </button>
@@ -69,7 +72,7 @@ export default function LoginPrompt() {
 
           {/* Continue without login */}
           <button
-            onClick={()=> data._closeAllPopUps()}
+            onClick={() => data._closeAllPopUps()}
             className="w-full text-sm text-gray-500 hover:text-gray-700 transition"
           >
             Continue without login →

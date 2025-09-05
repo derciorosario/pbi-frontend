@@ -207,12 +207,15 @@ export default function EventsPage() {
          
         </aside>
 
-    
         <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
-          <section className="lg:col-span-4 space-y-4">
-            <h3 className="font-semibold text-2xl mt-1">Your Path to Knowledge</h3>
-            <TabsAndAdd tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
-            {renderMiddle()}
+          <section className="lg:col-span-4 space-y-4 mt-5">
+          
+           <div className="flex items-center justify-between gap-y-2 flex-wrap">
+              <h3 className="font-semibold text-2xl mt-1">Your Path to Knowledge</h3>
+          
+            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
+            </div>
+              {renderMiddle()}
           </section>
 
           <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">

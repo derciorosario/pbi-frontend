@@ -218,15 +218,17 @@ export default function PeopleFeedPage() {
          
         </aside>
     <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
-          <section className="lg:col-span-4 space-y-4">
-            <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
+          <section className="lg:col-span-4 space-y-4 mt-4">
+           <div className="flex items-center justify-between gap-x-2 flex-wrap ">
+             <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
             
-            <TabsAndAdd tabs={tabs} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
+            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                 { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                 { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                 { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
                 { label: "Create News Article", Icon: PlusCircle, onClick: () => navigate("/news/create") },
             ]} />
+           </div>
 
           {activeTab === "My Connections" && (
           <div className="mb-3">

@@ -1,4 +1,4 @@
-// src/components/Header.jsx
+// src/components/Header.jsx 
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import I from "../lib/icons";
@@ -28,7 +28,8 @@ function Header({ page }) {
     { name: "people", label: "People", path: "/people", icon: <I.people /> },
     { name: "jobs", label: "Jobs", path: "/jobs", icon: <I.jobs /> },
     { name: "events", label: "Events", path: "/events", icon: <I.calendar /> },
-    { name: "business", label: "Business", path: "/business", icon: <I.biz /> },
+    { name: "products", label: "Products", path: "/products", icon: <I.products /> },
+    { name: "services", label: "Services", path: "/services", icon: <I.briefcase /> },
     { name: "tourism", label: "Tourism", path: "/tourism", icon: <I.pin /> },
   ];
 
@@ -87,7 +88,7 @@ function Header({ page }) {
                     : "text-gray-700 hover:bg-brand-50 hover:text-brand-600"
                 }`}
               >
-                {item.icon} {item.label}
+                {item.icon} {!user && item.name=="feed" ? "Home" : item.label }
               </a>
             );
           })}
