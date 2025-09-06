@@ -91,7 +91,6 @@ function App() {
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/job/:id" element={<CreateJobOpportunity />} />
             <Route path="/event/:id" element={<CreateEventPage />} />
-            <Route path="/funding" element={<CrowdfundingPage />} />
             <Route path="/fundings/create" element={<CrowdfundForm />} />
             <Route path="/funding/:id" element={<CrowdfundForm />} />
             
@@ -101,6 +100,7 @@ function App() {
         <Route element={<ProtectedRouteOnboarding/>}>
             <Route path="/" element={<Home/>} />
             <Route path="/dashboard" element={<Home/>} />
+            <Route path="/funding" element={<CrowdfundingPage />} />
             <Route path="/people" element={<PeopleFeedPage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/jobs" element={<JobsExplorePage />} />
