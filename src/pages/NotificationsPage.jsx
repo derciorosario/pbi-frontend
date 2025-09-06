@@ -2,6 +2,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Header from "../components/Header";
 import client from "../api/client";
+import { toast } from "../lib/toast";
+import { useAuth } from "../contexts/AuthContext";
 
 const styles = {
   primary:
@@ -28,12 +30,23 @@ function timeAgo(d) {
 }
 
 export default function NotificationsPage() {
+  const { user } = useAuth();
   const [filter, setFilter] = useState("All");
 
   const [loadingConn, setLoadingConn] = useState(false);
   const [incoming, setIncoming] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
   const [errorConn, setErrorConn] = useState("");
+
+  // Notifications state
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [errorNotifications, setErrorNotifications] = useState("");
+  
+  // Meeting requests state
+  const [loadingMeetings, setLoadingMeetings] = useState(false);
+  const [meetingRequests, setMeetingRequests] = useState([]);
+  const [errorMeetings, setErrorMeetings] = useState("");
 
   async function loadConnections() {
     setLoadingConn(true);
@@ -51,28 +64,125 @@ export default function NotificationsPage() {
     }
   }
 
+  async function loadNotifications() {
+    setLoadingNotifications(true);
+    setErrorNotifications("");
+    try {
+      const { data } = await client.get("/notifications");
+      setNotifications(data || []);
+    } catch (e) {
+      setErrorNotifications(
+        e?.response?.data?.message || "Failed to load notifications"
+      );
+    } finally {
+      setLoadingNotifications(false);
+    }
+  }
+  
+  async function loadMeetingRequests() {
+    setLoadingMeetings(true);
+    setErrorMeetings("");
+    try {
+      const { data } = await client.get("/meeting-requests");
+      setMeetingRequests([...(data.received || []), ...(data.sent || [])]);
+    } catch (e) {
+      setErrorMeetings(
+        e?.response?.data?.message || "Failed to load meeting requests"
+      );
+    } finally {
+      setLoadingMeetings(false);
+    }
+  }
+
   useEffect(() => {
     loadConnections();
+    loadNotifications();
+    loadMeetingRequests();
   }, []);
 
   async function handleRespond(id, action) {
     try {
+      // Show loading toast
+      const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : 'Declining'} connection request...`);
+      
+      // Send the request to the server
       await client.post(`/connections/requests/${id}/respond`, { action });
+      
+      // Update the toast with success message
+      toast.success(
+        `Connection request ${action === 'accept' ? 'accepted' : 'declined'} successfully`,
+        { id: toastId }
+      );
+      
+      // Reload connections
       await loadConnections();
     } catch (e) {
-      alert(e?.response?.data?.message || "Failed to update request");
+      // Show error toast
+      toast.error(e?.response?.data?.message || "Failed to update connection request");
+      console.error("Error responding to connection request:", e);
+    }
+  }
+
+  async function handleMeetingRespond(id, action, rejectionReason = "") {
+    try {
+      // Show loading toast
+      const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : 'Declining'} meeting request...`);
+      
+      // Send the request to the server
+      await client.post(`/meeting-requests/${id}/respond`, { action, rejectionReason });
+      
+      // Update the toast with success message
+      toast.success(
+        `Meeting request ${action === 'accept' ? 'accepted' : 'declined'} successfully`,
+        { id: toastId }
+      );
+      
+      // Remove the notification from the list
+      setNotifications(prev => prev.filter(n =>
+        !(n.type === "meeting_request" && n.data?.meetingRequestId === id)
+      ));
+      
+      // Reload all data
+      await Promise.all([
+        loadNotifications(),
+        loadMeetingRequests()
+      ]);
+    } catch (e) {
+      // Show error toast
+      toast.error(e?.response?.data?.message || "Failed to update meeting request");
+      console.error("Error responding to meeting request:", e);
+    }
+  }
+
+  async function markAllAsRead() {
+    try {
+      // Show loading toast
+      const toastId = toast.loading("Marking all notifications as read...");
+      
+      // Send the request to the server
+      await client.post("/notifications/mark-all-read");
+      
+      // Update the toast with success message
+      toast.success("All notifications marked as read", { id: toastId });
+      
+      // Reload notifications
+      await loadNotifications();
+    } catch (e) {
+      // Show error toast
+      toast.error(e?.response?.data?.message || "Failed to mark notifications as read");
+      console.error("Error marking notifications as read:", e);
     }
   }
 
   const allItems = useMemo(() => {
-    return [
+    const connectionItems = [
       ...incoming.map((r) => ({
         key: `in-${r.id}`,
         title: "New Connection Request",
         desc:
           `${r.fromName || "Someone"} wants to connect with you.` +
           (r.reason ? ` Reason: ${r.reason}.` : "") +
-          (r.message ? ` Message: “${r.message}”` : ""),
+          (r.message ? ` Message: "${r.message}"` : ""),
         time: timeAgo(r.createdAt),
         actions: (
           <div className="mt-2 flex gap-2 text-sm">
@@ -97,12 +207,59 @@ export default function NotificationsPage() {
         desc:
           `Waiting for approval from ${r.toName || "user"}.` +
           (r.reason ? ` Reason: ${r.reason}.` : "") +
-          (r.message ? ` Message: “${r.message}”` : ""),
+          (r.message ? ` Message: "${r.message}"` : ""),
         time: timeAgo(r.createdAt),
         actions: <div className="mt-2 text-xs text-gray-500">Pending</div>,
       })),
     ];
-  }, [incoming, outgoing]);
+
+    const notificationItems = notifications.map((n) => {
+      let actions = null;
+      let customDesc = n.message;
+      
+      // Handle meeting request notifications
+      if (n.type === "meeting_request" && n.data?.meetingRequestId) {
+        // Check if this is a meeting request sent by the current user
+        const isSentByCurrentUser = n.data.fromUserId === user?.id;
+        
+        if (isSentByCurrentUser) {
+          // Custom message for meeting requests sent by the current user
+          customDesc = `You requested a meeting with ${n.data.toName || "someone"}: "${n.data.title}"`;
+          // No actions for sent requests
+        } else {
+          // This is a meeting request received by the current user
+          customDesc = `${n.data.fromName || "Someone"} wants to schedule a meeting with you: "${n.data.title}"`;
+          // Show accept/decline actions
+          actions = (
+            <div className="mt-2 flex gap-2 text-sm">
+              <button
+                onClick={() => handleMeetingRespond(n.data.meetingRequestId, "accept")}
+                className={styles.primary}
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => handleMeetingRespond(n.data.meetingRequestId, "reject")}
+                className={styles.outline}
+              >
+                Decline
+              </button>
+            </div>
+          );
+        }
+      }
+
+      return {
+        key: `notification-${n.id}`,
+        title: n.title,
+        desc: customDesc,
+        time: timeAgo(n.createdAt),
+        actions,
+      };
+    });
+
+    return [...connectionItems, ...notificationItems];
+  }, [incoming, outgoing, notifications]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -115,7 +272,7 @@ export default function NotificationsPage() {
 
         <div className="mt-6 flex items-center justify-between">
           <div className="flex gap-2">
-            {["All", "Connections", "Jobs", "Events", "Messages", "System"].map(
+            {["All", "Connections", "Meetings", "Jobs", "Events", "Messages", "System"].map(
               (t) => (
                 <button
                   key={t}
@@ -135,12 +292,17 @@ export default function NotificationsPage() {
             <button className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm">
               ⚙ Settings
             </button>
-            <button className={styles.primary}>Mark All Read</button>
+            <button
+              onClick={markAllAsRead}
+              className={styles.primary}
+            >
+              Mark All Read
+            </button>
           </div>
         </div>
 
         <div className="mt-6 space-y-6">
-          {(filter === "All" || filter === "Connections") && (
+          {(filter === "All" || filter === "Connections" || filter === "Meetings") && (
             <div className="space-y-6">
               {filter === "Connections" && (
                 <>
@@ -256,6 +418,70 @@ export default function NotificationsPage() {
                 </>
               )}
 
+              {filter === "Meetings" && (
+                <section>
+                  <h2 className="text-lg font-semibold mb-3">
+                    Meeting Requests
+                  </h2>
+                  {loadingMeetings && (
+                    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
+                      Loading…
+                    </div>
+                  )}
+                  {errorMeetings && (
+                    <div className="rounded-2xl bg-white border border-red-200 bg-red-50 shadow-sm p-4 text-sm text-red-700">
+                      {errorMeetings}
+                    </div>
+                  )}
+                  {!loadingMeetings && !meetingRequests.filter(m => m.status === "pending").length && (
+                    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
+                      No pending meeting requests.
+                    </div>
+                  )}
+                  {meetingRequests.filter(m => m.status === "pending").map((m) => (
+                    <div
+                      key={m.id}
+                      className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex justify-between"
+                    >
+                      <div>
+                        <h3 className="font-semibold">
+                          New Meeting Request
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {m.requester?.name || "Someone"} wants to schedule a meeting: "{m.title}"
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          📅 {new Date(m.scheduledAt).toLocaleDateString()} at {new Date(m.scheduledAt).toLocaleTimeString()}
+                          • {m.duration} minutes • {m.mode === "video" ? "Video call" : "In person"}
+                        </p>
+                        {m.agenda && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            📝 {m.agenda}
+                          </p>
+                        )}
+                        <div className="mt-2 flex gap-2 text-sm">
+                          <button
+                            onClick={() => handleMeetingRespond(m.id, "accept")}
+                            className={styles.primary}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleMeetingRespond(m.id, "reject")}
+                            className={styles.outline}
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        {timeAgo(m.createdAt)}
+                      </div>
+                    </div>
+                  ))}
+                </section>
+              )}
+
               {filter === "All" && (
                 <section>
                   {!allItems.length && (
@@ -308,7 +534,11 @@ export default function NotificationsPage() {
 
         <button
           className={`mt-6 mx-auto block ${styles.outline}`}
-          onClick={loadConnections}
+          onClick={() => {
+            loadConnections();
+            loadNotifications();
+            loadMeetingRequests();
+          }}
         >
           Refresh
         </button>

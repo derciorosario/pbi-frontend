@@ -1,19 +1,23 @@
 // src/components/LoginPrompt.jsx
-import React from "react";
+import React, { useState } from "react";
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
+import LoginDialog from "./LoginDialog.jsx";
 
 export default function LoginPrompt() {
   const navigate = useNavigate();
   const data = useData();
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [initialTab, setInitialTab] = useState("login");
 
   return (
-    <div
-      className={`fixed inset-0 ${
-        !data._openPopUps.login_prompt ? "opacity-0 pointer-events-none" : ""
-      } transition-all z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm`}
-    >
+    <>
+      <div
+        className={`fixed inset-0 ${
+          !data._openPopUps.login_prompt ? "opacity-0 pointer-events-none" : ""
+        } transition-all z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm`}
+      >
       <div className="bg-white _login_prompt w-full max-w-lg rounded-2xl shadow-xl overflow-hidden animate-fadeIn">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
@@ -57,13 +61,13 @@ export default function LoginPrompt() {
         <div className="p-6 border-t space-y-3">
           <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => { setInitialTab("login"); setShowLoginDialog(true); data._closeAllPopUps(); }}
               className="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition transform hover:scale-[1.02]"
             >
               Log in
             </button>
             <button
-              onClick={() => navigate("/signup")}
+              onClick={() => { setInitialTab("signup"); setShowLoginDialog(true); data._closeAllPopUps(); }}
               className="flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition"
             >
               Join now
@@ -80,5 +84,12 @@ export default function LoginPrompt() {
         </div>
       </div>
     </div>
+
+    <LoginDialog
+      isOpen={showLoginDialog}
+      onClose={() => setShowLoginDialog(false)}
+      initialTab={initialTab}
+    />
+    </>
   );
 }

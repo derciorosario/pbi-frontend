@@ -1,7 +1,9 @@
 // src/components/QuickActionsPanel.jsx
 import { X } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import  client  from "../api/client";
 
 /* brand */
 const BRAND = "#0a66c2";
@@ -74,43 +76,146 @@ const CircleBtn = ({children, className="", style, ...rest}) => (
 
 /* component */
 export default function QuickActionsPanel() {
-  const {user}=useAuth()
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // State for data
+  const [connectionRequests, setConnectionRequests] = useState([]);
+  const [recentChats, setRecentChats] = useState([]);
+  const [upcomingMeetings, setUpcomingMeetings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load all data
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      // Load connection requests
+      const connectionRes = await client.get('/connections/requests');
+      setConnectionRequests(connectionRes.data.incoming || []);
+
+      // Load recent chats (conversations)
+      const chatsRes = await client.get('/messages/conversations');
+      setRecentChats(chatsRes.data || []);
+
+      // Load upcoming meetings
+      const meetingsRes = await client.get('/meeting-requests/upcoming');
+      setUpcomingMeetings(meetingsRes.data || []);
+
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    if (user) {
+      loadData();
+    }
+  }, [user]);
+
+  // Set up polling every 3 seconds
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      loadData();
+    }, 3000); // 3 seconds
+
+    // Cleanup interval on unmount
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Handle connection request response
+  const handleConnectionResponse = async (requestId, action) => {
+    try {
+      await client.post(`/api/connections/requests/${requestId}/respond`, { action });
+      // Refresh data after response
+      loadData();
+    } catch (error) {
+      console.error('Error responding to connection request:', error);
+    }
+  };
+
+  // Handle chat navigation
+  const handleChatClick = (userId) => {
+    navigate(`/messages?user=${userId}`);
+  };
+
+  // Handle meeting join
+  const handleJoinMeeting = async (meetingId) => {
+    try {
+      // Get meeting details
+      const response = await client.get(`/api/meeting-requests/${meetingId}`);
+      const meeting = response.data;
+
+      if (meeting.link) {
+        window.open(meeting.link, '_blank');
+      } else {
+        console.log('No meeting link available');
+      }
+    } catch (error) {
+      console.error('Error joining meeting:', error);
+    }
+  };
+
+  if (!user) return null;
+
   return (
     <aside className={`w-full ${!user ? 'hidden':''} max-w-sm rounded-2xl border border-gray-200 bg-white shadow-sm my-2`}>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <I.bell />
-          <h3 className="text-lg font-semibold text-gray-900">My Hub</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <I.bell />
+            <h3 className="text-lg font-semibold text-gray-900">My Hub</h3>
+          </div>
+          <button
+            onClick={loadData}
+            className="h-8 w-8 grid place-items-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50"
+            title="Refresh"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
         <p className="mt-1 text-sm text-gray-500">Stay connected and organized</p>
       </div>
-
-      {/* Connection Requests */}
-      <Section
-        title="Connection Requests"
-        icon={<I.users />}
-        right={<Counter n={3} />}
-      >
-        {[
-          {name:"Sarah Johnson", title:"Tech Entrepreneur", img:"https://i.pravatar.cc/80?img=65"},
-          {name:"Michael Chen", title:"Investor", img:"https://i.pravatar.cc/80?img=12"},
-        ].map((p)=>(
-          <div key={p.name} className="flex items-center justify-between mb-3 hover:bg-gray-50 cursor-pointer">
-            <div className="flex items-center gap-3 min-w-0">
-              <img src={p.img} alt="" className="h-9 w-9 rounded-full object-cover flex-shrink-0"/>
-              <div className="min-w-0">
-                <div className="text-[14px] font-semibold text-gray-900 truncate">{p.name}</div>
-                <div className="text-xs text-gray-500 truncate">{p.title}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <CircleBtn style={{background: BRAND}}><I.check/></CircleBtn>
-              <CircleBtn className="border border-gray-200 text-gray-500 bg-white"><X size={18}/></CircleBtn>
-            </div>
+{/* Connection Requests */}
+<Section
+  title="Connection Requests"
+  icon={<I.users />}
+  right={<Counter n={connectionRequests.length} />}
+>
+  {connectionRequests.length === 0 ? (
+    <div className="text-sm text-gray-500 text-center py-4">
+      No pending connection requests
+    </div>
+  ) : (
+    connectionRequests.map((request) => (
+      <div key={request.id} className="flex items-center justify-between mb-3 hover:bg-gray-50 cursor-pointer">
+        <div className="flex items-center gap-3 min-w-0">
+          <img src={request.from?.avatarUrl || "https://i.pravatar.cc/80?img=1"} alt="" className="h-9 w-9 rounded-full object-cover flex-shrink-0"/>
+          <div className="min-w-0">
+            <div className="text-[14px] font-semibold text-gray-900 truncate">{request.fromName || request.from?.name}</div>
+            <div className="text-xs text-gray-500 truncate">{request.reason || "Professional"}</div>
           </div>
-        ))}
-      </Section>
+        </div>
+        <div className="flex items-center gap-2">
+          <CircleBtn style={{background: BRAND}} onClick={() => handleConnectionResponse(request.id, "accept")}>
+            <I.check/>
+          </CircleBtn>
+          <CircleBtn className="border border-gray-200 text-gray-500 bg-white" onClick={() => handleConnectionResponse(request.id, "reject")}>
+            <X size={18}/>
+          </CircleBtn>
+        </div>
+      </div>
+    ))
+  )}
+</Section>
 
       {/* Recent Chats */}
       <Section
@@ -122,76 +227,104 @@ export default function QuickActionsPanel() {
           </button>
         }
       >
-        {[
-          {name:"Emma Wilson", msg:"Great! Let's schedule a call...", time:"2m", img:"https://i.pravatar.cc/80?img=57", online:true},
-          {name:"David Rodriguez", msg:"Thanks for connecting!", time:"1h", img:"https://i.pravatar.cc/80?img=33", online:false},
-        ].map(c=>(
-          <div
-            key={c.name}
-            className="flex items-center justify-between mb-3 rounded-lg px-2 py-1 hover:bg-gray-50 cursor-pointer"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative">
-                <img src={c.img} alt="" className="h-9 w-9 rounded-full object-cover flex-shrink-0"/>
-                <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white ${c.online?"bg-emerald-500":"bg-gray-300"}`}/>
-              </div>
-              <div className="min-w-0">
-                <div className="text-sm font-medium text-gray-900 truncate">{c.name}</div>
-                <div className="text-xs text-gray-500 truncate">{c.msg}</div>
-              </div>
-            </div>
-            <span className="text-[11px] text-gray-400">{c.time}</span>
+        {recentChats.length === 0 ? (
+          <div className="text-sm text-gray-500 text-center py-4">
+            No recent chats
           </div>
-        ))}
+        ) : (
+          recentChats.map((chat) => (
+            <div
+              key={chat.id}
+              className="flex items-center justify-between mb-3 rounded-lg px-2 py-1 hover:bg-gray-50 cursor-pointer"
+              onClick={() => handleChatClick(chat.otherUser.id)}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative">
+                  <img src={chat.otherUser.avatarUrl || "https://i.pravatar.cc/80?img=1"} alt="" className="h-9 w-9 rounded-full object-cover flex-shrink-0"/>
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white bg-gray-300"/>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-gray-900 truncate">{chat.otherUser.name}</div>
+                  <div className="text-xs text-gray-500 truncate">{chat.lastMessage || "No messages yet"}</div>
+                </div>
+              </div>
+              <span className="text-[11px] text-gray-400">
+                {chat.lastMessageTime ? new Date(chat.lastMessageTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : ""}
+              </span>
+            </div>
+          ))
+        )}
       </Section>
 
       {/* Upcoming Meetings */}
       <Section
         title="Upcoming Meetings"
         icon={<I.calendar />}
-        right={<Counter n={2} />}
+        right={<Counter n={upcomingMeetings.length} />}
       >
-        {/* Meeting 1 */}
-        <div className="rounded-xl border border-gray-200 bg-white mb-3">
-          <div className="p-3">
-            <div className="flex items-center justify-between">
-              <div className="font-semibold text-gray-800">Partnership Discussion</div>
-              <span className="rounded-full bg-orange-100 text-orange-700 text-[11px] px-2 py-0.5">Today</span>
-            </div>
-            <div className="mt-1 text-xs text-gray-500 flex items-center gap-1.5">
-              <I.pin/> with John Smith • 3:00 PM
-            </div>
+        {upcomingMeetings.length === 0 ? (
+          <div className="text-sm text-gray-500 text-center py-4">
+            No upcoming meetings
           </div>
-          <div className="p-3 pt-0">
-            <button
-              className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
-              style={{background: BRAND}}
-            >
-              Join Meeting
-            </button>
-          </div>
-        </div>
+        ) : (
+          upcomingMeetings.map((meeting) => {
+            // Calculate time label
+            const meetingDate = new Date(meeting.scheduledAt);
+            const today = new Date();
+            const tomorrow = new Date();
+            tomorrow.setDate(today.getDate() + 1);
 
-        {/* Meeting 2 */}
-        <div className="rounded-xl border border-gray-200 bg-white">
-          <div className="p-3">
-            <div className="flex items-center justify-between">
-              <div className="font-semibold text-gray-800">Investment Pitch</div>
-              <span className="rounded-full bg-blue-100 text-blue-700 text-[11px] px-2 py-0.5">Tomorrow</span>
-            </div>
-            <div className="mt-1 text-xs text-gray-500 flex items-center gap-1.5">
-              <I.pin/> with Sarah Lee • 11:00 AM
-            </div>
-          </div>
-          <div className="p-3 pt-0">
-            <button
-              className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
-              style={{background: BRAND}}
-            >
-              Join Meeting
-            </button>
-          </div>
-        </div>
+            let timeLabel = "";
+            if (meetingDate.toDateString() === today.toDateString()) {
+              timeLabel = "Today";
+            } else if (meetingDate.toDateString() === tomorrow.toDateString()) {
+              timeLabel = "Tomorrow";
+            } else {
+              timeLabel = meetingDate.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+              });
+            }
+
+            const timeString = meetingDate.toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            });
+
+            const otherUser = meeting.fromUserId === user?.id ? meeting.recipient : meeting.requester;
+
+            return (
+              <div key={meeting.id} className="rounded-xl border border-gray-200 bg-white mb-3">
+                <div className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="font-semibold text-gray-800">{meeting.title}</div>
+                    <span className={`rounded-full text-[11px] px-2 py-0.5 ${
+                      timeLabel === "Today" ? "bg-orange-100 text-orange-700" :
+                      timeLabel === "Tomorrow" ? "bg-blue-100 text-blue-700" :
+                      "bg-gray-100 text-gray-700"
+                    }`}>
+                      {timeLabel}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-gray-500 flex items-center gap-1.5">
+                    <I.pin/> with {otherUser?.name || "Unknown"} • {timeString}
+                  </div>
+                </div>
+                <div className="p-3 pt-0">
+                  <button
+                    className="w-full rounded-xl px-4 py-2.5 text-sm font-semibold text-white"
+                    style={{background: BRAND}}
+                    onClick={() => handleJoinMeeting(meeting.id)}
+                  >
+                    Join Meeting
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
       </Section>
     </aside>
   );

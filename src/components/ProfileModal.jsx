@@ -94,23 +94,64 @@ function saveMeetings(me, them, arr) {
 
 /* ----------------------- meeting time / status utils --------------------- */
 function addMinutes(dateIso, mins) {
-  const t = new Date(dateIso).getTime();
-  return new Date(t + mins * 60000).toISOString();
+  if (!dateIso) return null;
+  
+  try {
+    const date = new Date(dateIso);
+    if (isNaN(date.getTime())) return null;
+    
+    const t = date.getTime();
+    return new Date(t + mins * 60000).toISOString();
+  } catch (error) {
+    console.error("Error adding minutes to date:", error);
+    return null;
+  }
 }
 
 function isJoinWindow(startIso, durationMin) {
-  const now = Date.now();
-  const start = new Date(startIso).getTime();
-  const joinOpen = start - 10 * 60 * 1000; // 10 minutes before
-  const end = new Date(addMinutes(startIso, Number(durationMin) || 30)).getTime();
-  return now >= joinOpen && now <= end;
+  if (!startIso) return false;
+  
+  try {
+    const now = Date.now();
+    const startDate = new Date(startIso);
+    
+    if (isNaN(startDate.getTime())) return false;
+    
+    const start = startDate.getTime();
+    const joinOpen = start - 10 * 60 * 1000; // 10 minutes before
+    
+    // Safely calculate end time
+    let end;
+    const endTimeStr = addMinutes(startIso, Number(durationMin) || 30);
+    if (endTimeStr) {
+      end = new Date(endTimeStr).getTime();
+    } else {
+      // Fallback: add duration directly to start time
+      end = start + (Number(durationMin) || 30) * 60 * 1000;
+    }
+    
+    return now >= joinOpen && now <= end;
+  } catch (error) {
+    console.error("Error checking join window:", error);
+    return false;
+  }
 }
 
 function humanWhen(startIso, tz, durationMin) {
-  const s = new Date(startIso);
-  const end = new Date(s.getTime() + (Number(durationMin) || 30) * 60000);
-  const opts = { dateStyle: "medium", timeStyle: "short", timeZone: tz || undefined };
-  return `${s.toLocaleString(undefined, opts)} • ${durationMin} min`;
+  if (!startIso) return "Invalid date";
+  
+  try {
+    const s = new Date(startIso);
+    
+    if (isNaN(s.getTime())) return "Invalid date";
+    
+    const end = new Date(s.getTime() + (Number(durationMin) || 30) * 60000);
+    const opts = { dateStyle: "medium", timeStyle: "short", timeZone: tz || undefined };
+    return `${s.toLocaleString(undefined, opts)} • ${durationMin} min`;
+  } catch (error) {
+    console.error("Error formatting meeting time:", error);
+    return "Invalid date";
+  }
 }
 
 /* ----------------------- MeetingRequestModal (UI only) ------------------- */
@@ -150,7 +191,7 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
     setForm((f) => ({ ...f, [k]: v }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const eMap = validate();
     setErrors(eMap);
@@ -158,26 +199,32 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
 
     const isoStart = new Date(`${form.date}T${form.time}:00`).toISOString();
 
-    // Simulated create (frontend-only)
+    // Create meeting request via API
     setSubmitting(true);
-    setTimeout(() => {
-      setSubmitting(false);
-      toast.success("Meeting request created (simulation)");
-      onCreated?.({
-        id: `sim_${Date.now()}`,
+    try {
+      const payload = {
         toUserId,
         title: form.title,
         agenda: form.agenda,
-        mode: form.mode, // 'video' | 'in_person'
-        link: form.link,
-        location: form.location,
+        scheduledAt: isoStart,
+        duration: parseInt(form.duration),
         timezone: form.timezone,
-        duration: form.duration,
-        isoStart,
-        createdAt: new Date().toISOString(),
-      });
+        mode: form.mode,
+        location: form.mode === "in_person" ? form.location : null,
+        link: form.mode === "video" ? form.link : null
+      };
+
+      const { data } = await client.post("/meeting-requests", payload);
+      
+    toast.success("Meeting request sent successfully!");
+      onCreated?.(data);
       onClose();
-    }, 500);
+    } catch (error) {
+      console.error("Error creating meeting request:", error);
+      toast.error(error?.response?.data?.message || "Failed to send meeting request");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (!open) return null;
@@ -405,18 +452,47 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
     };
   }, [isOpen, userId]);
 
-  // Load meetings (frontend only) when modal opens or identity changes
+  // Load meetings from API when modal opens
   useEffect(() => {
-    if (!isOpen || !userId) return;
-    const me = user?.id || "anon";
-    setMeetings(loadMeetings(me, userId));
+    if (!isOpen || !userId || !user) return;
+    
+    async function loadMeetings() {
+      try {
+        const { data } = await client.get("/meeting-requests");
+        // Filter meetings involving this specific user
+        const relevantMeetings = [
+          ...data.received.filter(m => m.fromUserId === userId),
+          ...data.sent.filter(m => m.toUserId === userId)
+        ].filter(m => m.status === "accepted");
+        
+        // Convert to the format expected by the UI
+        const formattedMeetings = relevantMeetings.map(m => ({
+          id: m.id,
+          toUserId: userId,
+          title: m.title,
+          agenda: m.agenda,
+          mode: m.mode,
+          link: m.link,
+          location: m.location,
+          timezone: m.timezone,
+          duration: m.duration,
+          isoStart: m.scheduledAt,
+          createdAt: m.createdAt,
+        }));
+        
+        setMeetings(formattedMeetings);
+      } catch (error) {
+        console.error("Error loading meetings:", error);
+      }
+    }
+    
+    loadMeetings();
   }, [isOpen, user?.id, userId]);
 
   function upsertMeetingList(newOne) {
-    const me = user?.id || "anon";
+    // Just add to local state - the API handles persistence
     const updated = [newOne, ...meetings].sort((a, b) => new Date(b.isoStart) - new Date(a.isoStart));
     setMeetings(updated);
-    saveMeetings(me, userId, updated);
   }
 
   function renderConnectButton() {
@@ -646,11 +722,32 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                   <div className="space-y-3">
                     {meetings.map((m) => {
                       const joinable = m.mode === "video" && isJoinWindow(m.isoStart, m.duration);
-                      const start = new Date(m.isoStart).getTime();
                       const now = Date.now();
-                      const end = new Date(addMinutes(m.isoStart, Number(m.duration) || 30)).getTime();
-                      const status =
-                        now < start ? "Upcoming" : now > end ? "Ended" : "Ongoing";
+                      let start, end, status;
+                      
+                      try {
+                        const startDate = new Date(m.isoStart);
+                        if (!isNaN(startDate.getTime())) {
+                          start = startDate.getTime();
+                          
+                          // Safely calculate end time
+                          const endTimeStr = addMinutes(m.isoStart, Number(m.duration) || 30);
+                          if (endTimeStr) {
+                            end = new Date(endTimeStr).getTime();
+                          } else {
+                            // Fallback: add duration directly to start time
+                            end = start + (Number(m.duration) || 30) * 60 * 1000;
+                          }
+                          
+                          status = now < start ? "Upcoming" : now > end ? "Ended" : "Ongoing";
+                        } else {
+                          // Invalid date, set default status
+                          status = "Upcoming";
+                        }
+                      } catch (error) {
+                        console.error("Error processing meeting time:", error);
+                        status = "Upcoming"; // Default fallback
+                      }
 
                       return (
                         <div key={m.id} className="rounded-lg border p-3">

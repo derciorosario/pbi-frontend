@@ -27,6 +27,7 @@ import BusinessPage from './pages/BusinessPage.jsx';
 import TourismPage from './pages/TourismPage.jsx';
 import CompanyPage from './pages/CompaniesPage.jsx';
 import NotificationsPage from './pages/NotificationsPage.jsx';
+import MeetingsPage from './pages/meetings/index.jsx';
 import CreateEventPage from './pages/CreateEventPage.jsx';
 import CreateServicePage from './pages/CreateServicePage.jsx';
 import CreateServiceRequestPage from './pages/CreateServicePage.jsx';
@@ -89,6 +90,7 @@ function App() {
             <Route path="/experiences/create" element={<CreateTourismPostPage />} />
             <Route path="/experience/:id" element={<CreateTourismPostPage />} />
             <Route path="/messages" element={<MessagesPage />} />
+            <Route path="/meetings" element={<MeetingsPage />} />
             <Route path="/job/:id" element={<CreateJobOpportunity />} />
             <Route path="/event/:id" element={<CreateEventPage />} />
             <Route path="/fundings/create" element={<CrowdfundForm />} />

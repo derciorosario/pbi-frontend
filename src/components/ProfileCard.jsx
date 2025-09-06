@@ -24,11 +24,11 @@ function ProfileCard() {
        
         <div className="p-3 border-r">
           <div className="text-xs text-gray-500">Connections</div>
-          <div className="font-semibold">89</div>
+          <div className="font-semibold">1</div>
         </div>
         <div className="p-3">
           <div className="text-xs text-gray-500">Posts</div>
-          <div className="font-semibold">23</div>
+          <div className="font-semibold">2</div>
         </div>
       </div>
       <button className={`mt-4 ${styles.primaryWide} flex items-center justify-center`}>

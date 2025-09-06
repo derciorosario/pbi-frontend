@@ -8,6 +8,7 @@ import { useData } from "../contexts/DataContext";
 import { useSocket } from "../contexts/SocketContext";
 import * as messageApi from "../api/messages";
 import LoginDialog from "./LoginDialog.jsx";
+import logoImg from  '../assets/logo.png'
 
 function Header({ page }) {
   const navigate = useNavigate();
@@ -18,7 +19,6 @@ function Header({ page }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
-
   const profileMenuRef = useRef(null);
   const moreMenuRef = useRef(null);
   const data = useData();
@@ -105,15 +105,11 @@ function Header({ page }) {
             className="flex items-center gap-2 cursor-pointer"
             onClick={() => navigate("/")}
           >
-            <div
-              className="h-9 w-9 rounded-xl grid place-items-center text-white font-bold"
-              style={{ background: "linear-gradient(135deg,#0a66c2,#004182)" }}
-            >
-              P
-            </div>
+           
             <div className="leading-tight">
-              <div className="font-semibold text-brand-600">54LINKS</div>
-              <div className="text-[11px] text-gray-500 -mt-1">Business Initiative</div>
+              <img src={logoImg} width={120}/>
+             {/** <div className="font-semibold text-brand-600">54LINKS</div>
+              <div className="text-[11px] text-gray-500 -mt-1">Business Initiative</div> */}
             </div>
           </div>
 
