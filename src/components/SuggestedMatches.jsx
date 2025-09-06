@@ -4,6 +4,8 @@ import ProfileModal from "./ProfileModal.jsx";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import { useData } from "../contexts/DataContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { useNavigate } from "react-router-dom";
+import { toast } from "../lib/toast";
 
 function avatarSrc(item, idx = 0) {
   if (item?.avatarUrl) return item.avatarUrl;
@@ -21,6 +23,7 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
   const [target, setTarget] = useState({ id: null, name: "" });
   const data = useData();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Local overlay of statuses (so we can flip to "pending" instantly)
   const initial = useMemo(() => {
@@ -163,7 +166,16 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
                   {renderConnectButton(s)}
                   <button
                     onClick={() => {
-                      if (!user?.id) data._showPopUp("login_prompt");
+                      if (!user?.id) {
+                        data._showPopUp("login_prompt");
+                        return;
+                      }
+                      
+                      // Navigate to messages page with the user ID
+                      navigate(`/messages?userId=${s.id}`);
+                      
+                      // Show a toast notification
+                      toast.success("Starting conversation with " + s.name);
                     }}
                     className="flex-1 _login_prompt rounded-lg px-3 py-1.5 text-sm border border-gray-200 text-gray-700 bg-white hover:border-brand-500 hover:text-brand-600"
                   >

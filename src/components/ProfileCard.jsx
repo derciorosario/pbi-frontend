@@ -20,11 +20,8 @@ function ProfileCard() {
           <div className="text-xs text-gray-500">{profile?.primaryIdentity}<br/>{user?.city} {user?.city && (user?.country || user?.countryOfResidence) ? `,`:''} {(user?.country || user?.countryOfResidence)}</div>
         </div>
       </div>
-      <div className="mt-4 grid grid-cols-3 bg-gray-50 rounded-xl text-center text-sm">
-        <div className="p-3 border-r">
-          <div className="text-xs text-gray-500">Profile Views</div>
-          <div className="font-semibold">247</div>
-        </div>
+      <div className="mt-4 grid grid-cols-2 bg-gray-50 rounded-xl text-center text-sm">
+       
         <div className="p-3 border-r">
           <div className="text-xs text-gray-500">Connections</div>
           <div className="font-semibold">89</div>

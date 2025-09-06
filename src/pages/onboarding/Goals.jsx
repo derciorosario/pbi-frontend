@@ -22,9 +22,7 @@ export default function Goals() {
     setSelected((arr) =>
       arr.includes(id)
         ? arr.filter((x) => x !== id)
-        : arr.length < 3
-        ? [...arr, id]
-        : arr // máximo de 3
+        : [...arr, id]
     );
   }
 
@@ -86,13 +84,11 @@ export default function Goals() {
           </h2>
 
           {/* Mensagem sempre visível no início */}
-          <p className="text-sm text-gray-500 mb-4">* Select 3.</p>
+          <p className="text-sm text-gray-500 mb-4">* Select the goals that interest you.</p>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
             {goals.map((g) => {
               const isSelected = selected.includes(g.id);
-              const isDisabled =
-                selected.length >= 3 && !isSelected; // se já escolheu 3, desativa os outros
 
               return (
                 <button
@@ -102,7 +98,7 @@ export default function Goals() {
                     isSelected
                       ? "border-brand-700 ring-2 ring-brand-500"
                       : "border-gray-200"
-                  } ${isDisabled ? "opacity-50 pointer-events-none" : ""}`}
+                  }`}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-brand-700">

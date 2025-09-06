@@ -84,7 +84,7 @@ export default function EventsPage() {
     try {
       // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre “all”
       const params = {
-        tab: "events",
+        tab: "tourism",
         q: debouncedQ || undefined,
         country: country || undefined,
         city: city || undefined,
@@ -156,32 +156,7 @@ export default function EventsPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
-  const experiences = [
-  {
-    id: 1,
-    author: "Safari Adventures Kenya",
-    time: "2 hours ago • Nairobi, Kenya",
-    tag: "Safari",
-    title: "Discover the Magic of Maasai Mara",
-    desc: "Experience the greatest wildlife spectacle on Earth during the Great Migration. Our expert guides will take you on an unforgettable journey through Kenya's most famous national reserve.",
-    stats: { likes: 124, comments: 18 },
-    image:
-      "https://images.unsplash.com/photo-1508672019048-805c876b67e2?q=80&w=1600&auto=format&fit=crop",
-    cta: "Book Now",
-  },
-  {
-    id: 2,
-    author: "Cape Town Explorer",
-    time: "4 hours ago • Cape Town, South Africa",
-    tag: "Adventure",
-    title: "Table Mountain Cable Car Adventure",
-    desc: "Take in breathtaking 360-degree views of Cape Town from the top of Table Mountain with our guided cable car experience.",
-    stats: { likes: 98, comments: 12 },
-    image:
-      "https://images.unsplash.com/photo-1501594907352-04cda38ebc29?q=80&w=1600&auto=format&fit=crop",
-    cta: "Book Now",
-  },
-];
+
 
   const renderMiddle = () => {
 
@@ -203,8 +178,8 @@ export default function EventsPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        {!loadingFeed && experiences.map((exp) => (
-              <ExperienceCard key={exp.id} exp={exp} />
+        {!loadingFeed && items.map((exp) => (
+              <ExperienceCard key={exp.id} item={exp} />
           ))
         }
       </>
@@ -227,7 +202,7 @@ export default function EventsPage() {
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
             { label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Share experience", Icon: PlusCircle, path: "/experience/create" }
+            { label: "Share experience", Icon: PlusCircle, path: "/experiences/create" }
         ]} />
          
         </aside>
@@ -238,7 +213,7 @@ export default function EventsPage() {
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
               <h3 className="font-semibold text-2xl mt-1">Explore Africa’s Rich Culture & Tourism</h3>
           
-            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/products/create')} />
+            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/experiences/create')} />
             </div>
               {renderMiddle()}
           </section>

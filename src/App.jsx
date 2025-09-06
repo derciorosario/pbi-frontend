@@ -40,6 +40,10 @@ import TwoStepOnboarding from './pages/onboarding/TwoStepOnboarding.jsx';
 import ProtectedRouteOnboarding from '../ProtectedRouteOnBoarding.jsx';
 import ServicesPage from './pages/ServicePage.jsx';
 import ProductsPage from './pages/ProductsPage.jsx';
+import CrowdfundingPage from './pages/CrowdfundingPage.jsx';
+import CrowdfundForm from './components/CrowdfundForm.jsx';
+import TermsOfServicePage from './pages/legal/TermsOfService.jsx';
+import PrivacyPolicyPage from './pages/legal/PrivacyPolicy.jsx';
 
 
 
@@ -70,7 +74,8 @@ function App() {
         <Route path="/onboarding/industry"    element={<Industry />} />
         <Route path="/onboarding/goals"       element={<Goals />} />
 
-      
+        <Route path="/terms" element={<TermsOfServicePage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
         <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
@@ -78,12 +83,18 @@ function App() {
             <Route path="/events/create" element={<CreateEventPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/services/create" element={<CreateServicePage />} />
+            <Route path="/service/:id" element={<CreateServicePage />} />
             <Route path="/services/request/create" element={<CreateServiceRequestPage />} />
             <Route path="/products/create" element={<CreateProductPage />} />
-            <Route path="/experience/create" element={<CreateTourismPostPage />} />
+            <Route path="/experiences/create" element={<CreateTourismPostPage />} />
+            <Route path="/experience/:id" element={<CreateTourismPostPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/job/:id" element={<CreateJobOpportunity />} />
             <Route path="/event/:id" element={<CreateEventPage />} />
+            <Route path="/funding" element={<CrowdfundingPage />} />
+            <Route path="/fundings/create" element={<CrowdfundForm />} />
+            <Route path="/funding/:id" element={<CrowdfundForm />} />
+            
             
         </Route>
 
@@ -95,6 +106,7 @@ function App() {
             <Route path="/jobs" element={<JobsExplorePage />} />
             <Route path="/tourism" element={<TourismPage />} /> 
             <Route path="/companies" element={<CompanyPage />} />
+            
 
             <Route path="/services" element={<ServicesPage/>} />
             <Route path="/products" element={<ProductsPage />} />

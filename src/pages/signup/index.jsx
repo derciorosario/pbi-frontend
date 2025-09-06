@@ -153,7 +153,7 @@ export default function Signup() {
       </div>
 
 
-          <h2 className="text-3xl font-bold text-gray-900">Join 54LINKS BI</h2>
+          <h2 className="text-3xl font-bold text-gray-900">Join 54LINKS</h2>
           <p className="mt-1 text-gray-500">Join the global networking community</p>
 
           <div className="max-w-xs">
@@ -327,8 +327,8 @@ export default function Signup() {
               />
               <p className="text-gray-600">
                 I agree to the{" "}
-                <a href="#" className="text-brand-600 underline">Terms of Service</a> and{" "}
-                <a href="#" className="text-brand-600 underline">Privacy Policy</a>
+                <a href="/terms" className="text-brand-600 underline">Terms of Service</a> and{" "}
+                <a href="/privacy" className="text-brand-600 underline">Privacy Policy</a>
               </p>
             </div>
             {errors.tos && (

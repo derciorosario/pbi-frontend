@@ -17,7 +17,7 @@ import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
-import ServiceCard from "../components/ServiceCard";
+import CrowdfundCard from "../components/CrowdfundCard";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -28,7 +28,7 @@ function useDebounce(v, ms = 400) {
   return val;
 }
 
-export default function ServicesPage() {
+export default function CrowdfundingPage() {
   const [activeTab, setActiveTab] = useState("Suggested for You");
   const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
   const navigate=useNavigate()
@@ -84,7 +84,7 @@ export default function ServicesPage() {
     try {
       // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre “all”
       const params = {
-        tab: "services",
+        tab: "funding",
         q: debouncedQ || undefined,
         country: country || undefined,
         city: city || undefined,
@@ -156,56 +156,32 @@ export default function ServicesPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
-  
-
-
   const renderMiddle = () => {
-
-    if(!loadingFeed && items.length == 0){
-         return <EmptyFeedState />
-    }
-    
-    if(!loadingFeed){
+    if (activeTab !== "Suggested for You") {
       return (
-      <div className="max-w-4xl mx-auto space-y-5">
-        {items.map((s) => (
-            <ServiceCard
-            key={s.id}
-            item={s}
-            currentUserId={s?.id}
-            onContact={() => alert(`${s.type} - Contact ${s.provider}`)}
-            onConnect={() => console.log(`Connect with ${s.providerUserName}`)}
-            />
-        ))}
-      </div>
-    )
-
+        <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
+          {activeTab} tab uses its own API route. Render the specific list here.
+        </div>
+      );
     }
-    
-    
 
     return (
       <>
-
         {loadingFeed && (
           <div className="min-h-[160px] grid place-items-center text-gray-600">
              <FullPageLoader notFull={true}/>
           </div>
         )}
 
+        {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
+
         {!loadingFeed &&
-          items.map((item) =>
-            item.kind === "job" ? (
-              <JobCard key={`job-${item.id}`} job={item} />
-            ) : item.kind === "event" ? (
-              <EventCard key={`event-${item.id}`} e={item} />
-            ) : null
-          )}
+          items.map((p) => (
+          <CrowdfundCard key={p.id} item={p} />
+        ))}
       </>
     );
   };
-
-
 
   return (
    <DefaultLayout>
@@ -223,8 +199,8 @@ export default function ServicesPage() {
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
             { label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Post a Service", Icon: PlusCircle, path: "/services/create" },
-        ]} />
+            { label: "Post an Funding Project", Icon: PlusCircle, path: "/funding/create" }
+          ]} />
          
         </aside>
 
@@ -232,9 +208,9 @@ export default function ServicesPage() {
           <section className="lg:col-span-4 space-y-4 mt-5">
           
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              <h3 className="font-semibold text-2xl mt-1">Professional Services</h3>
+              <h3 className="font-semibold text-2xl mt-1">Your Path to Knowledge</h3>
           
-            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/services/create')} />
+            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/fundings/create')} />
             </div>
               {renderMiddle()}
           </section>

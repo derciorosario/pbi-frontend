@@ -492,12 +492,11 @@ export default function ProfilePage() {
                     <input type="checkbox"
                            checked={interests.goalIds.includes(g.id)}
                            onChange={()=>{
-                             setInterests(prev=>{
-                               const has = prev.goalIds.includes(g.id);
-                               let next = has ? prev.goalIds.filter(x=>x!==g.id) : [...prev.goalIds, g.id];
-                               if (next.length > 3) next = next.slice(0,3);
-                               return { goalIds: next };
-                             });
+                              setInterests(prev=>{
+                                const has = prev.goalIds.includes(g.id);
+                                let next = has ? prev.goalIds.filter(x=>x!==g.id) : [...prev.goalIds, g.id];
+                                return { goalIds: next };
+                              });
                            }}/>
                     <span>{g.name}</span>
                   </label>

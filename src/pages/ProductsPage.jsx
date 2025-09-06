@@ -86,7 +86,7 @@ export default function ProductsPage() {
     try {
       // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre “all”
       const params = {
-        tab: "events",
+        tab: "products",
         q: debouncedQ || undefined,
         country: country || undefined,
         city: city || undefined,
@@ -158,86 +158,9 @@ export default function ProductsPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
-  const products = [
-  {
-    id: 1,
-    image: "https://i.ibb.co/j5PzN9R/handbag.jpg",
-    title: "Premium Leather Handbags",
-    description: "Handcrafted leather bags with traditional African patterns.",
-    price: 149,
-    location: "Lagos, Nigeria",
-    rating: 4.8,
-    reviews: 24,
-    featured: true,
-  },
-  {
-    id: 2,
-    image: "https://i.ibb.co/kS8n2GN/coffee.jpg",
-    title: "Organic Coffee Beans",
-    description: "Premium roasted coffee beans from Ethiopian highlands.",
-    price: 32,
-    location: "Addis Ababa",
-    rating: 4.9,
-    reviews: 156,
-  },
-  {
-    id: 3,
-    image: "https://i.ibb.co/pLk7Fcf/solar.jpg",
-    title: "Solar Charging Station",
-    description: "Portable solar-powered mobile device charging solution.",
-    price: 89,
-    location: "Nairobi, Kenya",
-    rating: 4.7,
-    reviews: 42,
-  },
-  {
-    id: 4,
-    image: "https://i.ibb.co/7V7f8Z7/kente.jpg",
-    title: "Traditional Kente Cloth",
-    description: "Authentic handwoven kente fabric with traditional patterns.",
-    price: 75,
-    location: "Accra, Ghana",
-    rating: 4.6,
-    reviews: 18,
-  },
-  {
-    id: 5,
-    image: "https://i.ibb.co/wKzYj2F/shea.jpg",
-    title: "Organic Shea Butter Set",
-    description: "Natural skincare products made from pure African shea butter.",
-    price: 45,
-    location: "Tamale, Ghana",
-    rating: 4.8,
-    reviews: 89,
-  },
-  {
-    id: 6,
-    image: "https://i.ibb.co/ygXHjD7/wooden-art.jpg",
-    title: "Handcarved Wooden Art",
-    description: "Beautiful handcrafted wooden sculptures and decorative pieces.",
-    price: 120,
-    location: "Cape Town",
-    rating: 4.7,
-    reviews: 31,
-  },
-];
 
   const renderMiddle = () => {
 
-    return (
-     <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 sm:grid-cols-2  gap-6">
-        {products.map((p) => (
-          <ProductCard
-            key={p.id}
-            {...p}
-            onContact={() => alert(`Contact seller of ${p.title}`)}
-            onSave={() => alert(`Saved ${p.title}`)}
-          />
-        ))}
-      </div>
-    </div>
-    )
     if (activeTab !== "Suggested for You") {
       return (
         <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
@@ -255,6 +178,20 @@ export default function ProductsPage() {
         )}
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
+
+        {<div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2  gap-6">
+            {items.map((p) => (
+              <ProductCard
+                key={p.id}
+                item={p}
+                {...p}
+                onContact={() => alert(`Contact seller of ${p.title}`)}
+                onSave={() => alert(`Saved ${p.title}`)}
+              />
+            ))}
+          </div>
+    </div>}
 
         {!loadingFeed &&
           items.map((item) =>

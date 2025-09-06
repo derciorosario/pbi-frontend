@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../../api/client";
 import I from "../../lib/icons.jsx";
+import LoginDialog from "../../components/LoginDialog.jsx";
 
 import MobileFiltersButton from "../../components/MobileFiltersButton.jsx";
 import MobileFiltersBottomSheet from "../../components/MobileFiltersBottomSheet.jsx";
@@ -20,6 +21,9 @@ import QuickActions from "../../components/QuickActions.jsx";
 import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import ProfileCard from "../../components/ProfileCard.jsx";
 import ServiceCard from "../../components/ServiceCard.jsx";
+import ProductCard from "../../components/ProductCard.jsx";
+import ExperienceCard from "../../components/ExperienceCard.jsx";
+import CrowdfundCard from "../../components/CrowdfundCard.jsx";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -32,9 +36,10 @@ function useDebounce(v, ms = 400) {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState("All");
-  const tabs = useMemo(() => ["All", "Events", "Job Opportunities","Services","Products"], []);
+  const tabs = useMemo(() => ["All", "Events", "Jobs","Services","Products"], []);
 
   const [query, setQuery] = useState("");
   const debouncedQ = useDebounce(query, 400);
@@ -81,7 +86,7 @@ export default function HomePage() {
       setLoadingFeed(true);
       try {
         const tabParam =
-          activeTab === "Events" ? "events" : activeTab === "Job Opportunities" ? "jobs" : activeTab === "Services" ?  "service" :  activeTab === "Products" ? "product" : "all";
+          activeTab === "Events" ? "events" : activeTab === "Jobs" ? "jobs" : activeTab === "Services" ?  "service" :  activeTab === "Products" ? "product" : "all";
         const params = {
           tab: tabParam,
           q: debouncedQ || undefined,
@@ -157,16 +162,7 @@ export default function HomePage() {
 
       <section className={`relative overflow-visible ${user?.id ? "hidden" : ""}`}>
   {/* Hero Gradient */}
-  <div className="relative bg-gradient-to-r  from-[#004182]  to-[#0a66c2]
-
-
-
-
-
-
-
-
-">
+  <div className="relative bg-gradient-to-r  from-[#004182]  to-[#0a66c2]">
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 md:py-16">
       <div className="grid lg:grid-cols-12 gap-8 items-center">
         <div className="lg:col-span-6 text-white">
@@ -182,7 +178,7 @@ export default function HomePage() {
           </p>
           <div className="mt-8 flex items-center gap-4">
             <button
-              onClick={() => navigate("/signup")}
+              onClick={() => setLoginDialogOpen(true)}
               className="rounded-xl px-6 py-3 font-semibold text-brand-600 bg-white shadow-sm"
             >
               Sign Up
@@ -211,8 +207,8 @@ export default function HomePage() {
     <div className="-mt-10 md:-mt-14 lg:-mt-16 w-full lg:w-[720px] relative z-30">
       <div className="rounded-[22px] bg-white shadow-xl ring-1 ring-black/5 p-4 md:p-5 relative z-30">
         {/* Tabs */}
-        <div className="flex items-center gap-6 text-sm font-medium text-gray-500 border-b">
-          {["All", "Events", "Job Opportunities","Services","Products"].map((tab) => (
+        <div className="flex items-center gap-6 text-sm font-medium text-gray-500 border-b overflow-x-auto">
+          {["All", "Events", "Jobs","Services","Products"].map((tab) => (
             <button
               key={tab}
               className={`pb-3 relative ${
@@ -302,7 +298,7 @@ export default function HomePage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <div className="grid lg:grid-cols-12 gap-6">
-          <aside className="lg:col-span-3 hidden lg:block sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+          {user &&  <aside className="lg:col-span-3 hidden lg:block sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
             <ProfileCard />
             <div className="_sticky top-0 mb-2">
               <FiltersCard {...filtersProps} />
@@ -313,9 +309,9 @@ export default function HomePage() {
               { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
             ]} />
 
-          </aside>
+          </aside>}
 
-          <section className="lg:col-span-6 space-y-4">
+          <section className={`${user ? 'lg:col-span-6':'lg:col-span-8'} sprace-y-4`}>
 
           <section className="lg:col-span-4 space-y-4 flex items-center justify-between gap-y-2 flex-wrap">
             <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
@@ -328,6 +324,8 @@ export default function HomePage() {
             ]} />
 
           </section>
+
+
             
             {loadingFeed && (
               <FullPageLoader notFull={true}/>
@@ -335,6 +333,10 @@ export default function HomePage() {
 
            {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
 
+               
+              
+          <div className="flex flex-col gap-y-2">
+                 
 
             {!loadingFeed &&
               items.map((item) => {
@@ -358,11 +360,26 @@ export default function HomePage() {
                 if(item.kind=="service"){
                        return   <ServiceCard item={item} currentUserId={user?.id}/>
                 }
+
+                if(item.kind=="product"){
+                       return   <ProductCard item={item} currentUserId={user?.id}/>
+                }
+
+                if(item.kind=="tourism"){
+                       return   <ExperienceCard item={item} currentUserId={user?.id}/>
+                }
+
+                if(item.kind=="funding"){
+                       return   <CrowdfundCard item={item} currentUserId={user?.id}/>
+                }
+
+
                 return <EventCard key={`event-${item.id}`} e={item} />;
               })}
+          </div>
           </section>
 
-          <aside className="lg:col-span-3 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+          <aside className={`${user ? 'lg:col-span-3':'lg:col-span-4'}  sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto`}>
             {loadingSuggestions ? (
               <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
                 Loading suggestions…
@@ -378,6 +395,13 @@ export default function HomePage() {
         isOpen={mobileFiltersOpen}
         onClose={() => setMobileFiltersOpen(false)}
         filtersProps={filtersProps}
+      />
+      
+      {/* Login Dialog */}
+      <LoginDialog
+        isOpen={loginDialogOpen}
+        onClose={() => setLoginDialogOpen(false)}
+        initialTab="signup" // Show signup tab first when opened from signup button
       />
    
     </DefaultLayout>

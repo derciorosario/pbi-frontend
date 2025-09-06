@@ -104,7 +104,7 @@ export default function Login() {
             </>
           ) : (
             <>
-              <h2 className="mt-6 text-3xl font-bold text-gray-900">Pan-African BI</h2>
+              <h2 className="mt-6 text-3xl font-bold text-gray-900">54Links</h2>
               <p className="mt-1 text-gray-600">
                 Discover, connect, and collaborate across Africa.
               </p>

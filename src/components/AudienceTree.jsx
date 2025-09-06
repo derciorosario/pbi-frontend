@@ -18,6 +18,8 @@ const Icons = {
 function AudienceTree({ tree, selected, onChange }) {
   const [open, setOpen] = useState({}); // collapse state by key id
 
+  console.log({tree})
+
   const toggle = (k) => setOpen(o => ({ ...o, [k]: !o[k] }));
 
   const isChecked = (type, id) => selected[type].has(id);

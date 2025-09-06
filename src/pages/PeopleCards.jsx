@@ -191,7 +191,11 @@ export default function PeopleProfileCard({
           onClick={() => {
             if (!user) {
               data._showPopUp("login_prompt");
+              return;
             }
+            
+            // Navigate to messages page with the user ID
+            navigate(`/messages?userId=${id}`);
           }}
           className="inline-flex _login_prompt justify-center items-center rounded-xl px-5 py-2.5 text-sm font-medium border border-gray-200 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
         >

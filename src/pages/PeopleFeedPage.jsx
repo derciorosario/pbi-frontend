@@ -31,7 +31,7 @@ function useDebounce(v, ms = 400) {
 
 export default function PeopleFeedPage() {
   const {user}=useAuth()
-  const [activeTab, setActiveTab] = useState("Posts");
+  const [activeTab, setActiveTab] = useState("People");
   const data=useData()
   
   const tabs = useMemo(() => {

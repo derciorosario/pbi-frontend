@@ -8,7 +8,8 @@ import { useAuth } from "../../contexts/AuthContext";
  * - Step 1: pick identities (multi)
  * - Step 2: pick categories/subcategories/level-3
  *   * Only categories are mandatory (≥1)
- *   * Sub-subcategories show ONLY if their parent subcategory is OPEN (chevron) OR SELECTED
+ *   * Level-3 shows ONLY if its parent subcategory is OPEN (chevron) OR SELECTED
+ *   * Hides dropdown icons when there is no deeper level available
  */
 export default function TwoStepOnboarding() {
   const nav = useNavigate();
@@ -295,6 +296,10 @@ export default function TwoStepOnboarding() {
     });
   };
 
+  // helpers (hide dropdowns when there is no next level)
+  const hasSubs = (cat) => Array.isArray(cat?.subcategories) && cat.subcategories.length > 0;
+  const hasSubsubs = (sc) => Array.isArray(sc?.subsubs) && sc.subsubs.length > 0;
+
   // guards
   const canContinueStep1 = identityIds.length >= 1;
   const canFinish = categoryIds.length >= 1; // subcategories optional
@@ -428,88 +433,130 @@ export default function TwoStepOnboarding() {
                         </div>
 
                         <div className="px-4 py-4 space-y-3">
-                          {(iden.categories || []).map((cat, cIdx) => (
-                            <details
-                              key={`cat-${iIdx}-${cIdx}`}
-                              className="group border rounded-lg"
-                              open={!!cat.id && openCats.has(cat.id)}
-                              onToggle={cat.id ? handleDetailsToggle(cat.id) : undefined}
-                            >
-                              <summary className="flex items-center justify-between px-4 py-3 cursor-pointer select-none">
-                                <div className="flex items-center gap-2">
-                                  <input
-                                    type="checkbox"
-                                    className="h-4 w-4"
-                                    checked={!!cat.id && categoryIds.includes(cat.id)}
-                                    onChange={() => cat.id && toggleCategory(cat.id)}
-                                    disabled={!cat.id}
-                                    title={cat.id ? "" : "Category not found in DB"}
-                                  />
-                                  <span className="font-medium">{cat.name}</span>
+                          {(iden.categories || []).map((cat, cIdx) => {
+                            const _hasSubs = hasSubs(cat);
+
+                            // If the category has NO subcategories, render a simple row (no dropdown icon)
+                            if (!_hasSubs) {
+                              return (
+                                <div key={`cat-${iIdx}-${cIdx}`} className="border rounded-lg">
+                                  <div className="flex items-center justify-between px-4 py-3">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        className="h-4 w-4"
+                                        checked={!!cat.id && categoryIds.includes(cat.id)}
+                                        onChange={() => cat.id && toggleCategory(cat.id)}
+                                        disabled={!cat.id}
+                                        title={cat.id ? "" : "Category not found in DB"}
+                                      />
+                                      <span className="font-medium">{cat.name}</span>
+                                    </label>
+                                    {/* no chevron here because there is no next level */}
+                                  </div>
                                 </div>
-                                <span className="text-gray-400 group-open:rotate-180 transition">▾</span>
-                              </summary>
+                              );
+                            }
 
-                              <div className="px-4 pb-4 space-y-3">
-                                {(cat.subcategories || []).map((sc, sIdx) => {
-                                  const isOpen = !!sc.id && openSubs.has(sc.id);
-                                  const isSelected = !!sc.id && subcategoryIds.includes(sc.id);
-                                  return (
-                                    <div key={`sub-${iIdx}-${cIdx}-${sIdx}`} className="border rounded-lg p-3">
-                                      <div className="flex items-center justify-between">
-                                        <label className="flex items-center gap-3 cursor-pointer">
-                                          <input
-                                            type="checkbox"
-                                            className="h-4 w-4 text-brand-600"
-                                            checked={isSelected}
-                                            onChange={() => sc.id && toggleSubcategory(sc.id)}
-                                            disabled={!sc.id}
-                                            title={sc.id ? "" : "Subcategory not found in DB"}
-                                          />
-                                          <span className="font-medium">{sc.name}</span>
-                                        </label>
+                            // Category WITH subcategories → use details/summary and show chevron
+                            return (
+                              <details
+                                key={`cat-${iIdx}-${cIdx}`}
+                                className="group border rounded-lg"
+                                open={!!cat.id && openCats.has(cat.id)}
+                                onToggle={cat.id ? handleDetailsToggle(cat.id) : undefined}
+                              >
+                                <summary
+                                  className={`flex items-center justify-between px-4 py-3 select-none ${
+                                    _hasSubs ? "cursor-pointer" : "cursor-default"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="checkbox"
+                                      className="h-4 w-4"
+                                      checked={!!cat.id && categoryIds.includes(cat.id)}
+                                      onChange={() => cat.id && toggleCategory(cat.id)}
+                                      disabled={!cat.id}
+                                      title={cat.id ? "" : "Category not found in DB"}
+                                    />
+                                    <span className="font-medium">{cat.name}</span>
+                                  </div>
 
-                                        {/* chevron to open/close level-3 */}
-                                        <button
-                                          type="button"
-                                          onClick={() => sc.id && toggleSubOpen(sc.id)}
-                                          disabled={!sc.id || !(sc.subsubs && sc.subsubs.length)}
-                                          className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
-                                          aria-label="Toggle level 3"
-                                        >
-                                          <span className={`inline-block transition-transform ${isOpen ? "rotate-180" : ""}`}>
-                                            ▾
-                                          </span>
-                                        </button>
-                                      </div>
+                                  {/* Show dropdown icon ONLY if there are subcategories */}
+                                  {_hasSubs && (
+                                    <span className="text-gray-400 group-open:rotate-180 transition">▾</span>
+                                  )}
+                                </summary>
 
-                                      {Array.isArray(sc.subsubs) &&
-                                        sc.subsubs.length > 0 &&
-                                        (isOpen || isSelected) && (
-                                          <div className="mt-2 flex flex-wrap gap-2">
-                                            {sc.subsubs.map((ss, ssIdx) => (
-                                              <label
-                                                key={`ss-${iIdx}-${cIdx}-${sIdx}-${ssIdx}`}
-                                                className="inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm"
+                                <div className="px-4 pb-4 space-y-3">
+                                  {(cat.subcategories || []).map((sc, sIdx) => {
+                                    const _hasSubsubs = hasSubsubs(sc);
+                                    const isOpen = !!sc.id && openSubs.has(sc.id);
+                                    const isSelected = !!sc.id && subcategoryIds.includes(sc.id);
+
+                                    return (
+                                      <div key={`sub-${iIdx}-${cIdx}-${sIdx}`} className="border rounded-lg p-3">
+                                        <div className="flex items-center justify-between">
+                                          <label className="flex items-center gap-3 cursor-pointer">
+                                            <input
+                                              type="checkbox"
+                                              className="h-4 w-4 text-brand-600"
+                                              checked={isSelected}
+                                              onChange={() => sc.id && toggleSubcategory(sc.id)}
+                                              disabled={!sc.id}
+                                              title={sc.id ? "" : "Subcategory not found in DB"}
+                                            />
+                                            <span className="font-medium">{sc.name}</span>
+                                          </label>
+
+                                          {/* Show chevron ONLY if there are level-3 items */}
+                                          {_hasSubsubs && (
+                                            <button
+                                              type="button"
+                                              onClick={() => sc.id && toggleSubOpen(sc.id)}
+                                              className="text-gray-500 hover:text-gray-700"
+                                              aria-label="Toggle level 3"
+                                            >
+                                              <span
+                                                className={`inline-block transition-transform ${
+                                                  isOpen ? "rotate-180" : ""
+                                                }`}
                                               >
-                                                <input
-                                                  type="checkbox"
-                                                  checked={!!ss.id && subsubCategoryIds.includes(ss.id)}
-                                                  onChange={() => ss.id && toggleSubsub(ss.id)}
-                                                  disabled={!ss.id}
-                                                  title={ss.id ? "" : "Level-3 not found in DB"}
-                                                />
-                                                <span>{ss.name}</span>
-                                              </label>
-                                            ))}
-                                          </div>
-                                        )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </details>
-                          ))}
+                                                ▾
+                                              </span>
+                                            </button>
+                                          )}
+                                        </div>
+
+                                        {Array.isArray(sc.subsubs) &&
+                                          sc.subsubs.length > 0 &&
+                                          (isOpen || isSelected) && (
+                                            <div className="mt-2 flex flex-wrap gap-2">
+                                              {sc.subsubs.map((ss, ssIdx) => (
+                                                <label
+                                                  key={`ss-${iIdx}-${cIdx}-${sIdx}-${ssIdx}`}
+                                                  className="inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm"
+                                                >
+                                                  <input
+                                                    type="checkbox"
+                                                    checked={!!ss.id && subsubCategoryIds.includes(ss.id)}
+                                                    onChange={() => ss.id && toggleSubsub(ss.id)}
+                                                    disabled={!ss.id}
+                                                    title={ss.id ? "" : "Level-3 not found in DB"}
+                                                  />
+                                                  <span>{ss.name}</span>
+                                                </label>
+                                              ))}
+                                            </div>
+                                          )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </details>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
