@@ -9,20 +9,7 @@ export default function LeftPanel() {
   return (
     <div className="to-brand-600 from-brand-600 bg-gradient-to-br h-full text-white relative overflow-hidden flex flex-col items-center justify-center p-10">
       {/* Home button at the top */}
-      <div
-        className="absolute top-6 left-6 flex items-center gap-2 cursor-pointer"
-        onClick={() => navigate("/")}
-      >
-        <div className="h-9 w-9 rounded-xl grid place-items-center text-white font-bold bg-brand-500">
-          P
-        </div>
-        <div className="leading-tight">
-          <div className="font-semibold">54LINKS</div>
-          <div className="text-[11px] text-white/70 -mt-1">
-            Business Initiative
-          </div>
-        </div>
-      </div>
+     
 
       {/* Hero content */}
       <div className="max-w-md text-center mt-16">

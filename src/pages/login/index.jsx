@@ -7,6 +7,8 @@ import LeftPanel from "../../components/LeftPanel.jsx";
 import client from "../../api/client.js";
 import { toast } from "../../lib/toast";
 import GoogleCustomBtn from "../../components/GoogleBtn.jsx";
+import Logo from '../../assets/logo.png'
+
 
 const emailOK = (v) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").toLowerCase());
@@ -104,7 +106,9 @@ export default function Login() {
             </>
           ) : (
             <>
-              <h2 className="mt-6 text-3xl font-bold text-gray-900">55Links</h2>
+              <h2 className="mt-6 text-3xl font-bold text-gray-900">
+                <img src={Logo} width={130} className="mb-6"/>
+              </h2>
               <p className="mt-1 text-gray-600">
                 Discover, connect, and collaborate across Africa.
               </p>
