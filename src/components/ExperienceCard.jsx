@@ -19,7 +19,7 @@ export default function ExperienceCard({ item }) {
     setModalOpen(false);
   }
   
-  const imageUrl = item?.images?.[0]?.base64url || null;
+  const imageUrl = item?.images?.[0]?.base64url ||  item?.images?.[0] || null;
 
   return (
     <>

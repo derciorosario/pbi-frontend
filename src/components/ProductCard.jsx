@@ -25,7 +25,7 @@ export default function ProductCard({
   }
 
   // pick first image if exists
-  const imageUrl = item?.images?.[0]?.base64url || null;
+  const imageUrl = item?.images?.[0]?.base64url || item?.images?.[0] || null;
   const initials = (item?.seller?.name || "?")
     .split(" ")
     .map((s) => s[0])

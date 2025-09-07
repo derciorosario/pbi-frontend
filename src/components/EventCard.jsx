@@ -46,14 +46,14 @@ export default function EventCard({ e }) {
   return (
     <>
       <div className="rounded-2xl bg-white border shadow-sm overflow-hidden">
-        {e.coverImageBase64 ? (
-          <img src={e.coverImageBase64} alt="" className="w-full h-40 object-cover" />
+        {(e.coverImageBase64 || e.coverImage) ? (
+          <img src={e.coverImageBase64 || e.coverImage} alt="" className="w-full h-40 object-cover" />
         ) : (
           <div className="w-full h-40 bg-gray-100 grid place-items-center text-gray-400 text-sm">
             No image
           </div>
         )}
-
+ ||
         <div className="p-4">
           {!!tags.length && (
             <div className="flex flex-wrap gap-2">

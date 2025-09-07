@@ -30,7 +30,7 @@ export default function CrowdfundCard({ item }) {
   const data = useData();
   const { user } = useAuth();
   const navigate=useNavigate()
-  const imageUrl = item?.images?.[0]?.base64url || null;
+  const imageUrl = item?.images?.[0]?.base64url || item?.images?.[0] || null;
 
   // Get the raised amount from the API
   const raised = parseFloat(item?.raised || 0);
