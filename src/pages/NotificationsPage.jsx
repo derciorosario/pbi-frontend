@@ -116,6 +116,10 @@ export default function NotificationsPage() {
       
       // Reload connections
       await loadConnections();
+      
+      // Force an immediate refresh of the connection requests count in the header
+      // This will update the notification counter in the header
+      await client.get("/connections/requests");
     } catch (e) {
       // Show error toast
       toast.error(e?.response?.data?.message || "Failed to update connection request");
@@ -147,6 +151,10 @@ export default function NotificationsPage() {
         loadNotifications(),
         loadMeetingRequests()
       ]);
+      
+      // Force an immediate refresh of the meeting requests count in the header
+      // This will update the notification counter in the header
+      await client.get("/meeting-requests/upcoming");
     } catch (e) {
       // Show error toast
       toast.error(e?.response?.data?.message || "Failed to update meeting request");
@@ -288,10 +296,8 @@ export default function NotificationsPage() {
               )
             )}
           </div>
-          <div className="flex gap-2">
-            <button className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm">
-              ⚙ Settings
-            </button>
+          <div className="flex gap-2 hidden">
+          
             <button
               onClick={markAllAsRead}
               className={styles.primary}
@@ -433,12 +439,12 @@ export default function NotificationsPage() {
                       {errorMeetings}
                     </div>
                   )}
-                  {!loadingMeetings && !meetingRequests.filter(m => m.status === "pending").length && (
+                  {!loadingMeetings && !meetingRequests.filter(m => m.status === "pending" && m.requester?.id!=user?.id).length && (
                     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
                       No pending meeting requests.
                     </div>
                   )}
-                  {meetingRequests.filter(m => m.status === "pending").map((m) => (
+                  {meetingRequests.filter(m => m.status === "pending" && m.requester?.id!=user?.id).map((m) => (
                     <div
                       key={m.id}
                       className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex justify-between"
@@ -534,10 +540,18 @@ export default function NotificationsPage() {
 
         <button
           className={`mt-6 mx-auto block ${styles.outline}`}
-          onClick={() => {
-            loadConnections();
-            loadNotifications();
-            loadMeetingRequests();
+          onClick={async () => {
+            await Promise.all([
+              loadConnections(),
+              loadNotifications(),
+              loadMeetingRequests()
+            ]);
+            
+            // Force an immediate refresh of the counts in the header
+            await Promise.all([
+              client.get("/connections/requests"),
+              client.get("/meeting-requests/upcoming")
+            ]);
           }}
         >
           Refresh

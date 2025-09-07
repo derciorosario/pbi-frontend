@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { toast } from "../lib/toast";
-import { MoreVertical, User } from "lucide-react"; // 3 dots icon and user icon
+import { Edit, MoreVertical, User } from "lucide-react"; // 3 dots icon and user icon
 import I from '../lib/icons'
 import styles from "../lib/styles";
 import ConnectionRequestModal from "./ConnectionRequestModal";
@@ -64,11 +64,11 @@ export default function JobCard({ job, onEdit, onDelete }) {
 
   return (
     <>
-      <div className="rounded-2xl bg-white border p-5 shadow-sm">
+      <div  className={`rounded-2xl bg-white border p-5 shadow-sm `}>
         <div className="flex items-start justify-between">
           <div>
             <h3 className="font-semibold">{job.title}</h3>
-            <div className="text-sm text-gray-500">{job.companyName}</div>
+            {!job.make_company_name_private && <div className="text-sm text-gray-500">{job.companyName}</div>}
           </div>
 
           <div className="flex items-center gap-2 relative" ref={menuRef}>
@@ -131,6 +131,15 @@ export default function JobCard({ job, onEdit, onDelete }) {
              {formatTimeAgo(job.timeAgo, job.createdAt)}
           </div>
            <div className="flex items-center gap-2">
+           {job.postedByUserId==user?.id &&  <button
+                onClick={() => {
+                 if(job.postedByUserId==user?.id) navigate('/job/'+job.id)
+                }}
+                className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600"
+                aria-label="Edit"
+              >
+                <Edit size={19}/>
+              </button>}
               <button
                 onClick={() => {
                   if (!user?.id) {
@@ -149,7 +158,7 @@ export default function JobCard({ job, onEdit, onDelete }) {
               >
                 <I.msg />
               </button>
-              <button
+              {job.postedByUserId!=user?.id && <button
                 onClick={() => {
                   if (!user?.id) {
                     data._showPopUp("login_prompt");
@@ -160,7 +169,7 @@ export default function JobCard({ job, onEdit, onDelete }) {
                 className={styles.primary}
               >
                 Connect
-              </button>
+              </button>}
             </div>
        
         </div>

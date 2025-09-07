@@ -5,12 +5,12 @@ import { useNavigate } from "react-router-dom";
  * Quick config (edit these)
  * --------------------------- */
 const ORG = {
-  name: "54Links",
-  email: "privacy@54links.example", // update if you have a real address
+  name: "55Links",
+  email: "privacy@55Links.example", // update if you have a real address
   address: "Maputo, Mozambique",
-  dpoEmail: "dpo@54links.example",  // optional; remove if unused
+  dpoEmail: "dpo@55Links.example",  // optional; remove if unused
 };
-const BRAND = "#0a66c2";
+const BRAND = "#034ea2";
 
 const H2 = ({ id, children }) => (
   <h2 id={id} className="scroll-mt-28 text-xl md:text-2xl font-semibold text-gray-900 mt-10">

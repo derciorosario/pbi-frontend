@@ -64,7 +64,6 @@ function App() {
          <Route path="/verify/:token" element={<VerifyEmail />} />
          
       
-         
          {/* Forgot / Reset password */}
         <Route path="/reset-success" element={<ResetSuccess />} />
         <Route path="/forgot" element={<ForgotPassword />} />
@@ -80,6 +79,7 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<ProfilePage />} />
+
             <Route path="/jobs/create" element={<CreateJobOpportunity />} />
             <Route path="/events/create" element={<CreateEventPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
@@ -87,6 +87,7 @@ function App() {
             <Route path="/service/:id" element={<CreateServicePage />} />
             <Route path="/services/request/create" element={<CreateServiceRequestPage />} />
             <Route path="/products/create" element={<CreateProductPage />} />
+            <Route path="/product/:id" element={<CreateProductPage />} />
             <Route path="/experiences/create" element={<CreateTourismPostPage />} />
             <Route path="/experience/:id" element={<CreateTourismPostPage />} />
             <Route path="/messages" element={<MessagesPage />} />

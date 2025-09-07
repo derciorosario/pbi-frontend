@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import  client  from "../api/client";
 
 /* brand */
-const BRAND = "#0a66c2";
+const BRAND = "#034ea2";
 
 /* tiny inline icons */
 const I = {
@@ -131,7 +131,7 @@ export default function QuickActionsPanel() {
   // Handle connection request response
   const handleConnectionResponse = async (requestId, action) => {
     try {
-      await client.post(`/api/connections/requests/${requestId}/respond`, { action });
+      await client.post(`/connections/requests/${requestId}/respond`, { action });
       // Refresh data after response
       loadData();
     } catch (error) {
@@ -141,17 +141,19 @@ export default function QuickActionsPanel() {
 
   // Handle chat navigation
   const handleChatClick = (userId) => {
-    navigate(`/messages?user=${userId}`);
+    navigate(`/messages?userId=${userId}`);
   };
 
   // Handle meeting join
   const handleJoinMeeting = async (meetingId) => {
     try {
       // Get meeting details
-      const response = await client.get(`/api/meeting-requests/${meetingId}`);
+      const response = await client.get(`/meeting-requests/${meetingId}`);
       const meeting = response.data;
 
-      if (meeting.link) {
+      if(meeting.mode=="in_person"){
+        window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(meeting.location)}`, '_blank');
+      }else if (meeting.link) {
         window.open(meeting.link, '_blank');
       } else {
         console.log('No meeting link available');
@@ -222,9 +224,14 @@ export default function QuickActionsPanel() {
         title="Recent Chats"
         icon={<I.chat />}
         right={
-          <button className="h-7 w-7 grid place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50">
-            <I.plus/>
-          </button>
+          <div className="flex items-center gap-2">
+             <button onClick={()=>navigate('/messages')} className="h-7 w-7 grid place-items-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50">
+             <I.plus/>
+            </button>
+            <Counter n={recentChats.length} />
+            
+          </div>
+         
         }
       >
         {recentChats.length === 0 ? (
@@ -318,7 +325,7 @@ export default function QuickActionsPanel() {
                     style={{background: BRAND}}
                     onClick={() => handleJoinMeeting(meeting.id)}
                   >
-                    Join Meeting
+                    {meeting.mode=="in_person" ? 'See Map':'Join Meeting'} 
                   </button>
                 </div>
               </div>

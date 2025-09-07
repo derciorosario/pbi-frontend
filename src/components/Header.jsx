@@ -18,6 +18,8 @@ function Header({ page }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [connectionRequestCount, setConnectionRequestCount] = useState(0);
+  const [meetingRequestCount, setMeetingRequestCount] = useState(0);
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const profileMenuRef = useRef(null);
   const moreMenuRef = useRef(null);
@@ -53,7 +55,53 @@ function Header({ page }) {
     fetchUnreadCount();
     
     // Set up interval to refresh unread count
-    const interval = setInterval(fetchUnreadCount, 30000); // Every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 3000); // Every 3 seconds
+    
+    return () => clearInterval(interval);
+  }, [user]);
+  
+  // Get connection request count
+  useEffect(() => {
+    if (!user) return;
+    
+    async function fetchConnectionRequests() {
+      try {
+        const { data } = await client.get("/connections/requests");
+        setConnectionRequestCount((data.incoming || []).length);
+      } catch (error) {
+        console.error("Failed to fetch connection requests:", error);
+      }
+    }
+    
+    fetchConnectionRequests();
+    
+    // Set up interval to refresh connection requests
+    const interval = setInterval(fetchConnectionRequests, 3000); // Every 3 seconds
+    
+    return () => clearInterval(interval);
+  }, [user]);
+  
+  // Get meeting request count
+  useEffect(() => {
+    if (!user) return;
+    
+    async function fetchMeetingRequests() {
+      try {
+        const { data } = await client.get("/meeting-requests/upcoming");
+        // Count only pending requests that were not created by the current user
+        const pendingRequests = (data || []).filter(
+          req => req.status === "pending" && req.requester?.id !== user.id
+        );
+        setMeetingRequestCount(pendingRequests.length);
+      } catch (error) {
+        console.error("Failed to fetch meeting requests:", error);
+      }
+    }
+    
+    fetchMeetingRequests();
+    
+    // Set up interval to refresh meeting requests
+    const interval = setInterval(fetchMeetingRequests, 3000); // Every 3 seconds
     
     return () => clearInterval(interval);
   }, [user]);
@@ -77,13 +125,18 @@ function Header({ page }) {
   ];
 
   // Show first group in the main row; rest go under the "+" dropdown
-  const primaryNav = allNavItems.slice(0, 6); // Feed, People, Jobs, Events
-  const moreNav = allNavItems.slice(6,9);       // Products, Services, Tourism, Funding
+  const primaryNav = allNavItems//.slice(0, 6); // Feed, People, Jobs, Events
+  const moreNav = []// allNavItems.slice(6,9);       // Products, Services, Tourism, Funding
 
   function isActive(item) {
     if (page) return page === item.name;
     return pathname === item.path;
   }
+
+  
+    //console.log(Object.keys(data._openPopUps).some(i=>data._openPopUps[i]))
+   
+
 
   function getInitials(name) {
     if (!name) return "U";
@@ -108,7 +161,7 @@ function Header({ page }) {
            
             <div className="leading-tight">
               <img src={logoImg} width={120}/>
-             {/** <div className="font-semibold text-brand-600">54LINKS</div>
+             {/** <div className="font-semibold text-brand-600">55Links</div>
               <div className="text-[11px] text-gray-500 -mt-1">Business Initiative</div> */}
             </div>
           </div>
@@ -128,7 +181,7 @@ function Header({ page }) {
                   }}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${
                     active
-                      ? "bg-brand-500 text-white"
+                      ? "bg-brand-50 text-brand-600"
                       : "text-gray-700 hover:bg-brand-50 hover:text-brand-600"
                   }`}
                 >
@@ -138,7 +191,7 @@ function Header({ page }) {
             })}
 
             {/* "+" More menu */}
-            <div className="relative" ref={moreMenuRef}>
+            <div className="relative hidden" ref={moreMenuRef}>
               <button
                 aria-haspopup="menu"
                 aria-expanded={moreOpen}
@@ -196,16 +249,18 @@ function Header({ page }) {
           </nav>
 
           {/* Search + notifications + messages + profile */}
-          <div className="ml-auto hidden md:flex items-center gap-2 flex-1 max-w-md">
+          <div className="ml-auto hidden md:flex items-center gap-5 flex-1 max-w-md">
             <div className="flex-1">{/* layout spacer */}</div>
 
             {user ? (
               <>
                 {/* Notifications */}
                 <button onClick={() => navigate("/notifications")} className="relative">
-                  <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-white text-[10px]">
-                    3
-                  </span>
+                  {(connectionRequestCount > 0 || meetingRequestCount > 0) && (
+                    <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-white text-[10px]">
+                      {connectionRequestCount + meetingRequestCount > 9 ? '9+' : connectionRequestCount + meetingRequestCount}
+                    </span>
+                  )}
                   <svg className="text-gray-600" viewBox="0 0 24 24" fill="currentColor" height={"20"}>
                     <path d="M12 22a2.5 2.5 0 0 0 2.45-2H9.55A2.5 2.5 0 0 0 12 22ZM18 16v-5a6 6 0 1 0-12 0v5l-1.8 1.8A1 1 0 0 0 5 20h14a1 1 0 0 0 .8-1.6Z" />
                   </svg>
@@ -229,8 +284,8 @@ function Header({ page }) {
                     onClick={() => setProfileOpen((o) => !o)}
                     className="ml-2 h-10 w-10 rounded-full bg-brand-50 grid place-items-center flex-shrink-0 overflow-hidden"
                   >
-                    {profile?.avatarUrl ? (
-                      <img src={profile.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                    {user?.avatarUrl ? (
+                      <img src={user.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
                     ) : (
                       <span className="font-semibold text-brand-600 text-sm">{initials}</span>
                     )}
@@ -238,17 +293,31 @@ function Header({ page }) {
 
                   {profileOpen && (
                     <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg p-2">
-                      <div className="flex items-center gap-2 p-2 border-b">
-                        <img
-                          src={profile?.avatarUrl || "https://placehold.co/40x40?text=U"}
-                          alt="avatar"
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
-                        <div>
-                          <div className="font-medium text-sm">{user?.name || profile?.name || "User"}</div>
-                          <div className="text-xs text-gray-500 truncate">{user?.email || profile?.email}</div>
+                    <div onClick={() => {
+                      setProfileOpen(false);
+                          navigate("/profile");
+                    }} className="flex cursor-pointer items-center gap-2 p-2 border-b">
+                      <button
+                    
+                    className="ml-2 h-10 w-10 rounded-full bg-brand-50 grid place-items-center flex-shrink-0 overflow-hidden"
+                  >
+                    {user?.avatarUrl ? (
+                      <img src={user?.avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="font-semibold text-brand-600 text-sm">{initials}</span>
+                    )}
+                  </button>
+
+                      <div className="min-w-0"> {/* 👈 ensures truncate works */}
+                        <div className="font-medium text-sm truncate max-w-[180px]">
+                          {user?.name || profile?.name || "User"}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate max-w-[180px]">
+                          {user?.email || profile?.email}
                         </div>
                       </div>
+                    </div>
+
 
                       <button
                         onClick={() => {
@@ -260,15 +329,7 @@ function Header({ page }) {
                         Profile
                       </button>
 
-                      <button
-                        onClick={() => {
-                          setProfileOpen(false);
-                          navigate("/settings");
-                        }}
-                        className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-brand-50 hover:text-brand-600 rounded-md"
-                      >
-                        Settings
-                      </button>
+                     
 
                       <button
                         onClick={() => {

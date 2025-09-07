@@ -189,7 +189,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className={`relative w-full ${activeTab!="signup" ? 'max-w-md':'max-w-lg'} bg-white rounded-xl shadow-xl p-6 md:p-8 max-h-[90vh] overflow-y-auto`}>
+      <div className={`relative w-full ${activeTab!="signup" ? 'max-w-md':'max-w-lg'} bg-white rounded-xl shadow-xl p-6 md:p-8 max-h-[80vh] overflow-y-auto`}>
         {/* Close button */}
         <button 
           onClick={onClose}
@@ -206,7 +206,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
           </>
         ) : (
           <>
-            <h2 className="mt-2 text-3xl font-bold text-gray-900">54Links</h2>
+            <h2 className="mt-2 text-3xl font-bold text-gray-900">55Links</h2>
             <p className="mt-1 text-gray-600">
               Discover, connect, and collaborate across Africa.
             </p>

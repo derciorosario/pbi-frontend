@@ -393,7 +393,7 @@ export default function PeopleFeedPage() {
               P
             </div>
             <div className="leading-tight">
-              <div className="font-semibold">54LINKS</div>
+              <div className="font-semibold">55Links</div>
               <div className="text-[11px] text-gray-500 -mt-1">Business Initiative</div>
             </div>
           </div>
@@ -527,7 +527,7 @@ export default function PeopleFeedPage() {
                             <li>
                               <button onClick={()=>navigate('/jobs/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
                                 <PlusCircle size={16} className="text-[#8a358a]" />
-                                Post an Opportunity
+                                Post Job Opportunity
                               </button>
                             </li>
                             <li>
@@ -542,12 +542,7 @@ export default function PeopleFeedPage() {
                              Share an Experience
                               </button>
                             </li>
-                            <li>
-                              <button onClick={()=>navigate('/news/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
-                                <PlusCircle size={16} className="text-[#8a358a]" />
-                                Create News Article
-                              </button>
-                            </li>
+                          
                           </ul>
                         </div>
                       )}

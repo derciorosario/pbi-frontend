@@ -1,105 +1,112 @@
 // src/pages/Profile.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "../lib/toast";
 import {
-  getMe, updateIdentity, updatePersonal, updateProfessional, updateInterests,
-  listCategories, listGoals
+  getMe,
+  updatePersonal,
+  updateProfessional,
+  getIdentityCatalog,
+  updateDoSelections,
+  updateInterestSelections,
 } from "../api/profile";
 import ProfilePhoto from "../components/ProfilePhoto";
-import { useNavigate } from "react-router-dom";
 import COUNTRIES from "../constants/countries.js";
 import Header from "../components/Header.jsx";
 
-/* ---------------- SVG icons ---------------- */
-const I = {
-  feed: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/></svg>,
-  people: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4ZM6 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3ZM2 20a6 6 0 0 1 12 0v1H2Zm12.5 1v-1a7.5 7.5 0 0 1 9.5-7.2V21Z"/></svg>,
-  jobs: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M10 3h4a2 2 0 0 1 2 2v1h3a2 2 0 0 1 2 2v3H3V8a2 2 0 0 1 2-2h3V5a2 2 0 0 1 2-2Zm4 3V5h-4v1h4Z"/><path d="M3 11h18v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7Zm8 2H5v2h6v-2Z"/></svg>,
-  calendar: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h2v3H7zm8 0h2v3h-2z"/><path d="M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2h3V5a2 2 0 0 1 2-2Zm0 5v9h14v-9H5Z"/></svg>,
-  biz: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M3 21V3h8v6h10v12H3Z"/><path d="M7 7h2v2H7zm0 4h2v2H7zm0 4h2v2H7z"/></svg>,
-  pin: () => <svg className="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 14.5 9 2.5 2.5 0 0 1 12 11.5Z"/></svg>,
-  chevron: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="m6 9 6 6 6-6"/></svg>,
-  search: () => <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3.5-3.5"/></svg>,
-  heart: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-6.716-4.349-9.428-7.061A5.5 5.5 0 0 1 11.5 6.5L12 7l.5-.5a5.5 5.5 0 0 1 8.928 7.439C18.716 16.651 12 21 12 21z"/></svg>,
-  comment: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-  share: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M16 6l-4-4-4 4M12 2v14"/></svg>,
-  msg: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-  eye: () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5c5 0 9.3 3.1 11 7-1.7 3.9-6 7-11 7S2.7 15.9 1 12c1.7-3.9 6-7 11-7Zm0 10a3 3 0 1 0-3-3 3 3 0 0 0 3 3Z"/></svg>,
-  filter: () => <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5h18v2l-7 7v5l-4 2v-7L3 7z"/></svg>,
-  close: () => <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg>,
+const Tab = {
+  PERSONAL: "personal",
+  PROFESSIONAL: "professional",
+  DO: "do",
+  INTERESTS: "interests",
 };
-const Tab = { PERSONAL: "personal", PROFESSIONAL: "professional", INTERESTS: "interests" };
 
 export default function ProfilePage() {
-  const [active, setActive]       = useState(Tab.PERSONAL);
-  const [loading, setLoading]     = useState(true);
-  const [saving, setSaving]       = useState(false);
-  const [me, setMe]               = useState(null);
-  const [categories, setCategories] = useState([]);
-  const [goals, setGoals]           = useState([]);
-  const navigate=useNavigate()
+  const [active, setActive]   = useState(Tab.PERSONAL);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving]   = useState(false);
+  const [me, setMe]           = useState(null);
+  const [identities, setIdentities] = useState([]);
 
-  // Forms
-  const [identity, setIdentity] = useState({ primaryIdentity: "" });
- const [personal, setPersonal] = useState({
-  name: "", phone: "", nationality: "",
-  country: "", countryOfResidence: "", city: "", // 🆕
-  birthDate: "", professionalTitle: "", about: "", avatarUrl: ""
-});
+  // Personal
+  const [personal, setPersonal] = useState({
+    name: "", phone: "", nationality: "",
+    country: "", countryOfResidence: "", city: "",
+    birthDate: "", professionalTitle: "", about: "", avatarUrl: ""
+  });
+
+  // Professional (no categories here)
   const [professional, setProfessional] = useState({
     experienceLevel: "",
     skills: [],
     languages: [],
-    // featured
-    categoryId: "",
-    subcategoryId: "",
-    // multi-select (optional)
-    categoryIds: [],
-    subcategoryIds: []
   });
-  const [interests, setInterests] = useState({ goalIds: [] });
+
+  // DOES (what I DO)
+  const [doIdentityIds, setDoIdentityIds] = useState([]);
+  const [doCategoryIds, setDoCategoryIds] = useState([]);
+  const [doSubcategoryIds, setDoSubcategoryIds] = useState([]);
+  const [doSubsubCategoryIds, setDoSubsubCategoryIds] = useState([]);
+
+  // WANTS (what I’m looking for) + limits
+  const MAX_WANT_IDENTITIES = 3;
+  const MAX_WANT_CATEGORIES = 3;
+  const [wantIdentityIds, setWantIdentityIds] = useState([]);
+  const [wantCategoryIds, setWantCategoryIds] = useState([]);
+  const [wantSubcategoryIds, setWantSubcategoryIds] = useState([]);
+  const [wantSubsubCategoryIds, setWantSubsubCategoryIds] = useState([]);
+
+  // UI open/close (DO / WANT)
+  const [openCatsDo, setOpenCatsDo] = useState(() => new Set());
+  const [openSubsDo, setOpenSubsDo] = useState(() => new Set());
+  const [openCatsWant, setOpenCatsWant] = useState(() => new Set());
+  const [openSubsWant, setOpenSubsWant] = useState(() => new Set());
 
   useEffect(() => {
     (async () => {
       try {
-        const [{ data: meData }, { data: cats }, { data: gs }] = await Promise.all([
+        setLoading(true);
+        const [{ data: meData }, { data: catalog }] = await Promise.all([
           getMe(),
-          listCategories(),
-          listGoals(),
+          getIdentityCatalog(),
         ]);
-        setMe(meData);
-        setCategories(cats || []);
-        setGoals(gs || []);
 
-        // hydrate
+        setMe(meData);
+        setIdentities(Array.isArray(catalog?.identities) ? catalog.identities : []);
+
+        // hydrate personal
         const u = meData.user || {};
         const p = meData.profile || {};
-        setIdentity({ primaryIdentity: p.primaryIdentity || "" });
-
         setPersonal({
-            name: u.name || "",
-            phone: u.phone || "",
-            nationality: u.nationality || "",
-            country: u.country || "",
-            countryOfResidence: u.countryOfResidence || "", // 🆕
-            city: u.city || "",
-            birthDate: p.birthDate || "",
-            professionalTitle: p.professionalTitle || "",
-            about: p.about || "",
-            avatarUrl: p.avatarUrl || "",
+          name: u.name || "",
+          phone: u.phone || "",
+          nationality: u.nationality || "",
+          country: u.country || "",
+          countryOfResidence: u.countryOfResidence || "",
+          city: u.city || "",
+          birthDate: p.birthDate || "",
+          professionalTitle: p.professionalTitle || "",
+          about: p.about || "",
+          avatarUrl: u.avatarUrl || p.avatarUrl || "",
         });
 
+        // hydrate professional
         setProfessional({
           experienceLevel: p.experienceLevel || "",
           skills: Array.isArray(p.skills) ? p.skills : [],
           languages: Array.isArray(p.languages) ? p.languages : [],
-          categoryId: p.categoryId || "",
-          subcategoryId: p.subcategoryId || "",
-          categoryIds: meData.selectedCategoryIds || [],
-          subcategoryIds: meData.selectedSubcategoryIds || []
         });
 
-        setInterests({ goalIds: meData.selectedGoalIds || [] });
+        // DOES
+        setDoIdentityIds(meData.doIdentityIds || []);
+        setDoCategoryIds(meData.doCategoryIds || []);
+        setDoSubcategoryIds(meData.doSubcategoryIds || []);
+        setDoSubsubCategoryIds(meData.doSubsubCategoryIds || []);
+
+        // WANTS
+        setWantIdentityIds(meData.interestIdentityIds || []);
+        setWantCategoryIds(meData.interestCategoryIds || []);
+        setWantSubcategoryIds(meData.interestSubcategoryIds || []);
+        setWantSubsubCategoryIds(meData.interestSubsubCategoryIds || []);
       } catch (e) {
         console.error(e);
         toast.error("Failed to load profile.");
@@ -112,36 +119,40 @@ export default function ProfilePage() {
   const progress = me?.progress?.percent ?? 0;
   const levels = ["Junior", "Mid", "Senior", "Lead", "Director", "C-level"];
 
-  async function saveIdentity() {
-    try {
-      setSaving(true);
-      const { data } = await updateIdentity(identity);
-      setMe(data);
-      toast.success("Saved!");
-    } catch (e) {
-      toast.error(e?.response?.data?.message || "Failed to save.");
-    } finally { setSaving(false); }
-  }
-
-  async function savePersonal(stay = true) {
+  /* ---------- Save handlers ---------- */
+  async function savePersonal() {
     try {
       setSaving(true);
       const { data } = await updatePersonal(personal);
       setMe(data);
-      toast.success(stay ? "Draft saved." : "Saved!");
-      if (!stay) setActive(Tab.PROFESSIONAL);
+      toast.success("Personal info saved!");
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to save.");
     } finally { setSaving(false); }
   }
 
-  async function saveProfessional(stay = true) {
+  async function saveProfessional() {
     try {
       setSaving(true);
       const { data } = await updateProfessional(professional);
       setMe(data);
-      toast.success(stay ? "Draft saved." : "Saved!");
-      if (!stay) setActive(Tab.INTERESTS);
+      toast.success("Professional info saved!");
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to save.");
+    } finally { setSaving(false); }
+  }
+
+  async function saveDo() {
+    try {
+      setSaving(true);
+      const { data } = await updateDoSelections({
+        identityIds: doIdentityIds,
+        categoryIds: doCategoryIds,
+        subcategoryIds: doSubcategoryIds,
+        subsubCategoryIds: doSubsubCategoryIds,
+      });
+      setMe(data);
+      toast.success("Updated what you DO!");
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to save.");
     } finally { setSaving(false); }
@@ -150,114 +161,569 @@ export default function ProfilePage() {
   async function saveInterests() {
     try {
       setSaving(true);
-      const { data } = await updateInterests(interests);
+      const { data } = await updateInterestSelections({
+        identityIds: wantIdentityIds,
+        categoryIds: wantCategoryIds,
+        subcategoryIds: wantSubcategoryIds,
+        subsubCategoryIds: wantSubsubCategoryIds,
+      });
       setMe(data);
-      toast.success("Saved!");
+      toast.success("Updated what you’re LOOKING FOR!");
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to save.");
     } finally { setSaving(false); }
   }
 
-  if (loading) {
+  /* ---------- Relationships (maps) ---------- */
+  const getIdentityKey = (iden) => iden.id || `name:${iden.name}`;
+
+  const catToIdentityKeys = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      const ik = getIdentityKey(iden);
+      for (const c of iden.categories || []) {
+        if (!c?.id) continue;
+        m[c.id] = m[c.id] || new Set();
+        m[c.id].add(ik);
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const subToIdentityKeys = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      const ik = getIdentityKey(iden);
+      for (const c of iden.categories || []) {
+        for (const s of c.subcategories || []) {
+          if (!s?.id) continue;
+          m[s.id] = m[s.id] || new Set();
+          m[s.id].add(ik);
+        }
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const subsubToIdentityKeys = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      const ik = getIdentityKey(iden);
+      for (const c of iden.categories || []) {
+        for (const s of c.subcategories || []) {
+          for (const x of s.subsubs || []) {
+            if (!x?.id) continue;
+            m[x.id] = m[x.id] || new Set();
+            m[x.id].add(ik);
+          }
+        }
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const subToCat = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      for (const c of iden.categories || []) {
+        for (const s of c.subcategories || []) {
+          if (s?.id) m[s.id] = c.id;
+        }
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const subsubToSub = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      for (const c of iden.categories || []) {
+        for (const s of c.subcategories || []) {
+          for (const x of s.subsubs || []) {
+            if (x?.id) m[x.id] = s.id;
+          }
+        }
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const catToAllSubIds = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      for (const c of iden.categories || []) {
+        if (!c?.id) continue;
+        const subs = (c.subcategories || []).map((s) => s.id).filter(Boolean);
+        m[c.id] = Array.from(new Set([...(m[c.id] || []), ...subs]));
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const subToAllSubsubIds = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      for (const c of iden.categories || []) {
+        for (const s of c.subcategories || []) {
+          if (!s?.id) continue;
+          const subsubs = (s.subsubs || []).map((x) => x.id).filter(Boolean);
+          m[s.id] = Array.from(new Set([...(m[s.id] || []), ...subsubs]));
+        }
+      }
+    }
+    return m;
+  }, [identities]);
+
+  /* ---------- Helpers: generic toggles ---------- */
+  function makeToggleIdentity({ pickIds, setPickIds, setCats, setSubs, setX }) {
+    return (identityKey) => {
+      setPickIds((prev) => {
+        const picked = prev.includes(identityKey) ? prev.filter(x => x !== identityKey) : [...prev, identityKey];
+        const stillCovered = (map, id) => {
+          const ownersSet = map[id];
+          return ownersSet ? picked.some(ik => ownersSet.has(ik)) : false;
+        };
+        setX(prev => prev.filter(xid => stillCovered(subsubToIdentityKeys, xid)));
+        setSubs(prev => prev.filter(sid => stillCovered(subToIdentityKeys, sid)));
+        setCats(prev => prev.filter(cid => stillCovered(catToIdentityKeys, cid)));
+        return picked;
+      });
+    };
+  }
+
+  function makeToggleCategory({ catIds, setCatIds, setSubIds, setXIds }) {
+    return (catId) => {
+      if (!catId) return;
+      const has = catIds.includes(catId);
+      if (has) {
+        const subs = catToAllSubIds[catId] || [];
+        const xIds = subs.flatMap(sid => subToAllSubsubIds[sid] || []);
+        setCatIds(prev => prev.filter(x => x !== catId));
+        setSubIds(prev => prev.filter(s => !subs.includes(s)));
+        setXIds(prev => prev.filter(x => !xIds.includes(x)));
+      } else {
+        setCatIds(prev => [...prev, catId]);
+      }
+    };
+  }
+
+  function makeToggleSub({ subIds, setSubIds, setXIds, setCatIds }) {
+    return (subId) => {
+      if (!subId) return;
+      const parentCatId = subToCat[subId];
+      const has = subIds.includes(subId);
+      if (has) {
+        const xIds = subToAllSubsubIds[subId] || [];
+        setSubIds(prev => prev.filter(x => x !== subId));
+        setXIds(prev => prev.filter(x => !xIds.includes(x)));
+      } else {
+        if (parentCatId) {
+          setCatIds(prev => (prev.includes(parentCatId) ? prev : [...prev, parentCatId]));
+        }
+        setSubIds(prev => [...prev, subId]);
+      }
+    };
+  }
+
+  function makeToggleSubsub({ setXIds, subIds, setSubIds, setCatIds }) {
+    return (xId) => {
+      if (!xId) return;
+      const parentSubId = subsubToSub[xId];
+      const parentCatId = parentSubId ? subToCat[parentSubId] : null;
+      setXIds(prev => {
+        const has = prev.includes(xId);
+        if (has) return prev.filter(x => x !== xId);
+        if (parentSubId && !subIds.includes(parentSubId)) setSubIds(p => [...p, parentSubId]);
+        if (parentCatId) setCatIds(p => (p.includes(parentCatId) ? p : [...p, parentCatId]));
+        return [...prev, xId];
+      });
+    };
+  }
+
+  /* ---------- DOES ---------- */
+  const toggleIdentityDo = makeToggleIdentity({
+    pickIds: doIdentityIds, setPickIds: setDoIdentityIds,
+    setCats: setDoCategoryIds, setSubs: setDoSubcategoryIds, setX: setDoSubsubCategoryIds,
+  });
+  const toggleCategoryDo = makeToggleCategory({
+    catIds: doCategoryIds, setCatIds: setDoCategoryIds,
+    setSubIds: setDoSubcategoryIds, setXIds: setDoSubsubCategoryIds,
+  });
+  const toggleSubDo = makeToggleSub({
+    subIds: doSubcategoryIds, setSubIds: setDoSubcategoryIds,
+    setXIds: setDoSubsubCategoryIds, setCatIds: setDoCategoryIds,
+  });
+  const toggleSubsubDo = makeToggleSubsub({
+    setXIds: setDoSubsubCategoryIds,
+    subIds: doSubcategoryIds, setSubIds: setDoSubcategoryIds,
+    setCatIds: setDoCategoryIds,
+  });
+
+  /* ---------- WANTS (with limits) ---------- */
+  const toggleIdentityWant = (identityKey) => {
+    setWantIdentityIds(prev => {
+      const has = prev.includes(identityKey);
+      if (has) return prev.filter(x => x !== identityKey);
+      if (prev.length >= MAX_WANT_IDENTITIES) return prev; // limit
+      return [...prev, identityKey];
+    });
+  };
+
+  const toggleCategoryWant = (catId) => {
+    setWantCategoryIds(prev => {
+      const has = prev.includes(catId);
+      if (has) {
+        const subs = catToAllSubIds[catId] || [];
+        const xs = subs.flatMap(sid => subToAllSubsubIds[sid] || []);
+        setWantSubcategoryIds(p => p.filter(id => !subs.includes(id)));
+        setWantSubsubCategoryIds(p => p.filter(id => !xs.includes(id)));
+        return prev.filter(id => id !== catId);
+      } else {
+        if (prev.length >= MAX_WANT_CATEGORIES) return prev; // limit
+        return [...prev, catId];
+      }
+    });
+  };
+
+  const toggleSubWant = (subId) => {
+    const parentCatId = subToCat[subId];
+    setWantSubcategoryIds(prev => {
+      const has = prev.includes(subId);
+      if (has) return prev.filter(x => x !== subId);
+      if (parentCatId && !wantCategoryIds.includes(parentCatId)) {
+        if (wantCategoryIds.length >= MAX_WANT_CATEGORIES) return prev; // limit
+        setWantCategoryIds(p => [...p, parentCatId]);
+      }
+      return [...prev, subId];
+    });
+  };
+
+  const toggleSubsubWant = (xId) => {
+    const parentSubId = subsubToSub[xId];
+    const parentCatId = parentSubId ? subToCat[parentSubId] : null;
+    setWantSubsubCategoryIds(prev => {
+      const has = prev.includes(xId);
+      if (has) return prev.filter(x => x !== xId);
+      if (parentSubId && !wantSubcategoryIds.includes(parentSubId)) {
+        setWantSubcategoryIds(p => [...p, parentSubId]);
+      }
+      if (parentCatId && !wantCategoryIds.includes(parentCatId)) {
+        if (wantCategoryIds.length >= MAX_WANT_CATEGORIES) return prev; // limit
+        setWantCategoryIds(p => [...p, parentCatId]);
+      }
+      return [...prev, xId];
+    });
+  };
+
+  /* ---------- AUTO-OPEN ON TAB ENTER ---------- */
+  const computeOpenFromSelections = (catIds, subIds, xIds) => {
+    const cats = new Set(catIds);
+    const subs = new Set(subIds);
+
+    // parents from subIds
+    for (const sid of subIds) {
+      const pc = subToCat[sid];
+      if (pc) cats.add(pc);
+    }
+    // parents from xIds
+    for (const xid of xIds) {
+      const ps = subsubToSub[xid];
+      if (ps) {
+        subs.add(ps);
+        const pc = subToCat[ps];
+        if (pc) cats.add(pc);
+      }
+    }
+    return { cats, subs };
+  };
+
+  // Open “DO” sets on entering the DO tab or when selections change
+  useEffect(() => {
+    if (active !== Tab.DO) return;
+    const { cats, subs } = computeOpenFromSelections(
+      doCategoryIds, doSubcategoryIds, doSubsubCategoryIds
+    );
+    setOpenCatsDo(cats);
+    setOpenSubsDo(subs);
+  }, [active, doCategoryIds, doSubcategoryIds, doSubsubCategoryIds, subToCat, subsubToSub]);
+
+  // Open “WANTS” sets on entering the INTERESTS tab or when selections change
+  useEffect(() => {
+    if (active !== Tab.INTERESTS) return;
+    const { cats, subs } = computeOpenFromSelections(
+      wantCategoryIds, wantSubcategoryIds, wantSubsubCategoryIds
+    );
+    setOpenCatsWant(cats);
+    setOpenSubsWant(subs);
+  }, [active, wantCategoryIds, wantSubcategoryIds, wantSubsubCategoryIds, subToCat, subsubToSub]);
+
+  /* ---------- UI ---------- */
+  const Loading = () => (
+    <div className="min-h-screen grid place-items-center text-brand-700">
+      <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"/>
+      </svg>
+      <span className="ml-2">Loading…</span>
+    </div>
+  );
+
+  if (loading) return <Loading />;
+  if (!me) return null;
+
+  function IdentityGrid({ picked, onToggle, limit }) {
+    const reached = typeof limit === "number" && picked.length >= limit;
     return (
-      <div className="min-h-screen grid place-items-center text-brand-700">
-        <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"/>
-        </svg>
-        <span className="ml-2">Loading…</span>
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
+        {identities.map((iden, i) => {
+          const key = getIdentityKey(iden);
+          const active = picked.includes(key);
+          const disabled = !active && reached;
+          return (
+            <button
+              key={`${i}-${iden.name}`}
+              onClick={() => !disabled && onToggle(key)}
+              disabled={disabled}
+              className={`rounded-xl flex items-center justify-between border px-4 py-3 text-left hover:shadow-soft ${
+                active ? "border-brand-700 ring-2 ring-brand-500" : "border-gray-200"
+              } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
+              <div>
+                <div className="font-medium">{iden.name}</div>
+                <div className="text-xs text-gray-500">{(iden.categories || []).length} categories</div>
+              </div>
+              <input type="checkbox" className="h-4 w-4 pointer-events-none" checked={active} readOnly />
+            </button>
+          );
+        })}
       </div>
     );
   }
 
-  // derive subcategories of featured category
-  const featuredSubs =
-    categories.find(c => c.id === professional.categoryId)?.subcategories || [];
+  function CategoryTree({
+    selectedIdentitiesKeys,
+    catIds, subIds, xIds,
+    openCats, openSubs,
+    onToggleCat, onToggleSub, onToggleSubsub,
+    setOpenCats, setOpenSubs,
+    catLimit,
+    ensureCatOpenOnSelect = true,
+    ensureSubOpenOnSelect = true,
+  }) {
+    const hasSubs = (cat) => Array.isArray(cat?.subcategories) && cat.subcategories.length > 0;
+    const hasSubsubs = (sc) => Array.isArray(sc?.subsubs) && sc.subsubs.length > 0;
+    const reachedCatLimit = typeof catLimit === "number" && catIds.length >= catLimit;
+
+    const selectedIdentities = useMemo(() => {
+      const keys = new Set(selectedIdentitiesKeys);
+      return identities.filter((iden) => keys.has(getIdentityKey(iden)));
+    }, [identities, selectedIdentitiesKeys]);
+
+    if (selectedIdentities.length === 0) {
+      return (
+        <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
+          Select at least one identity to see categories.
+        </div>
+      );
+    }
+
+    const toggleCatOpen = (catId) => {
+      setOpenCats(prev => {
+        const n = new Set(prev);
+        n.has(catId) ? n.delete(catId) : n.add(catId);
+        return n;
+      });
+    };
+    const toggleSubOpen = (subId) => {
+      setOpenSubs(prev => {
+        const n = new Set(prev);
+        n.has(subId) ? n.delete(subId) : n.add(subId);
+        return n;
+      });
+    };
+
+    return (
+      <div className="space-y-4">
+        {selectedIdentities.map((iden, iIdx) => (
+          <div key={`iden-${iIdx}`} className="rounded-xl border">
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-xl">
+              <div className="font-semibold">{iden.name}</div>
+              <span className="text-xs text-gray-500">
+                {(iden.categories || []).length} categories
+              </span>
+            </div>
+
+            <div className="px-4 py-4 space-y-3">
+              {(iden.categories || []).map((cat, cIdx) => {
+                const _hasSubs = hasSubs(cat);
+                const catOpen = !!cat.id && openCats.has(cat.id);
+                const catSelected = !!cat.id && catIds.includes(cat.id);
+                const catDisabled = !!cat.id && !catSelected && reachedCatLimit;
+
+                return (
+                  <div key={`cat-${iIdx}-${cIdx}`} className="border rounded-lg">
+                    {/* Entire row toggles open/close */}
+                    <div
+                      className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+                      role="button"
+                      aria-expanded={catOpen}
+                      onClick={() => cat.id && toggleCatOpen(cat.id)}
+                    >
+                      <label
+                        className={`flex items-center gap-2 ${catDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4"
+                          checked={catSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            if (!cat.id) return;
+                            if (catDisabled) return;
+                            onToggleCat(cat.id);
+                            if (ensureCatOpenOnSelect && _hasSubs) {
+                              setOpenCats(prev => new Set(prev).add(cat.id));
+                            }
+                          }}
+                          disabled={!cat.id || catDisabled}
+                          title={!cat.id ? "Category not found in DB" : (catDisabled ? "Category limit reached" : "")}
+                        />
+                        <span className="font-medium">{cat.name}</span>
+                      </label>
+
+                      {_hasSubs && (
+                        <span className={`text-gray-500 transition-transform ${catOpen ? "rotate-180" : ""}`}>▾</span>
+                      )}
+                    </div>
+
+                    {_hasSubs && catOpen && (
+                      <div className="px-4 pb-4 space-y-3">
+                        {(cat.subcategories || []).map((sc, sIdx) => {
+                          const _hasSubsubs = hasSubsubs(sc);
+                          const isOpen = !!sc.id && openSubs.has(sc.id);
+                          const isSelected = !!sc.id && subIds.includes(sc.id);
+
+                          const parentSelected = !!cat.id && catIds.includes(cat.id);
+                          const subDisabled = !isSelected && !parentSelected && reachedCatLimit;
+
+                          return (
+                            <div key={`sub-${iIdx}-${cIdx}-${sIdx}`} className="border rounded-lg">
+                              <div
+                                className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+                                role="button"
+                                aria-expanded={isOpen}
+                                onClick={() => sc.id && toggleSubOpen(sc.id)}
+                              >
+                                <label
+                                  className={`flex items-center gap-3 ${subDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      if (!sc.id) return;
+                                      if (subDisabled) return;
+                                      onToggleSub(sc.id);
+                                      if (ensureSubOpenOnSelect && _hasSubsubs) {
+                                        setOpenSubs(prev => new Set(prev).add(sc.id));
+                                      }
+                                    }}
+                                    disabled={!sc.id || subDisabled}
+                                    title={!sc.id ? "Subcategory not found in DB" : (subDisabled ? "Category limit reached" : "")}
+                                  />
+                                  <span className="font-medium">{sc.name}</span>
+                                </label>
+
+                                {_hasSubsubs && (
+                                  <span className={`text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+                                )}
+                              </div>
+
+                              {_hasSubsubs && (isOpen || isSelected) && (
+                                <div className="px-4 pb-3">
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {sc.subsubs.map((ss, ssIdx) => {
+                                      const parentCatSelected = !!cat.id && catIds.includes(cat.id);
+                                      const ssSelected = !!ss.id && xIds.includes(ss.id);
+                                      const ssDisabled = !ssSelected && !parentCatSelected && reachedCatLimit;
+                                      return (
+                                        <label
+                                          key={`ss-${iIdx}-${cIdx}-${sIdx}-${ssIdx}`}
+                                          className={`inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm ${ssDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={!!ss.id && ssSelected}
+                                            onChange={() => {
+                                              if (!ss.id || ssDisabled) return;
+                                              onToggleSubsub(ss.id);
+                                            }}
+                                            disabled={!ss.id || ssDisabled}
+                                            title={!ss.id ? "Level-3 not found in DB" : (ssDisabled ? "Category limit reached" : "")}
+                                          />
+                                          <span>{ss.name}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div>
-      
       <Header/>
-
-    <div className="max-w-5xl mx-auto p-4 md:p-8">
-      {/* Header + progress */}
-      <div className="bg-white rounded-2xl shadow-soft p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Profile</h1>
-            <p className="text-gray-500">Tell your story, grow your network</p>
+      <div className="max-w-5xl mx-auto p-4 md:p-8">
+        {/* Header + progress */}
+        <div className="bg-white rounded-2xl shadow-soft p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold">Profile</h1>
+              <p className="text-gray-500">Update your information and preferences</p>
+            </div>
+            <div className="text-right text-sm text-gray-600">
+              <div className="font-medium">Completion</div>
+              <div>{progress}%</div>
+            </div>
           </div>
-          <div className="text-right text-sm text-gray-600">
-            <div className="font-medium">Complete your Profile</div>
-            <div>{progress}% of 100%</div>
+          <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-3 bg-brand-700 rounded-full transition-all" style={{ width: `${progress}%` }} />
           </div>
         </div>
-        <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-3 bg-brand-700 rounded-full transition-all" style={{ width: `${progress}%` }} />
-        </div>
-      </div>
 
-      {/* Identity quick card */}
-      <div className="mt-6 bg-white rounded-2xl shadow-soft p-5">
-        <h2 className="text-lg font-semibold mb-3">Who You Are</h2>
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
-          {["Entrepreneur", "Seller", "Buyer", "Job Seeker", "Recruiter", "Investor", "Other"].map(v => (
-            <label key={v} className="flex items-center gap-2 border rounded-lg px-3 py-2">
-              <input
-                type="radio"
-                name="identity"
-                checked={identity.primaryIdentity === v}
-                onChange={() => setIdentity({ primaryIdentity: v })}
-              />
-              <span>{v}</span>
-            </label>
-          ))}
-        </div>
-        <div className="mt-3 flex justify-end gap-3">
-          <button disabled={saving} onClick={saveIdentity} className="px-4 py-2 rounded-xl bg-brand-700 text-white">
-            Save Identity
-          </button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="mt-6">
-        <div className="flex gap-2">
-          <button
-            className={`px-4 py-2 rounded-lg border ${active===Tab.PERSONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`}
-            onClick={() => setActive(Tab.PERSONAL)}
-          >
-            Personal Info
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg border ${active===Tab.PROFESSIONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`}
-            onClick={() => setActive(Tab.PROFESSIONAL)}
-          >
-            Professional Info
-          </button>
-          <button
-            className={`px-4 py-2 rounded-lg border ${active===Tab.INTERESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`}
-            onClick={() => setActive(Tab.INTERESTS)}
-          >
-            Interests & Goals
-          </button>
+        {/* Tabs */}
+        <div className="mt-6 flex gap-2 flex-wrap">
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.PERSONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PERSONAL)}>Personal</button>
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.PROFESSIONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PROFESSIONAL)}>Professional</button>
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.DO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.DO)}>What I DO</button>
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.INTERESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INTERESTS)}>What I’m LOOKING FOR</button>
         </div>
 
         <div className="mt-4 bg-white rounded-2xl shadow-soft p-5">
           {/* PERSONAL */}
           {active === Tab.PERSONAL && (
             <div className="space-y-4">
-              {/* Avatar URL */}
-             
-       
-       
-       {/* Avatar Upload */}
-
-       <ProfilePhoto onChange={(base64)=>setPersonal({ ...personal, avatarUrl: base64 })} avatarUrl={personal.avatarUrl}/>
-
+              <ProfilePhoto onChange={(base64)=>setPersonal({ ...personal, avatarUrl: base64 })} avatarUrl={personal.avatarUrl}/>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Full Name</label>
+                  <label className="block text-sm font-medium mb-1">Full name</label>
                   <input className="w-full border rounded-lg px-3 py-2" value={personal.name}
                          onChange={e=>setPersonal({...personal, name:e.target.value})}/>
                 </div>
@@ -271,64 +737,55 @@ export default function ProfilePage() {
                          onChange={e=>setPersonal({...personal, phone:e.target.value})}/>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Birth Date</label>
+                  <label className="block text-sm font-medium mb-1">Birth date</label>
                   <input type="date" className="w-full border rounded-lg px-3 py-2" value={personal.birthDate || ""}
                          onChange={e=>setPersonal({...personal, birthDate:e.target.value})}/>
                 </div>
-                
-                <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Country (Nationality)</label>
-                           
-                             <select
-                                name="country"
-                                value={personal.country}
-                                onChange={e => setPersonal({ ...personal, country: e.target.value })}
-                                className="w-full border rounded-lg px-3 py-2"
-                            >
-                                <option value="" disabled>Select country</option>
-                                {COUNTRIES.map((c) => (
-                                <option key={c} value={c}>{c}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Country of Residence</label>
-                          
-                             <select
-                                name="country"
-                                value={personal.countryOfResidence}
-                                onChange={e => setPersonal({ ...personal, countryOfResidence: e.target.value })}
-                                className="w-full border rounded-lg px-3 py-2"
-                            >
-                                <option value="" disabled>Select country</option>
-                                {COUNTRIES.map((c) => (
-                                <option key={c} value={c}>{c}</option>
-                                ))}
-                            </select>
-                        </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Nationality</label>
+                  <select value={personal.nationality} onChange={e=>setPersonal({...personal, nationality:e.target.value})}
+                          className="w-full border rounded-lg px-3 py-2">
+                    <option value="">Select</option>
+                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Country of residence</label>
+                  <select value={personal.countryOfResidence} onChange={e=>setPersonal({...personal, countryOfResidence:e.target.value})}
+                          className="w-full border rounded-lg px-3 py-2">
+                    <option value="">Select</option>
+                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium mb-1">Country (birth)</label>
+                  <select value={personal.country} onChange={e=>setPersonal({...personal, country:e.target.value})}
+                          className="w-full border rounded-lg px-3 py-2">
+                    <option value="">Select</option>
+                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">City</label>
                   <input className="w-full border rounded-lg px-3 py-2" value={personal.city}
                          onChange={e=>setPersonal({...personal, city:e.target.value})}/>
                 </div>
+
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Professional Title</label>
+                  <label className="block text-sm font-medium mb-1">Professional title</label>
                   <input className="w-full border rounded-lg px-3 py-2" value={personal.professionalTitle}
                          onChange={e=>setPersonal({...personal, professionalTitle:e.target.value})}/>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">About You</label>
+                  <label className="block text-sm font-medium mb-1">About you</label>
                   <textarea className="w-full border rounded-lg px-3 py-2" rows="4" value={personal.about}
                             onChange={e=>setPersonal({...personal, about:e.target.value})}/>
                 </div>
               </div>
-
               <div className="flex justify-end gap-3">
-                <button disabled={saving} onClick={()=>savePersonal(true)} className="px-4 py-2 rounded-xl border border-brand-700 text-brand-700 bg-white">Save Draft</button>
-                <button disabled={saving} onClick={()=>savePersonal(false)} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+                <button disabled={saving} onClick={savePersonal} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
               </div>
             </div>
           )}
@@ -338,91 +795,15 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Featured Industry</label>
-                  <select className="w-full border rounded-lg px-3 py-2"
-                          value={professional.categoryId}
-                          onChange={(e)=>setProfessional(p=>({ ...p, categoryId: e.target.value, subcategoryId: "" }))}>
-                    <option value="">Select a category</option>
-                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Experience Level</label>
+                  <label className="block text-sm font-medium mb-1">Experience level</label>
                   <select className="w-full border rounded-lg px-3 py-2"
                           value={professional.experienceLevel}
-                          onChange={(e)=>setProfessional(p=>({ ...p, experienceLevel: e.target.value }))}>
-                    <option value="">Select level</option>
+                          onChange={e=>setProfessional(p=>({ ...p, experienceLevel: e.target.value }))}>
+                    <option value="">Select</option>
                     {levels.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
                 </div>
               </div>
-
-              {professional.categoryId && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Featured Subcategory</label>
-                  <select className="w-full border rounded-lg px-3 py-2"
-                          value={professional.subcategoryId}
-                          onChange={(e)=>setProfessional(p=>({ ...p, subcategoryId: e.target.value }))}>
-                    <option value="">Select a subcategory</option>
-                    {featuredSubs.map(sc => <option key={sc.id} value={sc.id}>{sc.name}</option>)}
-                  </select>
-                </div>
-              )}
-
-              {/* Multi-select (optional): keep your onboarding selections in the profile page too */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Your Categories (multi-select)</label>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map(c => {
-                    const checked = professional.categoryIds.includes(c.id);
-                    return (
-                      <label key={c.id} className={`px-3 py-1 rounded-full border cursor-pointer ${checked ? "bg-brand-50 border-brand-600 text-brand-700" : "border-gray-200"}`}>
-                        <input type="checkbox" className="hidden"
-                          checked={checked}
-                          onChange={()=>{
-                            setProfessional(p=>{
-                              const has = p.categoryIds.includes(c.id);
-                              const next = has ? p.categoryIds.filter(x=>x!==c.id) : [...p.categoryIds, c.id];
-                              // if removing, also remove its subs
-                              const subIds = (c.subcategories || []).map(s=>s.id);
-                              return { ...p, categoryIds: next, subcategoryIds: p.subcategoryIds.filter(id => !subIds.includes(id)) };
-                            });
-                          }}/>
-                        {c.name}
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {!!professional.categoryIds.length && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Your Subcategories</label>
-                  <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
-                    {categories
-                      .filter(c => professional.categoryIds.includes(c.id))
-                      .flatMap(c => c.subcategories.map(sc => ({ ...sc, parentId: c.id })))
-                      .map(sc => {
-                        const checked = professional.subcategoryIds.includes(sc.id);
-                        return (
-                          <label key={sc.id} className="flex items-center gap-2 border rounded-lg px-3 py-2">
-                            <input type="checkbox" checked={checked}
-                                   onChange={()=>{
-                                     setProfessional(p=>{
-                                       const has = p.subcategoryIds.includes(sc.id);
-                                       const next = has ? p.subcategoryIds.filter(x=>x!==sc.id) : [...p.subcategoryIds, sc.id];
-                                       // ensure parent cat present
-                                       const categoryIds = p.categoryIds.includes(sc.parentId) ? p.categoryIds : [...p.categoryIds, sc.parentId];
-                                       return { ...p, subcategoryIds: next, categoryIds };
-                                     });
-                                   }}/>
-                            <span>{sc.name}</span>
-                          </label>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
 
               {/* Skills */}
               <div>
@@ -477,40 +858,88 @@ export default function ProfilePage() {
               </div>
 
               <div className="flex justify-end gap-3">
-                <button disabled={saving} onClick={()=>saveProfessional(true)}  className="px-4 py-2 rounded-xl border border-brand-700 text-brand-700 bg-white">Save Draft</button>
-                <button disabled={saving} onClick={()=>saveProfessional(false)} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+                <button disabled={saving} onClick={saveProfessional} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
               </div>
             </div>
           )}
 
-          {/* INTERESTS */}
-          {active === Tab.INTERESTS && (
-            <div className="space-y-4">
-              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
-                {goals.map(g=>(
-                  <label key={g.id} className="flex items-center gap-2 border rounded-lg px-3 py-2">
-                    <input type="checkbox"
-                           checked={interests.goalIds.includes(g.id)}
-                           onChange={()=>{
-                              setInterests(prev=>{
-                                const has = prev.goalIds.includes(g.id);
-                                let next = has ? prev.goalIds.filter(x=>x!==g.id) : [...prev.goalIds, g.id];
-                                return { goalIds: next };
-                              });
-                           }}/>
-                    <span>{g.name}</span>
-                  </label>
-                ))}
+          {/* WHAT I DO */}
+          {active === Tab.DO && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-2">Identities (what you DO)</h3>
+                <IdentityGrid picked={doIdentityIds} onToggle={toggleIdentityDo} />
               </div>
+              <div>
+                <h3 className="font-semibold mb-2">Categories (what you DO)</h3>
+                <CategoryTree
+                  selectedIdentitiesKeys={doIdentityIds}
+                  catIds={doCategoryIds}
+                  subIds={doSubcategoryIds}
+                  xIds={doSubsubCategoryIds}
+                  openCats={openCatsDo}
+                  openSubs={openSubsDo}
+                  onToggleCat={(id) => {
+                    toggleCategoryDo(id);
+                    setOpenCatsDo(prev => new Set(prev).add(id));
+                  }}
+                  onToggleSub={(id) => {
+                    toggleSubDo(id);
+                    setOpenSubsDo(prev => new Set(prev).add(id));
+                  }}
+                  onToggleSubsub={toggleSubsubDo}
+                  setOpenCats={setOpenCatsDo}
+                  setOpenSubs={setOpenSubsDo}
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button disabled={saving} onClick={saveDo} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+              </div>
+            </div>
+          )}
+
+          {/* WHAT I’M LOOKING FOR */}
+          {active === Tab.INTERESTS && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold mb-2">Identities (what you’re LOOKING FOR)</h3>
+                <span className="text-sm text-gray-500">Selected {wantIdentityIds.length}/{MAX_WANT_IDENTITIES}</span>
+              </div>
+              <IdentityGrid picked={wantIdentityIds} onToggle={toggleIdentityWant} limit={MAX_WANT_IDENTITIES}/>
+
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold mb-2">Categories (what you’re LOOKING FOR)</h3>
+                <span className="text-sm text-gray-500">Selected {wantCategoryIds.length}/{MAX_WANT_CATEGORIES}</span>
+              </div>
+              <CategoryTree
+                selectedIdentitiesKeys={wantIdentityIds}
+                catIds={wantCategoryIds}
+                subIds={wantSubcategoryIds}
+                xIds={wantSubsubCategoryIds}
+                openCats={openCatsWant}
+                openSubs={openSubsWant}
+                onToggleCat={(id) => {
+                  toggleCategoryWant(id);
+                  setOpenCatsWant(prev => new Set(prev).add(id));
+                }}
+                onToggleSub={(id) => {
+                  toggleSubWant(id);
+                  setOpenSubsWant(prev => new Set(prev).add(id));
+                }}
+                onToggleSubsub={toggleSubsubWant}
+                setOpenCats={setOpenCatsWant}
+                setOpenSubs={setOpenSubsWant}
+                catLimit={MAX_WANT_CATEGORIES}
+              />
 
               <div className="flex justify-end gap-3">
                 <button disabled={saving} onClick={saveInterests} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
               </div>
             </div>
           )}
+
         </div>
       </div>
-    </div>
     </div>
   );
 }

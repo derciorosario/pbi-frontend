@@ -331,7 +331,7 @@ export default function CrowdfundForm() {
       <div className="rounded-2xl border border-gray-100 bg-white p-5 md:p-6 shadow-sm">
         <h2 className="text-xl font-semibold">{isEditMode ? "Edit Funding Project" : "Create Funding Project"}</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Present your idea, set goals, and raise funds from the 54Links community.
+          Present your idea, set goals, and raise funds from the 55Links community.
         </p>
 
         {/* Title & Category */}

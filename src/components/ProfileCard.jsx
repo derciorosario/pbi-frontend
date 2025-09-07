@@ -8,10 +8,10 @@ function ProfileCard() {
     const {user,profile} = useAuth()
   return (
    <>
-    <div className={`rounded-2xl bg-white border p-4 shadow-sm ${!Boolean(user) ? 'hidden':''}`}>
+    <div className={`rounded-2xl bg-white hidden border p-4 shadow-sm ${!Boolean(user) ? 'hidden':''}`}>
       <div className="flex items-center gap-3">
         <img
-          src={profile?.avatarUrl || 'https://www.gravatar.com/avatar/?d=mp&s=200'}
+          src={profile?.avatarUrl || user?.avatarUrl || 'https://www.gravatar.com/avatar/?d=mp&s=200'}
           alt=""
           className="h-12 w-12 rounded-full"
         />
@@ -28,7 +28,7 @@ function ProfileCard() {
         </div>
         <div className="p-3">
           <div className="text-xs text-gray-500">Posts</div>
-          <div className="font-semibold">2</div>
+          <div className="font-semibold"></div>
         </div>
       </div>
       <button className={`mt-4 ${styles.primaryWide} flex items-center justify-center`}>

@@ -8,7 +8,7 @@ import styles from "../lib/styles.jsx";
 import I from "../lib/icons.jsx";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ProfileModal from "./ProfileModal";
-import { User2 } from "lucide-react";
+import { Edit, User2 } from "lucide-react";
 
 function formatTimeAgo(timeAgo, createdAt) {
   if (timeAgo) return timeAgo;
@@ -77,6 +77,16 @@ export default function EventCard({ e }) {
           <div className="flex items-center justify-between mt-4">
             <span className="font-semibold">{priceText}</span>
             <div className="flex items-center gap-2">
+               {e.organizerUserId==user?.id &&  <button
+                onClick={() => {
+                 if(e.organizerUserId==user?.id) navigate('/event/'+e.id)
+                }}
+                className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600"
+                aria-label="Edit"
+              >
+                <Edit size={19}/>
+              </button>}
+
               <button
                 onClick={() => {
                   if (!user?.id) {
@@ -95,7 +105,7 @@ export default function EventCard({ e }) {
               >
                 <I.msg />
               </button>
-              <button
+              {e.organizerUserId!=user?.id && <button
                 onClick={() => {
                   if (!user?.id) {
                     data._showPopUp("login_prompt");
@@ -106,7 +116,7 @@ export default function EventCard({ e }) {
                 className={styles.primary}
               >
                 Connect
-              </button>
+              </button>}
             </div>
           </div>
 

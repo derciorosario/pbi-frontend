@@ -10,17 +10,20 @@ export const SocketProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [onlineConnections, setOnlineConnections] = useState([]);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
-  const { token, isAuthenticated } = useAuth();
+  const { token, isAuthenticated, user } = useAuth();
+
+
+  
 
   useEffect(() => {
     let socketInstance = null;
 
     // Only connect if the user is authenticated
     if (isAuthenticated && token) {
-      // Create socket instance
-      socketInstance = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+      // Create socket instance with userId instead of token
+      socketInstance = io(import.meta.env.VITE_API_URL || 'https://kaziwani-server.visum.co.mz/api', {
         auth: {
-          token
+          userId: user.id // Send userId directly
         }
       });
 
@@ -132,8 +135,13 @@ export const SocketProvider = ({ children }) => {
       }
       
       // Update unread count when receiving a message
-      if (data?.message?.senderId !== socket.id) {
+      // Check if the message is not from the current user
+      if (data?.message?.senderId !== user?.id) {
+        // Increment the count immediately for responsive UI
         setTotalUnreadCount(prevCount => prevCount + 1);
+        
+        // Also refresh from the server to ensure accuracy
+        refreshUnreadCount();
       }
     };
     
@@ -202,12 +210,18 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
-  // Refresh unread count when connection status changes
+  // Refresh unread count when connection status changes and periodically
   useEffect(() => {
-    if (connected) {
+    if (isAuthenticated && token) {
+      // Initial refresh
       refreshUnreadCount();
+      
+      // Set up interval to refresh unread count every 3 seconds
+      const interval = setInterval(refreshUnreadCount, 3000);
+      
+      return () => clearInterval(interval);
     }
-  }, [connected]);
+  }, [isAuthenticated, token]);
 
   const value = {
     socket,

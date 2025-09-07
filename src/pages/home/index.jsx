@@ -208,7 +208,7 @@ export default function HomePage() {
       <div className="rounded-[22px] bg-white shadow-xl ring-1 ring-black/5 p-4 md:p-5 relative z-30">
         {/* Tabs */}
         <div className="flex items-center gap-6 text-sm font-medium text-gray-500 border-b overflow-x-auto">
-          {["All", "Events", "Jobs","Services","Products"].map((tab) => (
+          {/**{["All", "Events", "Jobs","Services","Products"].map((tab) => (
             <button
               key={tab}
               className={`pb-3 relative ${
@@ -221,7 +221,11 @@ export default function HomePage() {
                 <span className="absolute left-0 -bottom-[1px] h-[3px] w-full rounded-full bg-brand-600" />
               )}
             </button>
-          ))}
+          ))} */}
+          {/** new message here */}
+          <div className="text-[17px] mb-2 font-medium">
+            Find what you’re looking for
+          </div>
         </div>
 
         {/* Three controls: Country, City, Category */}
@@ -299,29 +303,30 @@ export default function HomePage() {
 
         <div className="grid lg:grid-cols-12 gap-6">
           {user &&  <aside className="lg:col-span-3 hidden lg:block sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+             
+             <QuickActions title="Quick Actions" items={[
+              { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
+              { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
+              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+            ]} />
             <ProfileCard />
             <div className="_sticky top-0 mb-2">
               <FiltersCard {...filtersProps} />
             </div>
-             <QuickActions title="Quick Actions" items={[
-              { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
-              { label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
-              { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
-            ]} />
+            
 
           </aside>}
 
           <section className={`${user ? 'lg:col-span-6':'lg:col-span-8'} sprace-y-4`}>
 
-          <section className="lg:col-span-4 space-y-4 flex items-center justify-between gap-y-2 flex-wrap">
+          <section className="lg:col-span-4 space-y-4 flex items-center justify-between gap-y-2 flex-wrap mb-3">
             <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
            
               <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
-                { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+                { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                 { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                 { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
-                { label: "Create News Article", Icon: PlusCircle, onClick: () => navigate("/news/create") },
-            ]} />
+              ]} />
 
           </section>
 

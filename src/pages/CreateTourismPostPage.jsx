@@ -248,7 +248,7 @@ export default function CreateTourismPostPage() {
               P
             </div>
             <div className="leading-tight">
-              <div className="font-semibold">54LINKS</div>
+              <div className="font-semibold">55Links</div>
               <div className="text-[11px] text-gray-500 -mt-1">Business Initiative</div>
             </div>
           </div>

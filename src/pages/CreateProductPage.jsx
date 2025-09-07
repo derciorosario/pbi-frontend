@@ -253,7 +253,7 @@ export default function CreateProductPage() {
       <Header page={"business"} />
 
       {/* ===== Content ===== */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 grid lg:grid-cols-12 gap-6">
+      <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 fle justify-center gap-6">
         {/* Left/Main Form */}
         <section className="lg:col-span-8">
           <form
@@ -486,7 +486,7 @@ export default function CreateProductPage() {
         </section>
 
         {/* Right Sidebar */}
-        <aside className="lg:col-span-4 space-y-4">
+        <aside className="lg:col-span-4 space-y-4 hidden">
           {/* Boost Your Post */}
           <div className="rounded-2xl bg-brand-700 p-6 text-white shadow-sm">
             <h3 className="text-lg font-semibold">🚀 Boost Your Post</h3>

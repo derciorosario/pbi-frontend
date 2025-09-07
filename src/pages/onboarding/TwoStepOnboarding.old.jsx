@@ -644,3 +644,788 @@ export default function ThreeStepOnboarding() {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// src/pages/FourStepOnboarding.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import client from "../../api/client";
+import { useAuth } from "../../contexts/AuthContext";
+
+/**
+ * FourStepOnboarding.jsx
+ * - Step 1: Who you are (identities)            → what you DO
+ * - Step 2: Where you belong (cats/subs/subsubs)→ what you DO
+ * - Step 3: What you're looking for (identities)→ what you WANT
+ * - Step 4: Categories you're looking for       → what you WANT
+ *
+ * Notes:
+ * - Only categories are mandatory in Steps 2 and 4 (sub/subsub optional).
+ * - Sub-sub shows if its parent subcategory is OPEN (chevron) OR SELECTED.
+ * - Fully controlled collapsibles (no <details>/<summary>) to avoid click issues.
+ * - Posts both tracks to /onboarding/oneshot.
+ */
+export default function FourStepOnboarding() {
+  const nav = useNavigate();
+  const userAuth = useAuth();
+
+  // flow
+  const [step, setStep] = useState(1);
+  const progress = useMemo(() => [0, 25, 50, 75, 100][step] ?? 100, [step]);
+
+  // data
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [identities, setIdentities] = useState([]); // [{id?, name, categories:[{id?, name, subcategories:[{id?, name, subsubs:[{id?, name}] }]}]}]
+
+  // selections (what user DOES)
+  const [identityIds, setIdentityIds] = useState([]);
+  const [categoryIds, setCategoryIds] = useState([]);
+  const [subcategoryIds, setSubcategoryIds] = useState([]);
+  const [subsubCategoryIds, setSubsubCategoryIds] = useState([]);
+
+  // selections (what user WANTS)
+  const [interestIdentityIds, setInterestIdentityIds] = useState([]);
+  const [interestCategoryIds, setInterestCategoryIds] = useState([]);
+  const [interestSubcategoryIds, setInterestSubcategoryIds] = useState([]);
+  const [interestSubsubCategoryIds, setInterestSubsubCategoryIds] = useState([]);
+
+  // UI expand/collapse – separate sets for "does" and "wants"
+  const [openCatsDoes, setOpenCatsDoes] = useState(() => new Set()); // Set<categoryId>
+  const [openSubsDoes, setOpenSubsDoes] = useState(() => new Set()); // Set<subcategoryId>
+  const [openCatsWant, setOpenCatsWant] = useState(() => new Set());
+  const [openSubsWant, setOpenSubsWant] = useState(() => new Set());
+
+  // load catalog
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const { data } = await client.get("/public/identities");
+        setIdentities(Array.isArray(data?.identities) ? data.identities : []);
+      } catch (e) {
+        console.error(e);
+        setError("Failed to load onboarding data.");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // auth guard
+  useEffect(() => {
+    if (!userAuth.user && !userAuth?.loading) {
+      nav("/login");
+    }
+  }, [userAuth.user, userAuth?.loading, nav]);
+
+  const getIdentityKey = (iden) => iden.id || `name:${iden.name}`;
+
+  // maps/relationships (shared)
+  const catToIdentityKeys = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      const ik = getIdentityKey(iden);
+      for (const c of iden.categories || []) {
+        if (!c?.id) continue;
+        m[c.id] = m[c.id] || new Set();
+        m[c.id].add(ik);
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const subToIdentityKeys = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      const ik = getIdentityKey(iden);
+      for (const c of iden.categories || []) {
+        for (const s of c.subcategories || []) {
+          if (!s?.id) continue;
+          m[s.id] = m[s.id] || new Set();
+          m[s.id].add(ik);
+        }
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const subsubToIdentityKeys = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      const ik = getIdentityKey(iden);
+      for (const c of iden.categories || []) {
+        for (const s of c.subcategories || []) {
+          for (const x of s.subsubs || []) {
+            if (!x?.id) continue;
+            m[x.id] = m[x.id] || new Set();
+            m[x.id].add(ik);
+          }
+        }
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const subToCat = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      for (const c of iden.categories || []) {
+        for (const s of c.subcategories || []) {
+          if (s?.id) m[s.id] = c.id;
+        }
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const subsubToSub = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      for (const c of iden.categories || []) {
+        for (const s of c.subcategories || []) {
+          for (const x of s.subsubs || []) {
+            if (x?.id) m[x.id] = s.id;
+          }
+        }
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const catToAllSubIds = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      for (const c of iden.categories || []) {
+        if (!c?.id) continue;
+        const subs = (c.subcategories || []).map((s) => s.id).filter(Boolean);
+        m[c.id] = Array.from(new Set([...(m[c.id] || []), ...subs]));
+      }
+    }
+    return m;
+  }, [identities]);
+
+  const subToAllSubsubIds = useMemo(() => {
+    const m = {};
+    for (const iden of identities) {
+      for (const c of iden.categories || []) {
+        for (const s of c.subcategories || []) {
+          if (!s?.id) continue;
+          const subsubs = (s.subsubs || []).map((x) => x.id).filter(Boolean);
+          m[s.id] = Array.from(new Set([...(m[s.id] || []), ...subsubs]));
+        }
+      }
+    }
+    return m;
+  }, [identities]);
+
+  // ---------- Toggles (generic builders) ----------
+
+  function makeToggleIdentity({
+    pickIds, setPickIds,
+    setCats, setSubs, setSubsubs,
+    setOpenCats, setOpenSubs,
+  }) {
+    return (identityKey) => {
+      setPickIds((prev) => {
+        const picked = prev.includes(identityKey)
+          ? prev.filter((x) => x !== identityKey)
+          : [...prev, identityKey];
+
+        const stillCovered = (ownersMap, id) => {
+          const owners = ownersMap[id];
+          if (!owners) return false;
+          return picked.some((ik) => owners.has(ik));
+        };
+
+        setSubsubs((prevX) => prevX.filter((xid) => stillCovered(subsubToIdentityKeys, xid)));
+        setSubs((prevSubs) => prevSubs.filter((sid) => stillCovered(subToIdentityKeys, sid)));
+        setCats((prevCats) => prevCats.filter((cid) => stillCovered(catToIdentityKeys, cid)));
+
+        setOpenCats((prevOpen) => {
+          const next = new Set([...prevOpen]);
+          for (const cid of [...prevOpen]) {
+            const owners = catToIdentityKeys[cid];
+            if (!owners || !picked.some((ik) => owners.has(ik))) next.delete(cid);
+          }
+          return next;
+        });
+
+        setOpenSubs((prevOpen) => {
+          const next = new Set([...prevOpen]);
+          for (const sid of [...prevOpen]) {
+            const owners = subToIdentityKeys[sid];
+            if (!owners || !picked.some((ik) => owners.has(ik))) next.delete(sid);
+          }
+          return next;
+        });
+
+        return picked;
+      });
+    };
+  }
+
+  function makeToggleCategory({ catIds, setCatIds, setSubIds, setXIds, setOpenCats, setOpenSubs }) {
+    return (catId) => {
+      if (!catId) return;
+      const has = catIds.includes(catId);
+      if (has) {
+        const subIds = catToAllSubIds[catId] || [];
+        const xIds = subIds.flatMap((sid) => subToAllSubsubIds[sid] || []);
+        setCatIds((prev) => prev.filter((x) => x !== catId));
+        setSubIds((prev) => prev.filter((sid) => !subIds.includes(sid)));
+        setXIds((prev) => prev.filter((x) => !xIds.includes(x)));
+        setOpenCats((prev) => { const next = new Set(prev); next.delete(catId); return next; });
+        setOpenSubs((prev) => { const next = new Set(prev); for (const sid of subIds) next.delete(sid); return next; });
+      } else {
+        setCatIds((prev) => [...prev, catId]);
+        setOpenCats((prev) => new Set(prev).add(catId));
+      }
+    };
+  }
+
+  function makeToggleSub({ subIds, setSubIds, setXIds, setOpenSubs, setCatIds, setOpenCats }) {
+    return (subId) => {
+      if (!subId) return;
+      const parentCatId = subToCat[subId];
+      const has = subIds.includes(subId);
+      if (has) {
+        const xIds = subToAllSubsubIds[subId] || [];
+        setSubIds((prev) => prev.filter((x) => x !== subId));
+        setXIds((prev) => prev.filter((x) => !xIds.includes(x)));
+        setOpenSubs((prev) => { const n = new Set(prev); n.delete(subId); return n; });
+      } else {
+        if (parentCatId) {
+          setCatIds((prev) => (prev.includes(parentCatId) ? prev : [...prev, parentCatId]));
+          setOpenCats((prev) => new Set(prev).add(parentCatId));
+        }
+        setSubIds((prev) => [...prev, subId]);
+      }
+    };
+  }
+
+  function makeToggleSubsub({ setXIds, subIds, setSubIds, setCatIds, setOpenCats }) {
+    return (xId) => {
+      if (!xId) return;
+      const parentSubId = subsubToSub[xId];
+      const parentCatId = parentSubId ? subToCat[parentSubId] : null;
+      setXIds((prev) => {
+        const has = prev.includes(xId);
+        if (has) return prev.filter((x) => x !== xId);
+        if (parentSubId && !subIds.includes(parentSubId)) {
+          setSubIds((p) => [...p, parentSubId]);
+        }
+        if (parentCatId) {
+          setCatIds((p) => (p.includes(parentCatId) ? p : [...p, parentCatId]));
+          setOpenCats((p) => new Set(p).add(parentCatId));
+        }
+        return [...prev, xId];
+      });
+    };
+  }
+
+  // Subcategory open/close (panel only)
+  const toggleSubOpenDoes = (subId) => {
+    if (!subId) return;
+    setOpenSubsDoes(prev => {
+      const n = new Set(prev);
+      n.has(subId) ? n.delete(subId) : n.add(subId);
+      return n;
+    });
+  };
+  const toggleSubOpenWant = (subId) => {
+    if (!subId) return;
+    setOpenSubsWant(prev => {
+      const n = new Set(prev);
+      n.has(subId) ? n.delete(subId) : n.add(subId);
+      return n;
+    });
+  };
+
+  // Category panel open/close
+  const handleCatOpenDoes = (catId) => {
+    setOpenCatsDoes(prev => {
+      const n = new Set(prev);
+      n.has(catId) ? n.delete(catId) : n.add(catId);
+      return n;
+    });
+  };
+  const handleCatOpenWant = (catId) => {
+    setOpenCatsWant(prev => {
+      const n = new Set(prev);
+      n.has(catId) ? n.delete(catId) : n.add(catId);
+      return n;
+    });
+  };
+
+  // build per-track handlers
+  const toggleIdentityDoes = makeToggleIdentity({
+    pickIds: identityIds, setPickIds: setIdentityIds,
+    setCats: setCategoryIds, setSubs: setSubcategoryIds, setSubsubs: setSubsubCategoryIds,
+    setOpenCats: setOpenCatsDoes, setOpenSubs: setOpenSubsDoes,
+  });
+  const toggleIdentityWant = makeToggleIdentity({
+    pickIds: interestIdentityIds, setPickIds: setInterestIdentityIds,
+    setCats: setInterestCategoryIds, setSubs: setInterestSubcategoryIds, setSubsubs: setInterestSubsubCategoryIds,
+    setOpenCats: setOpenCatsWant, setOpenSubs: setOpenSubsWant,
+  });
+
+  const toggleCategoryDoes = makeToggleCategory({
+    catIds: categoryIds, setCatIds: setCategoryIds,
+    setSubIds: setSubcategoryIds, setXIds: setSubsubCategoryIds,
+    setOpenCats: setOpenCatsDoes, setOpenSubs: setOpenSubsDoes,
+  });
+  const toggleSubDoes = makeToggleSub({
+    subIds: subcategoryIds, setSubIds: setSubcategoryIds,
+    setXIds: setSubsubCategoryIds, setOpenSubs: setOpenSubsDoes,
+    setCatIds: setCategoryIds, setOpenCats: setOpenCatsDoes,
+  });
+  const toggleSubsubDoes = makeToggleSubsub({
+    setXIds: setSubsubCategoryIds,
+    subIds: subcategoryIds, setSubIds: setSubcategoryIds,
+    setCatIds: setCategoryIds, setOpenCats: setOpenCatsDoes,
+  });
+
+  const toggleCategoryWant = makeToggleCategory({
+    catIds: interestCategoryIds, setCatIds: setInterestCategoryIds,
+    setSubIds: setInterestSubcategoryIds, setXIds: setInterestSubsubCategoryIds,
+    setOpenCats: setOpenCatsWant, setOpenSubs: setOpenSubsWant,
+  });
+  const toggleSubWant = makeToggleSub({
+    subIds: interestSubcategoryIds, setSubIds: setInterestSubcategoryIds,
+    setXIds: setInterestSubsubCategoryIds, setOpenSubs: setOpenSubsWant,
+    setCatIds: setInterestCategoryIds, setOpenCats: setOpenCatsWant,
+  });
+  const toggleSubsubWant = makeToggleSubsub({
+    setXIds: setInterestSubsubCategoryIds,
+    subIds: interestSubcategoryIds, setSubIds: setInterestSubcategoryIds,
+    setCatIds: setInterestCategoryIds, setOpenCats: setOpenCatsWant,
+  });
+
+  // derived lists
+  const selectedIdentitiesDoes = useMemo(() => {
+    const keys = new Set(identityIds);
+    return identities.filter((iden) => keys.has(getIdentityKey(iden)));
+  }, [identities, identityIds]);
+
+  const selectedIdentitiesWant = useMemo(() => {
+    const keys = new Set(interestIdentityIds);
+    return identities.filter((iden) => keys.has(getIdentityKey(iden)));
+  }, [identities, interestIdentityIds]);
+
+  // guards
+  const canContinue1 = identityIds.length >= 1;
+  const canContinue2 = categoryIds.length >= 1;
+  const canContinue3 = interestIdentityIds.length >= 1;
+  const canFinish     = interestCategoryIds.length >= 1;
+
+  // UI bits
+  const Loading = () => (
+    <div className="min-h-screen grid place-items-center text-brand-700">
+      <div className="flex items-center gap-2">
+        <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" />
+        </svg>
+        <span>Loading…</span>
+      </div>
+    </div>
+  );
+
+  const Header = ({ icon, title, subtitle }) => (
+    <header className="max-w-3xl mx-auto text-center">
+      <div className="mx-auto h-12 w-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center">
+        {icon}
+      </div>
+      <h1 className="mt-4 text-3xl font-bold">{title}</h1>
+      <p className="text-gray-500">{subtitle}</p>
+      <div className="mt-4 h-2 bg-gray-200 rounded">
+        <div className="h-2 rounded bg-brand-700" style={{ width: `${progress}%` }} />
+      </div>
+    </header>
+  );
+
+  if (loading || !userAuth.user) return <Loading />;
+  if (error) {
+    return (
+      <div className="min-h-screen grid place-items-center">
+        <div className="rounded-xl border bg-white p-6">
+          <div className="text-red-600 font-semibold mb-2">Error</div>
+          <div className="text-sm text-gray-700">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  // ------- Reusable step blocks -------
+
+  function IdentityStep({ title, subtitle, picked, onToggle, next, canNext, prev }) {
+    return (
+      <>
+        <Header icon={"👥"} title={title} subtitle={subtitle} />
+        <main className="max-w-3xl mx-auto mt-6">
+          <div className="bg-white rounded-2xl shadow-soft p-6">
+            <p className="text-gray-500 mb-5">Choose one or more.</p>
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {identities.map((iden, i) => {
+                const key = getIdentityKey(iden);
+                const active = picked.includes(key);
+                return (
+                  <button
+                    key={`${i}-${iden.name}`}
+                    onClick={() => onToggle(key)}
+                    className={`rounded-xl flex items-center justify-between border px-4 py-3 text-left hover:shadow-soft ${
+                      active ? "border-brand-700 ring-2 ring-brand-500" : "border-gray-200"
+                    }`}
+                  >
+                    <div>
+                      <div className="font-medium">{iden.name}</div>
+                      <div className="text-xs text-gray-500">{(iden.categories || []).length} categories</div>
+                    </div>
+                    <input type="checkbox" className="h-4 w-4 pointer-events-none" checked={active} readOnly />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-6 flex justify-between">
+            {prev ? (
+              <button onClick={prev} className="rounded-xl border px-4 py-3">Previous</button>
+            ) : <span />}
+            <button
+              onClick={next}
+              disabled={!canNext}
+              className="rounded-xl bg-brand-700 text-white px-6 py-3 font-semibold disabled:opacity-50"
+            >
+              Continue
+            </button>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  // Fully controlled collapsible category tree (no <details>)
+  function CategoryTreeStep({
+    title, subtitle,
+    selectedIdentities,
+    catIds, subIds, xIds,
+    openCats, openSubs,
+    onToggleCat, onToggleSub, onToggleSubsub,
+    onToggleCatOpen,      // (catId) => void
+    toggleSubOpen,        // (subId) => void
+    prev, nextLabel, onNext, canNext
+  }) {
+    const hasSubs = (cat) => Array.isArray(cat?.subcategories) && cat.subcategories.length > 0;
+    const hasSubsubs = (sc) => Array.isArray(sc?.subsubs) && sc.subsubs.length > 0;
+
+    return (
+      <>
+        <Header icon={"🧩"} title={title} subtitle={subtitle} />
+        <main className="max-w-4xl mx-auto mt-6">
+          <div className="bg-white rounded-2xl shadow-soft p-6">
+            {selectedIdentities.length === 0 ? (
+              <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
+                Select at least one identity in the previous step to see categories here.
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500 mb-4">Choose at least one category to continue.</p>
+
+                <div className="space-y-4">
+                  {selectedIdentities.map((iden, iIdx) => (
+                    <div key={`iden-${iIdx}`} className="rounded-xl border">
+                      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-xl">
+                        <div className="font-semibold">{iden.name}</div>
+                        <span className="text-xs text-gray-500">
+                          {(iden.categories || []).length} categories
+                        </span>
+                      </div>
+
+                      <div className="px-4 py-4 space-y-3">
+                        {(iden.categories || []).map((cat, cIdx) => {
+                          const _hasSubs = hasSubs(cat);
+                          const catOpen = !!cat.id && openCats.has(cat.id);
+
+                          return (
+                            <div key={`cat-${iIdx}-${cIdx}`} className="border rounded-lg">
+                              <div className="flex items-center justify-between px-4 py-3">
+                                <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4"
+                                    checked={!!cat.id && catIds.includes(cat.id)}
+                                    onChange={() => cat.id && onToggleCat(cat.id)}
+                                    disabled={!cat.id}
+                                    title={cat.id ? "" : "Category not found in DB"}
+                                  />
+                                  <span className="font-medium">{cat.name}</span>
+                                </label>
+
+                                {_hasSubs && (
+                                  <button
+                                    type="button"
+                                    className="text-gray-500 hover:text-gray-700"
+                                    aria-expanded={catOpen}
+                                    onClick={() => cat.id && onToggleCatOpen(cat.id)}
+                                  >
+                                    <span className={`inline-block transition-transform ${catOpen ? "rotate-180" : ""}`}>▾</span>
+                                  </button>
+                                )}
+                              </div>
+
+                              {_hasSubs && catOpen && (
+                                <div className="px-4 pb-4 space-y-3">
+                                  {(cat.subcategories || []).map((sc, sIdx) => {
+                                    const _hasSubsubs = hasSubsubs(sc);
+                                    const isOpen = !!sc.id && openSubs.has(sc.id);
+                                    const isSelected = !!sc.id && subIds.includes(sc.id);
+
+                                    return (
+                                      <div key={`sub-${iIdx}-${cIdx}-${sIdx}`} className="border rounded-lg p-3">
+                                        <div className="flex items-center justify-between">
+                                          <label
+                                            className="flex items-center gap-3 cursor-pointer"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              className="h-4 w-4 text-brand-600"
+                                              checked={isSelected}
+                                              onChange={() => sc.id && onToggleSub(sc.id)}
+                                              disabled={!sc.id}
+                                              title={sc.id ? "" : "Subcategory not found in DB"}
+                                            />
+                                            <span className="font-medium">{sc.name}</span>
+                                          </label>
+
+                                          {_hasSubsubs && (
+                                            <button
+                                              type="button"
+                                              onClick={() => sc.id && toggleSubOpen(sc.id)}
+                                              className="text-gray-500 hover:text-gray-700"
+                                              aria-expanded={isOpen}
+                                              aria-label={`Toggle ${sc.name} sub-items`}
+                                            >
+                                              <span className={`inline-block transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+                                            </button>
+                                          )}
+                                        </div>
+
+                                        {_hasSubsubs && (isOpen || isSelected) && (
+                                          <div className="mt-2 flex flex-wrap gap-2">
+                                            {sc.subsubs.map((ss, ssIdx) => (
+                                              <label
+                                                key={`ss-${iIdx}-${cIdx}-${sIdx}-${ssIdx}`}
+                                                className="inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                <input
+                                                  type="checkbox"
+                                                  checked={!!ss.id && xIds.includes(ss.id)}
+                                                  onChange={() => ss.id && onToggleSubsub(ss.id)}
+                                                  disabled={!ss.id}
+                                                  title={ss.id ? "" : "Level-3 not found in DB"}
+                                                />
+                                                <span>{ss.name}</span>
+                                              </label>
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-between">
+            <button onClick={prev} className="rounded-xl border px-4 py-3">Previous</button>
+            <button
+              onClick={onNext}
+              disabled={!canNext}
+              className="rounded-xl bg-brand-700 text-white px-6 py-3 font-semibold disabled:opacity-50"
+            >
+              {nextLabel}
+            </button>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  // ------- Render steps -------
+
+  return (
+    <div className="min-h-screen p-6 bg-brand-50/40">
+      {/* STEP 1: Who you are (DO) */}
+      {step === 1 && (
+        <IdentityStep
+          title="Tell us who you are"
+          subtitle="Choose the identities that best represent what you DO."
+          picked={identityIds}
+          onToggle={toggleIdentityDoes}
+          next={() => setStep(2)}
+          canNext={canContinue1}
+        />
+      )}
+
+      {/* STEP 2: Where you belong (DO) */}
+      {step === 2 && (
+        <CategoryTreeStep
+          title="Choose where you belong"
+          subtitle="Select the categories that match your expertise and activity."
+          selectedIdentities={selectedIdentitiesDoes}
+          catIds={categoryIds}
+          subIds={subcategoryIds}
+          xIds={subsubCategoryIds}
+          openCats={openCatsDoes}
+          openSubs={openSubsDoes}
+          onToggleCat={toggleCategoryDoes}
+          onToggleSub={toggleSubDoes}
+          onToggleSubsub={toggleSubsubDoes}
+          onToggleCatOpen={handleCatOpenDoes}
+          toggleSubOpen={toggleSubOpenDoes}
+          prev={() => setStep(1)}
+          nextLabel="Continue"
+          onNext={() => setStep(3)}
+          canNext={canContinue2}
+        />
+      )}
+
+      {/* STEP 3: What you're looking for (WANT) */}
+      {step === 3 && (
+        <IdentityStep
+          title="What are you looking for?"
+          subtitle="Pick the identities you want to connect with or discover."
+          picked={interestIdentityIds}
+          onToggle={toggleIdentityWant}
+          next={() => setStep(4)}
+          canNext={canContinue3}
+          prev={() => setStep(2)}
+        />
+      )}
+
+      {/* STEP 4: Categories you're looking for (WANT) */}
+      {step === 4 && (
+        <CategoryTreeStep
+          title="Pick the categories you are looking for"
+          subtitle="Select categories and roles you want to find."
+          selectedIdentities={selectedIdentitiesWant}
+          catIds={interestCategoryIds}
+          subIds={interestSubcategoryIds}
+          xIds={interestSubsubCategoryIds}
+          openCats={openCatsWant}
+          openSubs={openSubsWant}
+          onToggleCat={toggleCategoryWant}
+          onToggleSub={toggleSubWant}
+          onToggleSubsub={toggleSubsubWant}
+          onToggleCatOpen={handleCatOpenWant}
+          toggleSubOpen={toggleSubOpenWant}
+          prev={() => setStep(3)}
+          nextLabel="Save & Finish"
+          onNext={async () => {
+            if (!canFinish) return;
+            try {
+              await client.post("/onboarding/oneshot", {
+                // DOES
+                identityIds,
+                categoryIds,
+                subcategoryIds,
+                subsubCategoryIds,
+                // WANTS
+                interestIdentityIds,
+                interestCategoryIds,
+                interestSubcategoryIds,
+                interestSubsubCategoryIds,
+              });
+              window.location.href = "/";
+            } catch (e) {
+              console.error(e);
+              alert("Failed to save. Please try again.");
+            }
+          }}
+          canNext={canFinish}
+        />
+      )}
+    </div>
+  );
+}

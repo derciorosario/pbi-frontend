@@ -51,7 +51,7 @@ function TabsAndAdd({ tabs, activeTab, setActiveTab, items = [], btnClick }) {
       </div>
 
       {/* Add Button + Menu */}
-      <div className="relative" ref={addMenuRef}>
+     {user && <div className="relative" ref={addMenuRef}>
         <button
           onClick={() => {
             if (user == null) {
@@ -63,7 +63,7 @@ function TabsAndAdd({ tabs, activeTab, setActiveTab, items = [], btnClick }) {
           }}
           className={`${styles.primary} inline-flex items-center gap-2 _login_prompt`}
         >
-          <I.plus /> Add {!btnClick && <ChevronDown className="w-4 h-4" />}
+          <I.plus /> Create Post {!btnClick && <ChevronDown className="w-4 h-4" />}
         </button>
 
         {showAddMenu && items.length > 0 && (
@@ -82,7 +82,7 @@ function TabsAndAdd({ tabs, activeTab, setActiveTab, items = [], btnClick }) {
                     {Icon ? (
                       <Icon
                         size={16}
-                        className="text-indigo-700"
+                        className="text-accent-700"
                       />
                     ) : null}
                     <span>{label}</span>
@@ -92,7 +92,7 @@ function TabsAndAdd({ tabs, activeTab, setActiveTab, items = [], btnClick }) {
             </ul>
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

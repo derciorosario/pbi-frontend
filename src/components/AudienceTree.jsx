@@ -114,14 +114,14 @@ function AudienceTree({ tree, selected, onChange }) {
               onClick={() => toggle(idKey)}
               className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-1 w-full">
                 <input
                   type="checkbox"
                   className="h-4 w-4 accent-brand-600"
                   checked={isChecked("identityIds", identityId)}
                   onChange={e => setChecked("identityIds", identityId, e.target.checked)}
                 />
-                <span className="font-medium">{identity.name}</span>
+                <span className="font-medium w-full flex flex-1">{identity.name}</span>
               </div>
               <span className="text-gray-500">{openId ? <Icons.caretUp/> : <Icons.caret/>}</span>
             </button>
@@ -134,14 +134,14 @@ function AudienceTree({ tree, selected, onChange }) {
                   return (
                     <div key={cKey} className="rounded-lg border border-gray-200">
                       <div className="flex items-center justify-between px-3 py-2 bg-white">
-                        <label className="flex items-center gap-2">
+                        <label className="flex items-center gap-2 w-full flex-1">
                           <input
                             type="checkbox"
                             className="h-4 w-4 accent-brand-600"
                             checked={isChecked("categoryIds", cat.id)}
                             onChange={onCategoryCheck(identityId, cat)}
                           />
-                          <span className="text-sm font-medium">{cat.name}</span>
+                          <span className="text-sm font-medium w-full">{cat.name}</span>
                         </label>
                         <button type="button" onClick={() => toggle(cKey)} className="text-gray-500 hover:text-gray-700">
                           {openCat ? <Icons.caretUp/> : <Icons.caret/>}

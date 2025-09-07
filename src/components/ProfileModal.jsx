@@ -43,6 +43,12 @@ function timeAgo(iso) {
   return `${y} year${y > 1 ? "s" : ""} ago`;
 }
 
+  const timezones = [
+    "Africa/Abidjan","Africa/Accra","Africa/Addis_Ababa","Africa/Algiers","Africa/Cairo","Africa/Casablanca",
+    "Africa/Dakar","Africa/Dar_es_Salaam","Africa/Johannesburg","Africa/Kampala","Africa/Kigali",
+    "Africa/Lagos","Africa/Nairobi","Africa/Maputo"
+  ];
+
 function fmtLoc(city, country) {
   if (city && country) return `${city}, ${country}`;
   return city || country || "";
@@ -232,7 +238,7 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
       {/* Responsive container: header + scrollable body + sticky footer */}
-      <div className="w-[92vw] sm:w-full sm:max-w-lg max-h-[90vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
+      <div className="w-[92vw] sm:w-full sm:max-w-lg max-h-[80vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between bg-brand-500 px-4 py-3">
           <div className="text-white font-medium">Request Meeting</div>
@@ -294,13 +300,15 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Timezone</label>
-              <input
-                type="text"
+              <select
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                 value={form.timezone}
                 onChange={(e) => handleChange("timezone", e.target.value)}
-                placeholder="e.g., Africa/Maputo"
-              />
+              >
+              {timezones.map(t=>(
+                <option key={t} value={t}>{t}</option>
+              ))}
+              </select>
             </div>
           </div>
 
@@ -534,7 +542,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
 
   return (
     <div className="fixed z-[99] _profile inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white z-[99] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="bg-white z-[99] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[75vh] overflow-hidden">
         {/* Header */}
         <div className="bg-brand-500 p-4 flex justify-between items-center">
           <div className="text-white font-medium">Profile</div>
@@ -580,19 +588,12 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                   )}
 
                   {/* Stats */}
-                  <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
-                    <div className="text-center">
+                  <div className="mt-3 grid grid-cols-3 gap-4 text-sm hidden">
+                    <div className="">
                       <p className="font-semibold text-brand-600">{profile.connections ?? 0}</p>
                       <p className="text-gray-500 text-xs">Connections</p>
                     </div>
-                    <div className="text-center">
-                      <p className="font-semibold text-brand-600">{profile.projects ?? 0}</p>
-                      <p className="text-gray-500 text-xs">Projects</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-semibold text-brand-600">{profile.rating ?? "—"}</p>
-                      <p className="text-gray-500 text-xs">Rating</p>
-                    </div>
+                    
                   </div>
                 </div>
               </div>
@@ -879,7 +880,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
         toName={profile?.name}
         onCreated={(m) => {
           upsertMeetingList(m); // save locally + render in list
-          toast.success("Saved locally. (Demo only, not sent to backend)");
+          //toast.success("Saved locally. (Demo only, not sent to backend)");
         }}
       />
     </div>

@@ -1,12 +1,16 @@
 // src/api/profile.js
 import client from "./client";
 
+// PERFIL
 export const getMe              = () => client.get("/profile/me");
-export const updateIdentity     = (payload) => client.put("/profile/identity", payload);
 export const updatePersonal     = (payload) => client.put("/profile/personal", payload);
 export const updateProfessional = (payload) => client.put("/profile/professional", payload);
-export const updateInterests    = (payload) => client.put("/profile/interests", payload);
 
-// Public data (if you don't have these yet)
-export const listCategories = () => client.get("/public/categories");
-export const listGoals      = () => client.get("/public/goals");
+// TAXONOMIA (identidades → categorias → subcategorias → subsub)
+export const getIdentityCatalog = () => client.get("/public/identities");
+
+// NOVO: seleções do que FAZ (identidades/categorias/subs/subsubs)
+export const updateDoSelections = (payload) => client.put("/profile/do-selections", payload);
+
+// NOVO: seleções do que PROCURA (identidades/categorias/subs/subsubs)
+export const updateInterestSelections = (payload) => client.put("/profile/interest-selections", payload);

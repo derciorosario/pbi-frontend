@@ -1,6 +1,6 @@
 // src/components/ServiceCard.jsx
 import React, { useMemo, useState, useRef, useEffect } from "react";
-import { MapPin, User2, Clock, MoreHorizontal, MessageCircle, Pencil, Trash2 } from "lucide-react";
+import { MapPin, User2, Clock, MoreHorizontal, MessageCircle, Pencil, Trash2, Edit } from "lucide-react";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ServiceDetailsModal from "./ServiceDetailsModal";
 import { useData } from "../contexts/DataContext.jsx";
@@ -110,7 +110,7 @@ export default function ServiceCard({
     <>
     <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 flex flex-col md:flex-row md:items-center gap-5 hover:shadow-md transition-shadow">
       {/* Left: Avatar */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 hidden">
         {item?.avatarUrl ? (
           <img
             src={item.avatarUrl}
@@ -213,6 +213,15 @@ export default function ServiceCard({
 
       {/* Right: Actions */}
       <div className="flex flex-col gap-2 min-w-[160px]">
+        {item.providerUserId==user?.id &&  <button
+                        onClick={() => {
+                         if(item.providerUserId==user?.id) navigate('/service/'+item.id)
+                        }}
+                        className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600"
+                        aria-label="Edit"
+                      >
+                        <Edit size={19}/>
+        </button>}
         <button
           onClick={() => setDetailsModalOpen(true)}
           className="rounded-lg border border-brand-500 text-brand-500 px-3 py-1.5 text-sm font-medium hover:bg-brand-50"

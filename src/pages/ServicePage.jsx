@@ -215,17 +215,18 @@ export default function ServicesPage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+           
+        <QuickActions title="Quick Actions" items={[
+            { label: "Edit Profile", Icon: Pencil, path: "/profile" },
+            { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
+            { label: "Post a Service", Icon: PlusCircle, path: "/services/create" },
+        ]} />
+         
           <ProfileCard />
            <div className="_sticky top-0 z-10 bg-white">
             <FiltersCard {...filtersProps} />
           </div>
-          
-          <QuickActions title="Quick Actions" items={[
-            { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Post a Service", Icon: PlusCircle, path: "/services/create" },
-        ]} />
-         
+       
         </aside>
 
         <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">

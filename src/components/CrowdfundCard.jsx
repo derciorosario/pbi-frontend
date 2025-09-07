@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import styles from "../lib/styles.jsx";
 import I from "../lib/icons.jsx";
 
-const BRAND = "#0a66c2";
+const BRAND = "#034ea2";
 
 const Progress = ({ value }) => (
   <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
@@ -30,7 +30,6 @@ export default function CrowdfundCard({ item }) {
   const data = useData();
   const { user } = useAuth();
   const navigate=useNavigate()
-  
   const imageUrl = item?.images?.[0]?.base64url || null;
 
   // Get the raised amount from the API
@@ -47,7 +46,7 @@ export default function CrowdfundCard({ item }) {
   }, [item?.deadline]);
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm p-5 md:p-6">
+    <div className={`rounded-2xl ${user?.id==item.creatorUserId ? ' hover:border-blue-300 cursor-pointer':''} border border-gray-100 bg-white shadow-sm p-5 md:p-6`}>
       {/* Header */}
       <div className="flex items-start gap-4">
         {imageUrl ? (
@@ -127,7 +126,7 @@ export default function CrowdfundCard({ item }) {
         >
           Support Project
         </button>}
-        <button className="rounded-xl px-4 py-2 text-sm border border-gray-200 bg-white text-gray-700">
+        <button className="rounded-xl hidden px-4 py-2 text-sm border border-gray-200 bg-white text-gray-700">
           View Details
         </button>
         

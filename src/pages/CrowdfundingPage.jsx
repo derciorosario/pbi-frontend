@@ -191,24 +191,25 @@ export default function CrowdfundingPage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+          <QuickActions title="Quick Actions" items={[
+            { label: "Edit Profile", Icon: Pencil, path: "/profile" },
+            { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
+            { label: "Post an Funding Project", Icon: PlusCircle, path: "/funding/create" }
+          ]} />
           <ProfileCard />
            <div className="_sticky top-0 z-10 bg-white">
             <FiltersCard {...filtersProps} />
           </div>
           
-          <QuickActions title="Quick Actions" items={[
-            { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Post an Funding Project", Icon: PlusCircle, path: "/funding/create" }
-          ]} />
+         
          
         </aside>
 
         <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5">
           
-           <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              <h3 className="font-semibold text-2xl mt-1">Your Path to Knowledge</h3>
+           <div className="flex items-center justify-between gap-y-2">
+              <h3 className="font-semibold text-2xl mt-1">Find inspiring projects and contribute directly</h3>
           
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/fundings/create')} />
             </div>

@@ -186,15 +186,16 @@ export default function PeopleFeedPage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+           <QuickActions title="Quick Actions" items={[
+              { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
+              { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
+              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+            ]} />
           <ProfileCard />
           <div className="_sticky top-0 z-10 bg-white">
             <FiltersCard {...filtersProps} />
           </div>
-          <QuickActions title="Quick Actions" items={[
-              { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
-              { label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
-              { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
-            ]} />
+         
         </aside>
 
     

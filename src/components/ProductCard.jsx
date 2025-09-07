@@ -1,6 +1,6 @@
 // src/components/ProductCard.jsx
 import React, { useMemo, useState } from "react";
-import { MapPin, User2, Clock, MessageCircle } from "lucide-react";
+import { MapPin, User2, Clock, MessageCircle, Edit } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -129,7 +129,8 @@ export default function ProductCard({
               <MessageCircle size={16} />
               Message
             </button>
-            <button 
+
+            {item.sellerUserId!=user?.id && <button 
               onClick={() => {
                 if (!user?.id) {
                   data._showPopUp("login_prompt");
@@ -140,7 +141,16 @@ export default function ProductCard({
               className="rounded-lg px-3 py-2 text-sm border border-gray-200 bg-white text-gray-700"
             >
               Connect
-            </button>
+            </button>}
+             {item.sellerUserId==user?.id &&  <button
+                onClick={() => {
+                 if(item.sellerUserId==user?.id) navigate('/product/'+item.id)
+                }}
+                className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600"
+                aria-label="Edit"
+              >
+                <Edit size={19}/>
+              </button>}
           </div>
         </div>
       </div>

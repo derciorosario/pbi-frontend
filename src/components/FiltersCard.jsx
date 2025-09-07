@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import styles from "../lib/styles.jsx";
 import I from "../lib/icons.jsx";
 
@@ -17,23 +17,64 @@ export default function FiltersCard({
   setGoalId,
   categories = [],
   countries = [],
-  goals=[],
+  goals = [],
   goalId,
   role,
-  onApply,
 }) {
   const currentCategory = categories.find((c) => String(c.id) === String(categoryId));
   const visibleSubs = currentCategory?.subcategories || [];
 
   const roles = [
-  "Entrepreneur","Seller","Buyer","Job Seeker","Professional","Partnership",
-  "Investor","Event Organizer","Government Official","Traveler","NGO",
-  "Support Role","Freelancer","Student"
- ];
+    "Entrepreneur","Seller","Buyer","Job Seeker","Professional","Partnership",
+    "Investor","Event Organizer","Government Official","Traveler","NGO",
+    "Support Role","Freelancer","Student"
+  ];
+
+  // whether there's anything to reset
+  const hasActive = useMemo(
+    () =>
+      Boolean(
+        (query && query.trim()) ||
+          country ||
+          city ||
+          categoryId ||
+          subcategoryId ||
+          role ||
+          goalId
+      ),
+    [query, country, city, categoryId, subcategoryId, role, goalId]
+  );
+
+  const handleReset = () => {
+    setQuery("");
+    setCountry(undefined);
+    setCity(undefined);
+    setCategoryId(undefined);
+    setSubcategoryId(undefined);
+    setRole?.(undefined);
+    setGoalId?.(undefined);
+  };
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
-      <h3 className="font-semibold flex items-center gap-2">Filters</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold flex items-center gap-2">Filters</h3>
+
+        <button
+          type="button"
+          onClick={handleReset}
+          disabled={!hasActive}
+          className={`inline-flex items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition
+            ${hasActive
+              ? "border-gray-200 text-gray-700 hover:bg-gray-50"
+              : "border-gray-100 text-gray-400 cursor-not-allowed"
+            }`}
+          aria-disabled={!hasActive}
+          title="Reset all filters"
+        >
+          Reset
+        </button>
+      </div>
 
       <div className="mt-3">
         <label className="text-xs text-gray-500">Search</label>
@@ -111,7 +152,7 @@ export default function FiltersCard({
         </select>
       </div>
 
-       <div className="mt-3">
+      <div className="mt-3 hidden">
         <label className="text-xs text-gray-500">Goal</label>
         <select
           className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
@@ -127,8 +168,7 @@ export default function FiltersCard({
         </select>
       </div>
 
-
-      <div className="mt-3">
+      <div className="mt-3 hidden">
         <label className="text-xs text-gray-500">Role</label>
         <select
           className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
@@ -143,12 +183,6 @@ export default function FiltersCard({
           ))}
         </select>
       </div>
-
-      
-
-      {/**<button className={`mt-4 ${styles.primaryWide}`} onClick={onApply}>
-        Apply Filters
-      </button> */}
     </div>
   );
 }

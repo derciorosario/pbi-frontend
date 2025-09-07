@@ -49,7 +49,6 @@ export const DataProvider = ({ children }) => {
         _setOpenPopUps({...initial_popups,[option]:value || true})
     }
 
-   
 
     const value = {
       _openPopUps,

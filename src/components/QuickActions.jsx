@@ -11,7 +11,7 @@ export default function QuickActions({ title = "Quick Actions", items = [] }) {
       >
         <h3 className="font-semibold text-brand-600">{title}</h3>
         <ul className="mt-3 space-y-2 text-sm text-gray-700">
-          {items.map(({ label, Icon, onClick, disabled }, idx) => (
+          {items.filter(i=>!i.hide).map(({ label, Icon, onClick, disabled }, idx) => (
             <li key={idx}>
               <button
                 type="button"

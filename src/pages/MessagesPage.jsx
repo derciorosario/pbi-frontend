@@ -31,7 +31,8 @@ export default function MessagesPage() {
     onPrivateMessage,
     markMessagesAsRead,
     onlineConnections,
-    getOnlineConnections
+    getOnlineConnections,
+    refreshUnreadCount
   } = useSocket();
   
   // State
@@ -128,16 +129,20 @@ export default function MessagesPage() {
         
         // Mark messages as read
         if (connected) {
-          markMessagesAsRead(activeConversation.id).catch(console.error);
+          markMessagesAsRead(activeConversation.id)
+            .then(() => refreshUnreadCount())
+            .catch(console.error);
         } else {
-          messageApi.markAsRead(activeConversation.id).catch(console.error);
+          messageApi.markAsRead(activeConversation.id)
+            .then(() => refreshUnreadCount())
+            .catch(console.error);
         }
         
         // Update unread count in conversations list
-        setConversations(prev => 
-          prev.map(conv => 
-            conv.id === activeConversation.id 
-              ? { ...conv, unreadCount: 0 } 
+        setConversations(prev =>
+          prev.map(conv =>
+            conv.id === activeConversation.id
+              ? { ...conv, unreadCount: 0 }
               : conv
           )
         );
@@ -150,7 +155,42 @@ export default function MessagesPage() {
     }
     
     loadMessages();
-  }, [activeConversation, connected, markMessagesAsRead]);
+    
+    // Set up polling for messages every 2 seconds
+    // This runs alongside socket connection as a fallback
+    const pollInterval = setInterval(async () => {
+      if (!activeConversation) return;
+      
+      try {
+        console.log("Polling for new messages...");
+        const { data } = await messageApi.getMessages(activeConversation.id);
+        
+        // Compare with current messages to avoid unnecessary updates
+        if (data.length !== messages.length) {
+          console.log(`Found ${data.length} messages, currently have ${messages.length}`);
+          setMessages(data);
+          
+          // Mark as read
+          if (connected) {
+            markMessagesAsRead(activeConversation.id)
+              .then(() => refreshUnreadCount())
+              .catch(console.error);
+          } else {
+            messageApi.markAsRead(activeConversation.id)
+              .then(() => refreshUnreadCount())
+              .catch(console.error);
+          }
+        }
+      } catch (error) {
+        console.error("Error polling messages:", error);
+      }
+    }, 2000);
+    
+    // Clean up interval on unmount or when conversation changes
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, [activeConversation, connected, markMessagesAsRead, messages.length]);
   
   // Load messages with a specific user
   useEffect(() => {
@@ -205,9 +245,12 @@ export default function MessagesPage() {
     if (!message) return;
     
     // If this message belongs to the active conversation
-    if (activeConversation &&
-        (message.senderId === activeConversation.otherUser.id ||
-         message.receiverId === activeConversation.otherUser.id)) {
+    if (activeConversation && (
+        // Message from other user to current user
+        (message.senderId === activeConversation.otherUser.id && message.receiverId === user.id) ||
+        // Message from current user to other user
+        (message.senderId === user.id && message.receiverId === activeConversation.otherUser.id)
+    )) {
       
       // Add the message to the messages list
       setMessages(prev => {
@@ -224,17 +267,29 @@ export default function MessagesPage() {
       
       // Mark as read immediately
       if (connected) {
-        markMessagesAsRead(activeConversation.id).catch(console.error);
+        markMessagesAsRead(activeConversation.id)
+          .then(() => refreshUnreadCount())
+          .catch(console.error);
       }
     }
     
     // Always update the conversations list for any new message
     setConversations(prev => {
       const updatedConversations = [...prev];
-      const conversationIndex = updatedConversations.findIndex(
-        c => c.id === message.conversationId ||
-             (c.otherUser.id === message.senderId || c.otherUser.id === message.receiverId)
+      // Find the conversation by its ID first
+      let conversationIndex = updatedConversations.findIndex(
+        c => c.id === message.conversationId
       );
+      
+      // If not found by ID, try to find by matching sender and receiver
+      if (conversationIndex < 0) {
+        conversationIndex = updatedConversations.findIndex(c =>
+          // Current user is receiver, other user is sender
+          (c.otherUser.id === message.senderId && message.receiverId === user.id) ||
+          // Current user is sender, other user is receiver
+          (c.otherUser.id === message.receiverId && message.senderId === user.id)
+        );
+      }
       
       console.log("Updating conversation for message:", message.id,
                   "ConversationIndex:", conversationIndex);
@@ -281,20 +336,41 @@ export default function MessagesPage() {
 
   // Listen for new messages
   useEffect(() => {
-    if (!connected) return;
-    
+    // Always set up socket listener even if not connected
+    // This way it will work if connection is established later
     console.log("Setting up socket message listener, activeConversation:",
-                activeConversation?.id);
+                activeConversation?.id, "user:", user?.id, "connected:", connected);
     
+    // Set up the message listener
     const cleanup = onPrivateMessage(handleNewMessage);
     
-    return cleanup;
-  }, [connected, onPrivateMessage, activeConversation?.id]);
+    // Return cleanup function to remove listener when component unmounts or dependencies change
+    return () => {
+      console.log("Cleaning up socket message listener");
+      if (cleanup && typeof cleanup === 'function') {
+        cleanup();
+      }
+    };
+  }, [onPrivateMessage, activeConversation?.id, user?.id]);
   
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+  
+  // Refresh conversations list periodically
+  useEffect(() => {
+    const refreshInterval = setInterval(async () => {
+      try {
+        const { data } = await messageApi.getConversations();
+        setConversations(data);
+      } catch (error) {
+        console.error("Failed to refresh conversations:", error);
+      }
+    }, 3000);
+    
+    return () => clearInterval(refreshInterval);
+  }, []);
   
   // Send message
   async function handleSend() {
@@ -319,10 +395,26 @@ export default function MessagesPage() {
       setMessages(prev => [...prev, tempMessage]);
       
       // Send via socket if connected, otherwise use REST API
-      if (connected) {
-        await sendPrivateMessage(activeConversation.otherUser.id, content);
-      } else {
-        await messageApi.sendMessage(activeConversation.otherUser.id, content);
+      try {
+        if (connected) {
+          console.log("Sending message via socket to:", activeConversation.otherUser.id);
+          await sendPrivateMessage(activeConversation.otherUser.id, content);
+          console.log("Message sent successfully via socket");
+        } else {
+          console.log("Socket not connected, sending message via REST API");
+          await messageApi.sendMessage(activeConversation.otherUser.id, content);
+          console.log("Message sent successfully via REST API");
+        }
+      } catch (sendError) {
+        console.error("Error sending message:", sendError);
+        // If socket send fails, try REST API as fallback
+        if (connected) {
+          console.log("Socket send failed, trying REST API as fallback");
+          await messageApi.sendMessage(activeConversation.otherUser.id, content);
+        } else {
+          // Re-throw the error if REST API also failed
+          throw sendError;
+        }
       }
       
       // Update conversation in list
