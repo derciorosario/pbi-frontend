@@ -342,14 +342,14 @@ export default function HomePage() {
 
             
             {loadingFeed && (
-               <CardSkeletonLoader columns={2}/>
+               <CardSkeletonLoader columns={user ? 2 :  3}/>
             )}
 
            {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
 
                
               
-           <div className={`grid grid-cols-1 ${view=="list" ? "sm:grid-cols-1":"sm:grid-cols-2"}  gap-6`}>
+           <div className={`grid grid-cols-1 ${view=="list" ? "sm:grid-cols-1":(user ?  "sm:grid-cols-2" : "sm:grid-cols-3" )}  gap-6`}>
                  
 
             {!loadingFeed &&
