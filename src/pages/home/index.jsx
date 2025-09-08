@@ -323,7 +323,7 @@ export default function HomePage() {
 
           </aside>}
 
-          <section className={`${user ? 'lg:col-span-8':'lg:col-span-8'} sprace-y-4`}>
+          <section className={`${user ? 'lg:col-span-8':'lg:col-span-12'} sprace-y-4`}>
 
           <section className="lg:col-span-4 space-y-4 flex items-center justify-between gap-y-2 flex-wrap mb-3">
             <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
