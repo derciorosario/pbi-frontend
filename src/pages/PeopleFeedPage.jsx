@@ -19,6 +19,8 @@ import PeopleProfileCard from "./PeopleCards";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
+import CardSkeletonLoader from "../components/ui/SkeletonLoader";
+import PageTabs from "../components/PageTabs";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -54,6 +56,8 @@ export default function PeopleFeedPage() {
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
   const [goals, setGoals] = useState([]);
+  const [view,setView]=useState('grid')
+  let view_types=['grid','list']
 
   // Metadados
   const [categories, setCategories] = useState([]);
@@ -170,16 +174,18 @@ export default function PeopleFeedPage() {
     return (
       <>
         {loadingFeed && (
-          <div className="min-h-[160px] grid place-items-center text-gray-600">
-             <FullPageLoader notFull={true}/>
-          </div>
+         <div className="min-h-[160px] grid text-gray-600">
+          <CardSkeletonLoader/>
+        </div>
+                   
         )}
         
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-         
+        {/** <PageTabs view={view} loading={loadingFeed} setView={setView} view_types={view_types}/>  
 
+ */}
         {!loadingFeed &&
           items.map((item) =>
             item.kind === "job" ? (
@@ -189,9 +195,17 @@ export default function PeopleFeedPage() {
             ) : null
           )}
 
-          {!loadingFeed && activeTab == "People" && items.map((item) =><PeopleProfileCard {...item}/>)}
+           <div
+                           className={`grid grid-cols-1 mt-3 ${
+                             view == "list" ? "sm:grid-cols-1" : "sm:grid-cols-3"
+                           } gap-6`}
+                         >
+                           {!loadingFeed && items.map((item) => (
+                              <PeopleProfileCard tyle={view} {...item}/>
+                            ))
+                          }
 
-          {!loadingFeed && activeTab == "My Connections" && items.map((item) =><PeopleProfileCard {...item}/>)}
+                       </div>
 
       
       </>
@@ -222,7 +236,7 @@ export default function PeopleFeedPage() {
           
          
         </aside>
-    <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+    <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-4">
            <div className="flex items-center justify-between gap-x-2 flex-wrap ">
              <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
@@ -262,7 +276,7 @@ export default function PeopleFeedPage() {
             {renderMiddle()}
           </section>
 
-          <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+          <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto hidden">
             {loadingSuggestions ? (
               <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
                 Loading suggestions…

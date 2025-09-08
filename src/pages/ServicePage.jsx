@@ -18,6 +18,8 @@ import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
 import ServiceCard from "../components/ServiceCard";
+import PageTabs from "../components/PageTabs";
+import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -33,6 +35,10 @@ export default function ServicesPage() {
   const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
   const navigate=useNavigate()
   const data=useData()
+  const [view,setView]=useState('grid')
+  let view_types=['grid','list']
+
+
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -164,13 +170,20 @@ export default function ServicesPage() {
     if(!loadingFeed && items.length == 0){
          return <EmptyFeedState />
     }
-    
+
+   
+
     if(!loadingFeed){
       return (
-      <div className="max-w-4xl mx-auto space-y-5">
+       <div
+                 className={`grid grid-cols-1 ${
+                   view === "list" ? "sm:grid-cols-1" : "sm:grid-cols-3"
+                 } gap-6`}
+        >
         {items.map((s) => (
             <ServiceCard
             key={s.id}
+            type={view}
             item={s}
             currentUserId={s?.id}
             onContact={() => alert(`${s.type} - Contact ${s.provider}`)}
@@ -188,8 +201,8 @@ export default function ServicesPage() {
       <>
 
         {loadingFeed && (
-          <div className="min-h-[160px] grid place-items-center text-gray-600">
-             <FullPageLoader notFull={true}/>
+         <div className="min-h-[160px] grid text-gray-600">
+                                <CardSkeletonLoader/>
           </div>
         )}
 
@@ -223,32 +236,29 @@ export default function ServicesPage() {
         ]} />
          
           <ProfileCard />
-           <div className="_sticky top-0 z-10 bg-white">
+          <div className="_sticky top-0 z-10 bg-white">
             <FiltersCard {...filtersProps} />
           </div>
        
         </aside>
 
-        <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5">
           
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
               <h3 className="font-semibold text-2xl mt-1">Professional Services</h3>
-          
+           
+    
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/services/create')} />
+            </div>
+            <div>
+              
+          <PageTabs view={view} loading={loadingFeed} setView={setView} view_types={view_types}/>
+      
             </div>
               {renderMiddle()}
           </section>
 
-          <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
-            {loadingSuggestions ? (
-              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
-                Loading suggestions…
-              </div>
-            ) : (
-              <SuggestedMatches matches={matches} nearby={nearby} />
-            )}
-          </aside>
         </div>
       </main>
 

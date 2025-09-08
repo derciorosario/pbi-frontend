@@ -24,6 +24,8 @@ import ServiceCard from "../../components/ServiceCard.jsx";
 import ProductCard from "../../components/ProductCard.jsx";
 import ExperienceCard from "../../components/ExperienceCard.jsx";
 import CrowdfundCard from "../../components/CrowdfundCard.jsx";
+import PageTabs from "../../components/PageTabs.jsx";
+import CardSkeletonLoader from "../../components/ui/SkeletonLoader.jsx";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -63,6 +65,10 @@ export default function HomePage() {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  const [view,setView]=useState('grid')
+  let view_types=['grid','list']
+  
 
   const data=useData()
 
@@ -317,7 +323,7 @@ export default function HomePage() {
 
           </aside>}
 
-          <section className={`${user ? 'lg:col-span-6':'lg:col-span-8'} sprace-y-4`}>
+          <section className={`${user ? 'lg:col-span-8':'lg:col-span-8'} sprace-y-4`}>
 
           <section className="lg:col-span-4 space-y-4 flex items-center justify-between gap-y-2 flex-wrap mb-3">
             <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
@@ -330,17 +336,20 @@ export default function HomePage() {
 
           </section>
 
+           <PageTabs view={view} setView={setView} view_types={view_types}/>
+          
+
 
             
             {loadingFeed && (
-              <FullPageLoader notFull={true}/>
+               <CardSkeletonLoader columns={2}/>
             )}
 
            {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
 
                
               
-          <div className="flex flex-col gap-y-2">
+           <div className={`grid grid-cols-1 ${view=="list" ? "sm:grid-cols-1":"sm:grid-cols-2"}  gap-6`}>
                  
 
             {!loadingFeed &&
@@ -348,6 +357,7 @@ export default function HomePage() {
                 if (item.kind === "job") {
                   return (
                     <JobCard
+                    type={view} 
                       key={`job-${item.id}`}
                       job={{
                         ...item,
@@ -363,19 +373,19 @@ export default function HomePage() {
                 }
 
                 if(item.kind=="service"){
-                       return   <ServiceCard item={item} currentUserId={user?.id}/>
+                       return   <ServiceCard type={view} item={item} currentUserId={user?.id}/>
                 }
 
                 if(item.kind=="product"){
-                       return   <ProductCard item={item} currentUserId={user?.id}/>
+                       return   <ProductCard type={view}  item={item} currentUserId={user?.id}/>
                 }
 
                 if(item.kind=="tourism"){
-                       return   <ExperienceCard item={item} currentUserId={user?.id}/>
+                       return   <ExperienceCard type={view}  item={item} currentUserId={user?.id}/>
                 }
 
                 if(item.kind=="funding"){
-                       return   <CrowdfundCard item={item} currentUserId={user?.id}/>
+                       return   <CrowdfundCard type={view}  item={item} currentUserId={user?.id}/>
                 }
 
 
@@ -384,7 +394,7 @@ export default function HomePage() {
           </div>
           </section>
 
-          <aside className={`${user ? 'lg:col-span-3':'lg:col-span-4'}  sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto`}>
+          <aside className={`${user ? 'lg:col-span-3':'lg:col-span-4'} hidden  sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto`}>
             {loadingSuggestions ? (
               <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
                 Loading suggestions…

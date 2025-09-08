@@ -18,6 +18,8 @@ import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
 import CrowdfundCard from "../components/CrowdfundCard";
+import CardSkeletonLoader from "../components/ui/SkeletonLoader";
+import PageTabs from "../components/PageTabs";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -45,11 +47,13 @@ export default function CrowdfundingPage() {
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
 
+  const [view,setView]=useState('grid')
+  let view_types=['grid','list']
+
   // Metadados
   const [categories, setCategories] = useState([]);
   const [countries, setCountries] = useState([]);
   const [goals, setGoals] = useState([]);
-
 
   // Feed
   const [items, setItems] = useState([]);
@@ -168,17 +172,28 @@ export default function CrowdfundingPage() {
     return (
       <>
         {loadingFeed && (
-          <div className="min-h-[160px] grid place-items-center text-gray-600">
-             <FullPageLoader notFull={true}/>
-          </div>
+           <div className="min-h-[160px] grid text-gray-600">
+                       <CardSkeletonLoader/>
+                    </div>
         )}
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        {!loadingFeed &&
+        <PageTabs view={view} loading={loadingFeed} setView={setView} view_types={view_types}/>
+        
+         <div
+                 className={`grid grid-cols-1 ${
+                   view === "list" ? "sm:grid-cols-1" : "sm:grid-cols-3"
+                 } gap-6`}
+               >
+                  {!loadingFeed &&
           items.map((p) => (
-          <CrowdfundCard key={p.id} item={p} />
+          <CrowdfundCard type={view} key={p.id} item={p} />
         ))}
+
+       </div>
+
+
       </>
     );
   };
@@ -186,10 +201,9 @@ export default function CrowdfundingPage() {
   return (
    <DefaultLayout>
      <Header />
-
       <main className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
-
+       
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
@@ -200,12 +214,9 @@ export default function CrowdfundingPage() {
            <div className="_sticky top-0 z-10 bg-white">
             <FiltersCard {...filtersProps} />
           </div>
-          
-         
-         
         </aside>
 
-        <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5">
           
            <div className="flex items-center justify-between gap-y-2">
@@ -215,16 +226,7 @@ export default function CrowdfundingPage() {
             </div>
               {renderMiddle()}
           </section>
-
-          <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
-            {loadingSuggestions ? (
-              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
-                Loading suggestions…
-              </div>
-            ) : (
-              <SuggestedMatches matches={matches} nearby={nearby} />
-            )}
-          </aside>
+        
         </div>
       </main>
 

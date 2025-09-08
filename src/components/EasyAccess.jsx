@@ -1,5 +1,5 @@
 // src/components/QuickActionsPanel.jsx
-import { X } from "lucide-react";
+import { Bell, Calendar, ChartBar, MessageCircle, User2, X } from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -21,11 +21,11 @@ const I = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
     </svg>
   ),
-  bell:   () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill={BRAND}><path d="M12 22a2.5 2.5 0 0 0 2.45-2H9.55A2.5 2.5 0 0 0 12 22ZM18 16v-5a6 6 0 1 0-12 0v5l-1.8 1.8A1 1 0 0 0 5 20h14a1 1 0 0 0 .8-1.6Z"/></svg>,
-  users:  () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill={BRAND}><path d="M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4ZM2 20a6 6 0 0 1 12 0v1H2Z"/></svg>,
-  chat:   () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill={BRAND}><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  bell:   () => <Bell size={18} color={BRAND}/>,
+  users:  () => <User2  size={20} color={BRAND}/>,
+  chat:   () => <MessageCircle size={16} color={BRAND}/>,
   plus:   () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>,
-  calendar:() => <svg className="h-4 w-4" viewBox="0 0 24 24" fill={BRAND}><path d="M7 2h2v3H7zm8 0h2v3h-2z"/><path d="M5 5h14a2 2 0 0 1 2 2v13H3V7a2 2 0 0 1 2-2Z"/></svg>,
+  calendar:() => <Calendar  size={18} color={BRAND}/>,
   check:  () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="white"><path d="M9 16.2 4.8 12l-1.8 1.8L9 20l12-12-1.8-1.8z"/></svg>,
   close:  () => <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg>,
   pin:    () => <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 10a3 3 0 1 1 0-6 3 3 0 0 1 0 6Z"/></svg>,

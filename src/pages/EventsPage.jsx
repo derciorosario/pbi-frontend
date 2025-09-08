@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import client from "../api/client";
 
@@ -17,6 +18,8 @@ import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
+import PageTabs from "../components/PageTabs";
+import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -43,6 +46,8 @@ export default function EventsPage() {
   const [subcategoryId, setSubcategoryId] = useState();
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
+  const [view,setView]=useState('grid')
+  let view_types=['grid','list']
 
   // Metadados
   const [categories, setCategories] = useState([]);
@@ -167,21 +172,34 @@ export default function EventsPage() {
     return (
       <>
         {loadingFeed && (
-          <div className="min-h-[160px] grid place-items-center text-gray-600">
-             <FullPageLoader notFull={true}/>
+          <div className="min-h-[160px] grid text-gray-600">
+             <CardSkeletonLoader/>
           </div>
         )}
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        {!loadingFeed &&
-          items.map((item) =>
-            item.kind === "job" ? (
-              <JobCard key={`job-${item.id}`} job={item} />
-            ) : item.kind === "event" ? (
-              <EventCard key={`event-${item.id}`} e={item} />
-            ) : null
+        <PageTabs view={view} loading={loadingFeed} setView={setView} view_types={view_types}/>
+        
+
+       
+           
+          {!loadingFeed && (
+               <div
+                 className={`grid grid-cols-1 ${
+                   view === "list" ? "sm:grid-cols-1" : "sm:grid-cols-3"
+                 } gap-6`}
+               >
+                 {items?.map((item) =>
+                   item.kind === "job" ? (
+                     <JobCard type={view}  key={`job-${item.id}`} job={item} />
+                   ) : item.kind === "event" ? (
+                     <EventCard type={view} key={`event-${item.id}`} e={item} />
+                   ) : null
+                 )}
+               </div>
           )}
+
       </>
     );
   };
@@ -211,7 +229,7 @@ export default function EventsPage() {
          
         </aside>
 
-        <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5">
           
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
@@ -222,15 +240,7 @@ export default function EventsPage() {
               {renderMiddle()}
           </section>
 
-          <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
-            {loadingSuggestions ? (
-              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
-                Loading suggestions…
-              </div>
-            ) : (
-              <SuggestedMatches matches={matches} nearby={nearby} />
-            )}
-          </aside>
+         
         </div>
       </main>
 

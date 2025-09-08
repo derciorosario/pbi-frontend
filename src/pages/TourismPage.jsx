@@ -18,6 +18,8 @@ import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
 import ExperienceCard from "../components/ExperienceCard";
+import PageTabs from "../components/PageTabs";
+import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -33,6 +35,8 @@ export default function EventsPage() {
   const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
   const navigate=useNavigate()
   const data=useData()
+  const [view,setView]=useState('grid')
+  let view_types=['grid','list']
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -49,7 +53,6 @@ export default function EventsPage() {
   const [categories, setCategories] = useState([]);
   const [countries, setCountries] = useState([]);
   const [goals, setGoals] = useState([]);
-
 
   // Feed
   const [items, setItems] = useState([]);
@@ -170,18 +173,29 @@ export default function EventsPage() {
 
     return (
       <>
-        {loadingFeed && (
-          <div className="min-h-[160px] grid place-items-center text-gray-600">
-             <FullPageLoader notFull={true}/>
-          </div>
-        )}
+       {loadingFeed && (
+               <div className="min-h-[160px] grid text-gray-600">
+                                      <CardSkeletonLoader/>
+                                   </div>
+              )}
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        {!loadingFeed && items.map((exp) => (
-              <ExperienceCard key={exp.id} item={exp} />
-          ))
-        }
+        <PageTabs view={view} loading={loadingFeed} setView={setView} view_types={view_types}/>  
+
+               <div
+                 className={`grid grid-cols-1 ${
+                   view === "list" ? "sm:grid-cols-1" : "sm:grid-cols-3"
+                 } gap-6`}
+               >
+                 {!loadingFeed && items.map((exp) => (
+                 <ExperienceCard type={view} key={exp.id} item={exp} />
+                  ))
+                }
+                      </div>
+       
+
+
       </>
     );
   };
@@ -206,7 +220,7 @@ export default function EventsPage() {
           </div>
         </aside>
 
-        <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5">
           
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
@@ -217,15 +231,6 @@ export default function EventsPage() {
               {renderMiddle()}
           </section>
 
-          <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
-            {loadingSuggestions ? (
-              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
-                Loading suggestions…
-              </div>
-            ) : (
-              <SuggestedMatches matches={matches} nearby={nearby} />
-            )}
-          </aside>
         </div>
       </main>
 

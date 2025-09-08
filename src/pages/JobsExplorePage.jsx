@@ -17,6 +17,8 @@ import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
+import CardSkeletonLoader from "../components/ui/SkeletonLoader";
+import PageTabs from "../components/PageTabs";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -30,7 +32,9 @@ function useDebounce(v, ms = 400) {
 export default function PeopleFeedPage() {
   const [activeTab, setActiveTab] = useState("Posts");
   const tabs = useMemo(() => ["Posts", "Job Seeker","Job Offers"], []);
+  let view_types=['grid','list']
   const navigate=useNavigate()
+  const [view,setView]=useState('grid')
   const data=useData()
 
   // Filtros compatíveis com a Home
@@ -158,21 +162,33 @@ export default function PeopleFeedPage() {
     return (
       <>
         {loadingFeed && (
-          <div className="min-h-[160px] grid place-items-center text-gray-600">
-             <FullPageLoader notFull={true}/>
+          <div className="min-h-[160px] grid  text-gray-600">
+             <CardSkeletonLoader/>
           </div>
         )}
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        {!loadingFeed &&
-          items.map((item) =>
+        <PageTabs view={view} setView={setView} view_types={view_types}/>
+
+      
+        
+        {!loadingFeed && (
+        <div
+          className={`grid grid-cols-1 ${
+            view === "list" ? "sm:grid-cols-1" : "sm:grid-cols-3"
+          } gap-6`}
+        >
+          {items?.map((item) =>
             item.kind === "job" ? (
-              <JobCard key={`job-${item.id}`} job={item} />
+              <JobCard type={view}  key={`job-${item.id}`} job={item} />
             ) : item.kind === "event" ? (
               <EventCard key={`event-${item.id}`} e={item} />
             ) : null
           )}
+        </div>
+      )}
+
       </>
     );
   };
@@ -199,7 +215,7 @@ export default function PeopleFeedPage() {
         </aside>
 
     
-        <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-4">
             <div className="flex items-center justify-between gap-y-2 flex-wrap">
               <h3 className="font-semibold text-2xl mt-1">Find Your Next Opportunity</h3>
@@ -208,7 +224,7 @@ export default function PeopleFeedPage() {
             {renderMiddle()}
           </section>
 
-          <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+          {/**<aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
             {loadingSuggestions ? (
               <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
                 Loading suggestions…
@@ -216,7 +232,7 @@ export default function PeopleFeedPage() {
             ) : (
               <SuggestedMatches matches={matches} nearby={nearby} />
             )}
-          </aside>
+          </aside> */}
         </div>
       </main>
 

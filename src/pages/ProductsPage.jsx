@@ -17,7 +17,9 @@ import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
-import ProductCard from "../components/ProductCard";
+import ProductCard from "../components/ProductCard-1";
+import CardSkeletonLoader from "../components/ui/SkeletonLoader";
+import PageTabs from "../components/PageTabs";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -35,6 +37,8 @@ export default function ProductsPage() {
   const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
   const navigate=useNavigate()
   const data=useData()
+  const [view,setView]=useState('grid')
+  let view_types=['grid','list']
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -172,20 +176,24 @@ export default function ProductsPage() {
     return (
       <>
         {loadingFeed && (
-          <div className="min-h-[160px] grid place-items-center text-gray-600">
-             <FullPageLoader notFull={true}/>
+          <div className="min-h-[160px] grid text-gray-600">
+             <CardSkeletonLoader/>
           </div>
         )}
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        {<div className="max-w-6xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2  gap-6">
+        {<div className="max-w-6xl mx-auto">
+
+           <PageTabs view={view} setView={setView} view_types={view_types}/>
+
+          <div className={`grid grid-cols-1 ${view=="list" ? "sm:grid-cols-1":"sm:grid-cols-3"}  gap-6`}>
             {items.map((p) => (
               <ProductCard
                 key={p.id}
                 item={p}
                 {...p}
+                type={view}
                 onContact={() => alert(`Contact seller of ${p.title}`)}
                 onSave={() => alert(`Saved ${p.title}`)}
               />
@@ -222,23 +230,26 @@ export default function ProductsPage() {
            <div className="_sticky top-0 z-10 bg-white">
             <FiltersCard {...filtersProps} />
           </div>
-          
-         
          
         </aside>
 
-        <div className="lg:col-span-9 grid lg:grid-cols-6 gap-6">
+        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5">
-          
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              <h3 className="font-semibold text-2xl mt-1">Explore and Discover New Products</h3>
+             <div className="table">
+               <h3 className="font-semibold text-2xl mt-1">Explore and Discover New Products</h3>
+               <span
+                    className="left-0 flex hidden -bottom-[1px] h-[3px] w-full bg-brand-100 rounded-full"
+      
+                />
+             </div>
           
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/products/create')} />
             </div>
               {renderMiddle()}
           </section>
 
-          <aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+          {/**<aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto hidden">
             {loadingSuggestions ? (
               <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
                 Loading suggestions…
@@ -246,7 +257,7 @@ export default function ProductsPage() {
             ) : (
               <SuggestedMatches matches={matches} nearby={nearby} />
             )}
-          </aside>
+          </aside> */}
         </div>
       </main>
 
