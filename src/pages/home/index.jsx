@@ -21,7 +21,7 @@ import QuickActions from "../../components/QuickActions.jsx";
 import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import ProfileCard from "../../components/ProfileCard.jsx";
 import ServiceCard from "../../components/ServiceCard.jsx";
-import ProductCard from "../../components/ProductCard.jsx";
+import ProductCard from "../../components/ProductCard-1.jsx";
 import ExperienceCard from "../../components/ExperienceCard.jsx";
 import CrowdfundCard from "../../components/CrowdfundCard.jsx";
 import PageTabs from "../../components/PageTabs.jsx";
@@ -336,9 +336,9 @@ export default function HomePage() {
 
           </section>
 
-           <PageTabs view={view} setView={setView} view_types={view_types}/>
+           {/**  <PageTabs view={view} setView={setView} view_types={view_types}/>
           
-
+ */}
 
             
             {loadingFeed && (
@@ -349,7 +349,7 @@ export default function HomePage() {
 
                
               
-           <div className={`grid grid-cols-1 ${view=="list" ? "sm:grid-cols-1":(user ?  "sm:grid-cols-2" : "sm:grid-cols-3" )}  gap-6`}>
+           <div className={`grid grid-cols-1 mt-3 ${view=="list" ? "sm:grid-cols-1":(user ?  "sm:grid-cols-2" : "sm:grid-cols-3" )}  gap-6`}>
                  
 
             {!loadingFeed &&
