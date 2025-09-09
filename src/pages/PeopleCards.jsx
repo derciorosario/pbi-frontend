@@ -162,11 +162,11 @@ export default function PeopleProfileCard({
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute top-3 right-3 flex items-center gap-2">
-               {/** {matchPercentage !== undefined && matchPercentage !== null && (
+                {matchPercentage !== undefined && matchPercentage !== null && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
                     {matchPercentage}% match
                   </span>
-                )} */}
+                )} 
               </div>
               
             </div>

@@ -406,7 +406,7 @@ export default function EventDetails({ eventId, isOpen, onClose, item }) {
                 <button
                   onClick={() => {
                     // Share functionality
-                    const shareUrl = `${window.location.origin}/event/${event.id}`;
+                    const shareUrl = `${window.location.origin}/events?id=${event.id}`;
                     if (navigator.share) {
                       navigator.share({
                         title: event.title,

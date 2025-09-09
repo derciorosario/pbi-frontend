@@ -468,7 +468,7 @@ export default function CrowdfundDetails({ crowdfundId, isOpen, onClose }) {
                 <button
                   onClick={() => {
                     // Share functionality
-                    const shareUrl = `${window.location.origin}/tourism?id=${crowdfund.id}`;
+                    const shareUrl = `${window.location.origin}/funding?id=${crowdfund.id}`;
                     if (navigator.share) {
                       navigator.share({
                         title: crowdfund.title,

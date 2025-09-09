@@ -168,6 +168,7 @@ export default function EventsPage() {
     } finally {
       setLoadingFeed(false);
     }
+    data._scrollToSection('top',true);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
     price,
     serviceType,

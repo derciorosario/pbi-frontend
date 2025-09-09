@@ -115,7 +115,7 @@ export default function ExperienceCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const shareUrl = `${window.location.origin}/experience?id=${item.id}`;
+                  const shareUrl = `${window.location.origin}/tourism?id=${item.id}`;
                   if (navigator.share) {
                     navigator.share({ title: item.title, text: item.description, url: shareUrl }).catch(() => {});
                   } else {
@@ -167,7 +167,7 @@ export default function ExperienceCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const shareUrl = `${window.location.origin}/experience?id=${item.id}`;
+                  const shareUrl = `${window.location.origin}/tourism?id=${item.id}`;
                   if (navigator.share) {
                     navigator.share({ title: item.title, text: item.description, url: shareUrl }).catch(() => {});
                   } else {

@@ -1,4 +1,4 @@
-// src/components/tourismCard.jsx
+// src/components/fundingCard.jsx
 import React, { useMemo, useState } from "react";
 import { useData } from "../contexts/DataContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
@@ -127,7 +127,7 @@ export default function CrowdfundCard({
 
             <button
               onClick={() => {
-                const shareUrl = `${window.location.origin}/tourism?id=${item.id}`;
+                const shareUrl = `${window.location.origin}/funding?id=${item.id}`;
                 if (navigator.share) {
                   navigator.share({ title: item.title, text: item.pitch, url: shareUrl }).catch(() => {});
                 } else {
@@ -309,7 +309,7 @@ export default function CrowdfundCard({
             {/* View/Edit (mirrors the image quick action) */}
             <button
               onClick={() => {
-                if (isOwner) navigate(`/tourism/${item.id}`);
+                if (isOwner) navigate(`/funding/${item.id}`);
                 else setCrowdfundDetailsOpen(true);
               }}
               className="h-10 w-10 grid place-items-center rounded-xl border-2 border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"

@@ -158,12 +158,14 @@ export default function PeopleFeedPage() {
       };
       const { data } = await client.get("/feed", { params });
       setItems(Array.isArray(data.items) ? data.items : []);
+      
     } catch (e) {
       console.error("Failed to load feed:", e);
       setItems([]);
     } finally {
       setLoadingFeed(false);
     }
+    data._scrollToSection('top',true);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,  // NEW deps:
     price,
     serviceType,
@@ -276,7 +278,7 @@ export default function PeopleFeedPage() {
     setDate,
     registrationType,
     setRegistrationType,
-    
+
     categories,
     countries,
     onApply: () => setMobileFiltersOpen(false),

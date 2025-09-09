@@ -151,7 +151,7 @@ export default function ServiceCard({
 
               <button
                 onClick={() => {
-                  const shareUrl = `${window.location.origin}/service/${item.id}`;
+                  const shareUrl = `${window.location.origin}/services?id=${item.id}`;
                   if (navigator.share) {
                     navigator.share({ title: item.title, text: item.description, url: shareUrl }).catch(() => {});
                   } else {

@@ -370,7 +370,7 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
                 <button
                   onClick={() => {
                     // Share functionality
-                    const shareUrl = `${window.location.origin}/service/${service.id}`;
+                    const shareUrl = `${window.location.origin}/services?=${service.id}`;
                     if (navigator.share) {
                       navigator.share({
                         title: service.title,

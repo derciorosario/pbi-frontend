@@ -178,6 +178,7 @@ export default function PeopleFeedPage() {
     } finally {
       setLoadingFeed(false);
     }
+    data._scrollToSection('top',true);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,showPendingRequests,  // NEW deps:
     price,
     serviceType,

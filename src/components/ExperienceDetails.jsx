@@ -366,7 +366,7 @@ export default function ExperienceDetails({ experienceId, isOpen, onClose }) {
                 <button
                   onClick={() => {
                     // Share functionality
-                    const shareUrl = `${window.location.origin}/experience/${experience.id}`;
+                    const shareUrl = `${window.location.origin}/tourism?id=${experience.id}`;
                     if (navigator.share) {
                       navigator.share({
                         title: experience.title,
