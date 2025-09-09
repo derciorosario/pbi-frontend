@@ -47,6 +47,28 @@ export default function CrowdfundingPage() {
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
 
+  
+    const [audienceTree, setAudienceTree] = useState([]);
+    // Audience Tree
+    const [audienceSelections, setAudienceSelections] = useState({
+      identityIds: new Set(),
+      categoryIds: new Set(),
+      subcategoryIds: new Set(),
+      subsubCategoryIds: new Set(),
+    });
+  
+    useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/public/identities");
+        // Expecting data.identities: same structure you shared
+        setAudienceTree(data.identities);
+      } catch (error) {
+        console.error("Error loading identities:", error);
+      }
+    })();
+  }, []);
+
     // ---- NEW: all filter states ----
   // Products
   const [price, setPrice] = useState("");
@@ -158,6 +180,11 @@ export default function CrowdfundingPage() {
         date: date || undefined,
         registrationType: registrationType || undefined,
 
+        audienceIdentityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
+        audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
+        audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
+        audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
+
 
         limit: 20,
         offset: 0,
@@ -173,6 +200,7 @@ export default function CrowdfundingPage() {
     data._scrollToSection('top',true);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
     price,
+    audienceSelections,
     serviceType,
     priceType,
     deliveryTime,
@@ -222,6 +250,11 @@ export default function CrowdfundingPage() {
   }, [debouncedQ, country, city, categoryId, subcategoryId, goalId,role]);
 
   const filtersProps = {
+
+    audienceSelections,
+    setAudienceSelections,
+    audienceTree,
+
     query,
     setQuery,
     country,

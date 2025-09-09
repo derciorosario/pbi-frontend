@@ -197,9 +197,9 @@ export default function FeedPage() {
 
           </section>
 
-           {/**  <PageTabs view={view} setView={setView} view_types={view_types}/>
+             <PageTabs view={view} setView={setView} view_types={view_types}/>
           
- */}
+ 
 
             
             {loadingFeed && (
@@ -251,7 +251,7 @@ export default function FeedPage() {
                 }
 
 
-                return <EventCard key={`event-${item.id}`} e={item} matchPercentage={item.matchPercentage} />;
+                return <EventCard type={view}  item={item} key={`event-${item.id}`} e={item} matchPercentage={item.matchPercentage} />;
               })}
           </div>
           </section>

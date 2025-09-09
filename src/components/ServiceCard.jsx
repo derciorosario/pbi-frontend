@@ -117,38 +117,139 @@ export default function ServiceCard({
     toast.success("Starting conversation with " + (item?.providerUserName || "provider"));
   }
 
+  // Determine if we're in list mode
+  const isList = type === "list";
+
+  // Container classes based on layout type
+  const containerBase = "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out h-full";
+  const containerLayout = isList
+    ? "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch"
+    : "flex flex-col";
+
   return (
     <>
-      <div className="group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out flex flex-col h-full">
+      <div className={`${containerBase} ${containerLayout}`}>
         {/* IMAGE */}
-        {imageUrl && (
-          <div className="relative overflow-hidden">
-            <div className="relative">
-              <img
-                src={imageUrl}
-                alt={item?.title}
-                className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              {/* audienceCategories overlay when image exists */}
-              {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                  {item.audienceCategories.map((c) => (
-                    <span
-                      key={c.id || c.name}
-                      className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                    >
-                      {c.name}
-                    </span>
-                  ))}
-                </div>
+        {isList ? (
+          <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
+            {imageUrl ? (
+              <>
+                <img src={imageUrl} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* audienceCategories overlay when image exists */}
+                {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    {item.audienceCategories.map((c) => (
+                      <span
+                        key={c.id || c.name}
+                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
+                      >
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              // clean placeholder (no text)
+              <div className="absolute inset-0 w-full h-full bg-gray-100" />
+            )}
+
+            {/* Quick actions on image */}
+            <div className="absolute top-3 right-3 flex gap-2">
+
+                  <button
+              onClick={() => {
+                if (isOwner) {
+                  if (onEdit) onEdit(item);
+                  else navigate(`/service/${item.id}`);
+                } else {
+                  setDetailsModalOpen(true);
+                  onDetails?.(item);
+                }
+              }}
+               className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+               aria-label={isOwner ? "Edit service" : "View service"}
+            >
+              {isOwner ? (
+                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              ) : (
+                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
               )}
+            </button>
+
+              <button
+                onClick={() => {
+                  const shareUrl = `${window.location.origin}/services?id=${item.id}`;
+                  if (navigator.share) {
+                    navigator.share({ title: item.title, text: item.description, url: shareUrl }).catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(shareUrl);
+                    toast.success("Link copied to clipboard");
+                  }
+                }}
+                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                aria-label="Share"
+              >
+                <Share2 size={16} className="text-gray-600" />
+              </button>
+
+              
             </div>
+          </div>
+        ) : (
+          <div className="relative overflow-hidden">
+            {imageUrl ? (
+              <div className="relative">
+                <img
+                  src={imageUrl}
+                  alt={item?.title}
+                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* audienceCategories overlay when image exists */}
+                {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    {item.audienceCategories.map((c) => (
+                      <span
+                        key={c.id || c.name}
+                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
+                      >
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // clean placeholder (no text)
+              <div className="w-full h-48 bg-gray-100" />
+            )}
 
             {/* Quick actions on image */}
             <div className="absolute top-4 right-4 flex gap-2">
-            
 
+              
+                  <button
+              onClick={() => {
+                if (isOwner) {
+                  if (onEdit) onEdit(item);
+                  else navigate(`/service/${item.id}`);
+                } else {
+                  setDetailsModalOpen(true);
+                  onDetails?.(item);
+                }
+              }}
+               className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+               aria-label={isOwner ? "Edit service" : "View service"}
+            >
+              {isOwner ? (
+                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              ) : (
+                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              )}
+            </button>
+            
               <button
                 onClick={() => {
                   const shareUrl = `${window.location.origin}/services?id=${item.id}`;
@@ -169,7 +270,7 @@ export default function ServiceCard({
         )}
 
         {/* CONTENT */}
-        <div className="p-5 flex flex-col flex-1">
+        <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
           {/* Title */}
           <h3 className="font-semibold text-lg text-gray-900 truncate mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
             {item?.title}
@@ -190,7 +291,7 @@ export default function ServiceCard({
           )}
 
           {/* Description */}
-          <p className="mt-2 text-sm text-gray-600 leading-relaxed line-clamp-2">
+          <p className={`mt-2 text-sm text-gray-600 leading-relaxed ${isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"}`}>
             {item?.description}
           </p>
 
@@ -258,7 +359,7 @@ export default function ServiceCard({
 
           {/* Tags (show 2) with "+X more" tooltip if applicable */}
           {!!visibleTags.length && (
-            <div className="mb-4 flex flex-wrap gap-2">
+            <div className={`${isList ? "mb-3" : "mb-4"} flex flex-wrap gap-2`}>
               {visibleTags.map((t) => (
                 <span
                   key={t}
@@ -306,7 +407,7 @@ export default function ServiceCard({
           )}
 
           {/* Actions (View + Message + Connect / or Edit if owner) */}
-          <div className="flex items-center gap-2 mt-auto pt-2">
+          <div className={`flex items-center gap-2 mt-auto pt-2 ${isList ? "justify-end md:justify-start" : ""}`}>
             {/* View (Edit if owner) */}
             <button
               onClick={() => {
@@ -318,7 +419,7 @@ export default function ServiceCard({
                   onDetails?.(item);
                 }
               }}
-              className="flex items-center justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
+              className="flex items-center hidden justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
               aria-label={isOwner ? "Edit service" : "View service"}
             >
               {isOwner ? (
@@ -331,7 +432,9 @@ export default function ServiceCard({
             {/* Message */}
             <button
               onClick={handleMessage}
-              className="rounded-xl px-4 py-2.5 flex-1 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md"
+              className={`${
+                type === "grid" ? "flex-1" : ""
+              } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
             >
               Message
             </button>

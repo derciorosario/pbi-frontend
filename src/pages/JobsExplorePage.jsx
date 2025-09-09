@@ -48,8 +48,6 @@ export default function PeopleFeedPage() {
   const [goalId, setGoalId] = useState();
 
   const [audienceTree, setAudienceTree] = useState([]);
-
-
   // Audience Tree
   const [audienceSelections, setAudienceSelections] = useState({
     identityIds: new Set(),
@@ -149,7 +147,7 @@ export default function PeopleFeedPage() {
         subcategoryId: subcategoryId || undefined,
         goalId: goalId || undefined,
 
-        identityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
+       audienceIdentityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
         audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
         audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
         audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,

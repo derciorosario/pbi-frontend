@@ -36,6 +36,7 @@ const Tag = ({ children }) => (
 export default function CrowdfundCard({
   item,
   matchPercentage = 20, // optional match chip
+  type = "grid", // "grid" | "list"
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(item?.connectionStatus || "none");
@@ -89,62 +90,149 @@ export default function CrowdfundCard({
     setConnectionStatus("pending_outgoing");
   }
 
+  // Determine if we're in list mode
+  const isList = type === "list";
+
+  // Container classes based on layout type
+  const containerBase = "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
+  const containerLayout = isList
+    ? "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch"
+    : "flex flex-col";
+
   return (
     <>
-      <div className="group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out">
+      <div className={`${containerBase} ${containerLayout}`}>
         {/* IMAGE */}
-        <div className="relative overflow-hidden">
-          {imageUrl ? (
-            <div className="relative">
-              <img
-                src={imageUrl}
-                alt={item?.title}
-                className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              {/* audienceCategories overlay when image exists */}
-              {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                  {item.audienceCategories.map((c) => (
-                    <span
-                      key={c.id || c.name}
-                      className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                    >
-                      {c.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            // clean placeholder (no text)
-            <div className="w-full h-48 bg-gray-100" />
-          )}
+        {isList ? (
+          <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
+            {imageUrl ? (
+              <>
+                <img src={imageUrl} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* audienceCategories overlay when image exists */}
+                {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    {item.audienceCategories.map((c) => (
+                      <span
+                        key={c.id || c.name}
+                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
+                      >
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              // clean placeholder (no text)
+              <div className="absolute inset-0 w-full h-full bg-gray-100" />
+            )}
 
-          {/* Quick actions on image */}
-          <div className="absolute top-4 right-4 flex gap-2">
-          
+            {/* Quick actions on image */}
+            <div className="absolute top-3 right-3 flex gap-2">
 
-            <button
+              <button
               onClick={() => {
-                const shareUrl = `${window.location.origin}/funding?id=${item.id}`;
-                if (navigator.share) {
-                  navigator.share({ title: item.title, text: item.pitch, url: shareUrl }).catch(() => {});
-                } else {
-                  navigator.clipboard.writeText(shareUrl);
-                  toast.success("Link copied to clipboard");
-                }
+                if (isOwner) navigate(`/funding/${item.id}`);
+                else setCrowdfundDetailsOpen(true);
               }}
-              className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-              aria-label="Share"
+             className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                aria-label={isOwner ? "Edit" : "View"}
             >
-              <Share2 size={16} className="text-gray-600" />
+              {isOwner ? (
+                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              ) : (
+                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              )}
             </button>
+
+
+              <button
+                onClick={() => {
+                  const shareUrl = `${window.location.origin}/funding?id=${item.id}`;
+                  if (navigator.share) {
+                    navigator.share({ title: item.title, text: item.pitch, url: shareUrl }).catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(shareUrl);
+                    toast.success("Link copied to clipboard");
+                  }
+                }}
+                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                aria-label="Share"
+              >
+                <Share2 size={16} className="text-gray-600" />
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="relative overflow-hidden">
+            {imageUrl ? (
+              <div className="relative">
+                <img
+                  src={imageUrl}
+                  alt={item?.title}
+                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* audienceCategories overlay when image exists */}
+                {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    {item.audienceCategories.map((c) => (
+                      <span
+                        key={c.id || c.name}
+                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
+                      >
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // clean placeholder (no text)
+              <div className="w-full h-48 bg-gray-100" />
+            )}
+
+            {/* Quick actions on image */}
+            <div className="absolute top-4 right-4 flex gap-2">
+
+                 <button
+              onClick={() => {
+                if (isOwner) navigate(`/funding/${item.id}`);
+                else setCrowdfundDetailsOpen(true);
+              }}
+             className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                aria-label={isOwner ? "Edit" : "View"}
+            >
+              {isOwner ? (
+                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              ) : (
+                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              )}
+            </button>
+
+
+              <button
+                onClick={() => {
+                  const shareUrl = `${window.location.origin}/funding?id=${item.id}`;
+                  if (navigator.share) {
+                    navigator.share({ title: item.title, text: item.pitch, url: shareUrl }).catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(shareUrl);
+                    toast.success("Link copied to clipboard");
+                  }
+                }}
+                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                aria-label="Share"
+              >
+                <Share2 size={16} className="text-gray-600" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* CONTENT */}
-        <div className="p-5 flex flex-col">
+        <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
           {/* Title */}
           <h3 className="text-[17px] font-semibold text-gray-900 group-hover:text-brand-600 transition-colors duration-200">
             {item?.title}
@@ -288,7 +376,7 @@ export default function CrowdfundCard({
           )}
 
           {/* Actions */}
-          <div className="mt-5 flex gap-3">
+          <div className={`${isList ? "mt-3" : "mt-5"} flex items-center gap-2 ${isList ? "justify-end md:justify-start" : ""}`}>
             {/* Keep your Support button logic as-is (owner-only per your original code) */}
             {item.creatorUserId == user?.id && (
               <button
@@ -312,10 +400,14 @@ export default function CrowdfundCard({
                 if (isOwner) navigate(`/funding/${item.id}`);
                 else setCrowdfundDetailsOpen(true);
               }}
-              className="h-10 w-10 grid place-items-center rounded-xl border-2 border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
+              className="flex items-center hidden justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
               aria-label={isOwner ? "Edit" : "View"}
             >
-              {isOwner ? <Edit size={16} /> : <Eye size={16} />}
+              {isOwner ? (
+                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              ) : (
+                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              )}
             </button>
 
             {/* Message */}
@@ -328,7 +420,9 @@ export default function CrowdfundCard({
                 navigate(`/messages?userId=${item.creatorUserId}`);
                 toast.success("Starting conversation with " + (item.creatorUserName || "project creator"));
               }}
-              className="rounded-xl px-4 flex-1 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 transition-all duration-200 shadow-sm hover:shadow-md"
+              className={`${
+                type === "grid" ? "flex-1" : ""
+              } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 transition-all duration-200 shadow-sm hover:shadow-md`}
             >
               Message
             </button>

@@ -52,6 +52,18 @@ export default function ServicesPage() {
   const [role, setRole] = useState();
 
 
+  
+    const [audienceTree, setAudienceTree] = useState([]);
+    // Audience Tree
+    const [audienceSelections, setAudienceSelections] = useState({
+      identityIds: new Set(),
+      categoryIds: new Set(),
+      subcategoryIds: new Set(),
+      subsubCategoryIds: new Set(),
+    });
+  
+
+
      // ---- NEW: all filter states ----
     // Products
     const [price, setPrice] = useState("");
@@ -118,6 +130,19 @@ export default function ServicesPage() {
     })();
   }, []);
 
+  
+    useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/public/identities");
+        // Expecting data.identities: same structure you shared
+        setAudienceTree(data.identities);
+      } catch (error) {
+        console.error("Error loading identities:", error);
+      }
+    })();
+  }, []);
+
   // Fetch feed (somente na aba Posts)
   const fetchFeed = useCallback(async () => {
     if (activeTab !== "Suggested for You") return;
@@ -161,6 +186,11 @@ export default function ServicesPage() {
         date: date || undefined,
         registrationType: registrationType || undefined,
 
+        audienceIdentityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
+        audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
+        audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
+        audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
+
         limit: 20,
         offset: 0,
       };
@@ -174,6 +204,7 @@ export default function ServicesPage() {
     }
     data._scrollToSection('top',true);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
+        audienceSelections,
     price,
     serviceType,
     priceType,
@@ -224,6 +255,11 @@ export default function ServicesPage() {
   }, [debouncedQ, country, city, categoryId, subcategoryId, goalId,role]);
 
   const filtersProps = {
+
+    audienceSelections,
+    setAudienceSelections,
+    audienceTree,
+
     query,
     setQuery,
     country,

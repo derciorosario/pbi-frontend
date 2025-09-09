@@ -5,6 +5,7 @@ import AudienceTree from "./AudienceTree.jsx";
 import MultiSelect from "./MultiSelect.jsx";
 import MultiSelectDropdown from "./MultiSelectDropdown.jsx";
 import ExperienceLevelSelector from "./ExperienceLevelSelector.jsx";
+import COUNTRIES from "../constants/countries";
 
 const libraries = ["places"];
 
@@ -322,7 +323,7 @@ export default function FiltersCard({
       </div>
 
       {/* City / Country */}
-      <div className="mt-3">
+      <div className="mt-3 hidden">
         <label className="text-xs text-gray-500">City / Country</label>
         {isLoaded ? (
           <input
@@ -339,6 +340,29 @@ export default function FiltersCard({
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
           />
         )}
+      </div>
+
+      <div>
+        <ExperienceLevelSelector
+            value={country}
+            onChange={setCountry}
+            options={COUNTRIES}
+            label="Country"
+            placeholder="All"
+       />
+      </div>
+
+       <div className="mt-3">
+        <label className="text-xs text-gray-500">City</label>
+        <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
+          <I.search />
+          <input
+            className="w-full text-sm outline-none"
+            placeholder="Type name of the city"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+          />
+        </div>
       </div>
 
       {/* Category */}
@@ -572,7 +596,7 @@ export default function FiltersCard({
             placeholder="Any"
           />
 
-          <div className="mt-3">
+          <div className="mt-3 hidden">
             <label className="text-xs text-gray-500">Date</label>
             <input
               type="date"

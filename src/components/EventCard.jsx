@@ -163,7 +163,17 @@ export default function EventCard({
 
             {/* View & Share */}
             <div className="absolute top-4 right-4 flex gap-2">
-             
+                 <button
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (isOwner) navigate(`/event/${e.id}`);
+                  else setEventDetailsOpen(true);
+                }}
+                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                aria-label="View event"
+              >
+                {isOwner ? <Edit size={16} className="text-gray-600" /> : <Eye size={16} className="text-gray-600" />}
+              </button>
 
               <button
                 onClick={(ev) => {
@@ -334,7 +344,7 @@ export default function EventCard({
                 if (isOwner) navigate(`/event/${e.id}`);
                 else setEventDetailsOpen(true);
               }}
-              className="flex items-center justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
+              className="flex hidden items-center justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
               aria-label={isOwner ? "Edit event" : "View event"}
             >
               {isOwner ? (

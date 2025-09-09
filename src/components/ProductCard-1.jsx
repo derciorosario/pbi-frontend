@@ -139,14 +139,48 @@ export default function ProductCard({
              
 
               <button
+              onClick={() => {
+                if(user?.id==item.sellerUserId){
+                    navigate(`/product/${item.id}/view`)
+                }else{
+                    setProductDetailsOpen(true);
+                }
+              }}
+              className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
+                
+                aria-label="View product"
+            >
+              {user?.id==item.sellerUserId ? <Edit
+                className="transition-transform duration-200 group-hover/view:scale-110"
+                size={16}
+              /> :  <Eye
+                className="transition-transform duration-200 group-hover/view:scale-110"
+                size={16}
+              />}
+            </button>
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (onSave) onSave(item);
+                  // Share functionality
+                  if (navigator.share) {
+                    navigator.share({
+                      title: item.title,
+                      text: item.description,
+                      url: window.location.href,
+                    }).catch(err => console.error('Error sharing:', err));
+                  } else {
+                    // Fallback
+                    navigator.clipboard.writeText(window.location.href);
+                    toast.success("Link copied to clipboard");
+                  }
                 }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label="Save product"
+                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
+                aria-label="Share product"
               >
-                <Heart size={16} className="text-gray-600" />
+                <Share2
+                  size={16}
+                  className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200"
+                />
               </button>
             </div>
           </div>
@@ -199,6 +233,26 @@ export default function ProductCard({
             <div className="absolute top-4 right-4 flex gap-2">
             
 
+            <button
+              onClick={() => {
+                if(user?.id==item.sellerUserId){
+                    navigate(`/product/${item.id}/view`)
+                }else{
+                    setProductDetailsOpen(true);
+                }
+              }}
+              className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
+                
+                aria-label="View product"
+            >
+              {user?.id==item.sellerUserId ? <Edit
+                className="transition-transform duration-200 group-hover/view:scale-110"
+                size={16}
+              /> :  <Eye
+                className="transition-transform duration-200 group-hover/view:scale-110"
+                size={16}
+              />}
+            </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -375,7 +429,7 @@ export default function ProductCard({
                     setProductDetailsOpen(true);
                 }
               }}
-              className="flex items-center justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
+              className="flex items-center hidden justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
               aria-label="View product"
             >
               {user?.id==item.sellerUserId ? <Edit
