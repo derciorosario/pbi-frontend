@@ -129,11 +129,21 @@ export default function PeopleFeedPage() {
         
         // Set audience tree data for AudienceTree component
         // This assumes the API returns identities with categories and subcategories
-        if (data.identities && Array.isArray(data.identities)) {
-          setAudienceTree(data.identities);
-        }
+       
       } catch (e) {
         console.error("Failed to load meta:", e);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/public/identities");
+        // Expecting data.identities: same structure you shared
+        setAudienceTree(data.identities);
+      } catch (error) {
+        console.error("Error loading identities:", error);
       }
     })();
   }, []);

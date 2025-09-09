@@ -86,6 +86,8 @@ export default function FiltersCard({
     subsubCategoryIds: new Set(),
   },
   setAudienceSelections = () => {},
+
+
 }) {
   const inputRef = useRef(null);
   const [inputValue, setInputValue] = useState("");
@@ -554,28 +556,10 @@ export default function FiltersCard({
             placeholder="Any"
           />
 
-          {/* Audience Tree */}
-          {Array.isArray(audienceTree) && audienceTree.length > 0 && (
-            <div className="mt-4">
-              <label className="text-xs text-gray-500 mb-2 block">
-                Audience Interests
-              </label>
-              <AudienceTree
-                tree={audienceTree}
-                selected={
-                  audienceSelections || {
-                    identityIds: new Set(),
-                    categoryIds: new Set(),
-                    subcategoryIds: new Set(),
-                    subsubCategoryIds: new Set(),
-                  }
-                }
-                onChange={setAudienceSelections}
-              />
-            </div>
-          )}
         </>
       )}
+
+      
 
       {/* Events */}
       {from === "events" && (
@@ -607,6 +591,29 @@ export default function FiltersCard({
           />
         </>
       )}
+
+
+      
+          {/* Audience Tree */}
+          {Array.isArray(audienceTree) && audienceTree.length > 0 && (
+            <div className="mt-4">
+              <label className="text-xs text-gray-500 mb-2 block">
+                Audience Interests
+              </label>
+              <AudienceTree
+                tree={audienceTree}
+                selected={
+                  audienceSelections || {
+                    identityIds: new Set(),
+                    categoryIds: new Set(),
+                    subcategoryIds: new Set(),
+                    subsubCategoryIds: new Set(),
+                  }
+                }
+                onChange={setAudienceSelections}
+              />
+            </div>
+        )}
 
       {/* Hidden (unchanged) */}
       <div className="mt-3 hidden">

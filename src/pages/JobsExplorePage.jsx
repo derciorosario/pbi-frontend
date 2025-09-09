@@ -47,6 +47,16 @@ export default function PeopleFeedPage() {
   const [subcategoryId, setSubcategoryId] = useState();
   const [goalId, setGoalId] = useState();
 
+  const [audienceTree, setAudienceTree] = useState([]);
+
+
+  // Audience Tree
+  const [audienceSelections, setAudienceSelections] = useState({
+    identityIds: new Set(),
+    categoryIds: new Set(),
+    subcategoryIds: new Set(),
+    subsubCategoryIds: new Set(),
+  });
 
    // ---- NEW: all filter states ----
   // Products
@@ -105,8 +115,21 @@ export default function PeopleFeedPage() {
         const { data } = await client.get("/feed/meta");
         setCategories(data.categories || []);
         setCountries(data.countries || []);
+     
       } catch (e) {
         console.error("Failed to load meta:", e);
+      }
+    })();
+  }, []);
+
+   useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/public/identities");
+        // Expecting data.identities: same structure you shared
+        setAudienceTree(data.identities);
+      } catch (error) {
+        console.error("Error loading identities:", error);
       }
     })();
   }, []);
@@ -125,6 +148,12 @@ export default function PeopleFeedPage() {
         categoryId: categoryId || undefined,
         subcategoryId: subcategoryId || undefined,
         goalId: goalId || undefined,
+
+        identityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
+        audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
+        audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
+        audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
+      
 
         // include ALL filters so backend can leverage them when needed:
         // products
@@ -166,7 +195,11 @@ export default function PeopleFeedPage() {
       setLoadingFeed(false);
     }
     data._scrollToSection('top',true);
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,  // NEW deps:
+  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, 
+
+    audienceSelections,
+    
+    // NEW deps:
     price,
     serviceType,
     priceType,
@@ -281,6 +314,11 @@ export default function PeopleFeedPage() {
 
     categories,
     countries,
+
+    audienceSelections,
+    setAudienceSelections,
+    audienceTree,
+
     onApply: () => setMobileFiltersOpen(false),
   };
 

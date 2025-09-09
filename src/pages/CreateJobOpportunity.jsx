@@ -167,7 +167,6 @@ export default function CreateJobOpportunity() {
     (async () => {
       try {
         const { data } = await client.get("/public/identities");
-        // Expecting data.identities: same structure you shared
         setAudTree(data.identities || []);
       } catch (error) {
         console.error("Error loading identities:", error);
