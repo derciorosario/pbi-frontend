@@ -240,7 +240,7 @@ export default function HomePage() {
                  </h1>
 
                  <p className="text-xl text-white/90 leading-relaxed mb-10 max-w-2xl">
-                   <strong className="text-white">55Links</strong> is a comprehensive business networking platform connecting entrepreneurs, professionals, and businesses worldwide. Discover opportunities, build partnerships, and accelerate your growth.
+                   <strong className="text-white">55Links</strong> is a comprehensive business networking platform connecting entrepreneurs, professionals, and businesses. Discover opportunities, build partnerships, and accelerate your growth.
                  </p>
 
                  <div className="flex flex-col sm:flex-row gap-4 mb-12">
@@ -356,7 +356,7 @@ export default function HomePage() {
                  </div>
                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Connect & Network</h3>
                  <p className="text-gray-600 text-lg leading-relaxed">
-                   Discover and connect with professionals, businesses, and entrepreneurs worldwide.
+                   Discover and connect with professionals, businesses, and entrepreneurs.
                    Attend virtual events, join communities, and build meaningful business relationships.
                  </p>
                </div>
@@ -456,7 +456,7 @@ export default function HomePage() {
                  </div>
                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart People Network</h3>
                  <p className="text-gray-600 mb-6 leading-relaxed">
-                   Connect with professionals, entrepreneurs, and business leaders worldwide. Our AI-powered matching algorithm finds the most relevant connections based on your interests, location, and business goals.
+                   Connect with professionals, entrepreneurs, and business leaders. Our AI-powered matching algorithm finds the most relevant connections based on your interests, location, and business goals.
                  </p>
                  <button
                    onClick={() => navigate("/people")}
@@ -478,7 +478,7 @@ export default function HomePage() {
                  </div>
                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Premium Job Market</h3>
                  <p className="text-gray-600 mb-6 leading-relaxed">
-                   Access exclusive job opportunities from top companies worldwide. Whether you're seeking your dream career or looking to hire talented professionals, find the perfect match with our advanced filtering system.
+                   Access exclusive job opportunities from top companies. Whether you're seeking your dream career or looking to hire talented professionals, find the perfect match with our advanced filtering system.
                  </p>
                  <button
                    onClick={() => navigate("/jobs")}
@@ -500,7 +500,7 @@ export default function HomePage() {
                  </div>
                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Business Marketplace</h3>
                  <p className="text-gray-600 mb-6 leading-relaxed">
-                   Buy, sell, and discover products and services from verified businesses worldwide. Support entrepreneurship, find suppliers, and grow your business network with our secure marketplace.
+                   Buy, sell, and discover products and services from verified businesses. Support entrepreneurship, find suppliers, and grow your business network with our secure marketplace.
                  </p>
                  <button
                    onClick={() => navigate("/products")}
@@ -544,13 +544,13 @@ export default function HomePage() {
                  </div>
                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Tourism & Culture</h3>
                  <p className="text-gray-600 mb-6 leading-relaxed">
-                   Discover cultural heritage and tourism opportunities worldwide. Connect with tourism businesses, share experiences, and promote diverse destinations globally.
+                   Discover cultural heritage and tourism opportunities. Connect with tourism businesses, share experiences, and promote diverse destinations globally.
                  </p>
                  <button
                    onClick={() => navigate("/tourism")}
                    className="flex items-center text-brand-600 font-semibold"
                  >
-                   <span>Explore Worldwide</span>
+                   <span>Explore the world</span>
                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
                      <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
                    </svg>
@@ -1152,7 +1152,7 @@ export default function HomePage() {
                  </div>
                  <div className="text-left">
                    <div className="font-bold text-white">Global Community</div>
-                   <div className="text-sm">Worldwide connections</div>
+                   <div className="text-sm">Connections</div>
                  </div>
                </div>
              </div>
@@ -1168,7 +1168,7 @@ export default function HomePage() {
                    <span className="text-2xl font-bold text-white">55Links</span>
                  </div>
                  <p className="text-white/90 mb-6 max-w-md leading-relaxed">
-                   A comprehensive business networking platform connecting entrepreneurs, professionals, and businesses worldwide. Building stronger networks through meaningful connections.
+                   A comprehensive business networking platform connecting entrepreneurs, professionals, and businesses. Building stronger networks through meaningful connections.
                  </p>
                  <div className="flex gap-4 hidden">
                    <a href="#" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-accent-500 transition-colors">
