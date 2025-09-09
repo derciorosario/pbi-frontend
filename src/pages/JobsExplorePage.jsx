@@ -47,6 +47,41 @@ export default function PeopleFeedPage() {
   const [subcategoryId, setSubcategoryId] = useState();
   const [goalId, setGoalId] = useState();
 
+
+   // ---- NEW: all filter states ----
+  // Products
+  const [price, setPrice] = useState("");
+
+  // Services
+  const [serviceType, setServiceType] = useState("");
+  const [priceType, setPriceType] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
+
+  // Shared (Jobs, Services, People)
+  const [experienceLevel, setExperienceLevel] = useState("");
+  const [locationType, setLocationType] = useState("");
+
+  // Jobs
+  const [jobType, setJobType] = useState("");
+  const [workMode, setWorkMode] = useState("");
+
+  // Tourism
+  const [postType, setPostType] = useState("");
+  const [season, setSeason] = useState("");
+  const [budgetRange, setBudgetRange] = useState("");
+
+  // Funding
+  const [fundingGoal, setFundingGoal] = useState("");
+  const [amountRaised, setAmountRaised] = useState("");
+  const [currency, setCurrency] = useState("");
+  const [deadline, setDeadline] = useState("");
+
+  // Events
+  const [eventType, setEventType] = useState("");
+  const [date, setDate] = useState("");
+  const [registrationType, setRegistrationType] = useState("Free");
+
+
   // Metadados
   const [categories, setCategories] = useState([]);
   const [countries, setCountries] = useState([]);
@@ -90,6 +125,34 @@ export default function PeopleFeedPage() {
         categoryId: categoryId || undefined,
         subcategoryId: subcategoryId || undefined,
         goalId: goalId || undefined,
+
+        // include ALL filters so backend can leverage them when needed:
+        // products
+        price: price || undefined,
+        // services
+        serviceType: serviceType || undefined,
+        priceType: priceType || undefined,
+        deliveryTime: deliveryTime || undefined,
+        // shared
+        experienceLevel: experienceLevel || undefined,
+        locationType: locationType || undefined,
+        // jobs
+        jobType: jobType || undefined,
+        workMode: workMode || undefined,
+        // tourism
+        postType: postType || undefined,
+        season: season || undefined,
+        budgetRange: budgetRange || undefined,
+        // funding
+        fundingGoal: fundingGoal || undefined,
+        amountRaised: amountRaised || undefined,
+        currency: currency || undefined,
+        deadline: deadline || undefined,
+        // events
+        eventType: eventType || undefined,
+        date: date || undefined,
+        registrationType: registrationType || undefined,
+
         limit: 20,
         offset: 0,
       };
@@ -101,7 +164,25 @@ export default function PeopleFeedPage() {
     } finally {
       setLoadingFeed(false);
     }
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId]);
+  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,  // NEW deps:
+    price,
+    serviceType,
+    priceType,
+    deliveryTime,
+    experienceLevel,
+    locationType,
+    jobType,
+    workMode,
+    postType,
+    season,
+    budgetRange,
+    fundingGoal,
+    amountRaised,
+    currency,
+    deadline,
+    eventType,
+    date,
+    registrationType,]);
 
   useEffect(() => {
     fetchFeed();
@@ -145,6 +226,57 @@ export default function PeopleFeedPage() {
     setSubcategoryId,
     goalId,
     setGoalId,
+
+    // products
+    price,
+    setPrice,
+
+    // services
+    serviceType,
+    setServiceType,
+    priceType,
+    setPriceType,
+    deliveryTime,
+    setDeliveryTime,
+
+    // shared
+    experienceLevel,
+    setExperienceLevel,
+    locationType,
+    setLocationType,
+
+    // jobs
+    jobType,
+    setJobType,
+    workMode,
+    setWorkMode,
+
+    // tourism
+    postType,
+    setPostType,
+    season,
+    setSeason,
+    budgetRange,
+    setBudgetRange,
+
+    // funding
+    fundingGoal,
+    setFundingGoal,
+    amountRaised,
+    setAmountRaised,
+    currency,
+    setCurrency,
+    deadline,
+    setDeadline,
+
+    // events
+    eventType,
+    setEventType,
+    date,
+    setDate,
+    registrationType,
+    setRegistrationType,
+    
     categories,
     countries,
     onApply: () => setMobileFiltersOpen(false),
@@ -169,19 +301,19 @@ export default function PeopleFeedPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        <PageTabs view={view} setView={setView} view_types={view_types}/>
+        <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
 
       
         
         {!loadingFeed && (
         <div
           className={`grid grid-cols-1 ${
-            view === "list" ? "sm:grid-cols-1" : "sm:grid-cols-3"
+            view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
           } gap-6`}
         >
           {items?.map((item) =>
             item.kind === "job" ? (
-              <JobCard type={view}  key={`job-${item.id}`} job={item} />
+              <JobCard type={view}  key={`job-${item.id}`} job={item} matchPercentage={item.matchPercentage} />
             ) : item.kind === "event" ? (
               <EventCard key={`event-${item.id}`} e={item} />
             ) : null
@@ -209,7 +341,7 @@ export default function PeopleFeedPage() {
             ]} />
           <ProfileCard />
           <div className="_sticky top-0 z-10 bg-white">
-            <FiltersCard {...filtersProps} />
+            <FiltersCard {...filtersProps} from="jobs"/>
           </div>
          
         </aside>

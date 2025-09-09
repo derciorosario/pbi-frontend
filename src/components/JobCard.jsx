@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { toast } from "../lib/toast";
-import { Edit, Eye, MapPin, Clock, User as UserIcon, Share2 } from "lucide-react";
+import { Edit, Eye, MapPin, Clock, User as UserIcon, Share2, MessageCircle } from "lucide-react";
 import I from "../lib/icons";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ProfileModal from "./ProfileModal";
@@ -114,17 +114,7 @@ export default function JobCard({
 
             {/* Quick actions on image */}
             <div className="absolute top-3 right-3 flex gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isOwner) navigate(`/jobs/${job.id}`);
-                  else setJobDetailsOpen(true);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label="View job"
-              >
-                {isOwner ? <Edit size={16} className="text-gray-600" /> : <Eye size={16} className="text-gray-600" />}
-              </button>
+             
 
               <button
                 onClick={(e) => {
@@ -176,21 +166,7 @@ export default function JobCard({
 
             {/* View & Share */}
             <div className="absolute top-4 right-4 flex gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isOwner) navigate(`/job/${job.id}`);
-                  else setJobDetailsOpen(true);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/view"
-                aria-label="View job"
-              >
-                {isOwner ? (
-                  <Edit size={16} className="text-gray-600 group-hover/view:text-brand-600 transition-colors duration-200" />
-                ) : (
-                  <Eye size={16} className="text-gray-600 group-hover/view:text-brand-600 transition-colors duration-200" />
-                )}
-              </button>
+             
 
               <button
                 onClick={(e) => {
@@ -393,7 +369,7 @@ export default function JobCard({
                 type === "grid" ? "flex-1" : ""
               } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
             >
-              Message
+              <span>Message</span>
             </button>
 
             {!isOwner && renderConnectButton()}

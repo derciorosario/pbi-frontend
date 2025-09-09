@@ -109,23 +109,13 @@ export default function ExperienceCard({
             {/* Quick actions on image */}
             <div className="absolute top-3 right-3 flex gap-2">
               {/* View / Edit */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isOwner) navigate(`/experience/${item.id}`);
-                  else setExperienceDetailsOpen(true);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label="View experience"
-              >
-                {isOwner ? <Edit size={16} className="text-gray-600" /> : <Eye size={16} className="text-gray-600" />}
-              </button>
+              
 
               {/* Share */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const shareUrl = `${window.location.origin}/experience/${item.id}`;
+                  const shareUrl = `${window.location.origin}/experience?id=${item.id}`;
                   if (navigator.share) {
                     navigator.share({ title: item.title, text: item.description, url: shareUrl }).catch(() => {});
                   } else {
@@ -172,26 +162,12 @@ export default function ExperienceCard({
 
             {/* View & Share */}
             <div className="absolute top-4 right-4 flex gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isOwner) navigate(`/experience/${item.id}`);
-                  else setExperienceDetailsOpen(true);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/view"
-                aria-label="View experience"
-              >
-                {isOwner ? (
-                  <Edit size={16} className="text-gray-600 group-hover/view:text-brand-600 transition-colors duration-200" />
-                ) : (
-                  <Eye size={16} className="text-gray-600 group-hover/view:text-brand-600 transition-colors duration-200" />
-                )}
-              </button>
+             
 
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  const shareUrl = `${window.location.origin}/experience/${item.id}`;
+                  const shareUrl = `${window.location.origin}/experience?id=${item.id}`;
                   if (navigator.share) {
                     navigator.share({ title: item.title, text: item.description, url: shareUrl }).catch(() => {});
                   } else {
@@ -233,7 +209,7 @@ export default function ExperienceCard({
           )}
 
           {/* Description */}
-          <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+          <p className={`text-sm text-gray-600 mt-2 leading-relaxed ${type=="list" ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"}`}>
             {item?.description}
           </p>
 

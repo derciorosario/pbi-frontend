@@ -147,25 +147,7 @@ export default function ServiceCard({
 
             {/* Quick actions on image */}
             <div className="absolute top-4 right-4 flex gap-2">
-              <button
-                onClick={() => {
-                  if (isOwner) {
-                    if (onEdit) onEdit(item);
-                    else navigate(`/service/${item.id}`);
-                  } else {
-                    setDetailsModalOpen(true);
-                    onDetails?.(item);
-                  }
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label={isOwner ? "Edit service" : "View service"}
-              >
-                {isOwner ? (
-                  <Edit size={16} className="text-gray-600" />
-                ) : (
-                  <Eye size={16} className="text-gray-600" />
-                )}
-              </button>
+            
 
               <button
                 onClick={() => {

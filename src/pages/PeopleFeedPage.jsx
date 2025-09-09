@@ -59,6 +59,41 @@ export default function PeopleFeedPage() {
   const [view,setView]=useState('grid')
   let view_types=['grid','list']
 
+
+    // ---- NEW: all filter states ----
+  // Products
+  const [price, setPrice] = useState("");
+
+  // Services
+  const [serviceType, setServiceType] = useState("");
+  const [priceType, setPriceType] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("");
+
+  // Shared (Jobs, Services, People)
+  const [experienceLevel, setExperienceLevel] = useState("");
+  const [locationType, setLocationType] = useState("");
+
+  // Jobs
+  const [jobType, setJobType] = useState("");
+  const [workMode, setWorkMode] = useState("");
+
+  // Tourism
+  const [postType, setPostType] = useState("");
+  const [season, setSeason] = useState("");
+  const [budgetRange, setBudgetRange] = useState("");
+
+  // Funding
+  const [fundingGoal, setFundingGoal] = useState("");
+  const [amountRaised, setAmountRaised] = useState("");
+  const [currency, setCurrency] = useState("");
+  const [deadline, setDeadline] = useState("");
+
+  // Events
+  const [eventType, setEventType] = useState("");
+  const [date, setDate] = useState("");
+  const [registrationType, setRegistrationType] = useState("Free");
+
+
   // Metadados
   const [categories, setCategories] = useState([]);
   const [countries, setCountries] = useState([]);
@@ -104,6 +139,34 @@ export default function PeopleFeedPage() {
         goalId:goalId || undefined,
         role:role || undefined,
         connectionStatus:activeTab=="My Connections" && showPendingRequests ? 'outgoing_pending,incoming_pending' :  activeTab=="My Connections" && !showPendingRequests ? 'connected' : null,
+
+        // include ALL filters so backend can leverage them when needed:
+        // products
+        price: price || undefined,
+        // services
+        serviceType: serviceType || undefined,
+        priceType: priceType || undefined,
+        deliveryTime: deliveryTime || undefined,
+        // shared
+        experienceLevel: experienceLevel || undefined,
+        locationType: locationType || undefined,
+        // jobs
+        jobType: jobType || undefined,
+        workMode: workMode || undefined,
+        // tourism
+        postType: postType || undefined,
+        season: season || undefined,
+        budgetRange: budgetRange || undefined,
+        // funding
+        fundingGoal: fundingGoal || undefined,
+        amountRaised: amountRaised || undefined,
+        currency: currency || undefined,
+        deadline: deadline || undefined,
+        // events
+        eventType: eventType || undefined,
+        date: date || undefined,
+        registrationType: registrationType || undefined,
+
         limit: 20,
         offset: 0,
       };
@@ -115,7 +178,25 @@ export default function PeopleFeedPage() {
     } finally {
       setLoadingFeed(false);
     }
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,showPendingRequests]);
+  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,showPendingRequests,  // NEW deps:
+    price,
+    serviceType,
+    priceType,
+    deliveryTime,
+    experienceLevel,
+    locationType,
+    jobType,
+    workMode,
+    postType,
+    season,
+    budgetRange,
+    fundingGoal,
+    amountRaised,
+    currency,
+    deadline,
+    eventType,
+    date,
+    registrationType,]);
 
   useEffect(() => {
     fetchFeed();
@@ -163,6 +244,58 @@ export default function PeopleFeedPage() {
     goals,
     role,
     setRole,
+
+
+    // products
+    price,
+    setPrice,
+
+    // services
+    serviceType,
+    setServiceType,
+    priceType,
+    setPriceType,
+    deliveryTime,
+    setDeliveryTime,
+
+    // shared
+    experienceLevel,
+    setExperienceLevel,
+    locationType,
+    setLocationType,
+
+    // jobs
+    jobType,
+    setJobType,
+    workMode,
+    setWorkMode,
+
+    // tourism
+    postType,
+    setPostType,
+    season,
+    setSeason,
+    budgetRange,
+    setBudgetRange,
+
+    // funding
+    fundingGoal,
+    setFundingGoal,
+    amountRaised,
+    setAmountRaised,
+    currency,
+    setCurrency,
+    deadline,
+    setDeadline,
+
+    // events
+    eventType,
+    setEventType,
+    date,
+    setDate,
+    registrationType,
+    setRegistrationType,
+    
     categories,
     countries,
     onApply: () => setMobileFiltersOpen(false),
@@ -186,22 +319,14 @@ export default function PeopleFeedPage() {
         {/** <PageTabs view={view} loading={loadingFeed} setView={setView} view_types={view_types}/>  
 
  */}
-        {!loadingFeed &&
-          items.map((item) =>
-            item.kind === "job" ? (
-              <JobCard key={`job-${item.id}`} job={item} />
-            ) : item.kind === "event" ? (
-              <EventCard key={`event-${item.id}`} e={item} />
-            ) : null
-          )}
-
+        
            <div
                            className={`grid grid-cols-1 mt-3 ${
-                             view == "list" ? "sm:grid-cols-1" : "sm:grid-cols-3"
+                             view == "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
                            } gap-6`}
                          >
                            {!loadingFeed && items.map((item) => (
-                              <PeopleProfileCard tyle={view} {...item}/>
+                              <PeopleProfileCard tyle={view} {...item}  matchPercentage={item.matchPercentage}/>
                             ))
                           }
 
@@ -230,17 +355,14 @@ export default function PeopleFeedPage() {
              ]} />
           <ProfileCard />
            <div className="_sticky top-0 z-10 bg-white">
-            <FiltersCard {...filtersProps} />
+            <FiltersCard {...filtersProps} from={"people"}/>
           </div>
-          
-          
          
         </aside>
     <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-4">
            <div className="flex items-center justify-between gap-x-2 flex-wrap ">
              <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
-
             
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                 { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },

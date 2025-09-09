@@ -113,6 +113,8 @@ export default function HomePage() {
       } finally {
         setLoadingFeed(false);
       }
+
+      data._scrollToSection('top',true);
     })();
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role]);
 
@@ -359,6 +361,7 @@ export default function HomePage() {
                     <JobCard
                     type={view} 
                       key={`job-${item.id}`}
+                      matchPercentage={item.matchPercentage}
                       job={{
                         ...item,
                         categoryName:
@@ -373,23 +376,23 @@ export default function HomePage() {
                 }
 
                 if(item.kind=="service"){
-                       return   <ServiceCard type={view} item={item} currentUserId={user?.id}/>
+                       return   <ServiceCard type={view} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id}/>
                 }
 
                 if(item.kind=="product"){
-                       return   <ProductCard type={view}  item={item} currentUserId={user?.id}/>
+                       return   <ProductCard type={view}  item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id}/>
                 }
 
                 if(item.kind=="tourism"){
-                       return   <ExperienceCard type={view}  item={item} currentUserId={user?.id}/>
+                       return   <ExperienceCard type={view}  item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id}/>
                 }
 
                 if(item.kind=="funding"){
-                       return   <CrowdfundCard type={view}  item={item} currentUserId={user?.id}/>
+                       return   <CrowdfundCard type={view}  item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id}/>
                 }
 
 
-                return <EventCard key={`event-${item.id}`} e={item} />;
+                return <EventCard key={`event-${item.id}`} e={item} matchPercentage={item.matchPercentage} />;
               })}
           </div>
           </section>

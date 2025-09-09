@@ -1,11 +1,10 @@
-// src/components/CrowdfundCard.jsx
+// src/components/tourismCard.jsx
 import React, { useMemo, useState } from "react";
 import { useData } from "../contexts/DataContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ProfileModal from "./ProfileModal";
-import CrowdfundDetails from "./CrowdfundDetails";
 import { toast } from "../lib/toast";
 import {
   Eye,
@@ -15,6 +14,7 @@ import {
   Clock,
   User as UserIcon,
 } from "lucide-react";
+import CrowdfundDetails from "./CrowdfundDetails.jsx";
 
 const BRAND = "#034ea2";
 
@@ -123,24 +123,11 @@ export default function CrowdfundCard({
 
           {/* Quick actions on image */}
           <div className="absolute top-4 right-4 flex gap-2">
-            <button
-              onClick={() => {
-                if (isOwner) navigate(`/crowdfund/${item.id}`);
-                else setCrowdfundDetailsOpen(true);
-              }}
-              className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-              aria-label={isOwner ? "Edit" : "View"}
-            >
-              {isOwner ? (
-                <Edit size={16} className="text-gray-600" />
-              ) : (
-                <Eye size={16} className="text-gray-600" />
-              )}
-            </button>
+          
 
             <button
               onClick={() => {
-                const shareUrl = `${window.location.origin}/crowdfund/${item.id}`;
+                const shareUrl = `${window.location.origin}/tourism?id=${item.id}`;
                 if (navigator.share) {
                   navigator.share({ title: item.title, text: item.pitch, url: shareUrl }).catch(() => {});
                 } else {
@@ -322,7 +309,7 @@ export default function CrowdfundCard({
             {/* View/Edit (mirrors the image quick action) */}
             <button
               onClick={() => {
-                if (isOwner) navigate(`/crowdfund/${item.id}`);
+                if (isOwner) navigate(`/tourism/${item.id}`);
                 else setCrowdfundDetailsOpen(true);
               }}
               className="h-10 w-10 grid place-items-center rounded-xl border-2 border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"

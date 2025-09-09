@@ -167,7 +167,7 @@ function Header({ page }) {
           </div>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-2 text-sm ml-6">
+          <nav className="hidden md:flex items-center max-md:overflow-hidden gap-2 text-sm ml-6 max-lg:overflow-x-auto">
             {primaryNav.map((item) => {
               const active = isActive(item);
               return (
@@ -249,7 +249,7 @@ function Header({ page }) {
           </nav>
 
           {/* Search + notifications + messages + profile */}
-          <div className="ml-auto hidden md:flex items-center gap-5 flex-1 max-w-md">
+          <div className="ml-auto  items-center flex px-3 gap-5 flex-1 max-w-md">
             <div className="flex-1">{/* layout spacer */}</div>
 
             {user ? (

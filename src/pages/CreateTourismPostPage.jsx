@@ -8,6 +8,7 @@ import AudienceTree from "../components/AudienceTree";
 import COUNTRIES from "../constants/countries";
 import client from "../api/client";
 import { toast } from "../lib/toast";
+import Header from "../components/Header";
 
 /* ---------------- Shared styles (brand) ---------------- */
 const styles = {
@@ -237,60 +238,7 @@ export default function CreateTourismPostPage() {
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
       {/* ===== Header ===== */}
-      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-200">
-        <div className="mx-auto max-w-7xl h-16 px-4 sm:px-6 lg:px-8 flex items-center gap-4">
-          {/* Logo */}
-          <div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            <div className="h-9 w-9 rounded-xl grid place-items-center text-white font-bold bg-brand-700">
-              P
-            </div>
-            <div className="leading-tight">
-              <div className="font-semibold">55Links</div>
-              <div className="text-[11px] text-gray-500 -mt-1">Business Initiative</div>
-            </div>
-          </div>
-
-          {/* Navbar */}
-          <nav className="hidden md:flex items-center gap-4 text-sm ml-6">
-            <a onClick={() => navigate("/")} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100 cursor-pointer">
-              <Home size={16} /> Feed
-            </a>
-            <a onClick={() => navigate("/people")} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100 cursor-pointer">
-              <Users size={16} /> People
-            </a>
-            <a onClick={() => navigate("/jobs")} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100 cursor-pointer">
-              <Briefcase size={16} /> Jobs
-            </a>
-            <a onClick={() => navigate("/events")} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100 cursor-pointer">
-              <Calendar size={16} /> Events
-            </a>
-            <a onClick={() => navigate("/business")} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-gray-700 hover:bg-gray-100 cursor-pointer">
-              <Building2 size={16} /> Business
-            </a>
-            <a onClick={() => navigate("/tourism")} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-white cursor-pointer bg-brand-600 hover:bg-brand-700">
-              <MapPin size={16} /> Tourism
-            </a>
-          </nav>
-
-          {/* Search + Notifications + Profile */}
-          <div className="ml-auto hidden md:flex items-center gap-2 flex-1 max-w-md">
-            <div className="flex items-center gap-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2">
-              <Search size={16} className="text-gray-500" />
-              <input className="w-full bg-transparent outline-none text-sm" placeholder="Search people, jobs, events..." />
-            </div>
-            <button onClick={() => navigate("/notifications")} className="relative">
-              <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-white text-[10px]">3</span>
-              <svg className="h-[18px] w-[18px] text-gray-600" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 22a2.5 2.5 0 0 0 2.45-2H9.55A2.5 2.5 0 0 0 12 22ZM18 16v-5a6 6 0 1 0-12 0v5l-1.8 1.8A1 1 0 0 0 5 20h14a1 1 0 0 0 .8-1.6Z"/>
-              </svg>
-            </button>
-            <button onClick={() => navigate("/profile")} className="ml-2 h-10 w-10 rounded-full bg-gray-100 grid place-items-center flex-shrink-0">AB</button>
-          </div>
-        </div>
-      </header>
+      <Header page={"tourism"}/>
 
       {/* ===== Content ===== */}
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">

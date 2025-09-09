@@ -25,6 +25,16 @@ function avatarSrc({ avatarUrl, email, name }) {
   return null; // clean placeholder (no "No image" text)
 }
 
+function getInitials(name) {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map(part => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 function computeTimeAgo(explicit, createdAt) {
   if (explicit) return explicit;
   if (!createdAt) return "";
@@ -140,25 +150,51 @@ export default function PeopleProfileCard({
         </div>
       ) : (
         <div className="relative overflow-hidden">
-          {heroUrl ? (
+         
             <div className="relative">
-              <img
+               {heroUrl ? (<img
                 src={heroUrl}
                 alt={name}
-                className="w-full h-40 object-cover transition-transform duration-500 group-hover:scale-105"
-              />
+                className="w-full h-[45px] blur-sm opacity-80 object-cover transition-transform duration-500 group-hover:scale-105"
+              />) : (
+                <div className="w-full bg-gray-500 h-[45px]">
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="absolute top-3 right-3 flex items-center gap-2">
-                {matchPercentage !== undefined && matchPercentage !== null && (
+               {/** {matchPercentage !== undefined && matchPercentage !== null && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
                     {matchPercentage}% match
                   </span>
-                )}
+                )} */}
               </div>
+              
             </div>
-          ) : null}
+
+           
+
+        
         </div>
       )}
+
+      {/* Profile Image (circular) - only when there's no heroUrl */}
+      
+        <div className="relative translate-x-3 -mt-8 z-10">
+          {heroUrl ? (
+            <div className="w-16 h-16 rounded-full bg-blue-50 border-4 border-white overflow-hidden shadow-md">
+              <img
+                src={heroUrl}
+                alt={name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-16 h-16 rounded-full border-4 border-white bg-brand-100 flex items-center justify-center shadow-md">
+              <span className="text-brand-600 font-medium text-lg">{getInitials(name)}</span>
+            </div>
+          )}
+        </div>
+      
 
       {/* CONTENT */}
       <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
@@ -253,14 +289,14 @@ export default function PeopleProfileCard({
         )}
 
         {/* Actions */}
-        <div className="mt-auto pt-2 flex flex-wrap items-center gap-3">
+        <div className="mt-auto pt-2 flex items-center gap-2">
           {/* View profile */}
           <button
             onClick={() => {
               setOpenId(id);
               data._showPopUp?.("profile");
             }}
-            className="h-10 w-10 grid place-items-center rounded-xl border-2 border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
+            className="h-10 w-10 flex-shrink-0 grid place-items-center rounded-xl border-2 border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
             aria-label="View profile"
           >
             <Eye size={16} />

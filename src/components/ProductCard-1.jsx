@@ -136,16 +136,7 @@ export default function ProductCard({
 
             {/* Quick actions on image */}
             <div className="absolute top-3 right-3 flex gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setProductDetailsOpen(true);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label="View product"
-              >
-                <Eye size={16} className="text-gray-600" />
-              </button>
+             
 
               <button
                 onClick={(e) => {
@@ -206,19 +197,7 @@ export default function ProductCard({
            
             {/* View & Save */}
             <div className="absolute top-4 right-4 flex gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setProductDetailsOpen(true);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/eye"
-                aria-label="View product"
-              >
-                <Eye
-                  size={16}
-                  className="text-gray-600 group-hover/eye:text-brand-600 transition-colors duration-200"
-                />
-              </button>
+            
 
               <button
                 onClick={(e) => {

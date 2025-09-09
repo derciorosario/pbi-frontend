@@ -19,6 +19,7 @@
     "@formatjs/intl": "^3.0.4",
     "@formatjs/intl-pluralrules": "^5.4.1",
     "@paypal/react-paypal-js": "^8.5.0",
+    "@react-google-maps/api": "^2.20.7",
     "@react-oauth/google": "^0.12.2",
     "axios": "^1.11.0",
     "core-js": "^3.39.0",

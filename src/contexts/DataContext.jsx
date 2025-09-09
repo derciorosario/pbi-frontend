@@ -21,6 +21,16 @@ export const DataProvider = ({ children }) => {
       _setOpenPopUps({..._openPopUps,[option]:false})
     }
 
+  const _scrollToSection = (to,instant) => {
+      const Section = document.getElementById(to);
+      console.log({Section})
+      if (Section) {
+        Section.scrollIntoView({ behavior:instant ? 'instant' :  (to=="home" || to=="about" || to=="move_after_pagination" || to=="contact") ? 'smooth':'instant' });
+      }else{
+        setTimeout(()=>_scrollToSection(to),2000)
+      }
+   }
+
     const handleOutsideClick = (event) => {
    
       let close=true
@@ -52,6 +62,7 @@ export const DataProvider = ({ children }) => {
 
     const value = {
       _openPopUps,
+       _scrollToSection,
       _closeAllPopUps,
       _showPopUp,
       _closeThisPopUp,
