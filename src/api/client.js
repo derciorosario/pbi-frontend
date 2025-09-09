@@ -10,7 +10,7 @@ const client = axios.create({
 });
 
 /** Helpers to read/write token consistently */
-export function getStoredToken() {
+export function getStoredToken() {  
   return (
     localStorage.getItem("auth_token") ||
     localStorage.getItem("token") ||
