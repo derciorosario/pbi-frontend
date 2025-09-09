@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useJsApiLoader } from "@react-google-maps/api";
 import I from "../lib/icons.jsx";
+import AudienceTree from "./AudienceTree.jsx";
 
 const libraries = ["places"];
 
@@ -73,6 +74,16 @@ export default function FiltersCard({
   setDate,
   registrationType,
   setRegistrationType,
+  
+  /* Audience Tree */
+  audienceTree = [],
+  audienceSelections = {
+    identityIds: new Set(),
+    categoryIds: new Set(),
+    subcategoryIds: new Set(),
+    subsubCategoryIds: new Set(),
+  },
+  setAudienceSelections = () => {},
 }) {
   const inputRef = useRef(null);
   const [inputValue, setInputValue] = useState("");
@@ -253,6 +264,14 @@ export default function FiltersCard({
     setEventType?.("");
     setDate?.("");
     setRegistrationType?.("");
+  
+    // Audience Tree
+    setAudienceSelections?.({
+      identityIds: new Set(),
+      categoryIds: new Set(),
+      subcategoryIds: new Set(),
+      subsubCategoryIds: new Set(),
+    });
   };
 
   return (
@@ -311,7 +330,7 @@ export default function FiltersCard({
       </div>
 
       {/* Category */}
-      <div className="mt-3">
+      <div className="mt-3 hidden"> {/**hide for now */}
         <label className="text-xs text-gray-500">Category</label>
         <select
           className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
@@ -332,7 +351,7 @@ export default function FiltersCard({
       </div>
 
       {/* Subcategory */}
-      <div className="mt-3">
+      <div className="mt-3 hidden"> {/*** Hide for now */}
         <label className="text-xs text-gray-500">Subcategory</label>
         <select
           className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
@@ -606,25 +625,63 @@ export default function FiltersCard({
 
       {/* People */}
       {isPeople && (
-        <div className="mt-4">
-          <label className="text-xs text-gray-500">Experience Level</label>
-          <select
-            value={experienceLevel || ""}
-            onChange={(e) => setExperienceLevel?.(e.target.value)}
-            className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-          >
-            <option value="">Any</option>
-            <option>Junior</option>
-            <option>Mid</option>
-            <option>Senior</option>
-            <option>Lead</option>
-            <option>Director</option>
-            <option>C-level</option>
-          </select>
-          <span className="pointer-events-none absolute right-2 bottom-3 hidden sm:block">
-            <I.chevron />
-          </span>
-        </div>
+        <>
+          <div className="mt-4">
+            <label className="text-xs text-gray-500 mb-2 block">Experience Level</label>
+            <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
+              <div className="grid grid-cols-2 gap-2">
+                {["Junior", "Mid", "Senior", "Lead", "Director", "C-level"].map((level) => {
+                  // Handle experienceLevel as a comma-separated string
+                  const selectedLevels = experienceLevel ? experienceLevel.split(',') : [];
+                  const isChecked = selectedLevels.includes(level);
+                  
+                  return (
+                    <label key={level} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          // Update the comma-separated string of selected levels
+                          let newSelectedLevels = [...selectedLevels];
+                          if (e.target.checked) {
+                            // Add level if checked
+                            if (!newSelectedLevels.includes(level)) {
+                              newSelectedLevels.push(level);
+                            }
+                          } else {
+                            // Remove level if unchecked
+                            newSelectedLevels = newSelectedLevels.filter(l => l !== level);
+                          }
+                          // Join back to comma-separated string or empty string if none selected
+                          setExperienceLevel?.(newSelectedLevels.length > 0 ? newSelectedLevels.join(',') : '');
+                        }}
+                        className="h-4 w-4 accent-brand-600"
+                      />
+                      {level}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Audience Tree */}
+          {Array.isArray(audienceTree) && audienceTree.length > 0 && (
+            <div className="mt-4">
+              <label className="text-xs text-gray-500 mb-2 block">Audience Interests</label>
+              <AudienceTree
+                tree={audienceTree}
+                selected={audienceSelections || {
+                  identityIds: new Set(),
+                  categoryIds: new Set(),
+                  subcategoryIds: new Set(),
+                  subsubCategoryIds: new Set(),
+                }}
+                onChange={setAudienceSelections}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* Events */}

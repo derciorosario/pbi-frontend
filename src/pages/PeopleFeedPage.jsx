@@ -93,10 +93,18 @@ export default function PeopleFeedPage() {
   const [date, setDate] = useState("");
   const [registrationType, setRegistrationType] = useState("Free");
 
+  // Audience Tree
+  const [audienceSelections, setAudienceSelections] = useState({
+    identityIds: new Set(),
+    categoryIds: new Set(),
+    subcategoryIds: new Set(),
+    subsubCategoryIds: new Set(),
+  });
 
   // Metadados
   const [categories, setCategories] = useState([]);
   const [countries, setCountries] = useState([]);
+  const [audienceTree, setAudienceTree] = useState([]);
 
   // Feed
   const [items, setItems] = useState([]);
@@ -118,6 +126,12 @@ export default function PeopleFeedPage() {
         setCategories(data.categories || []);
         setCountries(data.countries || []);
         setGoals(data.goals || []);
+        
+        // Set audience tree data for AudienceTree component
+        // This assumes the API returns identities with categories and subcategories
+        if (data.identities && Array.isArray(data.identities)) {
+          setAudienceTree(data.identities);
+        }
       } catch (e) {
         console.error("Failed to load meta:", e);
       }
@@ -138,6 +152,12 @@ export default function PeopleFeedPage() {
         subcategoryId: subcategoryId || undefined,
         goalId:goalId || undefined,
         role:role || undefined,
+        
+        // Add audience selections to the API request
+        identityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
+        audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
+        audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
+        audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
         connectionStatus:activeTab=="My Connections" && showPendingRequests ? 'outgoing_pending,incoming_pending' :  activeTab=="My Connections" && !showPendingRequests ? 'connected' : null,
 
         // include ALL filters so backend can leverage them when needed:
@@ -179,7 +199,10 @@ export default function PeopleFeedPage() {
       setLoadingFeed(false);
     }
     data._scrollToSection('top',true);
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,showPendingRequests,  // NEW deps:
+  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role, showPendingRequests,
+    // Audience selections
+    audienceSelections,
+    // NEW deps:
     price,
     serviceType,
     priceType,
@@ -216,6 +239,12 @@ export default function PeopleFeedPage() {
           subcategoryId: subcategoryId || undefined,
           goalId: goalId || undefined,
           role:role || undefined,
+          
+          // Add audience selections to suggestions request
+          identityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
+          audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
+          audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
+          audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
           limit: 10,
         };
         const { data } = await client.get("/feed/suggestions", { params });
@@ -227,7 +256,7 @@ export default function PeopleFeedPage() {
         setLoadingSuggestions(false);
       }
     })();
-  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId,role]);
+  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, role, audienceSelections]);
 
   const filtersProps = {
     query,
@@ -296,6 +325,11 @@ export default function PeopleFeedPage() {
     setDate,
     registrationType,
     setRegistrationType,
+    
+    // Audience Tree props
+    audienceTree,
+    audienceSelections,
+    setAudienceSelections,
     
     categories,
     countries,

@@ -1,15 +1,27 @@
 import React, { useState } from "react";
 
+// Brand accents (lightly used below)
+const BRAND_BLUE = "#034ea2";
+const BRAND_GREEN = "#27a84a";
+
 // Icons for the component
 const Icons = {
-  caret: () => (<svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>),
-  caretUp: () => (<svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M7 14l5-5 5 5z"/></svg>),
+  caret: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M7 10l5 5 5-5z" />
+    </svg>
+  ),
+  caretUp: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M7 14l5-5 5 5z" />
+    </svg>
+  ),
 };
 
 /**
  * AudienceTree Component
  * Hierarchical selection tree for identities -> categories -> subcategories -> subsubs
- * 
+ *
  * @param {Object} props
  * @param {Array} props.tree - The hierarchical data structure
  * @param {Object} props.selected - Object with Sets for each selection type
@@ -18,9 +30,7 @@ const Icons = {
 function AudienceTree({ tree, selected, onChange }) {
   const [open, setOpen] = useState({}); // collapse state by key id
 
-  console.log({tree})
-
-  const toggle = (k) => setOpen(o => ({ ...o, [k]: !o[k] }));
+  const toggle = (k) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
   const isChecked = (type, id) => selected[type].has(id);
   const setChecked = (type, id, value) => {
@@ -31,7 +41,8 @@ function AudienceTree({ tree, selected, onChange }) {
       subsubCategoryIds: new Set(selected.subsubCategoryIds),
     };
     const bucket = next[type];
-    if (value) bucket.add(id); else bucket.delete(id);
+    if (value) bucket.add(id);
+    else bucket.delete(id);
     onChange(next);
   };
 
@@ -51,9 +62,9 @@ function AudienceTree({ tree, selected, onChange }) {
     } else {
       next.categoryIds.delete(category.id);
       // remove all subchildren of this category
-      (category.subcategories || []).forEach(sc => {
+      (category.subcategories || []).forEach((sc) => {
         next.subcategoryIds.delete(sc.id);
-        (sc.subsubs || []).forEach(ss => next.subsubCategoryIds.delete(ss.id));
+        (sc.subsubs || []).forEach((ss) => next.subsubCategoryIds.delete(ss.id));
       });
       // keep identity if other categories remain under it
     }
@@ -75,7 +86,7 @@ function AudienceTree({ tree, selected, onChange }) {
       next.subcategoryIds.add(subcat.id);
     } else {
       next.subcategoryIds.delete(subcat.id);
-      (subcat.subsubs || []).forEach(ss => next.subsubCategoryIds.delete(ss.id));
+      (subcat.subsubs || []).forEach((ss) => next.subsubCategoryIds.delete(ss.id));
     }
     onChange(next);
   };
@@ -103,7 +114,7 @@ function AudienceTree({ tree, selected, onChange }) {
     <div className="rounded-xl border border-gray-200">
       {tree.map((identity) => {
         // NOTE: identity.id should exist on API; if not, you can synthesize a stable key from the name.
-        const identityId = identity.id || identity.name; 
+        const identityId = identity.id || identity.name;
         const idKey = `id-${identityId}`;
         const openId = !!open[idKey];
 
@@ -119,11 +130,13 @@ function AudienceTree({ tree, selected, onChange }) {
                   type="checkbox"
                   className="h-4 w-4 accent-brand-600"
                   checked={isChecked("identityIds", identityId)}
-                  onChange={e => setChecked("identityIds", identityId, e.target.checked)}
+                  onChange={(e) => setChecked("identityIds", identityId, e.target.checked)}
                 />
                 <span className="font-medium w-full flex flex-1">{identity.name}</span>
               </div>
-              <span className="text-gray-500">{openId ? <Icons.caretUp/> : <Icons.caret/>}</span>
+              <span className="text-gray-500">
+                {openId ? <Icons.caretUp /> : <Icons.caret />}
+              </span>
             </button>
 
             {openId && (
@@ -143,18 +156,25 @@ function AudienceTree({ tree, selected, onChange }) {
                           />
                           <span className="text-sm font-medium w-full">{cat.name}</span>
                         </label>
-                        <button type="button" onClick={() => toggle(cKey)} className="text-gray-500 hover:text-gray-700">
-                          {openCat ? <Icons.caretUp/> : <Icons.caret/>}
+                        <button
+                          type="button"
+                          onClick={() => toggle(cKey)}
+                          className="text-gray-500 hover:text-gray-700"
+                        >
+                          {openCat ? <Icons.caretUp /> : <Icons.caret />}
                         </button>
                       </div>
 
                       {openCat && (
-                        <div className="px-3 py-2 space-y-2 bg-gray-50">
+                        // SUBCATEGORY AREA — light blue background + subtle left border
+                        <div
+                          className={`px-3 py-2 space-y-2 bg-[${BRAND_BLUE}]/5 border-l-2 border-[${BRAND_BLUE}]/20`}
+                        >
                           {(cat.subcategories || []).map((sc) => {
                             const scKey = `sc-${sc.id}`;
                             const openSc = !!open[scKey];
                             return (
-                              <div key={scKey} className="border rounded-md">
+                              <div key={scKey} className="border rounded-md overflow-hidden">
                                 <div className="flex items-center justify-between px-3 py-2 bg-white">
                                   <label className="flex items-center gap-2">
                                     <input
@@ -165,13 +185,20 @@ function AudienceTree({ tree, selected, onChange }) {
                                     />
                                     <span className="text-sm">{sc.name}</span>
                                   </label>
-                                  <button type="button" onClick={() => toggle(scKey)} className="text-gray-500 hover:text-gray-700">
-                                    {openSc ? <Icons.caretUp/> : <Icons.caret/>}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggle(scKey)}
+                                    className="text-gray-500 hover:text-gray-700"
+                                  >
+                                    {openSc ? <Icons.caretUp /> : <Icons.caret />}
                                   </button>
                                 </div>
 
-                                {openSc && (sc.subsubs?.length > 0) && (
-                                  <div className="px-3 py-2 bg-gray-50 grid sm:grid-cols-2 gap-2">
+                                {openSc && sc.subsubs?.length > 0 && (
+                                  // SUB-SUBCATEGORY GRID — soft green background + subtle left border
+                                  <div
+                                    className={`px-3 py-2 bg-[${BRAND_GREEN}]/10 border-l-2 border-[${BRAND_GREEN}]/30 grid sm:grid-cols-2 gap-2`}
+                                  >
                                     {sc.subsubs.map((ss) => (
                                       <label key={ss.id} className="flex items-center gap-2">
                                         <input
