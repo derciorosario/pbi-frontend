@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useData } from "../../contexts/DataContext";
 
 /** ---------------------------
  * Quick config (edit these)
@@ -29,9 +30,10 @@ const Anchor = ({ href, children }) => (
 export default function TermsOfServicePage() {
   const nav = useNavigate();
   const lastUpdated = "September 6, 2025";
+  const data=useData()
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div id="top"  className="min-h-screen bg-gray-50">
       {/* Top bar */}
       <header
         className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60"

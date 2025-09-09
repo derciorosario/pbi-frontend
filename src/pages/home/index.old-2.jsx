@@ -36,7 +36,7 @@ function useDebounce(v, ms = 400) {
   return val;
 }
 
-export default function FeedPage() {
+export default function HomePage() {
   const navigate = useNavigate();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
@@ -69,6 +69,7 @@ export default function FeedPage() {
   const [view,setView]=useState('grid')
   let view_types=['grid','list']
   
+
   const data=useData()
 
   const {user}=useAuth()
@@ -164,7 +165,147 @@ export default function FeedPage() {
   };
 
   return (
-    <>
+    <DefaultLayout>
+     <Header page={'feed'}/>
+
+      <section className={`relative overflow-visible ${user?.id ? "hidden" : ""}`}>
+  {/* Hero Gradient */}
+  <div className="relative bg-gradient-to-r  from-[#004182]  to-[#0a66c2]">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 md:py-16">
+      <div className="grid lg:grid-cols-12 gap-8 items-center">
+        <div className="lg:col-span-6 text-white">
+          <h1 className="text-[42px] md:text-6xl font-extrabold leading-[1.05]">
+            Connect
+            <br />
+            Globally
+          </h1>
+          <p className="mt-5 max-w-xl text-white/90 text-lg">
+            The largest Pan-African networking platform for professionals,
+            freelancers, and entrepreneurs. Discover opportunities, connect with
+            talent, and grow your business.
+          </p>
+          <div className="mt-8 flex items-center gap-4">
+            <button
+              onClick={() => setLoginDialogOpen(true)}
+              className="rounded-xl px-6 py-3 font-semibold text-brand-600 bg-white shadow-sm"
+            >
+              Sign Up
+            </button>
+            <button
+              onClick={() => navigate("/people")}
+              className="rounded-xl px-6 py-3 font-semibold border border-white/60 text-white hover:bg-white/10"
+            >
+              <a>Explore</a>
+            </button>
+          </div>
+        </div>
+        <div className="lg:col-span-6">
+          <img
+            alt="networking"
+            className="w-full rounded-[28px] object-cover aspect-[16/9] shadow-xl"
+            src="https://theblackrise.com/wp-content/uploads/2023/11/AdobeStock_257397505-scaled.jpeg"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Hero Filters: Tabs + Country / City / Category + Search */}
+  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-30">
+    <div className="-mt-10 md:-mt-14 lg:-mt-16 w-full lg:w-[720px] relative z-30">
+      <div className="rounded-[22px] bg-white shadow-xl ring-1 ring-black/5 p-4 md:p-5 relative z-30">
+        {/* Tabs */}
+        <div className="flex items-center gap-6 text-sm font-medium text-gray-500 border-b overflow-x-auto">
+          {/**{["All", "Events", "Jobs","Services","Products"].map((tab) => (
+            <button
+              key={tab}
+              className={`pb-3 relative ${
+                activeTab === tab ? "text-gray-900" : "hover:text-gray-700"
+              }`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+              {activeTab === tab && (
+                <span className="absolute left-0 -bottom-[1px] h-[3px] w-full rounded-full bg-brand-600" />
+              )}
+            </button>
+          ))} */}
+          {/** new message here */}
+          <div className="text-[17px] mb-2 font-medium">
+            Find what you’re looking for
+          </div>
+        </div>
+
+        {/* Three controls: Country, City, Category */}
+        <div className="mt-4 grid md:grid-cols-3 gap-3">
+          <div>
+            <label className="text-[11px] text-gray-500">Country</label>
+            <select
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              value={country || ""}
+              onChange={(e) => setCountry(e.target.value || undefined)}
+            >
+              <option value="">All countries</option>
+              {countries.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[11px] text-gray-500">City</label>
+            <input
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              placeholder="City"
+              value={city || ""}
+              onChange={(e) => setCity(e.target.value || undefined)}
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] text-gray-500">Category</label>
+            <select
+              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
+              value={categoryId || ""}
+              onChange={(e) => {
+                const v = e.target.value || "";
+                setCategoryId(v || undefined);
+                setSubcategoryId(undefined);
+              }}
+            >
+              <option value="">All categories</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Search row */}
+        <div className="mt-3">
+          <div className="flex items-center gap-2 rounded-full bg-gray-50 border border-gray-200 px-3 py-2">
+            <input
+              className="flex-1 bg-transparent outline-none text-sm"
+              placeholder="Search by skills, location, or interest..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <button className="flex items-center gap-2 rounded-full px-4 py-2 text-white text-sm font-semibold shadow bg-brand-600 hover:bg-brand-700">
+              <I.search /> Search
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 rounded-[22px] h-6 bg-black/0 shadow-[0_20px_35px_-25px_rgba(0,0,0,0.35)] relative z-20" />
+    </div>
+  </div>
+</section>
+
+
       <main id="explore" className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-10 relative`}>
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
@@ -274,7 +415,13 @@ export default function FeedPage() {
         filtersProps={filtersProps}
       />
       
+      {/* Login Dialog */}
+      <LoginDialog
+        isOpen={loginDialogOpen}
+        onClose={() => setLoginDialogOpen(false)}
+        initialTab="signup" // Show signup tab first when opened from signup button
+      />
    
-    </>
+    </DefaultLayout>
   );
 }

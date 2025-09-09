@@ -3,29 +3,18 @@ import { useNavigate } from "react-router-dom";
 import client from "../../api/client";
 import I from "../../lib/icons.jsx";
 import LoginDialog from "../../components/LoginDialog.jsx";
+import Input from "../../components/Input.jsx";
+import GoogleCustomBtn from "../../components/GoogleBtn.jsx";
+import COUNTRIES from "../../constants/countries.js";
+import { toast } from "../../lib/toast";
 
-import MobileFiltersButton from "../../components/MobileFiltersButton.jsx";
-import MobileFiltersBottomSheet from "../../components/MobileFiltersBottomSheet.jsx";
-import FiltersCard from "../../components/FiltersCard.jsx";
-import TabsAndAdd from "../../components/TabsAndAdd.jsx";
-import SuggestedMatches from "../../components/SuggestedMatches.jsx";
-import EventCard from "../../components/EventCard.jsx";
-import JobCard from "../../components/JobCard.jsx";
 import Header from "../../components/Header.jsx";
-import EmptyFeedState from "../../components/EmptyFeedState.jsx";
-import FullPageLoader from "../../components/ui/FullPageLoader.jsx";
 import { useData } from "../../contexts/DataContext.jsx";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import DefaultLayout from "../../layout/DefaultLayout.jsx";
-import QuickActions from "../../components/QuickActions.jsx";
-import { Pencil, PlusCircle, Rocket } from "lucide-react";
-import ProfileCard from "../../components/ProfileCard.jsx";
-import ServiceCard from "../../components/ServiceCard.jsx";
-import ProductCard from "../../components/ProductCard-1.jsx";
-import ExperienceCard from "../../components/ExperienceCard.jsx";
-import CrowdfundCard from "../../components/CrowdfundCard.jsx";
-import PageTabs from "../../components/PageTabs.jsx";
-import CardSkeletonLoader from "../../components/ui/SkeletonLoader.jsx";
+import Logo from '../../assets/logo.png'
+import Demo from '../../assets/lg-main.png'
+import FeedPage from "../feed/FeedExplorePage.jsx";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -43,377 +32,1199 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState("All");
   const tabs = useMemo(() => ["All", "Events", "Jobs","Services","Products"], []);
 
-  const [query, setQuery] = useState("");
-  const debouncedQ = useDebounce(query, 400);
+  // Authentication form state
+  const [authTab, setAuthTab] = useState("signup");
+  const [loginForm, setLoginForm] = useState({ email: "", password: "", remember: false });
+  const [loginErrors, setLoginErrors] = useState({ email: "", password: "" });
+  const [signupForm, setSignupForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    country: "",
+    password: "",
+    confirmPassword: "",
+    tos: false
+  });
+  const [signupErrors, setSignupErrors] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    country: "",
+    password: "",
+    confirmPassword: "",
+    tos: ""
+  });
+  const [acct, setAcct] = useState("individual");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showPwd1, setShowPwd1] = useState(false);
+  const [showPwd2, setShowPwd2] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [country, setCountry] = useState();
-  const [city, setCity] = useState();
-  const [categoryId, setCategoryId] = useState();
-  const [subcategoryId, setSubcategoryId] = useState();
-  const [goalId, setGoalId] = useState();
-  const [role, setRole] = useState();
+  // Authentication form handlers
+  const onAuthLoginChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setLoginForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    setLoginErrors((prev) => ({ ...prev, [name]: "" }));
+  };
 
-  const [categories, setCategories] = useState([]);
-  const [countries, setCountries] = useState([]);
-  const [goals, setGoals] = useState([]);
+  const onAuthSignupChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setSignupForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+    setSignupErrors((prev) => ({ ...prev, [name]: "" }));
+  };
 
-  const [items, setItems] = useState([]);
-  const [loadingFeed, setLoadingFeed] = useState(false);
+  // Labels change with account type, but variable names DO NOT change
+  const labelName = acct === "company" ? "Company name" : "Name";
+  const labelEmail = acct === "company" ? "Company email" : "Email Address";
+  const labelPhone = acct === "company" ? "Company phone" : "Phone Number";
 
-  const [matches, setMatches] = useState([]);
-  const [nearby, setNearby] = useState([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  function validateAuthLogin() {
+    const next = { email: "", password: "" };
+    if (!loginForm.email) next.email = "Email is required.";
+    else if (!emailOK(loginForm.email)) next.email = "Please enter a valid email.";
+    if (!loginForm.password) next.password = "Password is required.";
+    setLoginErrors(next);
+    return !next.email && !next.password;
+  }
 
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  function validateAuthSignup() {
+    const next = {
+      name: "",
+      email: "",
+      phone: "",
+      country: "",
+      password: "",
+      confirmPassword: "",
+      tos: ""
+    };
 
-  const [view,setView]=useState('grid')
-  let view_types=['grid','list']
+    if (!signupForm.name) next.name = `${labelName} is required.`;
+    if (!signupForm.email) next.email = `${labelEmail} is required.`;
+    else if (!emailOK(signupForm.email)) next.email = "Please enter a valid email.";
+    if (!signupForm.phone) next.phone = `${labelPhone} is required.`;
+    else if (String(signupForm.phone).replace(/\D/g, "").length < 6)
+      next.phone = "Please enter a valid phone number.";
+    if (!signupForm.country) next.country = "Country is required.";
+    if (!signupForm.password) next.password = "Password is required.";
+    else if (signupForm.password.length < 6)
+      next.password = "Use at least 6 characters.";
+    if (!signupForm.confirmPassword) next.confirmPassword = "Please confirm password.";
+    else if (signupForm.password !== signupForm.confirmPassword)
+      next.confirmPassword = "Passwords do not match.";
+    if (!signupForm.tos) next.tos = "You must agree to the Terms and Privacy Policy.";
+
+    setSignupErrors(next);
+    return Object.values(next).every((v) => !v);
+  }
+
+  async function onAuthLoginSubmit(e) {
+    e.preventDefault();
+    if (!validateAuthLogin()) {
+      toast.error("Please fix the highlighted fields.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const promise = client.post("/auth/login", {
+        email: loginForm.email,
+        password: loginForm.password
+      });
+
+      const res = await toast.promise(
+        promise,
+        {
+          loading: "Signing you in…",
+          success: "Welcome back! 🎉",
+          error: (err) => err?.response?.data?.message || "Login failed. Check your credentials."
+        },
+        { id: "login" }
+      );
+
+      const token = res?.data?.token;
+      if (token) {
+        // store under both keys for compatibility with other parts of the app
+        localStorage.setItem("auth_token", token);
+        localStorage.setItem("token", token);
+        window.location.href="/"; // Refresh the page
+      }
+    } catch {
+      /* toast shown by toast.promise */
+      setLoading(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onAuthSignupSubmit(e) {
+    e.preventDefault();
+    if (!validateAuthSignup()) {
+      toast.error("Please fix the highlighted fields.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Build payload with same variable names; include account type
+      const payload = {
+        name: signupForm.name,
+        email: signupForm.email,
+        phone: signupForm.phone,
+        country: signupForm.country,
+        password: signupForm.password,
+        account_type: acct // "individual" | "company"
+      };
+
+      const promise = client.post("/auth/signup", payload);
+
+      const res = await toast.promise(
+        promise,
+        {
+          loading: "Creating your account…",
+          success: "Account created! 🎉",
+          error: (err) => err?.response?.data?.message || "Sign up failed."
+        },
+        { id: "signup" }
+      );
+
+      // After signup, go to "Email Sent" page
+      const email = res?.data?.email || payload.email;
+      navigate("/verify-email-sent", { state: { email } });
+    } catch {
+      // toast already handled
+    } finally {
+      setLoading(false);
+    }
+  }
+
   
 
   const data=useData()
 
   const {user}=useAuth()
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await client.get("/feed/meta");
-        setCategories(data.categories || []);
-        setCountries(data.countries || []);
-        setGoals(data.goals || []);
-      } catch (e) {
-        console.error(e);
-      }
-    })();
-  }, []);
+ 
 
-  useEffect(() => {
-    (async () => {
-      setLoadingFeed(true);
-      try {
-        const tabParam =
-          activeTab === "Events" ? "events" : activeTab === "Jobs" ? "jobs" : activeTab === "Services" ?  "service" :  activeTab === "Products" ? "product" : "all";
-        const params = {
-          tab: tabParam,
-          q: debouncedQ || undefined,
-          country: country || undefined,
-          city: city || undefined,
-          goalId:goalId || undefined,
-          role:role || undefined,
-          categoryId: categoryId || undefined,
-          subcategoryId: subcategoryId || undefined,
-          limit: 20,
-          offset: 0,
-        };
-
-        const { data } = await client.get("/feed", { params });
-        setItems(data.items || []);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoadingFeed(false);
-      }
-
-      data._scrollToSection('top',true);
-    })();
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role]);
-
-  useEffect(() => {
-    (async () => {
-      setLoadingSuggestions(true);
-      try {
-        const params = {
-          q: debouncedQ || undefined,
-          country: country || undefined,
-          city: city || undefined,
-          goalId:goalId || undefined,
-          role:role || undefined,
-          categoryId: categoryId || undefined,
-          subcategoryId: subcategoryId || undefined,
-          limit: 10,
-        };
-        const { data } = await client.get("/feed/suggestions", { params });
-        setMatches(data.matches || []);
-        setNearby(data.nearby || []);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoadingSuggestions(false);
-      }
-    })();
-  }, [debouncedQ, country, city, categoryId, subcategoryId, role, goalId]);
-
-  const filtersProps = {
-    query,
-    setQuery,
-    country,
-    setCountry,
-    city,
-    setCity,
-    categoryId,
-    setCategoryId,
-    subcategoryId,
-    setSubcategoryId,
-    categories,
-    countries,
-    role,
-    setGoalId,
-    setRole,
-    goalId,
-    goals,
-    onApply: () => setMobileFiltersOpen(false),
-  };
 
   return (
     <DefaultLayout>
      <Header page={'feed'}/>
 
+       {user && <FeedPage/>}
+
+      {/* Enhanced Landing Page - Only show when user is not logged in */}
       <section className={`relative overflow-visible ${user?.id ? "hidden" : ""}`}>
-  {/* Hero Gradient */}
-  <div className="relative bg-gradient-to-r  from-[#004182]  to-[#0a66c2]">
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 md:py-16">
-      <div className="grid lg:grid-cols-12 gap-8 items-center">
-        <div className="lg:col-span-6 text-white">
-          <h1 className="text-[42px] md:text-6xl font-extrabold leading-[1.05]">
-            Connect
-            <br />
-            Globally
-          </h1>
-          <p className="mt-5 max-w-xl text-white/90 text-lg">
-            The largest Pan-African networking platform for professionals,
-            freelancers, and entrepreneurs. Discover opportunities, connect with
-            talent, and grow your business.
-          </p>
-          <div className="mt-8 flex items-center gap-4">
-            <button
-              onClick={() => setLoginDialogOpen(true)}
-              className="rounded-xl px-6 py-3 font-semibold text-brand-600 bg-white shadow-sm"
-            >
-              Sign Up
-            </button>
-            <button
-              onClick={() => navigate("/people")}
-              className="rounded-xl px-6 py-3 font-semibold border border-white/60 text-white hover:bg-white/10"
-            >
-              <a>Explore</a>
-            </button>
-          </div>
-        </div>
-        <div className="lg:col-span-6">
-          <img
-            alt="networking"
-            className="w-full rounded-[28px] object-cover aspect-[16/9] shadow-xl"
-            src="https://theblackrise.com/wp-content/uploads/2023/11/AdobeStock_257397505-scaled.jpeg"
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  {/* Hero Filters: Tabs + Country / City / Category + Search */}
-  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-30">
-    <div className="-mt-10 md:-mt-14 lg:-mt-16 w-full lg:w-[720px] relative z-30">
-      <div className="rounded-[22px] bg-white shadow-xl ring-1 ring-black/5 p-4 md:p-5 relative z-30">
-        {/* Tabs */}
-        <div className="flex items-center gap-6 text-sm font-medium text-gray-500 border-b overflow-x-auto">
-          {/**{["All", "Events", "Jobs","Services","Products"].map((tab) => (
-            <button
-              key={tab}
-              className={`pb-3 relative ${
-                activeTab === tab ? "text-gray-900" : "hover:text-gray-700"
-              }`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-              {activeTab === tab && (
-                <span className="absolute left-0 -bottom-[1px] h-[3px] w-full rounded-full bg-brand-600" />
-              )}
-            </button>
-          ))} */}
-          {/** new message here */}
-          <div className="text-[17px] mb-2 font-medium">
-            Find what you’re looking for
-          </div>
-        </div>
-
-        {/* Three controls: Country, City, Category */}
-        <div className="mt-4 grid md:grid-cols-3 gap-3">
-          <div>
-            <label className="text-[11px] text-gray-500">Country</label>
-            <select
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              value={country || ""}
-              onChange={(e) => setCountry(e.target.value || undefined)}
-            >
-              <option value="">All countries</option>
-              {countries.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-[11px] text-gray-500">City</label>
-            <input
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              placeholder="City"
-              value={city || ""}
-              onChange={(e) => setCity(e.target.value || undefined)}
-            />
-          </div>
-
-          <div>
-            <label className="text-[11px] text-gray-500">Category</label>
-            <select
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              value={categoryId || ""}
-              onChange={(e) => {
-                const v = e.target.value || "";
-                setCategoryId(v || undefined);
-                setSubcategoryId(undefined);
-              }}
-            >
-              <option value="">All categories</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Search row */}
-        <div className="mt-3">
-          <div className="flex items-center gap-2 rounded-full bg-gray-50 border border-gray-200 px-3 py-2">
-            <input
-              className="flex-1 bg-transparent outline-none text-sm"
-              placeholder="Search by skills, location, or interest..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button className="flex items-center gap-2 rounded-full px-4 py-2 text-white text-sm font-semibold shadow bg-brand-600 hover:bg-brand-700">
-              <I.search /> Search
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className="mt-3 rounded-[22px] h-6 bg-black/0 shadow-[0_20px_35px_-25px_rgba(0,0,0,0.35)] relative z-20" />
-    </div>
-  </div>
-</section>
 
 
-      <main id="explore" className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-10 relative`}>
-        <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
+         {/* Hero Section */}
+         <div className="relative bg-brand-600 overflow-hidden">
+           <div className="absolute inset-0">
+             <div className="absolute inset-0 bg-brand-700/20"></div>
+             <div className="absolute inset-0" style={{
+               backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='40' cy='40' r='3'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+             }} />
+           </div>
 
-        <div className="grid lg:grid-cols-12 gap-6">
-          {user &&  <aside className="lg:col-span-3 hidden lg:block sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-24 md:py-32">
+             <div className="grid lg:grid-cols-12 gap-16 items-center">
+               <div className="lg:col-span-7 text-white">
+                 <div className="flex items-center gap-3 mb-8">
+                   <span className="text-3xl font-bold">55Links</span>
+                 </div>
+
+                 <h1 className="text-6xl md:text-7xl font-black leading-[0.9] mb-8">
+                   <span className="block">Connect</span>
+                   <span className="block text-accent-100">
+                     With Your Matches
+                   </span>
+                  
+                 </h1>
+
+                 <p className="text-xl text-white/90 leading-relaxed mb-10 max-w-2xl">
+                   <strong className="text-white">55Links</strong> is a comprehensive business networking platform connecting entrepreneurs, professionals, and businesses worldwide. Discover opportunities, build partnerships, and accelerate your growth.
+                 </p>
+
+                 <div className="flex flex-col sm:flex-row gap-4 mb-12">
+                   <button
+                     onClick={() => setLoginDialogOpen(true)}
+                     className="px-10 py-4 bg-white text-brand-600 font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-lg"
+                   >
+                     Start Building Connections
+                   </button>
+                   <button
+                     onClick={() => navigate("/people")}
+                     className="px-10 py-4 border-2 border-white/60 text-white font-semibold rounded-xl hover:bg-white/10 hover:border-white transition-all duration-200 text-lg"
+                   >
+                     Explore Network
+                   </button>
+                 </div>
+
+                 {/* Key Benefits */}
+                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-white/90">
+                   <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 bg-accent-500 rounded-lg flex items-center justify-center">
+                       <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                         <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
+                       </svg>
+                     </div>
+                     <div>
+                       <div className="font-semibold text-white">Smart Matching</div>
+                       <div className="text-sm">AI-powered connections</div>
+                     </div>
+                   </div>
+                   <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 bg-accent-600 rounded-lg flex items-center justify-center">
+                       <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                         <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/>
+                       </svg>
+                     </div>
+                     <div>
+                       <div className="font-semibold text-white">Job Opportunities</div>
+                       <div className="text-sm">Find your next career move</div>
+                     </div>
+                   </div>
+                   <div className="flex items-center gap-3">
+                     <div className="w-10 h-10 bg-accent-700 rounded-lg flex items-center justify-center">
+                       <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                         <path d="M7 4V2C7 1.45 7.45 1 8 1h8c.55 0 1 .45 1 1v2h4c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H3c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h4zM9 2v2h6V2H9z"/>
+                       </svg>
+                     </div>
+                     <div>
+                       <div className="font-semibold text-white">Business Marketplace</div>
+                       <div className="text-sm">Buy, sell, and trade</div>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+
+               <div className="lg:col-span-5">
+                 <div className="relative">
+                   <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                     <img
+                       alt="Global business networking"
+                       className="w-full object-cover"
+                       src="https://theblackrise.com/wp-content/uploads/2023/11/AdobeStock_257397505-scaled.jpeg"
+                     />
+                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+
+        {/* How It Works Section */}
+        <div id="features" className="py-24 bg-white">
+           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+             <div className="text-center mb-20">
+               <h2 className="text-5xl font-bold text-gray-900 mb-6">
+                 How <span className="text-brand-600">55Links</span> Works
+               </h2>
+               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                 Join our growing business network in just three simple steps and unlock unlimited opportunities
+               </p>
+             </div>
+
+             <div className="grid md:grid-cols-3 gap-12">
+               <div className="text-center group">
+                 <div className="relative mb-8">
+                   <div className="w-24 h-24 bg-brand-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+                     <span className="text-3xl font-bold text-white">1</span>
+                   </div>
+                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent-500 rounded-full flex items-center justify-center">
+                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                     </svg>
+                   </div>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Create Your Profile</h3>
+                 <p className="text-gray-600 text-lg leading-relaxed">
+                   Set up your professional profile showcasing your skills, experience, and business interests.
+                   Our smart system learns what you're looking for and connects you with relevant opportunities.
+                 </p>
+               </div>
+
+               <div className="text-center group">
+                 <div className="relative mb-8">
+                   <div className="w-24 h-24 bg-accent-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+                     <span className="text-3xl font-bold text-white">2</span>
+                   </div>
+                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-brand-500 rounded-full flex items-center justify-center">
+                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                       <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
+                     </svg>
+                   </div>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Connect & Network</h3>
+                 <p className="text-gray-600 text-lg leading-relaxed">
+                   Discover and connect with professionals, businesses, and entrepreneurs worldwide.
+                   Attend virtual events, join communities, and build meaningful business relationships.
+                 </p>
+               </div>
+
+               <div className="text-center group">
+                 <div className="relative mb-8">
+                   <div className="w-24 h-24 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+                     <span className="text-3xl font-bold text-white">3</span>
+                   </div>
+                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent-600 rounded-full flex items-center justify-center">
+                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                     </svg>
+                   </div>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Grow & Succeed</h3>
+                 <p className="text-gray-600 text-lg leading-relaxed">
+                   Access exclusive opportunities, secure partnerships, and accelerate your business growth.
+                   Join our growing community of successful entrepreneurs who have transformed their businesses through 55Links.
+                 </p>
+               </div>
+             </div>
+           </div>
+         </div>
+
+        {/* Platform Showcase Section */}
+        <div className="py-20 bg-gray-100">
+           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+             <div className="text-center mb-12">
+               <h2 className="text-5xl font-bold text-gray-900 mb-6">
+                 See <span className="text-brand-600">55Links</span> in Action
+               </h2>
+               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                 Our intuitive platform makes it easy to discover opportunities, connect with professionals,
+                 and build meaningful business relationships
+               </p>
+             </div>
              
-             <QuickActions title="Quick Actions" items={[
-              { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
-              { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
-              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
-            ]} />
-            <ProfileCard />
-            <div className="_sticky top-0 mb-2">
-              <FiltersCard {...filtersProps} />
-            </div>
-            
+             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 mx-auto max-w-5xl">
+               <img
+                 src={Demo}
+                 alt="55Links Platform Interface"
+                 className="w-full h-auto object-cover"
+               />
+               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+               <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                 <div className="flex items-center gap-4 mb-4">
+                   <div className="w-12 h-12 bg-brand-600 rounded-full flex items-center justify-center">
+                     <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                       <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
+                     </svg>
+                   </div>
+                   <div>
+                     <div className="text-xl font-bold">Powerful Networking Tools</div>
+                     <div className="text-white/80">Connect with the right people at the right time</div>
+                   </div>
+                 </div>
+                 <div className="grid grid-cols-3 gap-4">
+                   <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
+                     <div className="font-semibold">Smart Matching</div>
+                     <div className="text-sm text-white/80">AI-powered connections</div>
+                   </div>
+                   <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
+                     <div className="font-semibold">Business Marketplace</div>
+                     <div className="text-sm text-white/80">Products & Services</div>
+                   </div>
+                   <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
+                     <div className="font-semibold">Business Opportunities</div>
+                     <div className="text-sm text-white/80">Valuable connections</div>
+                   </div>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
 
-          </aside>}
+        {/* Platform Features Section */}
+        <div className="py-24 bg-gray-50">
+           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+             <div className="text-center mb-20">
+               <h2 className="text-5xl font-bold text-gray-900 mb-6">
+                 Everything You Need to <span className="text-brand-600">Succeed</span>
+               </h2>
+               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                 From job opportunities to business partnerships, our comprehensive platform provides all the tools
+                 and connections you need to thrive in today's global economy.
+               </p>
+             </div>
 
-          <section className={`${user ? 'lg:col-span-8':'lg:col-span-12'} sprace-y-4`}>
+             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+               {/* People Network */}
+               <div onClick={() => navigate("/people")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-brand-200 cursor-pointer">
+                 <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
+                   </svg>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart People Network</h3>
+                 <p className="text-gray-600 mb-6 leading-relaxed">
+                   Connect with professionals, entrepreneurs, and business leaders worldwide. Our AI-powered matching algorithm finds the most relevant connections based on your interests, location, and business goals.
+                 </p>
+                 <button
+                   onClick={() => navigate("/people")}
+                   className="flex items-center text-brand-600 font-semibold"
+                 >
+                   <span>Explore Network</span>
+                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                   </svg>
+                 </button>
+               </div>
 
-          <section className="lg:col-span-4 space-y-4 flex items-center justify-between gap-y-2 flex-wrap mb-3">
-            <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
-           
-              <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
-                { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
-                { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
-                { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
-              ]} />
+               {/* Job Opportunities */}
+               <div onClick={() => navigate("/jobs")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-accent-200 cursor-pointer">
+                 <div className="w-16 h-16 bg-accent-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/>
+                   </svg>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Premium Job Market</h3>
+                 <p className="text-gray-600 mb-6 leading-relaxed">
+                   Access exclusive job opportunities from top companies worldwide. Whether you're seeking your dream career or looking to hire talented professionals, find the perfect match with our advanced filtering system.
+                 </p>
+                 <button
+                   onClick={() => navigate("/jobs")}
+                   className="flex items-center text-accent-600 font-semibold"
+                 >
+                   <span>Find Opportunities</span>
+                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                   </svg>
+                 </button>
+               </div>
 
-          </section>
+               {/* Business Marketplace */}
+               <div onClick={() => navigate("/products")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-brand-200 cursor-pointer">
+                 <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M7 4V2C7 1.45 7.45 1 8 1h8c.55 0 1 .45 1 1v2h4c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H3c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h4zM9 2v2h6V2H9z"/>
+                   </svg>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Business Marketplace</h3>
+                 <p className="text-gray-600 mb-6 leading-relaxed">
+                   Buy, sell, and discover products and services from verified businesses worldwide. Support entrepreneurship, find suppliers, and grow your business network with our secure marketplace.
+                 </p>
+                 <button
+                   onClick={() => navigate("/products")}
+                   className="flex items-center text-brand-600 font-semibold"
+                 >
+                   <span>Explore Marketplace</span>
+                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                   </svg>
+                 </button>
+               </div>
 
-           {/**  <PageTabs view={view} setView={setView} view_types={view_types}/>
-          
- */}
+               {/* Events & Networking */}
+               <div onClick={() => navigate("/events")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-accent-200 cursor-pointer">
+                 <div className="w-16 h-16 bg-accent-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 6v2h14V6H5z"/>
+                   </svg>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Events & Communities</h3>
+                 <p className="text-gray-600 mb-6 leading-relaxed">
+                   Attend exclusive business events, conferences, and networking sessions. Join industry-specific communities and connect with leaders shaping the global business landscape.
+                 </p>
+                 <button
+                   onClick={() => navigate("/events")}
+                   className="flex items-center text-accent-600 font-semibold"
+                 >
+                   <span>Join Events</span>
+                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                   </svg>
+                 </button>
+               </div>
 
-            
-            {loadingFeed && (
-               <CardSkeletonLoader columns={user ? 2 :  3}/>
-            )}
+               {/* Tourism & Culture */}
+               <div onClick={() => navigate("/tourism")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-brand-200 cursor-pointer">
+                 <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                   </svg>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Tourism & Culture</h3>
+                 <p className="text-gray-600 mb-6 leading-relaxed">
+                   Discover cultural heritage and tourism opportunities worldwide. Connect with tourism businesses, share experiences, and promote diverse destinations globally.
+                 </p>
+                 <button
+                   onClick={() => navigate("/tourism")}
+                   className="flex items-center text-brand-600 font-semibold"
+                 >
+                   <span>Explore Worldwide</span>
+                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                   </svg>
+                 </button>
+               </div>
 
-           {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
+               {/* Funding & Investment */}
+               <div onClick={() => navigate("/funding")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-accent-200 cursor-pointer">
+                 <div className="w-16 h-16 bg-accent-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                   </svg>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Funding & Investment</h3>
+                 <p className="text-gray-600 mb-6 leading-relaxed">
+                   Access crowdfunding opportunities, connect with investors, and secure funding for your business ventures. Join the growing startup ecosystem and investment community.
+                 </p>
+                 <button
+                   onClick={() => navigate("/funding")}
+                   className="flex items-center text-accent-600 font-semibold"
+                 >
+                   <span>Get Funded</span>
+                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                   </svg>
+                 </button>
+               </div>
+             </div>
+           </div>
+         </div>
 
-               
-              
-           <div className={`grid grid-cols-1 mt-3 ${view=="list" ? "sm:grid-cols-1":(user ?  "sm:grid-cols-2" : "sm:grid-cols-3" )}  gap-6`}>
-                 
+        {/* Platform Benefits Section */}
+        <div id="benefits" className="py-24 bg-white">
+           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+             <div className="text-center mb-20">
+               <h2 className="text-5xl font-bold text-gray-900 mb-6">
+                 Why Choose <span className="text-brand-600">55Links</span>
+               </h2>
+               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                 Join a platform designed to help you build meaningful business connections and accelerate your growth
+               </p>
+             </div>
 
-            {!loadingFeed &&
-              items.map((item) => {
-                if (item.kind === "job") {
-                  return (
-                    <JobCard
-                    type={view} 
-                      key={`job-${item.id}`}
-                      matchPercentage={item.matchPercentage}
-                      job={{
-                        ...item,
-                        categoryName:
-                          categories.find((c) => String(c.id) === String(item.categoryId))?.name,
-                        subcategoryName:
-                          categories
-                            .find((c) => String(c.id) === String(item.categoryId))
-                            ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
-                      }}
-                    />
-                  );
-                }
+             <div className="grid md:grid-cols-3 gap-8">
+               <div onClick={() => navigate("/people")} className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform">
+                 <div className="w-20 h-20 bg-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                   <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                   </svg>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Verified Network</h3>
+                 <p className="text-gray-600 leading-relaxed">
+                   Every member is verified, ensuring you connect with genuine professionals and businesses you can trust.
+                 </p>
+               </div>
 
-                if(item.kind=="service"){
-                       return   <ServiceCard type={view} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id}/>
-                }
+               <div onClick={() => navigate("/people")} className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform">
+                 <div className="w-20 h-20 bg-accent-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                   <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+                   </svg>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart Matching</h3>
+                 <p className="text-gray-600 leading-relaxed">
+                   Our AI-powered algorithm analyzes your interests, goals, and location to find the most relevant connections.
+                 </p>
+               </div>
 
-                if(item.kind=="product"){
-                       return   <ProductCard type={view}  item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id}/>
-                }
+               <div onClick={() => navigate("/privacy")} className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform">
+                 <div className="w-20 h-20 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                   <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                   </svg>
+                 </div>
+                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Secure & Private</h3>
+                 <p className="text-gray-600 leading-relaxed">
+                   Your data is protected with enterprise-grade security. Control who sees your information and how you connect.
+                 </p>
+               </div>
+             </div>
+           </div>
+         </div>
 
-                if(item.kind=="tourism"){
-                       return   <ExperienceCard type={view}  item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id}/>
-                }
+        {/* Community Section */}
+        <div id="community" className="py-20 bg-brand-600">
+           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+             <div className="text-center mb-16">
+               <h2 className="text-4xl font-bold text-white mb-6">
+                 Join Our Growing Business Community
+               </h2>
+               <p className="text-xl text-white/90 max-w-3xl mx-auto">
+                 Connect with entrepreneurs, professionals, and businesses from around the world
+               </p>
+             </div>
 
-                if(item.kind=="funding"){
-                       return   <CrowdfundCard type={view}  item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id}/>
-                }
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+               <div onClick={() => navigate("/people")} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/20 transition-colors">
+                 <div className="w-12 h-12 bg-accent-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
+                   </svg>
+                 </div>
+                 <div className="text-white font-semibold mb-2">Professional Network</div>
+                 <div className="text-white/80 text-sm">Connect with verified professionals</div>
+               </div>
+               <div onClick={() => navigate("/people")} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/20 transition-colors">
+                 <div className="w-12 h-12 bg-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                   </svg>
+                 </div>
+                 <div className="text-white font-semibold mb-2">Smart Matching</div>
+                 <div className="text-white/80 text-sm">AI-powered connection algorithm</div>
+               </div>
+               <div onClick={() => navigate("/events")} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/20 transition-colors">
+                 <div className="w-12 h-12 bg-accent-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 6v2h14V6H5z"/>
+                   </svg>
+                 </div>
+                 <div className="text-white font-semibold mb-2">Business Events</div>
+                 <div className="text-white/80 text-sm">Exclusive networking opportunities</div>
+               </div>
+             </div>
+           </div>
+         </div>
 
-
-                return <EventCard key={`event-${item.id}`} e={item} matchPercentage={item.matchPercentage} />;
-              })}
-          </div>
-          </section>
-
-          <aside className={`${user ? 'lg:col-span-3':'lg:col-span-4'} hidden  sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto`}>
-            {loadingSuggestions ? (
-              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
-                Loading suggestions…
+        {/* Getting Started Section */}
+        <div className="py-16 bg-gray-50">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-12">
+                <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                  Ready to Get Started?
+                </h2>
+                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                  Join our platform today and start building meaningful business connections
+                </p>
               </div>
-            ) : (
-              <SuggestedMatches matches={matches} nearby={nearby} />
-            )}
-          </aside>
-        </div>
-      </main>
 
-      <MobileFiltersBottomSheet
-        isOpen={mobileFiltersOpen}
-        onClose={() => setMobileFiltersOpen(false)}
-        filtersProps={filtersProps}
-      />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                <div onClick={() => navigate("/signup")} className="bg-white rounded-xl p-6 shadow-sm border border-brand-100 cursor-pointer hover:shadow-md transition-all">
+                  <div className="w-12 h-12 bg-brand-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white font-bold text-lg">1</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Create Your Profile</h3>
+                  <p className="text-gray-600 text-sm">Set up your professional profile in minutes</p>
+                </div>
+                <div onClick={() => navigate("/people")} className="bg-white rounded-xl p-6 shadow-sm border border-accent-100 cursor-pointer hover:shadow-md transition-all">
+                  <div className="w-12 h-12 bg-accent-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white font-bold text-lg">2</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Discover Connections</h3>
+                  <p className="text-gray-600 text-sm">Find relevant professionals and businesses</p>
+                </div>
+                <div onClick={() => navigate("/people")} className="bg-white rounded-xl p-6 shadow-sm border border-brand-100 cursor-pointer hover:shadow-md transition-all">
+                  <div className="w-12 h-12 bg-brand-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-white font-bold text-lg">3</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Grow Your Network</h3>
+                  <p className="text-gray-600 text-sm">Build partnerships and accelerate your success</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+         {/* Inline Login Form Section - Added after "Ready to Get Started?" */}
+         <div className="py-16 bg-white">
+           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+             <div className="text-center mb-12">
+               <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                 Join Our Community Today
+               </h2>
+               <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                 Create your account or sign in to start building meaningful business connections
+               </p>
+             </div>
+
+             <div className="flex justify-center">
+               <div className="w-full max-w-lg bg-white rounded-xl shadow-xl p-6 md:p-8">
+                 {/* Custom Tab Switch */}
+                 <div className="mb-6 grid grid-cols-2 rounded-xl bg-gray-100 p-1 text-sm">
+                   <button
+                     onClick={() => setAuthTab("login")}
+                     className={`text-center rounded-lg py-2 font-medium transition ${authTab === "login" ? "bg-white shadow-soft text-brand-700" : "text-gray-600 hover:text-gray-900"}`}
+                   >
+                     Sign In
+                   </button>
+                   <button
+                     onClick={() => setAuthTab("signup")}
+                     className={`text-center rounded-lg py-2 font-medium transition ${authTab === "signup" ? "bg-white shadow-soft text-brand-700" : "text-gray-600 hover:text-gray-900"}`}
+                   >
+                     Sign Up
+                   </button>
+                 </div>
+
+                 {authTab === "login" ? (
+                   <form onSubmit={onAuthLoginSubmit} className="space-y-4">
+                     <Input
+                       name="email"
+                       label="Email Address"
+                       type="email"
+                       placeholder="Enter your email"
+                       value={loginForm.email}
+                       onChange={onAuthLoginChange}
+                       error={loginErrors.email}
+                       rightIcon={
+                         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                           <path d="M4 6h16v12H4z"/><path d="m22 6-10 7L2 6"/>
+                         </svg>
+                       }
+                     />
+
+                     {/* PASSWORD with show/hide */}
+                     <Input
+                       name="password"
+                       label="Password"
+                       type={showPwd ? "text" : "password"}
+                       placeholder="Enter your password"
+                       value={loginForm.password}
+                       onChange={onAuthLoginChange}
+                       error={loginErrors.password}
+                       rightIcon={
+                         <button
+                           type="button"
+                           onClick={() => setShowPwd((s) => !s)}
+                           aria-label={showPwd ? "Hide password" : "Show password"}
+                           className="p-1 text-gray-500 hover:text-gray-700"
+                         >
+                           {showPwd ? (
+                             // eye-off
+                             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                               <path d="M3 3l18 18"/>
+                               <path d="M10.6 10.6A2 2 0 0 0 12 14a2 2 0 0 0 1.4-.6M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9.3 3.1 11 7-0.5 1.3-1.2 2.5-2.2 3.6M6.7 6.7C4.7 7.8 3.1 9.3 2 12c1.1 2.7 3.1 4.6 5.5 5.8A11.9 11.9 0 0 0 12 19c.7 0 1.4-.1 2-.2"/>
+                             </svg>
+                           ) : (
+                             // eye
+                             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z"/>
+                               <circle cx="12" cy="12" r="3"/>
+                             </svg>
+                           )}
+                         </button>
+                       }
+                     />
+
+                     <div className="flex items-center justify-between text-sm">
+                       <label className="inline-flex items-center gap-2">
+                         <input
+                           name="remember"
+                           type="checkbox"
+                           checked={loginForm.remember}
+                           onChange={onAuthLoginChange}
+                           className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                         />
+                         <span className="text-gray-600">Remember me</span>
+                       </label>
+                       <button
+                         type="button"
+                         onClick={() => navigate("/forgot")}
+                         className="text-brand-500 hover:underline"
+                       >
+                         Forgot password?
+                       </button>
+                     </div>
+
+                     <button
+                       type="submit"
+                       disabled={loading}
+                       className="mt-1 w-full rounded-xl bg-brand-600 py-3 font-semibold text-white shadow-soft hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                     >
+                       {loading && (
+                         <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"/>
+                         </svg>
+                       )}
+                       {loading ? "Signing In..." : "Sign In"}
+                     </button>
+
+                     {/* Divider */}
+                     <div className="relative my-6">
+                       <div className="absolute inset-0 flex items-center">
+                         <div className="w-full border-t border-gray-200"></div>
+                       </div>
+                       <div className="relative flex justify-center">
+                         <span className="bg-white px-4 text-xs uppercase tracking-wider text-gray-400">
+                           or continue with
+                         </span>
+                       </div>
+                     </div>
+
+                     {/* Google custom button with required style */}
+                     <GoogleCustomBtn page="signin" />
+
+                     {/* Sign up link */}
+                     <div className="mt-4 text-center text-sm">
+                       <span className="text-gray-600">Don't have an account?</span>{" "}
+                       <button
+                         type="button"
+                         onClick={() => setAuthTab("signup")}
+                         className="text-brand-500 hover:underline font-medium"
+                       >
+                         Sign up
+                       </button>
+                     </div>
+                   </form>
+                 ) : (
+                   /* Signup Form */
+                   <form onSubmit={onAuthSignupSubmit} className="">
+                     {/* Account type */}
+                     <div className="flex gap-3 mb-4">
+                       <button
+                         type="button"
+                         onClick={() => setAcct("individual")}
+                         className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm ${
+                           acct === "individual"
+                             ? "border-brand-500 text-brand-700 bg-brand-50"
+                             : "border-gray-200 text-gray-700"
+                         }`}
+                       >
+                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                           <path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5ZM3 22a9 9 0 1 1 18 0Z" />
+                         </svg>
+                         Individual
+                       </button>
+                       <button
+                         type="button"
+                         onClick={() => setAcct("company")}
+                         className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm ${
+                           acct === "company"
+                             ? "border-brand-500 text-brand-700 bg-brand-50"
+                             : "border-gray-200 text-gray-700"
+                         }`}
+                       >
+                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                           <path d="M3 21V3h8v6h10v12H3Z" />
+                         </svg>
+                         Company
+                       </button>
+                     </div>
+
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       {/* Name (dynamic label, same variable name) */}
+                       <div className="md:col-span-2">
+                         <Input
+                           label={labelName}
+                           name="name"
+                           placeholder={acct === "company" ? "Panafrican BI Ltd." : "John Doe"}
+                           value={signupForm.name}
+                           onChange={onAuthSignupChange}
+                           error={signupErrors.name}
+                         />
+                       </div>
+
+                       {/* Email (dynamic label, same variable name) */}
+                       <div className="md:col-span-1">
+                         <Input
+                           label={labelEmail}
+                           name="email"
+                           type="email"
+                           placeholder={acct === "company" ? "contact@yourcompany.com" : "john@example.com"}
+                           value={signupForm.email}
+                           onChange={onAuthSignupChange}
+                           error={signupErrors.email}
+                         />
+                       </div>
+
+                       {/* Phone (dynamic label, same variable name) */}
+                       <div className="md:col-span-1">
+                         <Input
+                           label={labelPhone}
+                           name="phone"
+                           placeholder={acct === "company" ? "Phone" : "Phone"}
+                           value={signupForm.phone}
+                           onChange={onAuthSignupChange}
+                           error={signupErrors.phone}
+                         />
+                       </div>
+
+                       {/* Country */}
+                       <div className="md:col-span-2 space-y-1">
+                         <label className="text-sm font-medium text-gray-700">Country</label>
+                         <select
+                           name="country"
+                           value={signupForm.country}
+                           onChange={onAuthSignupChange}
+                           className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-brand-500 focus:ring-2 bg-white ${
+                             signupErrors.country ? "border-red-400 focus:ring-red-400" : "border-gray-200"
+                           }`}
+                         >
+                           <option value="" disabled>Select your country</option>
+                           {COUNTRIES.map((c) => (
+                             <option key={c} value={c}>{c}</option>
+                           ))}
+                         </select>
+                         {signupErrors.country && <p className="text-xs text-red-600">{signupErrors.country}</p>}
+                       </div>
+
+                       {/* Passwords with show/hide */}
+                       <Input
+                         label="Password"
+                         name="password"
+                         type={showPwd1 ? "text" : "password"}
+                         placeholder="Create a strong password"
+                         value={signupForm.password}
+                         onChange={onAuthSignupChange}
+                         error={signupErrors.password}
+                         rightIcon={
+                           <button
+                             type="button"
+                             onClick={() => setShowPwd1((s) => !s)}
+                             aria-label={showPwd1 ? "Hide password" : "Show password"}
+                             className="p-1 text-gray-500 hover:text-gray-700"
+                           >
+                             {showPwd1 ? (
+                               // eye-off
+                               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                 <path d="M3 3l18 18"/>
+                                 <path d="M10.6 10.6A2 2 0 0 0 12 14a2 2 0 0 0 1.4-.6M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9.3 3.1 11 7-0.5 1.3-1.2 2.5-2.2 3.6M6.7 6.7C4.7 7.8 3.1 9.3 2 12c1.1 2.7 3.1 4.6 5.5 5.8A11.9 11.9 0 0 0 12 19c.7 0 1.4-.1 2-.2"/>
+                               </svg>
+                             ) : (
+                               // eye
+                               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z"/>
+                                 <circle cx="12" cy="12" r="3"/>
+                               </svg>
+                             )}
+                           </button>
+                         }
+                       />
+                       <Input
+                         label="Confirm Password"
+                         name="confirmPassword"
+                         type={showPwd2 ? "text" : "password"}
+                         placeholder="Confirm your password"
+                         value={signupForm.confirmPassword}
+                         onChange={onAuthSignupChange}
+                         error={signupErrors.confirmPassword}
+                         rightIcon={
+                           <button
+                             type="button"
+                             onClick={() => setShowPwd2((s) => !s)}
+                             aria-label={showPwd2 ? "Hide password" : "Show password"}
+                             className="p-1 text-gray-500 hover:text-gray-700"
+                           >
+                             {showPwd2 ? (
+                               // eye-off
+                               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                 <path d="M3 3l18 18"/>
+                                 <path d="M10.6 10.6A2 2 0 0 0 12 14a2 2 0 0 0 1.4-.6M9.9 5.1A9.8 9.8 0 0 1 12 5c5 0 9.3 3.1 11 7-0.5 1.3-1.2 2.5-2.2 3.6M6.7 6.7C4.7 7.8 3.1 9.3 2 12c1.1 2.7 3.1 4.6 5.5 5.8A11.9 11.9 0 0 0 12 19c.7 0 1.4-.1 2-.2"/>
+                               </svg>
+                             ) : (
+                               // eye
+                               <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z"/>
+                                 <circle cx="12" cy="12" r="3"/>
+                               </svg>
+                             )}
+                           </button>
+                         }
+                       />
+
+                       {/* TOS */}
+                       <div className="md:col-span-2 flex items-start gap-3 text-sm">
+                         <input
+                           name="tos"
+                           type="checkbox"
+                           checked={signupForm.tos}
+                           onChange={onAuthSignupChange}
+                           className={`mt-1 h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 ${
+                             signupErrors.tos ? "ring-2 ring-red-400" : ""
+                           }`}
+                         />
+                         <p className="text-gray-600">
+                           I agree to the{" "}
+                           <a href="/terms" className="text-brand-600 underline">Terms of Service</a> and{" "}
+                           <a href="/privacy" className="text-brand-600 underline">Privacy Policy</a>
+                         </p>
+                       </div>
+                       {signupErrors.tos && (
+                         <div className="md:col-span-2 -mt-2">
+                           <p className="text-xs text-red-600">{signupErrors.tos}</p>
+                         </div>
+                       )}
+
+                       {/* Submit */}
+                       <div className="md:col-span-2 space-y-4">
+                         <button
+                           type="submit"
+                           disabled={loading}
+                           className="w-full rounded-xl bg-brand-600 py-3 font-semibold text-white shadow-soft hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                         >
+                           {loading && (
+                             <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" />
+                             </svg>
+                           )}
+                           {loading ? "Creating Account…" : "Create Account"}
+                         </button>
+
+                         {/* Optional Google button */}
+                         <GoogleCustomBtn page="signup" />
+                       </div>
+
+                       {/* Login link */}
+                       <div className="md:col-span-2 text-center text-sm mt-4">
+                         <span className="text-gray-600">Already have an account?</span>{" "}
+                         <button
+                           type="button"
+                           onClick={() => setAuthTab("login")}
+                           className="text-brand-500 hover:underline font-medium"
+                         >
+                           Sign in
+                         </button>
+                       </div>
+                     </div>
+                   </form>
+                 )}
+               </div>
+             </div>
+           </div>
+         </div>
+
+
+        {/* Final CTA Section */}
+        <div className="py-24 bg-brand-600 relative overflow-hidden">
+           <div className="absolute inset-0 opacity-10">
+             <div className="absolute inset-0" style={{
+               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+             }} />
+           </div>
+
+           <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 text-center">
+             <div className="mb-8">
+               <h2 className="text-5xl md:text-6xl font-black text-white mb-6">
+                 Ready to Build Your
+                 <span className="block text-accent-100">
+                   Global Business Network?
+                 </span>
+               </h2>
+               <p className="text-xl text-white/90 mb-12 max-w-4xl mx-auto leading-relaxed">
+                 Join our growing community of professionals and entrepreneurs who are building meaningful connections and accelerating their business success through <strong>55Links</strong>.
+               </p>
+             </div>
+
+             <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
+               <button
+                 onClick={() => setLoginDialogOpen(true)}
+                 className="group relative px-12 py-5 bg-white text-brand-600 font-bold rounded-2xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 text-xl"
+               >
+                 <span className="relative z-10 flex items-center gap-3">
+                   🚀 Start Building Connections
+                   <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                   </svg>
+                 </span>
+                 <div className="absolute inset-0 bg-accent-50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+               </button>
+               <button
+                 onClick={() => navigate("/people")}
+                 className="px-12 py-5 border-2 border-white/60 text-white font-bold rounded-2xl hover:bg-white/10 hover:border-white transition-all duration-300 text-xl"
+               >
+                 🌍 Explore Our Network
+               </button>
+             </div>
+
+             {/* Trust Indicators */}
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white/90">
+               <div className="flex items-center justify-center gap-3">
+                 <div className="w-12 h-12 bg-accent-500 rounded-full flex items-center justify-center">
+                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                   </svg>
+                 </div>
+                 <div className="text-left">
+                   <div className="font-bold text-white">Verified Network</div>
+                   <div className="text-sm">Trusted connections only</div>
+                 </div>
+               </div>
+
+               <div className="flex items-center justify-center gap-3">
+                 <div className="w-12 h-12 bg-accent-600 rounded-full flex items-center justify-center">
+                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                   </svg>
+                 </div>
+                 <div className="text-left">
+                   <div className="font-bold text-white">Secure Platform</div>
+                   <div className="text-sm">Enterprise-grade security</div>
+                 </div>
+               </div>
+
+               <div className="flex items-center justify-center gap-3">
+                 <div className="w-12 h-12 bg-accent-700 rounded-full flex items-center justify-center">
+                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
+                   </svg>
+                 </div>
+                 <div className="text-left">
+                   <div className="font-bold text-white">Global Community</div>
+                   <div className="text-sm">Worldwide connections</div>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </div>
+
+        {/* Footer */}
+        <footer className="bg-brand-700 text-white py-16">
+           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+             <div className="grid md:grid-cols-4 gap-8 mb-12">
+               <div className="md:col-span-2">
+                 <div className="flex items-center gap-3 mb-6">
+                   <span className="text-2xl font-bold text-white">55Links</span>
+                 </div>
+                 <p className="text-white/90 mb-6 max-w-md leading-relaxed">
+                   A comprehensive business networking platform connecting entrepreneurs, professionals, and businesses worldwide. Building stronger networks through meaningful connections.
+                 </p>
+                 <div className="flex gap-4 hidden">
+                   <a href="#" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-accent-500 transition-colors">
+                     <span className="text-sm">📘</span>
+                   </a>
+                   <a href="#" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-accent-500 transition-colors">
+                     <span className="text-sm">🐦</span>
+                   </a>
+                   <a href="#" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-accent-500 transition-colors">
+                     <span className="text-sm">💼</span>
+                   </a>
+                   <a href="#" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-accent-500 transition-colors">
+                     <span className="text-sm">📧</span>
+                   </a>
+                 </div>
+               </div>
+
+               <div>
+                 <h3 className="text-lg font-semibold mb-4 text-accent-100">Platform</h3>
+                 <ul className="space-y-3 text-white/80">
+                   <li><a onClick={() => navigate("/")} className="hover:text-accent-200 transition-colors cursor-pointer">Feed</a></li>
+                   <li><a onClick={() => navigate("/people")} className="hover:text-accent-200 transition-colors cursor-pointer">People</a></li>
+                   <li><a onClick={() => navigate("/jobs")} className="hover:text-accent-200 transition-colors cursor-pointer">Jobs</a></li>
+                   <li><a onClick={() => navigate("/events")} className="hover:text-accent-200 transition-colors cursor-pointer">Events</a></li>
+                   <li><a onClick={() => navigate("/products")} className="hover:text-accent-200 transition-colors cursor-pointer">Products</a></li>
+                   <li><a onClick={() => navigate("/services")} className="hover:text-accent-200 transition-colors cursor-pointer">Services</a></li>
+                 </ul>
+               </div>
+
+               <div>
+                 <h3 className="text-lg font-semibold mb-4 text-accent-100">Company</h3>
+                 <ul className="space-y-3 text-white/80">
+                   <li><a onClick={() => navigate("/terms")} className="hover:text-accent-200 transition-colors cursor-pointer">Terms of Service</a></li>
+                   <li><a onClick={() => navigate("/privacy")} className="hover:text-accent-200 transition-colors cursor-pointer">Privacy Policy</a></li>
+                 </ul>
+               </div>
+             </div>
+
+             <div className="border-t border-white/20 pt-8">
+               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                 <div className="text-white/70 text-sm">
+                   © 2024 55Links. All rights reserved. Building global business networks together.
+                 </div>
+                 <div className="flex items-center gap-6 text-sm text-white/70">
+                   <span>🌍 Global Platform</span>
+                   <span>🔒 Secure & Verified</span>
+                   <span>🤝 Trusted Connections</span>
+                 </div>
+               </div>
+             </div>
+           </div>
+         </footer>
+
+      </section>
+
+
       
       {/* Login Dialog */}
       <LoginDialog

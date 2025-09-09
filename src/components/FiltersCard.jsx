@@ -2,9 +2,11 @@ import React, { useRef, useEffect, useState, useMemo } from "react";
 import { useJsApiLoader } from "@react-google-maps/api";
 import I from "../lib/icons.jsx";
 import AudienceTree from "./AudienceTree.jsx";
+import MultiSelect from "./MultiSelect.jsx";
+import MultiSelectDropdown from "./MultiSelectDropdown.jsx";
+import ExperienceLevelSelector from "./ExperienceLevelSelector.jsx";
 
 const libraries = ["places"];
-
 
 export default function FiltersCard({
   from,
@@ -74,7 +76,7 @@ export default function FiltersCard({
   setDate,
   registrationType,
   setRegistrationType,
-  
+
   /* Audience Tree */
   audienceTree = [],
   audienceSelections = {
@@ -89,7 +91,7 @@ export default function FiltersCard({
   const [inputValue, setInputValue] = useState("");
 
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyAF9zZKiLS2Ep98eFCX-jA871QAJxG5des", // Replace with your Google API key
+    googleMapsApiKey: "AIzaSyAF9zZKiLS2Ep98eFCX-jA871QAJxG5des",
     libraries,
   });
 
@@ -155,7 +157,7 @@ export default function FiltersCard({
   const isService = from === "service" || from === "services";
   const isTourism = from === "tourism";
   const isFunding = from === "funding";
-  const isPeople  = from === "people";
+  const isPeople = from === "people";
 
   const hasActive = useMemo(
     () =>
@@ -168,12 +170,19 @@ export default function FiltersCard({
         role ||
         goalId ||
         // products
-        (from === "products" && price !== undefined && price !== "" && price !== null) ||
+        (from === "products" &&
+          price !== undefined &&
+          price !== "" &&
+          price !== null) ||
         // jobs
         (from === "jobs" && (experienceLevel || jobType || workMode)) ||
         // services
         (isService &&
-          (serviceType || priceType || deliveryTime || experienceLevel || locationType)) ||
+          (serviceType ||
+            priceType ||
+            deliveryTime ||
+            experienceLevel ||
+            locationType)) ||
         // tourism
         (isTourism && (postType || season || budgetRange)) ||
         // funding
@@ -264,7 +273,7 @@ export default function FiltersCard({
     setEventType?.("");
     setDate?.("");
     setRegistrationType?.("");
-  
+
     // Audience Tree
     setAudienceSelections?.({
       identityIds: new Set(),
@@ -273,6 +282,7 @@ export default function FiltersCard({
       subsubCategoryIds: new Set(),
     });
   };
+
 
   return (
     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
@@ -330,7 +340,7 @@ export default function FiltersCard({
       </div>
 
       {/* Category */}
-      <div className="mt-3 hidden"> {/**hide for now */}
+      <div className="mt-3 hidden">{/**hide for now */}
         <label className="text-xs text-gray-500">Category</label>
         <select
           className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
@@ -351,7 +361,7 @@ export default function FiltersCard({
       </div>
 
       {/* Subcategory */}
-      <div className="mt-3 hidden"> {/*** Hide for now */}
+      <div className="mt-3 hidden">{/*** Hide for now */}
         <label className="text-xs text-gray-500">Subcategory</label>
         <select
           className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
@@ -387,202 +397,107 @@ export default function FiltersCard({
       {/* Jobs */}
       {from === "jobs" && (
         <>
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Experience Level</label>
-            <select
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              value={experienceLevel || ""}
-              onChange={(e) => setExperienceLevel?.(e.target.value)}
-            >
-              <option value="">All levels</option>
-              <option>Junior</option>
-              <option>Mid-level</option>
-              <option>Senior</option>
-              <option>Lead</option>
-            </select>
-          </div>
+          <ExperienceLevelSelector
+            value={experienceLevel || ""}
+            onChange={setExperienceLevel}
+            options={["Junior", "Mid-level", "Senior", "Lead"]}
+            label="Experience Level"
+            placeholder="Any"
+          />
 
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Job Type</label>
-            <select
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              value={jobType || ""}
-              onChange={(e) => setJobType?.(e.target.value)}
-            >
-              <option value="">All job types</option>
-              <option>Full-time</option>
-              <option>Part-time</option>
-              <option>Contract</option>
-              <option>Internship</option>
-              <option>Temporary</option>
-            </select>
-          </div>
+          <MultiSelectDropdown
+            value={jobType || ""}
+            onChange={setJobType}
+            options={["Full-time", "Part-time", "Contract", "Internship", "Temporary"]}
+            label="Job Type"
+            placeholder="Any"
+          />
 
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Work Mode</label>
-            <select
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              value={workMode || ""}
-              onChange={(e) => setWorkMode?.(e.target.value)}
-            >
-              <option value="">All modes</option>
-              <option>On-site</option>
-              <option>Remote</option>
-              <option>Hybrid</option>
-            </select>
-          </div>
+          <MultiSelectDropdown
+            value={workMode || ""}
+            onChange={setWorkMode}
+            options={["On-site", "Remote", "Hybrid"]}
+            label="Work Mode"
+            placeholder="Any"
+          />
         </>
       )}
 
       {/* Services (all full-width selects/inputs, no grids) */}
       {isService && (
         <>
-          <div className="mt-4">
-            <label className="text-xs text-gray-500">Service Type</label>
-            <select
-              value={serviceType || ""}
-              onChange={(e) => setServiceType?.(e.target.value)}
-              className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-            >
-              <option value="">Any</option>
-              <option>Consulting</option>
-              <option>Freelance Work</option>
-              <option>Product/Service</option>
-            </select>
-            <span className="pointer-events-none absolute right-2 bottom-3 hidden sm:block">
-              <I.chevron />
-            </span>
-          </div>
+          <MultiSelectDropdown
+            value={serviceType || ""}
+            onChange={setServiceType}
+            options={["Consulting", "Freelance Work", "Product/Service"]}
+            label="Service Type"
+            placeholder="Any"
+          />
 
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Price Type</label>
-            <select
-              value={priceType || ""}
-              onChange={(e) => setPriceType?.(e.target.value)}
-              className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-            >
-              <option value="">Any</option>
-              <option>Fixed Price</option>
-              <option>Hourly</option>
-            </select>
-            <span className="pointer-events-none absolute right-2 bottom-3 hidden sm:block">
-              <I.chevron />
-            </span>
-          </div>
+          <MultiSelectDropdown
+            value={priceType || ""}
+            onChange={setPriceType}
+            options={["Fixed Price", "Hourly"]}
+            label="Price Type"
+            placeholder="Any"
+          />
 
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Typical Delivery</label>
-            <select
-              value={deliveryTime || ""}
-              onChange={(e) => setDeliveryTime?.(e.target.value)}
-              className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-            >
-              <option value="">Any</option>
-              <option>1 Day</option>
-              <option>3 Days</option>
-              <option>1 Week</option>
-              <option>2 Weeks</option>
-              <option>1 Month</option>
-            </select>
-            <span className="pointer-events-none absolute right-2 bottom-3 hidden sm:block">
-              <I.chevron />
-            </span>
-          </div>
+          <MultiSelectDropdown
+            value={deliveryTime || ""}
+            onChange={setDeliveryTime}
+            options={["1 Day", "3 Days", "1 Week", "2 Weeks", "1 Month"]}
+            label="Typical Delivery"
+            placeholder="Any"
+          />
 
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Location Type</label>
-            <select
-              value={locationType || ""}
-              onChange={(e) => setLocationType?.(e.target.value)}
-              className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-            >
-              <option value="">Any</option>
-              <option>Remote</option>
-              <option>On-site</option>
-            </select>
-            <span className="pointer-events-none absolute right-2 bottom-3 hidden sm:block">
-              <I.chevron />
-            </span>
-          </div>
+          <MultiSelectDropdown
+            value={locationType || ""}
+            onChange={setLocationType}
+            options={["Remote", "On-site"]}
+            label="Location Type"
+            placeholder="Any"
+          />
 
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Experience Level</label>
-            <select
-              value={experienceLevel || ""}
-              onChange={(e) => setExperienceLevel?.(e.target.value)}
-              className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-            >
-              <option value="">Any</option>
-              <option>Entry Level</option>
-              <option>Intermediate</option>
-              <option>Expert</option>
-            </select>
-            <span className="pointer-events-none absolute right-2 bottom-3 hidden sm:block">
-              <I.chevron />
-            </span>
-          </div>
+          <ExperienceLevelSelector
+            value={experienceLevel || ""}
+            onChange={setExperienceLevel}
+            options={["Entry Level", "Intermediate", "Expert"]}
+            label="Experience Level"
+            placeholder="Any"
+          />
         </>
       )}
 
       {/* Tourism (full-width selects only) */}
       {isTourism && (
         <>
-          <div className="mt-4">
-            <label className="text-xs text-gray-500">Post Type</label>
-            <select
-              value={postType || ""}
-              onChange={(e) => setPostType?.(e.target.value)}
-              className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-            >
-              <option value="">Any</option>
-              <option>Destination</option>
-              <option>Experience</option>
-              <option>Culture</option>
-            </select>
-            <span className="pointer-events-none absolute right-2 bottom-3 hidden sm:block">
-              <I.chevron />
-            </span>
-          </div>
+          <MultiSelectDropdown
+            value={postType || ""}
+            onChange={setPostType}
+            options={["Destination", "Experience", "Culture"]}
+            label="Post Type"
+            placeholder="Any"
+          />
 
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Best Season to Visit</label>
-            <select
-              value={season || ""}
-              onChange={(e) => setSeason?.(e.target.value)}
-              className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-            >
-              <option value="">Any</option>
-              <option>Summer</option>
-              <option>Winter</option>
-              <option>All Year</option>
-              <option>Rainy Season</option>
-              <option>Dry Season</option>
-            </select>
-            <span className="pointer-events-none absolute right-2 bottom-3 hidden sm:block">
-              <I.chevron />
-            </span>
-          </div>
+          <MultiSelectDropdown
+            value={season || ""}
+            onChange={setSeason}
+            options={["Summer", "Winter", "All Year", "Rainy Season", "Dry Season"]}
+            label="Best Season to Visit"
+            placeholder="Any"
+          />
 
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Budget Range</label>
-            <select
-              value={budgetRange || ""}
-              onChange={(e) => setBudgetRange?.(e.target.value)}
-              className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-            >
-              <option value="">Any</option>
-              <option>$100 - $500</option>
-              <option>$500 - $2000</option>
-              <option>$2000+</option>
-            </select>
-            <span className="pointer-events-none absolute right-2 bottom-3 hidden sm:block">
-              <I.chevron />
-            </span>
-          </div>
+          <MultiSelectDropdown
+            value={budgetRange || ""}
+            onChange={setBudgetRange}
+            options={["$100 - $500", "$500 - $2000", "$2000+"]}
+            label="Budget Range"
+            placeholder="Any"
+          />
         </>
       )}
 
-      {/* Funding (already inputs/selects full-width) */}
+      {/* Funding */}
       {isFunding && (
         <>
           <div className="mt-4">
@@ -609,8 +524,6 @@ export default function FiltersCard({
             />
           </div>
 
-        
-
           <div className="mt-3">
             <label className="text-xs text-gray-500">Deadline</label>
             <input
@@ -626,57 +539,37 @@ export default function FiltersCard({
       {/* People */}
       {isPeople && (
         <>
-          <div className="mt-4">
-            <label className="text-xs text-gray-500 mb-2 block">Experience Level</label>
-            <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
-              <div className="grid grid-cols-2 gap-2">
-                {["Junior", "Mid", "Senior", "Lead", "Director", "C-level"].map((level) => {
-                  // Handle experienceLevel as a comma-separated string
-                  const selectedLevels = experienceLevel ? experienceLevel.split(',') : [];
-                  const isChecked = selectedLevels.includes(level);
-                  
-                  return (
-                    <label key={level} className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={(e) => {
-                          // Update the comma-separated string of selected levels
-                          let newSelectedLevels = [...selectedLevels];
-                          if (e.target.checked) {
-                            // Add level if checked
-                            if (!newSelectedLevels.includes(level)) {
-                              newSelectedLevels.push(level);
-                            }
-                          } else {
-                            // Remove level if unchecked
-                            newSelectedLevels = newSelectedLevels.filter(l => l !== level);
-                          }
-                          // Join back to comma-separated string or empty string if none selected
-                          setExperienceLevel?.(newSelectedLevels.length > 0 ? newSelectedLevels.join(',') : '');
-                        }}
-                        className="h-4 w-4 accent-brand-600"
-                      />
-                      {level}
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <ExperienceLevelSelector
+            value={experienceLevel || ""}
+            onChange={setExperienceLevel}
+            options={[
+              "Junior",
+              "Mid",
+              "Senior",
+              "Lead",
+              "Director",
+              "C-level",
+            ]}
+            label="Experience Level"
+            placeholder="Any"
+          />
 
           {/* Audience Tree */}
           {Array.isArray(audienceTree) && audienceTree.length > 0 && (
             <div className="mt-4">
-              <label className="text-xs text-gray-500 mb-2 block">Audience Interests</label>
+              <label className="text-xs text-gray-500 mb-2 block">
+                Audience Interests
+              </label>
               <AudienceTree
                 tree={audienceTree}
-                selected={audienceSelections || {
-                  identityIds: new Set(),
-                  categoryIds: new Set(),
-                  subcategoryIds: new Set(),
-                  subsubCategoryIds: new Set(),
-                }}
+                selected={
+                  audienceSelections || {
+                    identityIds: new Set(),
+                    categoryIds: new Set(),
+                    subcategoryIds: new Set(),
+                    subsubCategoryIds: new Set(),
+                  }
+                }
                 onChange={setAudienceSelections}
               />
             </div>
@@ -687,19 +580,13 @@ export default function FiltersCard({
       {/* Events */}
       {from === "events" && (
         <>
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Event Type</label>
-            <select
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
-              value={eventType || ""}
-              onChange={(e) => setEventType?.(e.target.value)}
-            >
-              <option value="">All event types</option>
-              <option>Workshop</option>
-              <option>Conference</option>
-              <option>Networking</option>
-            </select>
-          </div>
+          <MultiSelectDropdown
+            value={eventType || ""}
+            onChange={setEventType}
+            options={["Workshop", "Conference", "Networking"]}
+            label="Event Type"
+            placeholder="Any"
+          />
 
           <div className="mt-3">
             <label className="text-xs text-gray-500">Date</label>
@@ -711,18 +598,13 @@ export default function FiltersCard({
             />
           </div>
 
-          <div className="mt-3">
-            <label className="text-xs text-gray-500">Registration Type</label>
-            <select
-              value={registrationType}
-              onChange={(e) => setRegistrationType?.(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
-            >
-              <option value={""}>All</option>
-              <option>Free</option>
-              <option>Paid</option>
-            </select>
-          </div>
+          <MultiSelectDropdown
+            value={registrationType || ""}
+            onChange={setRegistrationType}
+            options={["Free", "Paid"]}
+            label="Registration Type"
+            placeholder="Any"
+          />
         </>
       )}
 
