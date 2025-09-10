@@ -234,7 +234,7 @@ export default function HomePage() {
                  <h1 className="text-6xl md:text-7xl font-black leading-[0.9] mb-8">
                    <span className="block">Connect</span>
                    <span className="block text-accent-100">
-                     With Your Matches
+                     with Your Matches
                    </span>
                   
                  </h1>
@@ -721,7 +721,7 @@ export default function HomePage() {
            <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
              <div className="text-center mb-12">
                <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                 Join Our Community Today
+                  Ready to Get Started?
                </h2>
                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                  Create your account or sign in to start building meaningful business connections

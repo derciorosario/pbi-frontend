@@ -7,6 +7,7 @@ import MultiSelectDropdown from "./MultiSelectDropdown.jsx";
 import ExperienceLevelSelector from "./ExperienceLevelSelector.jsx";
 import COUNTRIES from "../constants/countries";
 import { useData } from "../contexts/DataContext.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 const libraries = ["places"];
 
@@ -96,6 +97,7 @@ export default function FiltersCard({
   const data=useData()
   const inputRef = useRef(null);
   const [inputValue, setInputValue] = useState("");
+  const {user}=useAuth()
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: "AIzaSyAF9zZKiLS2Ep98eFCX-jA871QAJxG5des",

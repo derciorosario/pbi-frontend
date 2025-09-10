@@ -394,7 +394,7 @@ export default function PeopleFeedPage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside  className="scrollable-container lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
-          <div className="_sticky top-0 z-10 bg-white">
+          <div className="_sticky top-0 z-10 _bg-white">
             <FiltersCard selectedFilters={selectedFilters} {...filtersProps} from={"people"}/>
           </div>
           <QuickActions title="Quick Actions" items={[
