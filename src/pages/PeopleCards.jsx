@@ -152,10 +152,10 @@ export default function PeopleProfileCard({
         <div className="relative overflow-hidden">
          
             <div className="relative">
-               {/*heroUrl*/ 0==1 ? (<img
+               {heroUrl ? (<img
                 src={heroUrl}
                 alt={name}
-                className="w-full h-[45px] blur-sm _opacity-80 object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-[45px] blur-sm opacity-80 object-cover transition-transform duration-500 group-hover:scale-105"
               />) : (
                 <div className="w-full bg-brand-50 h-[45px]">
                 </div>

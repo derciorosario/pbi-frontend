@@ -26,7 +26,7 @@ export default function TopFilterButtons({buttons=[],selected=[],setSelected,fro
                           }
                           data.setUpdateData(Math.random())
                        }}
-                       className={`rounded-full table px-2.5 py-1.5 text-sm font-medium ${!selected.includes(i) ? '  text-gray-700 hover:border-brand-300 ':'text-brand-600 bg-brand-50 active:bg-brand-800'} _shadow-sm  flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md flex-shrink-0`}
+                       className={`rounded-full table px-2.5 py-1.5 text-sm font-medium ${!selected.includes(i) ? '  text-gray-700 hover:border-brand-300 ':'text-brand-600 bg-brand-50 active:bg-brand-800'} shadow-sm  flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md flex-shrink-0`}
                      >
                        <span>{i}</span>
                      </button>
