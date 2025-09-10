@@ -78,8 +78,8 @@ function App() {
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
         <Route element={<ProtectedRoute />}>
-            <Route path="/profile" element={<ProfilePage />} />
 
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/jobs/create" element={<CreateJobOpportunity />} />
             <Route path="/events/create" element={<CreateEventPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
@@ -104,13 +104,11 @@ function App() {
             <Route path="/" element={<Home/>} />
             <Route path="/dashboard" element={<Home/>} />
             <Route path="/funding" element={<CrowdfundingPage />} />
-            <Route path="/people" element={<PeopleFeedPage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/jobs" element={<JobsExplorePage />} />
             <Route path="/tourism" element={<TourismPage />} /> 
             <Route path="/companies" element={<CompanyPage />} />
-            
-
+             <Route path="/people" element={<PeopleFeedPage />} />
             <Route path="/services" element={<ServicesPage/>} />
             <Route path="/products" element={<ProductsPage />} />
         </Route>

@@ -201,14 +201,11 @@ export default function FeedPage() {
               <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                 { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                 { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
-                { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
+                { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
               ]} />
           </section>
 
              
- 
-
-            
             {loadingFeed && (
                <CardSkeletonLoader columns={user ? 2 :  3}/>
             )}

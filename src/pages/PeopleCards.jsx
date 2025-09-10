@@ -67,6 +67,7 @@ export default function PeopleProfileCard({
   timeAgo,               // optional precomputed
   matchPercentage = 20,  // optional % chip (overlay on image when list; chip near hero in grid)
   type = "grid",         // "grid" | "list"
+  accountType = "individual", // "individual" | "company"
 }) {
   const { user } = useAuth();
   const data = useData();
@@ -98,8 +99,10 @@ export default function PeopleProfileCard({
     onConnect?.();
   }
 
+  const isCompany = accountType === "company";
+  
   const containerBase =
-    "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
+    `group relative rounded-[15px] border ${isCompany ? 'border-blue-100' : 'border-gray-100'} ${isCompany ? 'bg-blue-50/20' : 'bg-white'} shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out`;
   const containerLayout = isList
     ? "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch"
     : "flex flex-col";
@@ -155,9 +158,9 @@ export default function PeopleProfileCard({
                {heroUrl ? (<img
                 src={heroUrl}
                 alt={name}
-                className="w-full h-[45px] blur-sm opacity-80 object-cover transition-transform duration-500 group-hover:scale-105"
+                className={`w-full ${isCompany ? 'h-[60px]' : 'h-[45px]'} blur-sm opacity-80 object-cover transition-transform duration-500 group-hover:scale-105`}
               />) : (
-                <div className="w-full bg-brand-50 h-[45px]">
+                <div className={`w-full ${isCompany ? 'bg-blue-50' : 'bg-brand-50'} ${isCompany ? 'h-[60px]' : 'h-[45px]'}`}>
                 </div>
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -181,18 +184,21 @@ export default function PeopleProfileCard({
       
         <div className="relative translate-x-3 -mt-8 z-10">
           {heroUrl ? (
-            <div className="w-16 h-16 rounded-full bg-blue-50 border-4 border-white overflow-hidden shadow-md">
+            <div className={`${isCompany ? 'w-20 h-20 rounded-md' : 'w-16 h-16 rounded-full'}  ${isCompany ? 'bg-blue-50' : 'bg-blue-50'} border-4 ${isCompany ? 'border-blue-50' : 'border-white'} overflow-hidden shadow-md`}>
+              
               <img
                 src={heroUrl}
                 alt={name}
                 className="w-full h-full object-cover"
               />
+
             </div>
           ) : (
-            <div className="w-16 h-16 rounded-full border-4 border-white bg-brand-100 flex items-center justify-center shadow-md">
-              <span className="text-brand-600 font-medium text-lg">{getInitials(name)}</span>
+            <div className={`${isCompany ? 'w-20 h-20' : 'w-16 h-16'} rounded-full border-4 ${isCompany ? 'border-blue-50' : 'border-white'} ${isCompany ? 'bg-blue-100' : 'bg-brand-100'} flex items-center justify-center shadow-md`}>
+              <span className={`${isCompany ? 'text-blue-600' : 'text-brand-600'} font-medium text-lg`}>{getInitials(name)}</span>
             </div>
           )}
+         
         </div>
       
 
@@ -202,7 +208,7 @@ export default function PeopleProfileCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div
-              className="text-[15px] font-semibold text-gray-900 truncate hover:underline cursor-pointer group-hover:text-brand-600 transition-colors"
+              className={`${isCompany ? 'text-[17px]' : 'text-[15px]'} font-semibold ${isCompany ? 'text-blue-900' : 'text-gray-900'} truncate hover:underline cursor-pointer group-hover:text-brand-600 transition-colors`}
               onClick={() => {
                 setOpenId(id);
                 data._showPopUp?.("profile");
@@ -210,7 +216,11 @@ export default function PeopleProfileCard({
             >
               {name}
             </div>
-            {role && <div className="text-sm text-gray-600 truncate">{role}</div>}
+            {role && (
+              <div className={`text-sm ${isCompany ? 'font-medium text-blue-700' : 'text-gray-600'} truncate`}>
+                {isCompany ? `${role || 'Company'}` : role}
+              </div>
+            )}
 
             {(location || computedTime) && (
               <div className="mt-0.5 flex items-center justify-between text-xs text-gray-500">
@@ -249,7 +259,9 @@ export default function PeopleProfileCard({
         {!!visibleTags.length && (
           <div className="mt-4 mb-4 flex flex-wrap gap-2">
             {visibleTags.map((t) => (
-              <Tag key={t}>{t}</Tag>
+              <span key={t} className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${isCompany ? 'bg-blue-50 text-blue-600 border border-blue-200/50' : 'bg-brand-50 text-brand-600 border border-brand-200/50'}`}>
+                {t}
+              </span>
             ))}
 
             {extraCount > 0 && (

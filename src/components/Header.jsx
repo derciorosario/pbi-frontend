@@ -129,6 +129,7 @@ function Header({ page }) {
   const allNavItems = [
     { name: "feed", label: "Feed", path: "/", icon: <I.feed /> },
     { name: "people", label: "People", path: "/people", icon: <I.people /> },
+    { name: "companies", label: "Companies", path: "/companies", icon: <I.company/> },
     { name: "jobs", label: "Jobs", path: "/jobs", icon: <I.jobs /> },
     { name: "events", label: "Events", path: "/events", icon: <I.calendar /> },
     { name: "products", label: "Products", path: "/products", icon: <I.products /> },
@@ -137,8 +138,8 @@ function Header({ page }) {
     { name: "funding", label: "Funding", path: "/funding", icon: <I.funding /> },
   ];
 
-  const primaryNav = allNavItems;
-  const moreNav = []; // not used now
+ const primaryNav = allNavItems.slice(0, 7);   // first 7 items
+const moreNav = allNavItems.slice(7);         // the rest go to "More"
 
   function isActive(item) {
     if (page) return page === item.name;
@@ -206,7 +207,7 @@ function Header({ page }) {
             ))}
 
             {/* "+" More menu (currently hidden) */}
-            <div className="relative hidden" ref={moreMenuRef}>
+            <div className="relative" ref={moreMenuRef}>
               <button
                 aria-haspopup="menu"
                 aria-expanded={moreOpen}

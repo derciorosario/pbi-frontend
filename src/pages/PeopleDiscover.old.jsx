@@ -537,7 +537,7 @@ export default function PeopleFeedPage() {
                               </button>
                             </li>
                              <li>
-                              <button onClick={()=>navigate('/expirience/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
+                              <button onClick={()=>navigate('/experiences/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
                                 <PlusCircle size={16} className="text-[#8a358a]" />
                              Share an Experience
                               </button>

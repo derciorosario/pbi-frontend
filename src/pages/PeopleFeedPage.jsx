@@ -13,7 +13,7 @@ import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import { Pencil, PlusCircle, Rocket } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import PeopleProfileCard from "./PeopleCards";
 import DefaultLayout from "../layout/DefaultLayout";
@@ -59,7 +59,10 @@ export default function PeopleFeedPage() {
   const [goals, setGoals] = useState([]);
   const [view,setView]=useState('grid')
   let view_types=['grid','list']
+  const {pathname}=useLocation()
 
+
+  const currentPage=pathname.includes('/people')  ? 'people': 'companies'
 
     // ---- NEW: all filter states ----
   // Products
@@ -155,7 +158,7 @@ export default function PeopleFeedPage() {
     try {
       // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre “all”
       const params = {
-        tab: "all",
+        accountType: currentPage=="people" ? 'individual' :'company',
         q: debouncedQ || undefined,
         country: country || undefined,
         city: city || undefined,
@@ -201,7 +204,7 @@ export default function PeopleFeedPage() {
         limit: 20,
         offset: 0,
       };
-      const { data } = await client.get(activeTab == "Posts" ? "/feed" : '/people', { params });
+      const { data } = await client.get('/people', { params });
       setItems(Array.isArray(data.items) ? data.items : []);
     } catch (e) {
       console.error("Failed to load feed:", e);
@@ -238,36 +241,6 @@ export default function PeopleFeedPage() {
   }, [fetchFeed]);
 
   // Fetch suggestions (sempre mostramos na direita)
-  useEffect(() => {
-    (async () => {
-      setLoadingSuggestions(true);
-      try {
-        const params = {
-          q: debouncedQ || undefined,
-          country: country || undefined,
-          city: city || undefined,
-          categoryId: categoryId || undefined,
-          subcategoryId: subcategoryId || undefined,
-          goalId: goalId || undefined,
-          role:role || undefined,
-          
-          // Add audience selections to suggestions request
-          identityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
-          audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
-          audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
-          audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
-          limit: 10,
-        };
-        const { data } = await client.get("/feed/suggestions", { params });
-        setMatches(data.matches || []);
-        setNearby(data.nearby || []);
-      } catch (e) {
-        console.error("Failed to load suggestions:", e);
-      } finally {
-        setLoadingSuggestions(false);
-      }
-    })();
-  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, role, audienceSelections]);
 
   const filtersProps = {
     query,
@@ -402,7 +375,7 @@ export default function PeopleFeedPage() {
               { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
               { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
               { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
-              { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
+              { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
              ]} />
           <ProfileCard />
          
@@ -421,13 +394,13 @@ export default function PeopleFeedPage() {
                 'Students',
                 'Government Officials',
                 'Investor',
-                // 'Experience Level',
+
                 ]}/>
               <div className="flex items-center justify-end gap-x-2 flex-wrap ">
                 <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                     { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                     { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
-                    { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
+                    { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
                   ]} />
            </div>
 

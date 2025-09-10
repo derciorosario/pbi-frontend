@@ -26,6 +26,9 @@ export default function ProfilePage() {
   const [saving, setSaving]   = useState(false);
   const [me, setMe]           = useState(null);
   const [identities, setIdentities] = useState([]);
+  
+  // Determine if this is a company account
+  const isCompany = me?.user?.accountType === "company";
 
   // Personal
   const [personal, setPersonal] = useState({
@@ -695,8 +698,14 @@ export default function ProfilePage() {
         <div className="bg-white rounded-2xl shadow-soft p-5">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold">Profile</h1>
-              <p className="text-gray-500">Update your information and preferences</p>
+              <h1 className="text-2xl md:text-3xl font-bold">
+                {isCompany ? "Company Profile" : "Profile"}
+              </h1>
+              <p className="text-gray-500">
+                {isCompany
+                  ? "Update your company information and preferences"
+                  : "Update your information and preferences"}
+              </p>
             </div>
             <div className="text-right text-sm text-gray-600">
               <div className="font-medium">Completion</div>
@@ -710,10 +719,18 @@ export default function ProfilePage() {
 
         {/* Tabs */}
         <div className="mt-6 flex gap-2 flex-wrap">
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.PERSONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PERSONAL)}>Personal</button>
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.PROFESSIONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PROFESSIONAL)}>Professional</button>
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.DO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.DO)}>What I DO</button>
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.INTERESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INTERESTS)}>What I’m LOOKING FOR</button>
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.PERSONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PERSONAL)}>
+            {isCompany ? "Company Info" : "Personal"}
+          </button>
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.PROFESSIONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PROFESSIONAL)}>
+            {isCompany ? "Company Details" : "Professional"}
+          </button>
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.DO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.DO)}>
+            {isCompany ? "What We Offer" : "What I DO"}
+          </button>
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.INTERESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INTERESTS)}>
+            {isCompany ? "What We're LOOKING FOR" : "What I'm LOOKING FOR"}
+          </button>
         </div>
 
         <div className="mt-4 bg-white rounded-2xl shadow-soft p-5">
@@ -723,7 +740,9 @@ export default function ProfilePage() {
               <ProfilePhoto onChange={(base64)=>setPersonal({ ...personal, avatarUrl: base64 })} avatarUrl={personal.avatarUrl}/>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Full name</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {isCompany ? "Company name" : "Full name"}
+                  </label>
                   <input className="w-full border rounded-lg px-3 py-2" value={personal.name}
                          onChange={e=>setPersonal({...personal, name:e.target.value})}/>
                 </div>
@@ -774,14 +793,22 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Professional title</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {isCompany ? "Company description/type" : "Professional title"}
+                  </label>
                   <input className="w-full border rounded-lg px-3 py-2" value={personal.professionalTitle}
-                         onChange={e=>setPersonal({...personal, professionalTitle:e.target.value})}/>
+                         onChange={e=>setPersonal({...personal, professionalTitle:e.target.value})}
+                         placeholder={isCompany ? "e.g., Venture Capital Firm, Technology Startup" : "e.g., Software Engineer, Marketing Specialist"}/>
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">About you</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {isCompany ? "About the company" : "About you"}
+                  </label>
                   <textarea className="w-full border rounded-lg px-3 py-2" rows="4" value={personal.about}
-                            onChange={e=>setPersonal({...personal, about:e.target.value})}/>
+                            onChange={e=>setPersonal({...personal, about:e.target.value})}
+                            placeholder={isCompany
+                              ? "Describe your company, its mission, and focus areas..."
+                              : "Tell others about yourself, your background, and interests..."}/>
                 </div>
               </div>
               <div className="flex justify-end gap-3">
@@ -795,7 +822,9 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Experience level</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {isCompany ? "Company size/stage" : "Experience level"}
+                  </label>
                   <select className="w-full border rounded-lg px-3 py-2"
                           value={professional.experienceLevel}
                           onChange={e=>setProfessional(p=>({ ...p, experienceLevel: e.target.value }))}>
@@ -807,7 +836,9 @@ export default function ProfilePage() {
 
               {/* Skills */}
               <div>
-                <label className="block text-sm font-medium mb-1">Skills</label>
+                <label className="block text-sm font-medium mb-1">
+                  {isCompany ? "Company expertise" : "Skills"}
+                </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {professional.skills.map((s,i)=>(
                     <span key={i} className="inline-flex items-center gap-1 bg-brand-50 text-brand-700 rounded-full px-3 py-1 text-sm">
@@ -829,7 +860,9 @@ export default function ProfilePage() {
 
               {/* Languages */}
               <div>
-                <label className="block text-sm font-medium mb-1">Languages</label>
+                <label className="block text-sm font-medium mb-1">
+                  {isCompany ? "Working languages" : "Languages"}
+                </label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {professional.languages.map((lng,i)=>(
                     <span key={i} className="inline-flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1 text-sm">
@@ -867,11 +900,15 @@ export default function ProfilePage() {
           {active === Tab.DO && (
             <div className="space-y-6">
               <div>
-                <h3 className="font-semibold mb-2">Identities (what you DO)</h3>
+                <h3 className="font-semibold mb-2">
+                  {isCompany ? "Company identities (what we DO)" : "Identities (what you DO)"}
+                </h3>
                 <IdentityGrid picked={doIdentityIds} onToggle={toggleIdentityDo} />
               </div>
               <div>
-                <h3 className="font-semibold mb-2">Categories (what you DO)</h3>
+                <h3 className="font-semibold mb-2">
+                  {isCompany ? "Categories (what we DO)" : "Categories (what you DO)"}
+                </h3>
                 <CategoryTree
                   selectedIdentitiesKeys={doIdentityIds}
                   catIds={doCategoryIds}
@@ -902,13 +939,17 @@ export default function ProfilePage() {
           {active === Tab.INTERESTS && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold mb-2">Identities (what you’re LOOKING FOR)</h3>
+                <h3 className="font-semibold mb-2">
+                  {isCompany ? "Identities (what we're LOOKING FOR)" : "Identities (what you're LOOKING FOR)"}
+                </h3>
                 <span className="text-sm text-gray-500">Selected {wantIdentityIds.length}/{MAX_WANT_IDENTITIES}</span>
               </div>
               <IdentityGrid picked={wantIdentityIds} onToggle={toggleIdentityWant} limit={MAX_WANT_IDENTITIES}/>
 
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold mb-2">Categories (what you’re LOOKING FOR)</h3>
+                <h3 className="font-semibold mb-2">
+                  {isCompany ? "Categories (what we're LOOKING FOR)" : "Categories (what you're LOOKING FOR)"}
+                </h3>
                 <span className="text-sm text-gray-500">Selected {wantCategoryIds.length}/{MAX_WANT_CATEGORIES}</span>
               </div>
               <CategoryTree
