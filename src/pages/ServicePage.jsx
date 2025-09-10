@@ -20,6 +20,7 @@ import { useData } from "../contexts/DataContext";
 import ServiceCard from "../components/ServiceCard";
 import PageTabs from "../components/PageTabs";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
+import TopFilterButtons from "../components/TopFilterButtons";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -380,6 +381,9 @@ export default function ServicesPage() {
     );
   };
 
+   const [selectedFilters,setSelectedFilters]=useState([])
+    
+  
 
 
   return (
@@ -391,7 +395,7 @@ export default function ServicesPage() {
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
             <div className="_sticky top-0 z-10 _bg-white">
-            <FiltersCard {...filtersProps} from={"services"} />
+            <FiltersCard selectedFilters={selectedFilters} {...filtersProps} from={"services"} />
           </div>
         <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
@@ -407,10 +411,20 @@ export default function ServicesPage() {
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5">
           
+           <TopFilterButtons selected={selectedFilters} setSelected={setSelectedFilters}
+                                              buttons={
+                                             [
+                                              'Service Type',
+                                              'Price Type',
+                                               'Typical Delivery',
+                                               'Location Type',
+                                               'Experience Level'
+                         ]}/>
+
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
               <h3 className="font-semibold text-2xl mt-1 hidden">Professional Services</h3>
            
-     <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
+               <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
       
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/services/create')} />
             </div>

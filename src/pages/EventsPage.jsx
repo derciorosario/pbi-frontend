@@ -20,6 +20,7 @@ import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
 import PageTabs from "../components/PageTabs";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
+import TopFilterButtons from "../components/TopFilterButtons";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -325,6 +326,9 @@ export default function EventsPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
+   const [selectedFilters,setSelectedFilters]=useState([])
+  
+
   const renderMiddle = () => {
     if (activeTab !== "Suggested for You") {
       return (
@@ -371,8 +375,9 @@ export default function EventsPage() {
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
          <div className="_sticky top-0 z-10 _bg-white">
-            <FiltersCard {...filtersProps} from={"events"} />
-          </div>
+            
+            <FiltersCard selectedFilters={selectedFilters} {...filtersProps} from={"events"}/>
+                      </div>
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
             { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
@@ -388,11 +393,19 @@ export default function EventsPage() {
 
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5">
-          
+           <TopFilterButtons selected={selectedFilters} setSelected={setSelectedFilters}
+                        buttons={
+                       [
+                        'Event Type',
+                        'Registration Type',
+                         // 'Experience Level',
+                        ]}/>
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
               <h3 className="font-semibold text-2xl mt-1 hidden hidden">Your Path to Knowledge</h3>
+            
+
              <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
-        
+             
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
             </div>
               {renderMiddle()}

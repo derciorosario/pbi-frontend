@@ -345,20 +345,7 @@ export default function FiltersCard({
         </button>
       </div>
 
-      {/* Search */}
-      <div className="mt-3">
-        <label className="text-xs text-gray-500">Search</label>
-        <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
-          <I.search />
-          <input
-            className="w-full text-sm outline-none"
-            placeholder="Title, keywords…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
+     
       {/* City / Country */}
       <div className="mt-3 hidden">
         <label className="text-xs text-gray-500">City / Country</label>
@@ -379,29 +366,8 @@ export default function FiltersCard({
         )}
       </div>
 
-      <div>
-        <ExperienceLevelSelector
-            value={country}
-            onChange={setCountry}
-            options={COUNTRIES}
-            label="Country"
-            placeholder="All"
-       />
-      </div>
-
-
-       <div className="mt-3">
-        <label className="text-xs text-gray-500">City</label>
-        <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
-          <I.search />
-          <input
-            className="w-full text-sm outline-none"
-            placeholder="Type name of the city"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-          />
-        </div>
-      </div>
+      
+  
       
       <div id="secundary-filters"></div>
 
@@ -665,7 +631,7 @@ export default function FiltersCard({
 
       
           {/* Audience Tree */}
-          {Array.isArray(audienceTree) && audienceTree.length > 0 && (
+      {Array.isArray(audienceTree) && audienceTree.length > 0 && (
             <div className={`mt-4 ${!audienceTree.some(i=>selectedFilters.includes(i.name)) ? 'hidden':''}`}>
               <label className="text-xs text-gray-500 mb-2 block">
                 Audience Interests
@@ -685,6 +651,48 @@ export default function FiltersCard({
               />
             </div>
         )}
+
+
+            <div>
+        <ExperienceLevelSelector
+            value={country}
+            onChange={setCountry}
+            options={COUNTRIES}
+            label="Country"
+            placeholder="All"
+       />
+      </div>
+
+
+
+       <div className="mt-3">
+        <label className="text-xs text-gray-500">City</label>
+        <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
+          <I.search />
+          <input
+            className="w-full text-sm outline-none"
+            placeholder="Type name of the city"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+          />
+        </div>
+      </div>
+
+       {/* Search */}
+      <div className="mt-3">
+        <label className="text-xs text-gray-500">Search</label>
+        <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
+          <I.search />
+          <input
+            className="w-full text-sm outline-none"
+            placeholder="Title, keywords…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+      </div>
+
+
 
       {/* Hidden (unchanged) */}
       <div className="mt-3 hidden">

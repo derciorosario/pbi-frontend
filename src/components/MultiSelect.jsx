@@ -33,7 +33,7 @@ function MultiSelect({ label, value = "", onChange, options = [], className = ""
   };
   
   return (
-    <div className={`mt-3 ${className} ${hide && _hide ? 'hidden':''}`}>
+    <div className={`mt-3 ${className} ${hide ? 'hidden':''}`}>
       <label className="text-xs text-gray-500 mb-2 block">{label}</label>
       <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
         <div className={`grid grid-cols-${column || 1} gap-2`}>

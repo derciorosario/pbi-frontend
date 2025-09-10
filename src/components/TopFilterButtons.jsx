@@ -1,7 +1,7 @@
 import React from 'react'
 import { useData } from '../contexts/DataContext'
 import { useAuth } from '../contexts/AuthContext'
-export default function TopFilterButtons({buttons=[],selected=[],setSelected}) {
+export default function TopFilterButtons({buttons=[],selected=[],setSelected,from}) {
  const data=useData()
  const {user}=useAuth()
   return (
@@ -10,9 +10,19 @@ export default function TopFilterButtons({buttons=[],selected=[],setSelected}) {
                 <button
                        onClick={() => {
                           if(selected.includes(i)){
-                            setSelected([])
+                           
+
+                                if((from=="people")){
+                                   setSelected([])
+                                }else{
+                                  setSelected(selected.filter(f=>f!=i))
+                                }
                           }else{
-                              setSelected([i])
+                             if((from=="people")){
+                              setSelected([i])  
+                             }else{
+                              setSelected([...selected,i])  
+                             }
                           }
                         data.setUpdateData(Math.random())
                         

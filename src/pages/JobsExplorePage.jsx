@@ -19,6 +19,7 @@ import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import PageTabs from "../components/PageTabs";
+import TopFilterButtons from "../components/TopFilterButtons";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -320,6 +321,10 @@ export default function PeopleFeedPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
+   const [selectedFilters,setSelectedFilters]=useState([])
+    
+  
+
   const renderMiddle = () => {
     if (activeTab !== "Posts") {
       return (
@@ -371,7 +376,7 @@ export default function PeopleFeedPage() {
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
             <div className="_sticky top-0 z-10 _bg-white">
-            <FiltersCard {...filtersProps} from="jobs"/>
+            <FiltersCard    selectedFilters={selectedFilters} {...filtersProps} from="jobs"/>
           </div>
            <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
@@ -386,7 +391,15 @@ export default function PeopleFeedPage() {
     
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-4">
+              <TopFilterButtons selected={selectedFilters} setSelected={setSelectedFilters}
+                                    buttons={
+                                   [
+                                    'Experience Level',
+                                    'Job Type',
+                                     'Work Mode',
+               ]}/>
             <div className="flex items-center justify-between gap-y-2 flex-wrap">
+              
               <h3 className="font-semibold text-2xl mt-1 hidden">Find Your Next Opportunity</h3>
               
               <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
