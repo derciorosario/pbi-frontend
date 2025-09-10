@@ -120,7 +120,7 @@ export default function PeopleProfileCard({
       />
       {/* MEDIA: left column ONLY when list; otherwise top hero in grid */}
       {isList ? (
-        <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
+        <div className="relative h-full w-full min-h-[160px] md:min-h-[176px] overflow-hidden">
           {heroUrl ? (
             <>
               <img src={heroUrl} alt={name} className="absolute inset-0 w-full h-full object-cover" />
@@ -152,7 +152,7 @@ export default function PeopleProfileCard({
           </div>
         </div>
       ) : (
-        <div className="relative overflow-hidden">
+        <div className="relative overflow-hidden w-full">
          
             <div className="relative">
                {heroUrl ? (<img
