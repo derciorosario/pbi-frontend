@@ -346,8 +346,7 @@ export default function CrowdfundingPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
-        
+       
          <div
                  className={`grid grid-cols-1 ${
                    view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
@@ -372,23 +371,25 @@ export default function CrowdfundingPage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
        
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+           <div className="_sticky top-0 z-10 bg-white">
+            <FiltersCard {...filtersProps} from={"funding"} />
+          </div>
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
             { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
             { label: "Post an Funding Project", Icon: PlusCircle, path: "/funding/create" }
           ]} />
           <ProfileCard />
-           <div className="_sticky top-0 z-10 bg-white">
-            <FiltersCard {...filtersProps} from={"funding"} />
-          </div>
+          
         </aside>
 
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5">
           
            <div className="flex items-center justify-between gap-y-2">
-              <h3 className="font-semibold text-2xl mt-1">Find inspiring projects and contribute directly</h3>
-          
+            <h3 className="font-semibold text-2xl mt-1 hidden">Find inspiring projects and contribute directly</h3>
+             <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
+        
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/fundings/create')} />
             </div>
               {renderMiddle()}

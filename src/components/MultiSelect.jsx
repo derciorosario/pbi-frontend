@@ -11,7 +11,7 @@ import React from "react";
  * @param {Array} props.options - Array of options to display
  * @param {string} props.className - Additional CSS classes
  */
-function MultiSelect({ label, value = "", onChange, options = [], className = "" }) {
+function MultiSelect({ label, value = "", onChange, options = [], className = "",column, hide ,_hide }) {
   // Parse the comma-separated string into an array
   const selectedValues = value ? value.split(',') : [];
   
@@ -33,10 +33,10 @@ function MultiSelect({ label, value = "", onChange, options = [], className = ""
   };
   
   return (
-    <div className={`mt-3 ${className}`}>
-      <label className="text-xs text-gray-500 mb-2 block">{label} (Select multiple)</label>
+    <div className={`mt-3 ${className} ${hide && _hide ? 'hidden':''}`}>
+      <label className="text-xs text-gray-500 mb-2 block">{label}</label>
       <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
-        <div className="grid grid-cols-2 gap-2">
+        <div className={`grid grid-cols-${column || 1} gap-2`}>
           {options.map((option) => {
             const isChecked = selectedValues.includes(option);
             

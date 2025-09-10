@@ -354,8 +354,6 @@ export default function ProductsPage() {
 
         {<div className="max-w-6xl mx-auto">
 
-           <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
-
           <div className={`grid grid-cols-1 ${view=="list" ? "sm:grid-cols-1":"lg:grid-cols-2 xl:grid-cols-3"}  gap-6`}>
             {items.map((p) => (
               <ProductCard
@@ -391,29 +389,28 @@ export default function ProductsPage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+             <div className="_sticky top-0 z-10 bg-white">
+            <FiltersCard {...filtersProps} from={"products"} />
+          </div>
            <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
             { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
             { label: "Post a Product", Icon: PlusCircle, path: "/products/create" },
         ]} />
           <ProfileCard />
-           <div className="_sticky top-0 z-10 bg-white">
-            <FiltersCard {...filtersProps} from={"products"} />
-          </div>
+        
          
         </aside>
 
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5">
-           <div className="flex items-center justify-between gap-y-2 flex-wrap">
-             <div className="table">
-               <h3 className="font-semibold text-2xl mt-1">Explore and Discover New Products</h3>
-               <span
-                    className="left-0 flex hidden -bottom-[1px] h-[3px] w-full bg-brand-100 rounded-full"
-      
-                />
-             </div>
+           <div className="flex items-center justify-between gap-y-2">
+            <h3 className="font-semibold text-2xl mt-1 hidden">Explore and Discover New Products</h3>
+               
+            
           
+           <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
+
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/products/create')} />
             </div>
               {renderMiddle()}

@@ -66,6 +66,18 @@ export default function FeedPage() {
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+
+  
+  const [audienceTree, setAudienceTree] = useState([]);
+  // Audience Tree
+  const [audienceSelections, setAudienceSelections] = useState({
+    identityIds: new Set(),
+    categoryIds: new Set(),
+    subcategoryIds: new Set(),
+    subsubCategoryIds: new Set(),
+  });
+  
+
   const [view,setView]=useState('grid')
   let view_types=['grid','list']
   
@@ -170,35 +182,30 @@ export default function FeedPage() {
 
         <div className="grid lg:grid-cols-12 gap-6">
           {user &&  <aside className="lg:col-span-3 hidden lg:block sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
-             
+            <div className="_sticky top-0 mb-2">
+              <FiltersCard {...filtersProps} />
+            </div>
              <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
               { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
               { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
             ]} />
             <ProfileCard />
-            <div className="_sticky top-0 mb-2">
-              <FiltersCard {...filtersProps} />
-            </div>
-            
 
           </aside>}
 
           <section className={`${user ? 'lg:col-span-8':'lg:col-span-12'} sprace-y-4`}>
 
           <section className="lg:col-span-4 space-y-4 flex items-center justify-between gap-y-2 flex-wrap mb-3">
-            <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
-           
+              <PageTabs page={"feed"} view={view} setView={setView} view_types={view_types}/>
               <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                 { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                 { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                 { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
               ]} />
-
           </section>
 
-             <PageTabs view={view} setView={setView} view_types={view_types}/>
-          
+             
  
 
             

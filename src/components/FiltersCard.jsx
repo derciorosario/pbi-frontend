@@ -6,10 +6,12 @@ import MultiSelect from "./MultiSelect.jsx";
 import MultiSelectDropdown from "./MultiSelectDropdown.jsx";
 import ExperienceLevelSelector from "./ExperienceLevelSelector.jsx";
 import COUNTRIES from "../constants/countries";
+import { useData } from "../contexts/DataContext.jsx";
 
 const libraries = ["places"];
 
 export default function FiltersCard({
+  selectedFilters=[],
   from,
   query,
   setQuery,
@@ -90,6 +92,8 @@ export default function FiltersCard({
 
 
 }) {
+
+  const data=useData()
   const inputRef = useRef(null);
   const [inputValue, setInputValue] = useState("");
 
@@ -287,8 +291,39 @@ export default function FiltersCard({
   };
 
 
+  useEffect(() => {
+
+
+    handleReset()
+
+    // Find the element to scroll to
+    const targetElement = selectedFilters.length ? document.querySelector('#secundary-filters') : document.querySelector('#filters');
+    
+    if (targetElement) {
+      // Find the parent scrollable container - this should be replaced with the actual container ID or class
+      // For example: const scrollableContainer = document.querySelector('.scrollable-container');
+      // If you don't know the container, you can try to find a parent with overflow
+      const scrollableContainer = targetElement.closest('.scrollable-container') ||
+                                  targetElement.closest('[style*="overflow"]') ||
+                                  targetElement.parentElement;
+      
+      if (scrollableContainer) {
+        // Get the position of the target element relative to the scrollable container
+        const targetPosition = targetElement.offsetTop // - scrollableContainer.offsetTop;
+        
+        // Scroll the container to the target position
+        scrollableContainer.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }
+
+    console.log(1)
+  }, [data.updateData]);
+
   return (
-    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+    <div id="filters" className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold flex items-center gap-2">Filters</h3>
         <button
@@ -352,6 +387,7 @@ export default function FiltersCard({
        />
       </div>
 
+
        <div className="mt-3">
         <label className="text-xs text-gray-500">City</label>
         <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
@@ -364,6 +400,8 @@ export default function FiltersCard({
           />
         </div>
       </div>
+      
+      <div id="secundary-filters"></div>
 
       {/* Category */}
       <div className="mt-3 hidden">{/**hide for now */}
@@ -423,7 +461,9 @@ export default function FiltersCard({
       {/* Jobs */}
       {from === "jobs" && (
         <>
-          <ExperienceLevelSelector
+         
+           <MultiSelect
+            hide={!selectedFilters.includes('Experience Level')}
             value={experienceLevel || ""}
             onChange={setExperienceLevel}
             options={["Junior", "Mid-level", "Senior", "Lead"]}
@@ -431,20 +471,20 @@ export default function FiltersCard({
             placeholder="Any"
           />
 
-          <MultiSelectDropdown
+          <MultiSelect
+            hide={!selectedFilters.includes('Job Type')}
             value={jobType || ""}
             onChange={setJobType}
             options={["Full-time", "Part-time", "Contract", "Internship", "Temporary"]}
             label="Job Type"
-            placeholder="Any"
           />
 
-          <MultiSelectDropdown
+          <MultiSelect
+           hide={!selectedFilters.includes('Work Mode')}
             value={workMode || ""}
             onChange={setWorkMode}
             options={["On-site", "Remote", "Hybrid"]}
             label="Work Mode"
-            placeholder="Any"
           />
         </>
       )}
@@ -452,39 +492,40 @@ export default function FiltersCard({
       {/* Services (all full-width selects/inputs, no grids) */}
       {isService && (
         <>
-          <MultiSelectDropdown
+          <MultiSelect
+            hide={!selectedFilters.includes('Service Type')}
             value={serviceType || ""}
             onChange={setServiceType}
             options={["Consulting", "Freelance Work", "Product/Service"]}
             label="Service Type"
-            placeholder="Any"
           />
 
-          <MultiSelectDropdown
+          <MultiSelect
+           hide={!selectedFilters.includes('Price Type')}
             value={priceType || ""}
             onChange={setPriceType}
             options={["Fixed Price", "Hourly"]}
             label="Price Type"
-            placeholder="Any"
           />
 
-          <MultiSelectDropdown
+          <MultiSelect
+            hide={!selectedFilters.includes('Typical Delivery')}
             value={deliveryTime || ""}
             onChange={setDeliveryTime}
             options={["1 Day", "3 Days", "1 Week", "2 Weeks", "1 Month"]}
             label="Typical Delivery"
-            placeholder="Any"
           />
 
-          <MultiSelectDropdown
+          <MultiSelect
+            hide={!selectedFilters.includes('Location Type')}
             value={locationType || ""}
             onChange={setLocationType}
             options={["Remote", "On-site"]}
             label="Location Type"
-            placeholder="Any"
           />
 
-          <ExperienceLevelSelector
+          <MultiSelect
+            hide={!selectedFilters.includes('Experience Level')}
             value={experienceLevel || ""}
             onChange={setExperienceLevel}
             options={["Entry Level", "Intermediate", "Expert"]}
@@ -497,28 +538,28 @@ export default function FiltersCard({
       {/* Tourism (full-width selects only) */}
       {isTourism && (
         <>
-          <MultiSelectDropdown
+          <MultiSelect 
+            hide={!selectedFilters.includes('Post Type')}
             value={postType || ""}
             onChange={setPostType}
             options={["Destination", "Experience", "Culture"]}
             label="Post Type"
-            placeholder="Any"
           />
 
-          <MultiSelectDropdown
+          <MultiSelect
+            hide={!selectedFilters.includes('Best Season to Visit')}
             value={season || ""}
             onChange={setSeason}
             options={["Summer", "Winter", "All Year", "Rainy Season", "Dry Season"]}
             label="Best Season to Visit"
-            placeholder="Any"
           />
 
-          <MultiSelectDropdown
+          <MultiSelect
+            hide={!selectedFilters.includes('Budget Range')}
             value={budgetRange || ""}
             onChange={setBudgetRange}
             options={["$100 - $500", "$500 - $2000", "$2000+"]}
             label="Budget Range"
-            placeholder="Any"
           />
         </>
       )}
@@ -565,8 +606,10 @@ export default function FiltersCard({
       {/* People */}
       {isPeople && (
         <>
-          <ExperienceLevelSelector
+        <MultiSelect
+            hide={!selectedFilters.includes('Experience Level')}
             value={experienceLevel || ""}
+            _hide={true}
             onChange={setExperienceLevel}
             options={[
               "Junior",
@@ -578,7 +621,7 @@ export default function FiltersCard({
             ]}
             label="Experience Level"
             placeholder="Any"
-          />
+          /> 
 
         </>
       )}
@@ -588,12 +631,12 @@ export default function FiltersCard({
       {/* Events */}
       {from === "events" && (
         <>
-          <MultiSelectDropdown
+          <MultiSelect
+            hide={!selectedFilters.includes('Event Type')}
             value={eventType || ""}
             onChange={setEventType}
             options={["Workshop", "Conference", "Networking"]}
             label="Event Type"
-            placeholder="Any"
           />
 
           <div className="mt-3 hidden">
@@ -606,12 +649,12 @@ export default function FiltersCard({
             />
           </div>
 
-          <MultiSelectDropdown
+          <MultiSelect
+            hide={!selectedFilters.includes('Registration Type')}
             value={registrationType || ""}
             onChange={setRegistrationType}
             options={["Free", "Paid"]}
             label="Registration Type"
-            placeholder="Any"
           />
         </>
       )}
@@ -620,12 +663,13 @@ export default function FiltersCard({
       
           {/* Audience Tree */}
           {Array.isArray(audienceTree) && audienceTree.length > 0 && (
-            <div className="mt-4">
+            <div className={`mt-4 ${!audienceTree.some(i=>selectedFilters.includes(i.name)) ? 'hidden':''}`}>
               <label className="text-xs text-gray-500 mb-2 block">
                 Audience Interests
               </label>
               <AudienceTree
                 tree={audienceTree}
+                shown={selectedFilters}
                 selected={
                   audienceSelections || {
                     identityIds: new Set(),

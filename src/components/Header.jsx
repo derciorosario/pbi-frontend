@@ -459,7 +459,7 @@ function Header({ page }) {
                       {notifBadgeCount > 0 && (
                         <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-white text-[11px]">
                           {notifBadgeCount > 9 ? "9+" : notifBadgeCount}
-                        </span>
+                        </span>  
                       )}
                     </button>
                     <button

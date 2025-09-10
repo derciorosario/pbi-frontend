@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useEffect } from "react";
 
 // Icons for the component
 const Icons = {
@@ -23,8 +24,10 @@ const Icons = {
  * @param {Object} props.selected - Object with Sets for each selection type
  * @param {Function} props.onChange - Callback when selections change
  */
-function AudienceTree({ tree, selected, onChange }) {
+function AudienceTree({ tree, selected, onChange, shown=[] }) {
   const [open, setOpen] = useState({}); // collapse state by key id
+
+
 
   const toggle = (k) => setOpen((o) => ({ ...o, [k]: !o[k] }));
 
@@ -110,8 +113,62 @@ function AudienceTree({ tree, selected, onChange }) {
   // Prevent row toggle when clicking on inputs/labels inside the row
   const stop = (e) => e.stopPropagation();
 
+
+  const clearAll = () => {
+    onChange({
+      identityIds: new Set(),
+      categoryIds: new Set(),
+      subcategoryIds: new Set(),
+      subsubCategoryIds: new Set(),
+    });
+   
+ };
+
+ /*useEffect(() => {
+  if (!shown?.length) return;
+
+  for (const identity of tree) {
+    if (shown.includes(identity.name)) {
+      const iKey = `id-${(identity.id || identity.name)}`;
+      const firstCat = (identity.categories || [])[0];
+      const next = { [iKey]: true };
+
+      if (firstCat) {
+        const cKey = `cat-${firstCat.id}`;
+        next[cKey] = !!firstCat.subcategories?.length;
+      }
+
+      setOpen(next); // clears everything else, opens just these
+      break;
+    }
+  }
+}, [shown, tree])*/
+
+
+
+useEffect(() => {
+  if (!shown?.length) return;
+
+  const match = tree.find((identity) => shown.includes(identity.name));
+  if (!match) return;
+
+  const idKey = `id-${(match.id || match.name)}`;
+  setOpen({ [idKey]: true }); // open identity only; clears others (cats/subcats stay closed)
+  clearAll()
+}, [shown, tree])
+
   return (
     <div className="rounded-xl border border-gray-200">
+      <div className="flex justify-end p-2 border-b bg-white">
+        <button
+          type="button"
+          onClick={clearAll}
+          className="text-xs px-2 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+        >
+          Clear
+        </button>
+      </div>
+
       {tree.map((identity) => {
         const identityId = identity.id || identity.name; // fallback stable key
         const idKey = `id-${identityId}`;
@@ -119,7 +176,7 @@ function AudienceTree({ tree, selected, onChange }) {
         const hasCategories = (identity.categories || []).length > 0;
 
         return (
-          <div key={idKey} className="border-b last:border-b-0">
+          <div key={idKey} className={`border-b last:border-b-0 ${shown.length && !shown.includes(identity.name) ? 'hidden':''}`}> 
             <div
               role={hasCategories ? "button" : undefined}
               tabIndex={hasCategories ? 0 : -1}
@@ -225,7 +282,7 @@ function AudienceTree({ tree, selected, onChange }) {
 
                                 {openSc && hasSubsubs && (
                                   // SUB-SUBCATEGORY GRID — soft green background
-                                  <div className="px-3 py-2 bg-emerald-50 grid sm:grid-cols-2 gap-2">
+                                  <div className="px-3 py-2 bg-emerald-50 grid gap-2">
                                     {sc.subsubs.map((ss) => (
                                       <label key={ss.id} className="flex items-center gap-2">
                                         <input

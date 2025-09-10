@@ -8,6 +8,8 @@ export const DataProvider = ({ children }) => {
       login_prompt:false
     }
 
+    const [updateData,setUpdateData]=useState([])
+
      let not_closing_popups=[
       'support_messages'
     ]
@@ -66,7 +68,8 @@ export const DataProvider = ({ children }) => {
       _closeAllPopUps,
       _showPopUp,
       _closeThisPopUp,
-      initial_popups
+      initial_popups,
+      updateData, setUpdateData
     };
 
     return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

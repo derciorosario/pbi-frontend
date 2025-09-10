@@ -1,0 +1,27 @@
+import React from 'react'
+import { useData } from '../contexts/DataContext'
+import { useAuth } from '../contexts/AuthContext'
+export default function TopFilterButtons({buttons=[],selected=[],setSelected}) {
+ const data=useData()
+ const {user}=useAuth()
+  return (
+     <div className="flex items-center gap-2 w-full flex-wrap _sticky top-[100px] z-20 _bg-[#F7F7FB]">
+              {buttons.map(i=>(
+                <button
+                       onClick={() => {
+                          if(selected.includes(i)){
+                            setSelected([])
+                          }else{
+                              setSelected([i])
+                          }
+                          setTimeout(()=> data.setUpdateData(Math.random()),user ? 0 : 0)
+                        
+                       }}
+                       className={`rounded-full px-2.5 py-1.5 text-sm font-medium ${!selected.includes(i) ? ' border-gray-200 border bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50':'bg-brand-500 border-brand-500 border text-white hover:bg-brand-600 active:bg-brand-800'}  flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
+                     >
+                       <span>{i}</span>
+                     </button>
+              ))}
+     </div>
+  )
+}

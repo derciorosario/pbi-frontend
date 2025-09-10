@@ -344,8 +344,7 @@ export default function EventsPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
-        
+       
 
        
            
@@ -371,7 +370,9 @@ export default function EventsPage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
-            
+         <div className="_sticky top-0 z-10 bg-white">
+            <FiltersCard {...filtersProps} from={"events"} />
+          </div>
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
             { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
@@ -381,10 +382,7 @@ export default function EventsPage() {
           ]} />
 
           <ProfileCard />
-           <div className="_sticky top-0 z-10 bg-white">
-            <FiltersCard {...filtersProps} from={"events"} />
-          </div>
-        
+         
          
         </aside>
 
@@ -392,8 +390,9 @@ export default function EventsPage() {
           <section className="lg:col-span-4 space-y-4 mt-5">
           
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              <h3 className="font-semibold text-2xl mt-1">Your Path to Knowledge</h3>
-          
+              <h3 className="font-semibold text-2xl mt-1 hidden hidden">Your Path to Knowledge</h3>
+             <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
+        
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
             </div>
               {renderMiddle()}

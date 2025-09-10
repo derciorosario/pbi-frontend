@@ -339,8 +339,6 @@ export default function PeopleFeedPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
-
       
         
         {!loadingFeed && (
@@ -372,15 +370,16 @@ export default function PeopleFeedPage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+            <div className="_sticky top-0 z-10 bg-white">
+            <FiltersCard {...filtersProps} from="jobs"/>
+          </div>
            <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
               { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
               { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
             ]} />
           <ProfileCard />
-          <div className="_sticky top-0 z-10 bg-white">
-            <FiltersCard {...filtersProps} from="jobs"/>
-          </div>
+         
          
         </aside>
 
@@ -388,8 +387,11 @@ export default function PeopleFeedPage() {
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-4">
             <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              <h3 className="font-semibold text-2xl mt-1">Find Your Next Opportunity</h3>
-            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  btnClick={()=>navigate('/jobs/create')} />
+              <h3 className="font-semibold text-2xl mt-1 hidden">Find Your Next Opportunity</h3>
+              
+              <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
+
+              <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  btnClick={()=>navigate('/jobs/create')} />
             </div>
             {renderMiddle()}
           </section>

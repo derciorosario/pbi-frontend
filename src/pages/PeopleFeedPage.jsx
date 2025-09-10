@@ -21,6 +21,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import PageTabs from "../components/PageTabs";
+import TopFilterButtons from "../components/TopFilterButtons";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -347,6 +348,8 @@ export default function PeopleFeedPage() {
   };
 
 
+  const [selectedFilters,setSelectedFilters]=useState([])
+
   const renderMiddle = () => {
    
     return (
@@ -365,7 +368,7 @@ export default function PeopleFeedPage() {
 
  */}
         
-           <div
+          <div
                            className={`grid grid-cols-1 mt-3 ${
                              view == "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
                            } gap-6`}
@@ -375,7 +378,7 @@ export default function PeopleFeedPage() {
                             ))
                           }
 
-                       </div>
+          </div>
 
       
       </>
@@ -390,7 +393,10 @@ export default function PeopleFeedPage() {
       <main className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
-        <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+        <aside  className="scrollable-container lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+          <div className="_sticky top-0 z-10 bg-white">
+            <FiltersCard selectedFilters={selectedFilters} {...filtersProps} from={"people"}/>
+          </div>
           <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
               { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
@@ -399,16 +405,24 @@ export default function PeopleFeedPage() {
               { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/expirience/create") },
              ]} />
           <ProfileCard />
-           <div className="_sticky top-0 z-10 bg-white">
-            <FiltersCard {...filtersProps} from={"people"}/>
-          </div>
          
         </aside>
     <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-4">
-           <div className="flex items-center justify-between gap-x-2 flex-wrap ">
-             <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
-            
+           <TopFilterButtons selected={selectedFilters} setSelected={setSelectedFilters}
+            buttons={
+           [
+            'Entrepreneur (Startups)',
+            'Established Entrepreneurs / Businesses',
+            'Social Entrepreneurs',
+            'Professional',
+            'Freelancers',
+            'Students',
+            'Government Officials',
+            'Investor',
+            'Experience Level',
+            ]}/>
+           <div className="flex items-center justify-end gap-x-2 flex-wrap ">
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                 { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                 { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },

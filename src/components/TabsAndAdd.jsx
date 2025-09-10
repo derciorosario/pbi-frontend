@@ -27,7 +27,7 @@ function TabsAndAdd({ tabs, activeTab, setActiveTab, items = [], btnClick }) {
   return (
     <div className="flex items-center justify-between">
       {/* Tabs */}
-      <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
+      <div className="flex items-center gap-4 text-sm font-medium text-gray-600 hidden">
         {tabs.map((t) => (
           <button
             key={t}

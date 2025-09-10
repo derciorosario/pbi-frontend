@@ -146,9 +146,6 @@ export default function JobCard({
                 <Share2 size={16} className="text-gray-600" />
               </button>
 
-             
-
-              
             </div>
           </div>
         ) : (
