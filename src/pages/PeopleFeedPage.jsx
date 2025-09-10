@@ -420,7 +420,7 @@ export default function PeopleFeedPage() {
             'Students',
             'Government Officials',
             'Investor',
-            'Experience Level',
+           // 'Experience Level',
             ]}/>
            <div className="flex items-center justify-end gap-x-2 flex-wrap ">
             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[

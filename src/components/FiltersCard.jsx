@@ -608,7 +608,8 @@ export default function FiltersCard({
       {/* People */}
       {isPeople && (
         <>
-        <MultiSelect
+        
+         {/**<MultiSelect
             hide={!selectedFilters.includes('Experience Level')}
             value={experienceLevel || ""}
             _hide={true}
@@ -623,7 +624,7 @@ export default function FiltersCard({
             ]}
             label="Experience Level"
             placeholder="Any"
-          /> 
+          />  */}
 
         </>
       )}
