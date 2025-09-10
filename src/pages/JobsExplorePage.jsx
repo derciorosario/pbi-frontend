@@ -390,7 +390,7 @@ export default function PeopleFeedPage() {
 
     
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
-          <section className="lg:col-span-4 space-y-4 mt-4">
+          <section className="lg:col-span-4 space-y-4 mt-4 overflow-hidden">
               <TopFilterButtons selected={selectedFilters} setSelected={setSelectedFilters}
                                     buttons={
                                    [

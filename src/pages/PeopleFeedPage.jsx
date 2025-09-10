@@ -380,8 +380,8 @@ export default function PeopleFeedPage() {
           <ProfileCard />
          
         </aside>
-    <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6 w-full">
-          <section className="lg:col-span-4 space-y-4 mt-4 w-full">
+    <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
+          <section className="lg:col-span-4 space-y-4 mt-4 w-full overflow-hidden">
          
              <TopFilterButtons from={"people"} selected={selectedFilters} setSelected={setSelectedFilters}
                 buttons={
