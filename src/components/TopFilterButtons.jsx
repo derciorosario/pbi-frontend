@@ -5,13 +5,12 @@ export default function TopFilterButtons({buttons=[],selected=[],setSelected,fro
  const data=useData()
  const {user}=useAuth()
   return (
-     <div className="flex items-center gap-2 w-full flex-wrap _sticky top-[100px] z-20 _bg-[#F7F7FB]">
+     <div className="flex relative gap-2 w-full overflow-x-auto rounded-sm whitespace-nowrap py-2 _sticky z-20 _bg-[#F7F7FB]">
               {buttons.map(i=>(
                 <button
                        onClick={() => {
                           if(selected.includes(i)){
-                           
-  setSelected([])
+                               setSelected([])
                                {/** if((from=="people")){
                                    setSelected([])
                                 }else{
@@ -25,14 +24,13 @@ export default function TopFilterButtons({buttons=[],selected=[],setSelected,fro
                               setSelected([...selected,i])  
                              } */}
                           }
-                        data.setUpdateData(Math.random())
-                        
+                          data.setUpdateData(Math.random())
                        }}
-                       className={`rounded-full px-2.5 py-1.5 text-sm font-medium ${!selected.includes(i) ? ' border-gray-200 border text-gray-700 hover:border-brand-300 ':'text-brand-600 bg-brand-50 active:bg-brand-800'}  flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
+                       className={`rounded-full table px-2.5 py-1.5 text-sm font-medium ${!selected.includes(i) ? '  text-gray-700 hover:border-brand-300 ':'text-brand-600 bg-brand-50 active:bg-brand-800'} shadow-sm  flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md flex-shrink-0`}
                      >
                        <span>{i}</span>
                      </button>
               ))}
      </div>
   )
-}
+}    
