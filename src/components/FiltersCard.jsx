@@ -301,7 +301,7 @@ export default function FiltersCard({
     // Find the element to scroll to
     const targetElement = selectedFilters.length ? document.querySelector('#secundary-filters') : document.querySelector('#filters');
     
-    if (targetElement && user) {
+    if (targetElement && user && 0==1) {
       // Find the parent scrollable container - this should be replaced with the actual container ID or class
       // For example: const scrollableContainer = document.querySelector('.scrollable-container');
       // If you don't know the container, you can try to find a parent with overflow
