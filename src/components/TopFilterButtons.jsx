@@ -10,23 +10,25 @@ export default function TopFilterButtons({buttons=[],selected=[],setSelected,fro
                 <button
                        onClick={() => {
                           if(selected.includes(i)){
-                               setSelected([])
-                               {/** if((from=="people")){
+                               
+                                if((from=="people")){
                                    setSelected([])
+                                   data.setUpdateData(Math.random())
                                 }else{
                                   setSelected(selected.filter(f=>f!=i))
-                                } */}
+                                  data.setFiltersToClear([i])
+                                } 
                           }else{
-                             setSelected([i])  
-                            {/** if((from=="people")){
-                             
+                             if((from=="people")){
+                               setSelected([i]) 
+                               data.setUpdateData(Math.random()) 
                              }else{
-                              setSelected([...selected,i])  
-                             } */}
+                               setSelected([...selected,i])  
+                             } 
                           }
-                          data.setUpdateData(Math.random())
+                          
                        }}
-                       className={`table px-5 py-1.5  text-sm font-medium ${!selected.includes(i) ? '  text-gray-700 hover:border-brand-300 ':'text-brand-600 font-bold  active:bg-brand-800'} ${_i === 0 ? 'border-r' : _i === buttons.length - 1 ? 'border-l' : 'border-x'} border-gray-200 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md flex-shrink-0`}
+                       className={`table px-5 py-1.5  text-sm font-medium ${!selected.includes(i) ? '  text-gray-700 hover:border-brand-300 ':'text-brand-600 font-bold shadow-md active:bg-brand-800'} ${_i === 0 ? 'border-r' : _i === buttons.length - 1 ? 'border-l' : 'border-x'} border-gray-200 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md flex-shrink-0`}
                      >
                        <span>{i}</span>
                      </button>

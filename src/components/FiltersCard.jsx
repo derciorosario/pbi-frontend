@@ -321,8 +321,123 @@ export default function FiltersCard({
       }
     }
 
-    console.log(1)
   }, [data.updateData]);
+
+
+
+  
+  useEffect(() => {
+        
+      if (!data.filtersToClear || data.filtersToClear.length === 0) return;
+
+      data.filtersToClear.forEach((label) => {
+        switch (label) {
+          case "Search":
+            setQuery("");
+            break;
+          case "Country":
+            setCountry(undefined);
+            setInputValue(""); // also clear text input
+            break;
+          case "City":
+            setCity(undefined);
+            setInputValue("");
+            break;
+          case "Category":
+            setCategoryId(undefined);
+            break;
+          case "Subcategory":
+            setSubcategoryId(undefined);
+            break;
+          case "Role":
+            setRole?.(undefined);
+            break;
+          case "Goal":
+            setGoalId?.(undefined);
+            break;
+
+          // Products
+          case "Price":
+            setPrice?.("");
+            break;
+
+          // Jobs
+          case "Experience Level":
+            setExperienceLevel?.("");
+            break;
+          case "Job Type":
+            setJobType?.("");
+            break;
+          case "Work Mode":
+            setWorkMode?.("");
+            break;
+
+          // Services
+          case "Service Type":
+            setServiceType?.("");
+            break;
+          case "Price Type":
+            setPriceType?.("");
+            break;
+          case "Typical Delivery":
+            setDeliveryTime?.("");
+            break;
+          case "Location Type":
+            setLocationType?.("");
+            break;
+
+          // Tourism
+          case "Post Type":
+            setPostType?.("");
+            break;
+          case "Best Season to Visit":
+            setSeason?.("");
+            break;
+          case "Budget Range":
+            setBudgetRange?.("");
+            break;
+
+          // Funding
+          case "Funding Goal":
+            setFundingGoal?.("");
+            break;
+          case "Amount Raised":
+            setAmountRaised?.("");
+            break;
+          case "Currency":
+            setCurrency?.("");
+            break;
+          case "Deadline":
+            setDeadline?.("");
+            break;
+
+          // Events
+          case "Event Type":
+            setEventType?.("");
+            break;
+          case "Date":
+            setDate?.("");
+            break;
+          case "Registration Type":
+            setRegistrationType?.("");
+            break;
+
+          // Audience
+          case "Audience Interests":
+            setAudienceSelections?.({
+              identityIds: new Set(),
+              categoryIds: new Set(),
+              subcategoryIds: new Set(),
+              subsubCategoryIds: new Set(),
+            });
+            break;
+        }
+      });
+
+      data.setFiltersToClear([]);
+}, [data.filtersToClear]);
+
+
 
   return (
     <div id="filters" className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">

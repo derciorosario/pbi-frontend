@@ -8,6 +8,8 @@ export const DataProvider = ({ children }) => {
       login_prompt:false
     }
 
+    const [filtersToClear,setFiltersToClear]=useState([])
+
     const [updateData,setUpdateData]=useState([])
 
      let not_closing_popups=[
@@ -34,20 +36,18 @@ export const DataProvider = ({ children }) => {
    }
 
     const handleOutsideClick = (event) => {
-   
+      
       let close=true
       Object.keys(initial_popups).forEach(f=>{
           if(event?.target?.closest(`._${f}`))  {
             close=false
           }
       })
-
       Object.keys(initial_popups).forEach(k=>{
           if(not_closing_popups.includes(k) && _openPopUps[k]){
              close=false
           }
       })
-  
       if(close){
         document.removeEventListener('click', handleOutsideClick); 
         _closeAllPopUps()
@@ -63,8 +63,9 @@ export const DataProvider = ({ children }) => {
 
 
     const value = {
+      filtersToClear,setFiltersToClear,
       _openPopUps,
-       _scrollToSection,
+      _scrollToSection,
       _closeAllPopUps,
       _showPopUp,
       _closeThisPopUp,
