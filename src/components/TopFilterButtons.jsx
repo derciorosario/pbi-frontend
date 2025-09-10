@@ -11,18 +11,19 @@ export default function TopFilterButtons({buttons=[],selected=[],setSelected,fro
                        onClick={() => {
                           if(selected.includes(i)){
                            
-
-                                if((from=="people")){
+  setSelected([])
+                               {/** if((from=="people")){
                                    setSelected([])
                                 }else{
                                   setSelected(selected.filter(f=>f!=i))
-                                }
+                                } */}
                           }else{
-                             if((from=="people")){
-                              setSelected([i])  
+                             setSelected([i])  
+                            {/** if((from=="people")){
+                             
                              }else{
                               setSelected([...selected,i])  
-                             }
+                             } */}
                           }
                         data.setUpdateData(Math.random())
                         
