@@ -411,10 +411,10 @@ export default function HomePage() {
                    </div>
                    <div>
                      <div className="text-xl font-bold">Powerful Networking Tools</div>
-                     <div className="text-white/80">Connect with the right people at the right time</div>
+                     <div className="text-white/80 max-md:hidden">Connect with the right people at the right time</div>
                    </div>
                  </div>
-                 <div className="grid grid-cols-3 gap-4">
+                 <div className="grid grid-cols-3 gap-4 max-md:hidden">
                    <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
                      <div className="font-semibold">Smart Matching</div>
                      <div className="text-sm text-white/80">AI-powered connections</div>
