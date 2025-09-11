@@ -12,7 +12,8 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";       // NEW
 import ResetEmailSent from "./pages/ResetEmailSent.jsx";       // NEW
 import ResetPassword from "./pages/ResetPassword.jsx";  
 import ResetSuccess from "./pages/ResetSuccess.jsx";   
-import ProfilePage from "./pages/Profile"; 
+import ProfilePage from "./pages/Profile";
+import SettingsPage from "./pages/Settings";
 import CreateJobOpportunity from "./pages/CreateJobOpportunity";
 
 // src/pages/onboarding/index.jsx (routes snippet)
@@ -80,6 +81,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
 
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/jobs/create" element={<CreateJobOpportunity />} />
             <Route path="/events/create" element={<CreateEventPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />

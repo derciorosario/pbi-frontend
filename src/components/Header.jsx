@@ -196,7 +196,7 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
           {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <div className="leading-tight">
-              <img src={logoImg} width={120} alt="54Links" />
+              <img src={logoImg} width={120} alt="55Links" />
             </div>
           </div>
 
@@ -342,6 +342,16 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
                       <button
                         onClick={() => {
                           setProfileOpen(false);
+                          navigate("/settings");
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-brand-50 hover:text-brand-600 rounded-md"
+                      >
+                        Settings
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setProfileOpen(false);
                           signOut();
                         }}
                         className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 text-red-600 hover:bg-red-50 rounded-md"
@@ -381,7 +391,7 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2" onClick={() => { setMobileOpen(false); navigate("/"); }}>
-                <img src={logoImg} alt="54Links" className="h-8 w-auto" />
+                <img src={logoImg} alt="55Links" className="h-8 w-auto" />
               </div>
               <button
                 className="p-2 rounded-lg hover:bg-gray-100"
@@ -488,6 +498,15 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
                     className="w-full rounded-lg px-3 py-2 text-sm border border-gray-200 hover:bg-gray-50"
                   >
                     Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
+                      navigate("/settings");
+                    }}
+                    className="w-full rounded-lg px-3 py-2 text-sm border border-gray-200 hover:bg-gray-50"
+                  >
+                    Settings
                   </button>
                   <button
                     onClick={() => {

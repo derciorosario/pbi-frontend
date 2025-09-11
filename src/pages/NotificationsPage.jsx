@@ -280,7 +280,7 @@ export default function NotificationsPage() {
 
         <div className="mt-6 flex items-center justify-between">
           <div className="flex gap-2">
-            {["All", "Connections", "Meetings", "Jobs", "Events", "Messages", "System"].map(
+            {["All", "Connections", "Meetings", "Posts", "Messages", "System"].map(
               (t) => (
                 <button
                   key={t}
@@ -513,15 +513,11 @@ export default function NotificationsPage() {
             </div>
           )}
 
-          {filter === "Jobs" && (
-            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
-              No job notifications.
-            </div>
-          )}
+         
 
-          {filter === "Events" && (
+          {filter === "Posts" && (
             <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
-              No event notifications.
+              No post notifications.
             </div>
           )}
 

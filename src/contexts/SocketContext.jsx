@@ -10,7 +10,7 @@ export const SocketProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [onlineConnections, setOnlineConnections] = useState([]);
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
-  const { token, isAuthenticated, user } = useAuth();
+  const { token, isAuthed, user } = useAuth();
 
 
   
@@ -19,7 +19,7 @@ export const SocketProvider = ({ children }) => {
     let socketInstance = null;
 
     // Only connect if the user is authenticated
-    if (isAuthenticated && token) {
+    if (isAuthed && token) {
       // Create socket instance with userId instead of token
       socketInstance = io(import.meta.env.VITE_API_URL || 'https://kaziwani-server.visum.co.mz/api', {
         auth: {
@@ -89,7 +89,7 @@ export const SocketProvider = ({ children }) => {
         setConnected(false);
       }
     };
-  }, [isAuthenticated, token]);
+  }, [isAuthed, token]);
 
   // Send a private message
   const sendPrivateMessage = (receiverId, content) => {
@@ -197,7 +197,7 @@ export const SocketProvider = ({ children }) => {
   // Refresh unread counts
   const refreshUnreadCount = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/messages/unread-count`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://kaziwani-server.visum.co.mz/api'}/api/messages/unread-count`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -212,7 +212,7 @@ export const SocketProvider = ({ children }) => {
 
   // Refresh unread count when connection status changes and periodically
   useEffect(() => {
-    if (isAuthenticated && token) {
+    if (isAuthed && token) {
       // Initial refresh
       refreshUnreadCount();
       
@@ -221,7 +221,7 @@ export const SocketProvider = ({ children }) => {
       
       return () => clearInterval(interval);
     }
-  }, [isAuthenticated, token]);
+  }, [isAuthed, token]);
 
   const value = {
     socket,
