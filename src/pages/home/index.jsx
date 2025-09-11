@@ -298,7 +298,7 @@ export default function HomePage() {
 
                <div className="lg:col-span-5">
                  <div className="relative">
-                   <div className="relative rounded-2xl overflow-hidden shadow-2xl scale-110">
+                   <div className="relative rounded-2xl overflow-hidden shadow-2xl md:scale-110">
                      <img
                        alt="Global business networking"
                        className="w-full object-cover"
