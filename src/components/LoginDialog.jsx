@@ -206,7 +206,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
           </>
         ) : (
           <>
-            <h2 className="mt-2 text-3xl font-bold text-gray-900">55Links</h2>
+            <h2 className="mt-2 text-3xl font-bold text-gray-900">54Links</h2>
             <p className="mt-1 text-gray-600">
               Discover, connect, and collaborate across Africa.
             </p>
@@ -382,7 +382,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                 <Input
                   label={labelName}
                   name="name"
-                  placeholder={acct === "company" ? "Panafrican BI Ltd." : "John Doe"}
+                  placeholder={acct === "company" ? "54Links Ltd." : "John Doe"}
                   value={signupForm.name}
                   onChange={onSignupChange}
                   error={signupErrors.name}

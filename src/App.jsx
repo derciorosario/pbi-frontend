@@ -90,15 +90,15 @@ function App() {
             <Route path="/service/:id" element={<CreateServicePage />} />
             <Route path="/services/request/create" element={<CreateServiceRequestPage />} />
             <Route path="/products/create" element={<CreateProductPage />} />
-            <Route path="/product/:id" element={<CreateProductPage />} />
             <Route path="/experiences/create" element={<CreateTourismPostPage />} />
             <Route path="/experience/:id" element={<CreateTourismPostPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/meetings" element={<MeetingsPage />} />
+            <Route path="/fundings/create" element={<CrowdfundForm />} />
             <Route path="/job/:id" element={<CreateJobOpportunity />} />
             <Route path="/event/:id" element={<CreateEventPage />} />
-            <Route path="/fundings/create" element={<CrowdfundForm />} />
             <Route path="/funding/:id" element={<CrowdfundForm />} />
+            <Route path="/product/:id" element={<CreateProductPage />} />
             
             
         </Route>

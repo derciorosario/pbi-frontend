@@ -6,10 +6,10 @@ import { useData } from "../../contexts/DataContext";
  * Quick config (edit these)
  * --------------------------- */
 const ORG = {
-  name: "55Links",
-  email: "privacy@55Links.example", // update if you have a real address
+  name: "54Links",
+  email: "privacy@54Links.example", // update if you have a real address
   address: "Maputo, Mozambique",
-  dpoEmail: "dpo@55Links.example",  // optional; remove if unused
+  dpoEmail: "dpo@54Links.example",  // optional; remove if unused
 };
 const BRAND = "#034ea2";
 

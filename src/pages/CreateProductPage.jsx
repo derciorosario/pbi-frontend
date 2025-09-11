@@ -1,11 +1,12 @@
 // src/pages/CreateProductPage.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "../components/Header";
 import COUNTRIES from "../constants/countries";
 import AudienceTree from "../components/AudienceTree";
 import client from "../api/client";
 import { toast } from "../lib/toast";
+import { useAuth } from "../contexts/AuthContext";
 
 /* ---------------- Shared styles (brand) ---------------- */
 const styles = {
@@ -15,6 +16,10 @@ const styles = {
     "w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500/30",
   ghost:
     "rounded-lg px-3 py-1.5 text-sm font-semibold border border-brand-600 text-brand-600 bg-white hover:bg-brand-50",
+  badge:
+    "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
+  chip:
+    "inline-flex items-center rounded-full bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1 text-xs",
 };
 
 const I = {
@@ -40,10 +45,134 @@ function fileToDataURL(file) {
   });
 }
 
+/* ---------- helpers for read-only view ---------- */
+function buildAudienceMaps(tree = []) {
+  const ids = new Map(), cats = new Map(), subs = new Map(), subsubs = new Map();
+  for (const idn of tree) {
+    ids.set(String(idn.id), idn.name || idn.title || `Identity ${idn.id}`);
+    for (const c of idn.categories || []) {
+      cats.set(String(c.id), c.name || c.title || `Category ${c.id}`);
+      for (const s of c.subcategories || []) {
+        subs.set(String(s.id), s.name || s.title || `Subcategory ${s.id}`);
+        for (const ss of s.subsubs || []) {
+          subsubs.set(String(ss.id), ss.name || ss.title || `Sub-sub ${ss.id}`);
+        }
+      }
+    }
+  }
+  return { ids, cats, subs, subsubs };
+}
+
+function LoaderCard({ message = "Loading..." }) {
+  return (
+    <div className="mt-6 rounded-2xl bg-white border border-gray-100 shadow-sm p-6 flex items-center justify-center h-60">
+      <div className="text-center">
+        <div className="inline-block animate-spin text-3xl mb-2">⟳</div>
+        <p className="text-sm text-gray-700">{message}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Read-only summary for non-owners ---------- */
+function ReadOnlyProductView({ form, images, audSel, audTree }) {
+  const maps = useMemo(() => buildAudienceMaps(audTree), [audTree]);
+  const identities = Array.from(audSel.identityIds || []).map((k) => maps.ids.get(String(k))).filter(Boolean);
+  const categories = Array.from(audSel.categoryIds || []).map((k) => maps.cats.get(String(k))).filter(Boolean);
+  const subcategories = Array.from(audSel.subcategoryIds || []).map((k) => maps.subs.get(String(k))).filter(Boolean);
+  const subsubs = Array.from(audSel.subsubCategoryIds || []).map((k) => maps.subsubs.get(String(k))).filter(Boolean);
+
+  const tags = (form.tagsInput || "")
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+
+  return (
+    <div className="mt-6 rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+      {/* Gallery */}
+      {images?.length ? (
+        <div className="grid gap-2 p-2 sm:grid-cols-2 md:grid-cols-3">
+          {images.slice(0, 6).map((img, i) => (
+            <div key={i} className="aspect-[4/3] w-full bg-gray-100 overflow-hidden rounded-lg">
+              <img src={img.base64url} alt={img.title || `Image ${i + 1}`} className="h-full w-full object-cover" />
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold">{form.title || "Untitled product"}</h1>
+            <p className="mt-1 text-sm text-gray-600 whitespace-pre-wrap">
+              {form.description || "No description provided."}
+            </p>
+          </div>
+          <span className={`${styles.badge} bg-amber-50 border-amber-300 text-amber-800`}>
+            View-only (not your product)
+          </span>
+        </div>
+
+        {/* Quick facts */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border p-4 text-sm text-gray-700">
+            <div className="text-gray-800 font-medium">Pricing</div>
+            <div className="mt-2">Price: {form.price !== "" ? form.price : "—"}</div>
+            <div>Quantity: {form.quantity !== "" ? form.quantity : "—"}</div>
+          </div>
+          <div className="rounded-xl border p-4 text-sm text-gray-700">
+            <div className="text-gray-800 font-medium">Location</div>
+            <div className="mt-2">{form.country || "—"}</div>
+          </div>
+          <div className="rounded-xl border p-4 text-sm text-gray-700">
+            <div className="text-gray-800 font-medium">Category</div>
+            <div className="mt-2">{form.categoryId || "—"}</div>
+            <div className="mt-1 text-xs text-gray-500">Subcategory: {form.subcategoryId || "—"}</div>
+          </div>
+        </div>
+
+        {/* Tags */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700">Tags</h3>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {tags.length ? tags.map((t) => <span key={t} className={styles.chip}>{t}</span>) : <span className="text-sm text-gray-500">—</span>}
+          </div>
+        </div>
+
+        {/* Audience */}
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700">Target Audience</h3>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {identities.map((x) => <span key={`i-${x}`} className={styles.chip}>{x}</span>)}
+            {categories.map((x) => <span key={`c-${x}`} className={styles.chip}>{x}</span>)}
+            {subcategories.map((x) => <span key={`s-${x}`} className={styles.chip}>{x}</span>)}
+            {subsubs.map((x) => <span key={`ss-${x}`} className={styles.chip}>{x}</span>)}
+            {!identities.length && !categories.length && !subcategories.length && !subsubs.length && (
+              <span className="text-sm text-gray-500">Everyone</span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button type="button" onClick={() => history.back()} className={styles.ghost}>
+            Back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CreateProductPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = Boolean(id);
+  const { user } = useAuth();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [ownerUserId, setOwnerUserId] = useState(null);
+
   const [cats, setCats] = useState([]); // [{id,name,subcategories:[{id,name}]}]
 
   // Audience tree + selections (mirrors Events/Services)
@@ -72,6 +201,8 @@ export default function CreateProductPage() {
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
 
+  const readOnly = isEditMode && user?.id && ownerUserId && user.id !== ownerUserId;
+
   // Load identities for AudienceTree
   useEffect(() => {
     (async () => {
@@ -87,9 +218,22 @@ export default function CreateProductPage() {
   // If editing, load existing product
   useEffect(() => {
     if (!isEditMode) return;
+    setIsLoading(true);
     (async () => {
       try {
         const { data } = await client.get(`/products/${id}`);
+
+        // infer owner (support multiple shapes)
+        const ownerId =
+          data.ownerUserId ??
+          data.userId ??
+          data.createdById ??
+          data.sellerId ??
+          data.createdBy?.id ??
+          data.owner?.id ??
+          null;
+        setOwnerUserId(ownerId);
+
         setForm((f) => ({
           ...f,
           title: data.title || "",
@@ -123,19 +267,22 @@ export default function CreateProductPage() {
         console.error(err);
         toast.error("Failed to load product");
         navigate("/business");
+      } finally {
+        setIsLoading(false);
       }
     })();
   }, [isEditMode, id, navigate]);
 
+  // Load categories (legacy tree)
   useEffect(() => {
-      (async () => {
-        try {
-          const { data } = await client.get("/categories/tree");
-          setCats(data.categories || []);
-        } catch (error) {
-          console.error("Error loading categories:", error);
-        }
-      })();
+    (async () => {
+      try {
+        const { data } = await client.get("/categories/tree");
+        setCats(data.categories || []);
+      } catch (error) {
+        console.error("Error loading categories:", error);
+      }
+    })();
   }, []);
 
   function setField(name, value) {
@@ -167,7 +314,6 @@ export default function CreateProductPage() {
       const mapped = await Promise.all(
         slice.map(async (file) => {
           const base64url = await fileToDataURL(file);
-          // default title = file name (no extension)
           const base = file.name.replace(/\.[^/.]+$/, "");
           return { title: base, base64url };
         })
@@ -213,32 +359,28 @@ export default function CreateProductPage() {
             ? Number(form.price)
             : undefined,
         quantity:
-        form.quantity !== "" && !Number.isNaN(Number(form.quantity))
+          form.quantity !== "" && !Number.isNaN(Number(form.quantity))
             ? Number(form.quantity)
             : undefined,
         description: form.description,
         country: form.country || undefined,
         tags: parsedTags(),
-        // Images (ONLY): [{ title, base64url }]
         images,
-        // Audience
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
         subcategoryIds: Array.from(audSel.subcategoryIds),
         subsubCategoryIds: Array.from(audSel.subsubCategoryIds),
       };
 
-      let res;
       if (isEditMode) {
-        res = await client.put(`/products/${id}`, payload);
+        await client.put(`/products/${id}`, payload);
         toast.success("Product updated!");
       } else {
-        res = await client.post("/products", payload);
+        await client.post("/products", payload);
         toast.success("Product published!");
       }
 
       navigate("/business");
-      return res?.data;
     } catch (error) {
       console.error(error);
       toast.error(error?.response?.data?.message || "Could not save product");
@@ -254,240 +396,214 @@ export default function CreateProductPage() {
 
       {/* ===== Content ===== */}
       <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 fle justify-center gap-6">
-        {/* Left/Main Form */}
+        {/* Left/Main Form OR Read-only */}
         <section className="lg:col-span-8">
-          <form
-            onSubmit={onSubmit}
-            className="rounded-2xl bg-white border border-gray-100 p-6 shadow-sm space-y-6"
-          >
-            <div className="flex items-center justify-between">
+          {!isEditMode ? null : isLoading ? (
+            <LoaderCard message="Loading product…" />
+          ) : readOnly ? (
+            <ReadOnlyProductView form={form} images={images} audSel={audSel} audTree={audTree} />
+          ) : null}
+
+          {/* Editable form (for owners or when creating) */}
+          {(!isEditMode || (!isLoading && !readOnly)) && (
+            <form
+              onSubmit={onSubmit}
+              className="rounded-2xl bg-white border border-gray-100 p-6 shadow-sm space-y-6"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold">
+                    {isEditMode ? "Edit Product" : "Create New Product Post"}
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    Share your product with the Pan-African community
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/business")}
+                    className={styles.ghost}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className={styles.primary} disabled={saving}>
+                    {saving ? "Saving…" : isEditMode ? "Update" : "Publish Product"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Product Images */}
               <div>
-                <h1 className="text-xl font-bold">
-                  {isEditMode ? "Edit Product" : "Create New Product Post"}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  Share your product with the Pan-African community
+                <h2 className="font-semibold mb-2">Product Images</h2>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFilesChosen(e.target.files)}
+                />
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center text-gray-500 cursor-pointer hover:bg-gray-50"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="text-sm">➕ Click to add images (JPG/PNG/WebP…)</div>
+                  <div className="text-xs text-gray-400 mt-1">Up to 20 images</div>
+                </div>
+
+                {images.length > 0 && (
+                  <div className="mt-4 grid sm:grid-cols-2 gap-4">
+                    {images.map((img, idx) => (
+                      <div key={idx} className="border rounded-xl overflow-hidden">
+                        <div className="h-44 bg-gray-100">
+                          <img
+                            src={img.base64url}
+                            alt={img.title || `Image ${idx + 1}`}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="p-3 flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={img.title}
+                            onChange={(e) => updateImageTitle(idx, e.target.value)}
+                            placeholder={`Image ${idx + 1} title`}
+                            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(idx)}
+                            className="p-2 rounded hover:bg-gray-100"
+                            title="Remove"
+                          >
+                            <I.trash />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Product Title */}
+              <div>
+                <h2 className="font-semibold">Product Title</h2>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) => setField("title", e.target.value)}
+                  placeholder="Enter your product title..."
+                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  required
+                />
+              </div>
+
+              {/* Price + Quantity */}
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <h2 className="font-semibold">Price</h2>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.price}
+                    onChange={(e) => setField("price", e.target.value)}
+                    placeholder="0.00"
+                    className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  />
+                </div>
+                <div>
+                  <h2 className="font-semibold">Quantity Available</h2>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.quantity}
+                    onChange={(e) => setField("quantity", e.target.value)}
+                    placeholder="Enter quantity"
+                    className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h2 className="font-semibold">Product Description</h2>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setField("description", e.target.value)}
+                  placeholder="Describe your product in detail..."
+                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  rows={4}
+                  required
+                />
+              </div>
+
+              {/* Location */}
+              <div>
+                <h2 className="font-semibold">Location</h2>
+                <div className="relative">
+                  <select
+                    value={form.country}
+                    onChange={(e) => setField("country", e.target.value)}
+                    className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  >
+                    <option value="">Select country</option>
+                    {COUNTRIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute right-2 top-[38px]">
+                    <I.chevron />
+                  </span>
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <h2 className="font-semibold">Tags</h2>
+                <input
+                  type="text"
+                  value={form.tagsInput}
+                  onChange={(e) => setField("tagsInput", e.target.value)}
+                  placeholder="Add tags separated by commas..."
+                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Tags help others find your product
                 </p>
               </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigate("/business")}
-                  className={styles.ghost}
-                >
+
+              {/* ===== Share With (Audience selection) ===== */}
+              <section>
+                <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
+                <p className="text-xs text-gray-600 mb-3">
+                  Select who should see this product. Choose multiple identities, categories, subcategories, and sub-subs.
+                </p>
+                <AudienceTree
+                  tree={audTree}
+                  selected={audSel}
+                  onChange={(next) => setAudSel(next)}
+                />
+              </section>
+
+              {/* Buttons */}
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={() => navigate("/business")} className={styles.ghost}>
                   Cancel
                 </button>
-                <button type="submit" className={styles.primary}>
-                  {saving ? "Saving…" : isEditMode ? "Update" : "Publish Product"}
+                <button type="submit" className={styles.primaryWide} disabled={saving}>
+                  {saving ? "Saving…" : isEditMode ? "Update Product" : "Publish Product"}
                 </button>
               </div>
-            </div>
-
-            {/* Product Images */}
-            <div>
-              <h2 className="font-semibold mb-2">Product Images</h2>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleFilesChosen(e.target.files)}
-              />
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center text-gray-500 cursor-pointer hover:bg-gray-50"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className="text-sm">➕ Click to add images (JPG/PNG/WebP…)</div>
-                <div className="text-xs text-gray-400 mt-1">Up to 20 images</div>
-              </div>
-
-              {images.length > 0 && (
-                <div className="mt-4 grid sm:grid-cols-2 gap-4">
-                  {images.map((img, idx) => (
-                    <div key={idx} className="border rounded-xl overflow-hidden">
-                      <div className="h-44 bg-gray-100">
-                        <img
-                          src={img.base64url}
-                          alt={img.title || `Image ${idx + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                      <div className="p-3 flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={img.title}
-                          onChange={(e) => updateImageTitle(idx, e.target.value)}
-                          placeholder={`Image ${idx + 1} title`}
-                          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(idx)}
-                          className="p-2 rounded hover:bg-gray-100"
-                          title="Remove"
-                        >
-                          <I.trash />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Product Title */}
-            <div>
-              <h2 className="font-semibold">Product Title</h2>
-              <input
-                type="text"
-                value={form.title}
-                onChange={(e) => setField("title", e.target.value)}
-                placeholder="Enter your product title..."
-                className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                required
-              />
-            </div>
-
-        {/** 
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <h2 className="font-semibold">Category</h2>
-                <select
-                  value={form.categoryId}
-                  onChange={(e) => setField("categoryId", e.target.value)}
-                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                >
-                  <option value="">Select Category</option>
-                  <option>Technology</option>
-                  <option>Fashion</option>
-                  <option>Food</option>
-                  <option>Home</option>
-                  <option>Beauty</option>
-                </select>
-              </div>
-              <div>
-                <h2 className="font-semibold">Subcategory (optional)</h2>
-                <select
-                  value={form.subcategoryId}
-                  onChange={(e) => setField("subcategoryId", e.target.value)}
-                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                >
-                  <option value="">Select Subcategory</option>
-                  <option>Mobile</option>
-                  <option>Clothing</option>
-                  <option>Beverages</option>
-                  <option>Skincare</option>
-                  <option>Furniture</option>
-                </select>
-              </div>
-            </div> */}
-
-            {/* Price + Quantity */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <h2 className="font-semibold">Price</h2>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.price}
-                  onChange={(e) => setField("price", e.target.value)}
-                  placeholder="0.00"
-                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                />
-              </div>
-              <div>
-                <h2 className="font-semibold">Quantity Available</h2>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.quantity}
-                  onChange={(e) => setField("quantity", e.target.value)}
-                  placeholder="Enter quantity"
-                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                />
-              </div>
-            </div>
-
-            {/* Description */}
-            <div>
-              <h2 className="font-semibold">Product Description</h2>
-              <textarea
-                value={form.description}
-                onChange={(e) => setField("description", e.target.value)}
-                placeholder="Describe your product in detail..."
-                className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                rows={4}
-                required
-              />
-            </div>
-
-            {/* Location */}
-            <div>
-              <h2 className="font-semibold">Location</h2>
-              <div className="relative">
-                <select
-                  value={form.country}
-                  onChange={(e) => setField("country", e.target.value)}
-                  className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                >
-                  <option value="">Select country</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-                <span className="pointer-events-none absolute right-2 top-[38px]">
-                  <I.chevron />
-                </span>
-              </div>
-            </div>
-
-            {/* Tags */}
-            <div>
-              <h2 className="font-semibold">Tags</h2>
-              <input
-                type="text"
-                value={form.tagsInput}
-                onChange={(e) => setField("tagsInput", e.target.value)}
-                placeholder="Add tags separated by commas..."
-                className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Tags help others find your product
-              </p>
-            </div>
-
-            {/* ===== Share With (Audience selection) ===== */}
-            <section>
-              <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
-              <p className="text-xs text-gray-600 mb-3">
-                Select who should see this product. Choose multiple identities, categories, subcategories, and sub-subs.
-              </p>
-              <AudienceTree
-                tree={audTree}
-                selected={audSel}
-                onChange={(next) => setAudSel(next)}
-              />
-            </section>
-
-            {/* Buttons */}
-            <div className="flex justify-end gap-3">
-              <button type="button" onClick={() => navigate("/business")} className={styles.ghost}>
-                Cancel
-              </button>
-              <button type="submit" className={styles.primaryWide} disabled={saving}>
-                {saving ? "Saving…" : isEditMode ? "Update Product" : "Publish Product"}
-              </button>
-            </div>
-          </form>
+            </form>
+          )}
         </section>
 
-        {/* Right Sidebar */}
+        {/* Right Sidebar (hidden for now) */}
         <aside className="lg:col-span-4 space-y-4 hidden">
-          {/* Boost Your Post */}
           <div className="rounded-2xl bg-brand-700 p-6 text-white shadow-sm">
             <h3 className="text-lg font-semibold">🚀 Boost Your Post</h3>
             <p className="mt-1 text-sm">Reach more potential customers across Africa</p>
@@ -496,7 +612,6 @@ export default function CreateProductPage() {
             </button>
           </div>
 
-          {/* Tips */}
           <div className="rounded-2xl bg-white border border-gray-100 p-6 shadow-sm">
             <h3 className="font-semibold text-brand-600">📌 Product Posting Tips</h3>
             <ul className="mt-3 space-y-2 text-sm text-gray-600">

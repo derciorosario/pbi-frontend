@@ -196,7 +196,7 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
           {/* Logo */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <div className="leading-tight">
-              <img src={logoImg} width={120} alt="55Links" />
+              <img src={logoImg} width={120} alt="54Links" />
             </div>
           </div>
 
@@ -391,7 +391,7 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2" onClick={() => { setMobileOpen(false); navigate("/"); }}>
-                <img src={logoImg} alt="55Links" className="h-8 w-auto" />
+                <img src={logoImg} alt="54Links" className="h-8 w-auto" />
               </div>
               <button
                 className="p-2 rounded-lg hover:bg-gray-100"

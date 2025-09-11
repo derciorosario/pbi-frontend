@@ -291,7 +291,7 @@ export default function CreateServicePage() {
           {isEditMode ? "Edit Service" : "Create Service Post"}
         </h1>
         <p className="text-sm text-gray-600">
-          Share your professional services with the 55Links community.
+          Share your professional services with the 54Links community.
         </p>
 
         <form

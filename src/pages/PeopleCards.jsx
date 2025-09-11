@@ -65,7 +65,7 @@ export default function PeopleProfileCard({
   connectionStatus: initialStatus,
   createdAt,
   timeAgo,               // optional precomputed
-  matchPercentage = 20,  // optional % chip (overlay on image when list; chip near hero in grid)
+  matchPercentage = 0,  // optional % chip (overlay on image when list; chip near hero in grid)
   type = "grid",         // "grid" | "list"
   accountType = "individual", // "individual" | "company"
 }) {

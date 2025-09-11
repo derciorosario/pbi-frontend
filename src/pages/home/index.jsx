@@ -228,7 +228,7 @@ export default function HomePage() {
              <div className="grid lg:grid-cols-12 gap-16 items-center">
                <div className="lg:col-span-7 text-white">
                  <div className="flex items-center gap-3 mb-8">
-                   <span className="text-3xl font-bold">55Links</span>
+                   <span className="text-3xl font-bold">54Links</span>
                  </div>
 
                  <h1 className="text-6xl md:text-7xl font-black leading-[0.9] mb-8">
@@ -240,7 +240,7 @@ export default function HomePage() {
                  </h1>
 
                  <p className="text-xl text-white/90 leading-relaxed mb-10 max-w-2xl">
-                   <strong className="text-white">55Links</strong> is a comprehensive business networking platform connecting entrepreneurs, professionals, and businesses. Discover opportunities, build partnerships, and accelerate your growth.
+                   <strong className="text-white">54Links</strong> is a comprehensive business networking platform connecting entrepreneurs, professionals, and businesses. Discover opportunities, build partnerships, and accelerate your growth.
                  </p>
 
                  <div className="flex flex-col sm:flex-row gap-4 mb-12">
@@ -317,7 +317,7 @@ export default function HomePage() {
            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
              <div className="text-center mb-20">
                <h2 className="text-5xl font-bold text-gray-900 mb-6">
-                 How <span className="text-brand-600">55Links</span> Works
+                 How <span className="text-brand-600">54Links</span> Works
                </h2>
                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                  Join our growing business network in just three simple steps and unlock unlimited opportunities
@@ -375,7 +375,7 @@ export default function HomePage() {
                  <h3 className="text-2xl font-bold text-gray-900 mb-4">Grow & Succeed</h3>
                  <p className="text-gray-600 text-lg leading-relaxed">
                    Access exclusive opportunities, secure partnerships, and accelerate your business growth.
-                   Join our growing community of successful entrepreneurs who have transformed their businesses through 55Links.
+                   Join our growing community of successful entrepreneurs who have transformed their businesses through 54Links.
                  </p>
                </div>
              </div>
@@ -387,7 +387,7 @@ export default function HomePage() {
            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
              <div className="text-center mb-12">
                <h2 className="text-5xl font-bold text-gray-900 mb-6">
-                 See <span className="text-brand-600">55Links</span> in Action
+                 See <span className="text-brand-600">54Links</span> in Action
                </h2>
                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                  Our intuitive platform makes it easy to discover opportunities, connect with professionals,
@@ -398,7 +398,7 @@ export default function HomePage() {
              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 mx-auto max-w-5xl">
                <img
                  src={Demo}
-                 alt="55Links Platform Interface"
+                 alt="54Links Platform Interface"
                  className="w-full h-auto object-cover"
                />
                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
@@ -587,7 +587,7 @@ export default function HomePage() {
            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
              <div className="text-center mb-20">
                <h2 className="text-5xl font-bold text-gray-900 mb-6">
-                 Why Choose <span className="text-brand-600">55Links</span>
+                 Why Choose <span className="text-brand-600">54Links</span>
                </h2>
                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                  Join a platform designed to help you build meaningful business connections and accelerate your growth
@@ -898,7 +898,7 @@ export default function HomePage() {
                          <Input
                            label={labelName}
                            name="name"
-                           placeholder={acct === "company" ? "Panafrican BI Ltd." : "John Doe"}
+                           placeholder={acct === "company" ? "54Links Ltd." : "John Doe"}
                            value={signupForm.name}
                            onChange={onAuthSignupChange}
                            error={signupErrors.name}
@@ -1093,7 +1093,7 @@ export default function HomePage() {
                  </span>
                </h2>
                <p className="text-xl text-white/90 mb-12 max-w-4xl mx-auto leading-relaxed">
-                 Join our growing community of professionals and entrepreneurs who are building meaningful connections and accelerating their business success through <strong>55Links</strong>.
+                 Join our growing community of professionals and entrepreneurs who are building meaningful connections and accelerating their business success through <strong>54Links</strong>.
                </p>
              </div>
 
@@ -1165,7 +1165,7 @@ export default function HomePage() {
              <div className="grid md:grid-cols-4 gap-8 mb-12">
                <div className="md:col-span-2">
                  <div className="flex items-center gap-3 mb-6">
-                   <span className="text-2xl font-bold text-white">55Links</span>
+                   <span className="text-2xl font-bold text-white">54Links</span>
                  </div>
                  <p className="text-white/90 mb-6 max-w-md leading-relaxed">
                    A comprehensive business networking platform connecting entrepreneurs, professionals, and businesses. Building stronger networks through meaningful connections.
@@ -1210,7 +1210,7 @@ export default function HomePage() {
              <div className="border-t border-white/20 pt-8">
                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                  <div className="text-white/70 text-sm">
-                   © 2024 55Links. All rights reserved. Building global business networks together.
+                   © 2024 54Links. All rights reserved. Building global business networks together.
                  </div>
                  <div className="flex items-center gap-6 text-sm text-white/70">
                    <span>🌍 Global Platform</span>

@@ -26,7 +26,7 @@ export default function LeftPanel() {
           One App
         </h1>
         <p className="mt-8 tracking-wide uppercase text-sm text-white/80">
-          &copy; 2025 55Links
+          &copy; 2025 54Links
         </p>
       </div>
     </div>

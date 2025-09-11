@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const env="pro"
-const API_URL = env=="dev" ? "http://localhost:2008/api" : "https://kaziwani-server.visum.co.mz/api" //import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_URL = env=="dev" ? "http://localhost:5000/api" : "https://kaziwani-server.visum.co.mz/api" //import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const client = axios.create({
   baseURL: API_URL,

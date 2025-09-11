@@ -48,7 +48,7 @@ export default function LoginPrompt() {
           </div>
 
           <p className="text-sm text-gray-600">
-            Join 55Links to explore{" "}
+            Join 54Links to explore{" "}
             <span className="font-medium text-brand-600">connections</span>,{" "}
             <span className="font-medium text-brand-600">opportunities</span>,{" "}
             <span className="font-medium text-brand-600">jobs</span>, and{" "}
