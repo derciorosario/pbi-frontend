@@ -46,6 +46,7 @@ import CrowdfundingPage from './pages/CrowdfundingPage.jsx';
 import CrowdfundForm from './components/CrowdfundForm.jsx';
 import TermsOfServicePage from './pages/legal/TermsOfService.jsx';
 import PrivacyPolicyPage from './pages/legal/PrivacyPolicy.jsx';
+import PublicProfilePage from './pages/ProfilePage.jsx';
 
 
 
@@ -110,7 +111,8 @@ function App() {
             <Route path="/jobs" element={<JobsExplorePage />} />
             <Route path="/tourism" element={<TourismPage />} /> 
             <Route path="/companies" element={<CompanyPage />} />
-             <Route path="/people" element={<PeopleFeedPage />} />
+            <Route path="/people" element={<PeopleFeedPage />} />
+            <Route path="/profile/:userId" element={<PublicProfilePage />} />
             <Route path="/services" element={<ServicesPage/>} />
             <Route path="/products" element={<ProductsPage />} />
         </Route>
