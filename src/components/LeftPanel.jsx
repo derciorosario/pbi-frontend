@@ -10,6 +10,9 @@ export default function LeftPanel() {
     <div className="to-brand-600 from-brand-600 bg-gradient-to-br h-full text-white relative overflow-hidden flex flex-col items-center justify-center p-10">
       {/* Home button at the top */}
      
+     <div className="absolute left-4 top-4">
+        <h1 onClick={()=>navigate('/')} className="hover:underline cursor-pointer text-[20px]">54Links</h1>
+     </div>
 
       {/* Hero content */}
       <div className="max-w-md text-center mt-16">
@@ -26,7 +29,7 @@ export default function LeftPanel() {
           One App
         </h1>
         <p className="mt-8 tracking-wide uppercase text-sm text-white/80">
-          &copy; 2025 54Links
+          &copy; 2025 55Links
         </p>
       </div>
     </div>

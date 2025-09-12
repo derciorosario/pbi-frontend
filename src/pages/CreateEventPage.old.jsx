@@ -519,12 +519,13 @@ export default function CreateEventPage() {
               </div>
             )}
 
-            <input
+             <input
               type="date"
               value={form.registrationDeadline}
               onChange={(e) => setField("registrationDeadline", e.target.value)}
               className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
+            
           </section>
 
           {/* ===== Share With (Audience selection) ===== */}

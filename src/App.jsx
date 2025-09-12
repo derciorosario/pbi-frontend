@@ -87,21 +87,17 @@ function App() {
             <Route path="/events/create" element={<CreateEventPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/services/create" element={<CreateServicePage />} />
-            <Route path="/service/:id" element={<CreateServicePage />} />
             <Route path="/services/request/create" element={<CreateServiceRequestPage />} />
             <Route path="/products/create" element={<CreateProductPage />} />
             <Route path="/experiences/create" element={<CreateTourismPostPage />} />
-            <Route path="/experience/:id" element={<CreateTourismPostPage />} />
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/meetings" element={<MeetingsPage />} />
             <Route path="/fundings/create" element={<CrowdfundForm />} />
-            <Route path="/job/:id" element={<CreateJobOpportunity />} />
-            <Route path="/event/:id" element={<CreateEventPage />} />
-            <Route path="/funding/:id" element={<CrowdfundForm />} />
-            <Route path="/product/:id" element={<CreateProductPage />} />
+            
             
             
         </Route>
+        
 
         <Route element={<ProtectedRouteOnboarding/>}>
             <Route path="/" element={<Home/>} />
@@ -115,6 +111,13 @@ function App() {
             <Route path="/profile/:userId" element={<PublicProfilePage />} />
             <Route path="/services" element={<ServicesPage/>} />
             <Route path="/products" element={<ProductsPage />} />
+
+            <Route path="/job/:id" element={<CreateJobOpportunity />} />
+            <Route path="/event/:id" element={<CreateEventPage />} />
+            <Route path="/funding/:id" element={<CrowdfundForm />} />
+            <Route path="/product/:id" element={<CreateProductPage />} />
+            <Route path="/experience/:id" element={<CreateTourismPostPage />} />
+            <Route path="/service/:id" element={<CreateServicePage />} />
         </Route>
 
       </Routes>

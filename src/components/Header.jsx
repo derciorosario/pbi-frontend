@@ -135,7 +135,7 @@ function Header({ page }) {
     { name: "products", label: "Products", path: "/products", icon: <I.products /> },
     { name: "services", label: "Services", path: "/services", icon: <I.briefcase /> },
     { name: "tourism", label: "Tourism", path: "/tourism", icon: <I.pin /> },
-    { name: "funding", label: "Funding", path: "/funding", icon: <I.funding /> },
+    { name: "funding", label: "Opportunites", path: "/funding", icon: <I.funding /> },
   ];
 
  const primaryNav = allNavItems.slice(0, 7);   // first 7 items

@@ -7,6 +7,7 @@ import Header from "../components/Header";
 import AudienceTree from "../components/AudienceTree";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
+import FullPageLoader from "../components/ui/FullPageLoader";
 
 /* brand icons (trimmed) */
 const I = {
@@ -288,6 +289,7 @@ export default function CreateJobOpportunity() {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const { user } = useAuth();
+  const [loading,setLoading]=useState(false)
 
   const [ownerUserId, setOwnerUserId] = useState(null);
 
@@ -316,7 +318,7 @@ export default function CreateJobOpportunity() {
   // NEW: media state for images
   const [media, setMedia] = useState({ logoUrl: null, coverImageUrl: null, images: [] });
 
-  const readOnly = isEditMode && user?.id && ownerUserId && user.id !== ownerUserId;
+  const readOnly = isEditMode && ownerUserId && user?.id !== ownerUserId;
 
   // Check if we're in edit mode and fetch job data if we are
   useEffect(() => {
@@ -477,6 +479,14 @@ export default function CreateJobOpportunity() {
     }
   };
 
+
+  if (isLoading) {
+      return (
+        <FullPageLoader message="Loading job…" tip="Fetching..." />
+      );
+    }
+  
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <Header page={"jobs"} />
@@ -487,7 +497,8 @@ export default function CreateJobOpportunity() {
           </a>
         </div>
 
-        <h1 className="text-2xl md:text-3xl font-bold">
+       {user?.id && <div>
+         <h1 className="text-2xl md:text-3xl font-bold">
           {isEditMode ? "Edit Job Opportunity" : "Create Job Opportunity"}
         </h1>
         <p className="mt-1 text-sm text-gray-600">
@@ -495,6 +506,7 @@ export default function CreateJobOpportunity() {
             ? "Update your job posting details below."
             : "Post a new job opening and choose exactly who should see it."}
         </p>
+       </div>}
 
         {/* Show read-only summary for non-owners (with images) */}
         {readOnly ? (

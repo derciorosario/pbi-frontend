@@ -7,6 +7,7 @@ import AudienceTree from "../components/AudienceTree";
 import client from "../api/client";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
+import FullPageLoader from "../components/ui/FullPageLoader";
 
 /* ---------------- Shared styles (brand) ---------------- */
 const styles = {
@@ -201,7 +202,7 @@ export default function CreateProductPage() {
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
 
-  const readOnly = isEditMode && user?.id && ownerUserId && user.id !== ownerUserId;
+  const readOnly = isEditMode  && ownerUserId && user?.id !== ownerUserId;
 
   // Load identities for AudienceTree
   useEffect(() => {
@@ -224,14 +225,9 @@ export default function CreateProductPage() {
         const { data } = await client.get(`/products/${id}`);
 
         // infer owner (support multiple shapes)
-        const ownerId =
-          data.ownerUserId ??
-          data.userId ??
-          data.createdById ??
-          data.sellerId ??
-          data.createdBy?.id ??
-          data.owner?.id ??
-          null;
+        const ownerId =data.sellerUserId;
+
+        
         setOwnerUserId(ownerId);
 
         setForm((f) => ({
@@ -389,10 +385,18 @@ export default function CreateProductPage() {
     }
   }
 
+
+   if (isLoading && id) {
+        return (
+          <FullPageLoader message="Loading product…" tip="Fetching..." />
+        );
+      }
+    
+
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
       {/* ===== Header ===== */}
-      <Header page={"business"} />
+      <Header page={"products"} />
 
       {/* ===== Content ===== */}
       <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 fle justify-center gap-6">
