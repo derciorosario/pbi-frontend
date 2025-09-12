@@ -110,9 +110,7 @@ function ReadOnlyProductView({ form, images, audSel, audTree }) {
               {form.description || "No description provided."}
             </p>
           </div>
-          <span className={`${styles.badge} bg-amber-50 border-amber-300 text-amber-800`}>
-            View-only (not your product)
-          </span>
+         
         </div>
 
         {/* Quick facts */}

@@ -106,9 +106,7 @@ function ReadOnlyTourismPost({ postType, form, images, audSel, audTree }) {
               {[form.location, form.country].filter(Boolean).join(", ") || "—"}
             </div>
           </div>
-          <span className={`${styles.badge} bg-amber-50 border-amber-300 text-amber-800`}>
-            View-only (not your post)
-          </span>
+         
         </div>
 
         {/* Quick facts */}

@@ -129,9 +129,7 @@ function ReadOnlyCrowdfundView({ form, images, audSel, audTree }) {
       {hero ? (
         <div className="relative aspect-[16/6] w-full bg-gray-100">
           <img src={hero} alt="Project cover" className="h-full w-full object-cover" />
-          <span className="absolute left-4 top-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-full px-2 py-0.5 text-xs font-medium">
-            View-only (not your project)
-          </span>
+          
         </div>
       ) : null}
 

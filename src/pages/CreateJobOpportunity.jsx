@@ -195,9 +195,7 @@ function ReadOnlyJobView({ form, audSel, audTree, media }) {
               </div>
             </div>
           </div>
-          <span className={`${styles.badge} bg-amber-50 border-amber-300 text-amber-800`}>
-            View-only (not your job)
-          </span>
+         
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">

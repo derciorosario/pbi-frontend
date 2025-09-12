@@ -111,7 +111,7 @@ function App() {
             <Route path="/profile/:userId" element={<PublicProfilePage />} />
             <Route path="/services" element={<ServicesPage/>} />
             <Route path="/products" element={<ProductsPage />} />
-
+            <Route path="/jobs/:id" element={<CreateJobOpportunity />} />
             <Route path="/job/:id" element={<CreateJobOpportunity />} />
             <Route path="/event/:id" element={<CreateEventPage />} />
             <Route path="/funding/:id" element={<CrowdfundForm />} />

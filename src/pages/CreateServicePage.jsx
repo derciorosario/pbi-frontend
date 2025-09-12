@@ -176,7 +176,7 @@ function ReadOnlyServiceView({ form, audSel, audTree, media }) {
             <h1 className="text-xl font-bold">{form.title || "Untitled Service"}</h1>
             <p className="mt-1 text-sm text-gray-700">{form.description || "No description provided."}</p>
           </div>
-          <span className={`${styles.badge} bg-amber-50 border-amber-300 text-amber-800`}>View-only (not your service)</span>
+         
         </div>
 
         {/* Quick facts */}

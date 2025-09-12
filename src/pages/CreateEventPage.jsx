@@ -115,7 +115,7 @@ function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
             <h1 className="text-xl font-bold">{form.title || "Untitled event"}</h1>
             <p className="mt-1 text-sm text-gray-600">{form.description || "No description provided."}</p>
           </div>
-          <span className={`${styles.badge} bg-amber-50 border-amber-300 text-amber-800`}>View-only (not your event)</span>
+        
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
