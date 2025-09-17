@@ -499,7 +499,7 @@ export default function ExperienceCard({
 
 // Share data and components
 const ShareMenu = ({ item, shareMenuRef, setShareOpen }) => {
-  const shareUrl = `${window.location.origin}/tourism?id=${item?.id}`;
+  const shareUrl = `${window.location.origin}/experience/${item?.id}`;
   const shareTitle = item?.title || "Experience on 54Links";
   const shareQuote = (item?.description || "").slice(0, 160) + ((item?.description || "").length > 160 ? "…" : "");
   const shareHashtags = ["54Links", "Tourism", "Travel", "Experience"].filter(Boolean);

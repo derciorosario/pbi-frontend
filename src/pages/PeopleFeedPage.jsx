@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import client from "../api/client";
 
 import Header from "../components/Header";
@@ -174,14 +174,16 @@ export default function PeopleFeedPage() {
     })();
   }, [currentPage]);
 
-  // Use a ref to track if we're in the middle of updating audience selections
-  const isUpdatingAudienceRef = React.useRef(false);
+  // Track last fetch time to prevent rapid successive calls
+  const lastFetchTimeRef = useRef(0);
 
   useEffect(() => {
-    // Only fetch if we're not in the middle of an audience update
-    if (!isUpdatingAudienceRef.current) {
-      fetchFeed();
-    }
+    const now = Date.now();
+    // Prevent fetches more frequent than 200ms apart
+    if (now - lastFetchTimeRef.current < 200) return;
+
+    lastFetchTimeRef.current = now;
+    fetchFeed();
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role, showPendingRequests,
     selectedFilters,
     audienceSelections,
@@ -206,11 +208,8 @@ export default function PeopleFeedPage() {
     registrationType,
     selectedIndustries]);
 
-  // Update audienceSelections when selectedFilters changes
+  // Update audienceSelections when selectedFilters changes (but don't trigger fetch)
   useEffect(() => {
-    // Set the ref to true to prevent double fetching
-    isUpdatingAudienceRef.current = true;
-
     if (selectedFilters.length > 0 && audienceTree.length > 0) {
       const identityIds = selectedFilters
         .map(filter => {
@@ -229,12 +228,8 @@ export default function PeopleFeedPage() {
         identityIds: new Set()
       }));
     }
-
-    // Reset the ref after the state update
-    setTimeout(() => {
-      isUpdatingAudienceRef.current = false;
-    }, 0);
   }, [selectedFilters, audienceTree, getIdentityIdFromLabel]);
+
 
   // Fetch feed (somente na aba Posts)
   const fetchFeed = useCallback(async () => {

@@ -87,7 +87,7 @@ export default function EventCard({
   const imageUrl = e?.coverImageBase64 || e?.coverImage || null;
 
   // Share data
-  const shareUrl = `${window.location.origin}/events/view=${e?.id}`;
+  const shareUrl = `${window.location.origin}/event/${e?.id}`;
   const shareTitle = e?.title || "Event on 54Links";
   const shareQuote = (e?.description || "").slice(0, 160) + ((e?.description || "").length > 160 ? "…" : "");
   const shareHashtags = ["54Links", "Events", "Networking"].filter(Boolean);

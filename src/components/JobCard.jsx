@@ -198,7 +198,7 @@ export default function JobCard({
   };
 
   /* ----------------------- Share data ----------------------- */
-  const shareUrl = `${window.location.origin}/jobs?view=${job?.id}`;
+  const shareUrl = `${window.location.origin}/job/${job?.id}`;
   const shareTitle = job?.title || "Opportunity on 54Links";
   const shareQuote =
     (job?.description || "").slice(0, 160) +
