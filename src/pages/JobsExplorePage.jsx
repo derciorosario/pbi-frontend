@@ -57,6 +57,17 @@ export default function PeopleFeedPage() {
     subsubCategoryIds: new Set(),
   });
 
+  // Map button labels to identity IDs
+  const getIdentityIdFromLabel = useCallback((label) => {
+    if (!audienceTree.length) return null;
+    for (const identity of audienceTree) {
+      if (identity.name === label || identity.name.toLowerCase() === label.toLowerCase()) {
+        return identity.id;
+      }
+    }
+    return null;
+  }, [audienceTree]);
+
    // ---- NEW: all filter states ----
   // Products
   const [price, setPrice] = useState("");
@@ -94,6 +105,9 @@ export default function PeopleFeedPage() {
   const [date, setDate] = useState("");
   const [registrationType, setRegistrationType] = useState("Free");
 
+  // Industries
+  const [selectedIndustries, setSelectedIndustries] = useState([]);
+
 
   // Metadados
   const [categories, setCategories] = useState([]);
@@ -113,6 +127,9 @@ export default function PeopleFeedPage() {
   // Mobile filters
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  // Selected filters for TopFilterButtons
+  const [selectedFilters,setSelectedFilters]=useState([])
+
   // Fetch meta
   useEffect(() => {
     (async () => {
@@ -128,23 +145,50 @@ export default function PeopleFeedPage() {
   }, []);
 
    useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await client.get("/public/identities");
-        // Expecting data.identities: same structure you shared
-        setAudienceTree(data.identities);
-      } catch (error) {
-        console.error("Error loading identities:", error);
-      }
-    })();
-  }, []);
+     (async () => {
+       try {
+         const { data } = await client.get("/public/identities", {
+           params: { type: 'individual' } // Load identities for job seekers
+         });
+         // Expecting data.identities: same structure you shared
+         setAudienceTree(data.identities || []);
+       } catch (error) {
+         console.error("Error loading identities:", error);
+         setAudienceTree([]);
+       }
+     })();
+   }, []);
+
+  // Update audienceSelections when selectedFilters changes
+  useEffect(() => {
+
+    if (selectedFilters.length > 0 && audienceTree.length > 0) {
+      const identityIds = selectedFilters
+        .map(filter => {
+          const id = getIdentityIdFromLabel(filter);
+          return id;
+        })
+        .filter(id => id !== null);
+
+
+      setAudienceSelections(prev => ({
+        ...prev,
+        identityIds: new Set(identityIds)
+      }));
+    } else {
+      setAudienceSelections(prev => ({
+        ...prev,
+        identityIds: new Set()
+      }));
+    }
+  }, [selectedFilters, audienceTree, getIdentityIdFromLabel]);
 
   // Fetch feed (somente na aba Posts)
   const fetchFeed = useCallback(async () => {
     if (activeTab !== "Posts") return;
     setLoadingFeed(true);
     try {
-      // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre “all”
+      // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre "all"
       const params = {
         tab: "jobs",
         q: debouncedQ || undefined,
@@ -155,12 +199,12 @@ export default function PeopleFeedPage() {
         goalId: goalId || undefined,
 
        audienceIdentityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
-        audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
-        audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
-        audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
-      
+       audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
+       audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
+       audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
+       industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
 
-        // include ALL filters so backend can leverage them when needed:
+       // include ALL filters so backend can leverage them when needed:
         // products
         price: price || undefined,
         // services
@@ -208,8 +252,8 @@ export default function PeopleFeedPage() {
       setLoadingFeed(false);
     }
     data._scrollToSection('top',true);
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, 
-
+  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,
+    selectedFilters,
     audienceSelections,
     // NEW deps:
     price,
@@ -233,7 +277,8 @@ export default function PeopleFeedPage() {
     deadline,
     eventType,
     date,
-    registrationType,]);
+    registrationType,
+    selectedIndustries,]);
 
   useEffect(() => {
     fetchFeed();
@@ -251,6 +296,7 @@ export default function PeopleFeedPage() {
           categoryId: categoryId || undefined,
           subcategoryId: subcategoryId || undefined,
           goalId: goalId || undefined,
+          industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
           limit: 10,
         };
         const { data } = await client.get("/feed/suggestions", { params });
@@ -262,7 +308,7 @@ export default function PeopleFeedPage() {
         setLoadingSuggestions(false);
       }
     })();
-  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId]);
+  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, selectedIndustries]);
 
   const filtersProps = {
     setShowTotalCount,
@@ -344,17 +390,12 @@ export default function PeopleFeedPage() {
     setAudienceSelections,
     audienceTree,
 
+    // industries
+    selectedIndustries,
+    setSelectedIndustries,
+
     onApply: () => setMobileFiltersOpen(false),
   };
-
-   const [selectedFilters,setSelectedFilters]=useState(['Job Type',
-                                    'Work Mode',
-                                    'Work Location',
-                                    'Work Schedule',
-                                    'Career Level',
-                                    'Payment Type'])
-    
-  
 
   const renderMiddle = () => {
     if (activeTab !== "Posts") {
@@ -428,16 +469,12 @@ export default function PeopleFeedPage() {
     
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-4 overflow-hidden">
-              <TopFilterButtons selected={selectedFilters} setSelected={setSelectedFilters}
+              <TopFilterButtons from={'jobs'} selected={selectedFilters} setSelected={setSelectedFilters}
                                     buttons={
                                    [
-                                    //'Experience Level',
-                                    'Job Type',
-                                    'Work Mode',
-                                    'Work Location',
-                                    'Work Schedule',
-                                    'Career Level',
-                                    'Payment Type'
+                                  "Professional",
+                                  "Freelancers",
+                                  "Students",
                ]}/>
             <div className="flex items-center justify-between gap-y-2 flex-wrap">
               

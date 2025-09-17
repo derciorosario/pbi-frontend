@@ -76,6 +76,9 @@ export default function FeedPage() {
     subsubCategoryIds: new Set(),
   });
 
+  // Industries state
+  const [selectedIndustries, setSelectedIndustries] = useState([]);
+
   const [view, setView] = useState("grid");
   let view_types = ["grid", "list"];
 
@@ -123,6 +126,7 @@ export default function FeedPage() {
           role: role || undefined,
           categoryId: categoryId || undefined,
           subcategoryId: subcategoryId || undefined,
+          industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
           limit: 20,
           offset: 0,
         };
@@ -138,7 +142,7 @@ export default function FeedPage() {
 
       data._scrollToSection("top", true);
     })();
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role]);
+  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role, selectedIndustries]);
 
   useEffect(() => {
     (async () => {
@@ -152,6 +156,7 @@ export default function FeedPage() {
           role: role || undefined,
           categoryId: categoryId || undefined,
           subcategoryId: subcategoryId || undefined,
+          industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
           limit: 10,
         };
         const { data } = await client.get("/feed/suggestions", { params });
@@ -163,7 +168,7 @@ export default function FeedPage() {
         setLoadingSuggestions(false);
       }
     })();
-  }, [debouncedQ, country, city, categoryId, subcategoryId, role, goalId]);
+  }, [debouncedQ, country, city, categoryId, subcategoryId, role, goalId, selectedIndustries]);
 
   const filtersProps = {
     setShowTotalCount,
@@ -184,6 +189,8 @@ export default function FeedPage() {
     setRole,
     goalId,
     goals,
+    selectedIndustries,
+    setSelectedIndustries,
     onApply: () => setMobileFiltersOpen(false),
   };
 

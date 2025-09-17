@@ -107,7 +107,7 @@ function Header({ page }) {
   const allNavItems = [
     { name: "feed", label: "Feed", path: "/", icon: <I.feed /> },
     { name: "people", label: "People", path: "/people", icon: <I.people /> },
-    { name: "companies", label: "Companies", path: "/companies", icon: <I.company/> },
+    { name: "companies", label: "Organizations", path: "/companies", icon: <I.company/> },
     { name: "jobs", label: "Jobs", path: "/jobs", icon: <I.jobs /> },
     { name: "events", label: "Events", path: "/events", icon: <I.calendar /> },
     { name: "products", label: "Products", path: "/products", icon: <I.products /> },

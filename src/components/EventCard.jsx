@@ -9,7 +9,23 @@ import I from "../lib/icons.jsx";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ProfileModal from "./ProfileModal";
 import EventDetails from "./EventDetails";
-import { Edit, Eye, Share2, MapPin, Clock, User as UserIcon } from "lucide-react";
+import { Edit, Eye, Share2, MapPin, Clock, User as UserIcon, Copy as CopyIcon } from "lucide-react";
+import {
+  FacebookShareButton,
+  FacebookIcon,
+  LinkedinShareButton,
+  LinkedinIcon,
+  TwitterShareButton,
+  TwitterIcon,
+  WhatsappShareButton,
+  WhatsappIcon,
+  TelegramShareButton,
+  TelegramIcon,
+  EmailShareButton,
+  EmailIcon,
+  FacebookMessengerShareButton,
+  FacebookMessengerIcon,
+} from "react-share";
 
 function computeTimeAgo(explicit, createdAt) {
   if (explicit) return explicit;
@@ -38,10 +54,132 @@ export default function EventCard({
   const [connectionStatus, setConnectionStatus] = useState(e?.connectionStatus || "none");
   const [eventDetailsOpen, setEventDetailsOpen] = useState(false); // event details modal
 
+  // Share popover
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareMenuRef = useRef(null);
+  const cardRef = useRef(null);
+  
+  // Close share menu on outside click / Esc
+  useEffect(() => {
+    function onDown(e) {
+      if (
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(e.target) &&
+        !cardRef.current?.contains(e.target)
+      ) {
+        setShareOpen(false);
+      }
+    }
+    function onEsc(e) {
+      if (e.key === "Escape") setShareOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
+
   const isOwner = user?.id && e?.organizerUserId && user.id === e.organizerUserId;
   const isList = type === "list";
 
   const imageUrl = e?.coverImageBase64 || e?.coverImage || null;
+
+  // Share data
+  const shareUrl = `${window.location.origin}/events/view=${e?.id}`;
+  const shareTitle = e?.title || "Event on 54Links";
+  const shareQuote = (e?.description || "").slice(0, 160) + ((e?.description || "").length > 160 ? "…" : "");
+  const shareHashtags = ["54Links", "Events", "Networking"].filter(Boolean);
+  const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
+
+  const CopyLinkButton = () => (
+    <button
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Link copied");
+          setShareOpen(false);
+        } catch {
+          toast.error("Failed to copy link");
+        }
+      }}
+      className="flex items-center gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+    >
+      <CopyIcon size={16} />
+      Copy link
+    </button>
+  );
+
+  const ShareMenu = () => (
+    <div
+      ref={shareMenuRef}
+      className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      role="dialog"
+      aria-label="Share options"
+    >
+      <div className="text-xs font-medium text-gray-500 px-1 pb-2">
+        Share this event
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <WhatsappIcon size={40} round />
+            <span className="text-xs text-gray-700">WhatsApp</span>
+          </div>
+        </WhatsappShareButton>
+
+        <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <FacebookIcon size={40} round />
+            <span className="text-xs text-gray-700">Facebook</span>
+          </div>
+        </FacebookShareButton>
+
+        <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <LinkedinIcon size={40} round />
+            <span className="text-xs text-gray-700">LinkedIn</span>
+          </div>
+        </LinkedinShareButton>
+
+        <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <TwitterIcon size={40} round />
+            <span className="text-xs text-gray-700">X / Twitter</span>
+          </div>
+        </TwitterShareButton>
+
+        <TelegramShareButton url={shareUrl} title={shareTitle}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <TelegramIcon size={40} round />
+            <span className="text-xs text-gray-700">Telegram</span>
+          </div>
+        </TelegramShareButton>
+
+        <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <EmailIcon size={40} round />
+            <span className="text-xs text-gray-700">Email</span>
+          </div>
+        </EmailShareButton>
+
+        {messengerAppId && (
+          <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <FacebookMessengerIcon size={40} round />
+              <span className="text-xs text-gray-700">Messenger</span>
+            </div>
+          </FacebookMessengerShareButton>
+        )}
+      </div>
+
+      <div className="mt-2">
+        <CopyLinkButton />
+      </div>
+    </div>
+  );
 
   const allTags = [e.eventType || "Event", e.categoryName, e.subcategoryName].filter(Boolean);
   const visibleTags = allTags.slice(0, 2);
@@ -67,7 +205,8 @@ export default function EventCard({
   return (
     <>
       <div
-        className={`${containerBase} ${containerLayout} ${!isList && isHovered ? "transform -translate-y-1" : ""}`}
+        ref={cardRef}
+        className={`${containerBase} relative ${containerLayout} ${!isList && isHovered ? "transform -translate-y-1" : ""}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -116,13 +255,7 @@ export default function EventCard({
               <button
                 onClick={(ev) => {
                   ev.stopPropagation();
-                  const shareUrl = `${window.location.origin}/events/view=${e.id}`;
-                  if (navigator.share) {
-                    navigator.share({ title: e.title, text: e.description, url: shareUrl }).catch(() => {});
-                  } else {
-                    navigator.clipboard.writeText(shareUrl);
-                    toast.success("Link copied to clipboard");
-                  }
+                  setShareOpen((s) => !s);
                 }}
                 className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
                 aria-label="Share event"
@@ -178,13 +311,7 @@ export default function EventCard({
               <button
                 onClick={(ev) => {
                   ev.stopPropagation();
-                  const shareUrl = `${window.location.origin}/events/view=${e.id}`;
-                  if (navigator.share) {
-                    navigator.share({ title: e.title, text: e.description, url: shareUrl }).catch(() => {});
-                  } else {
-                    navigator.clipboard.writeText(shareUrl);
-                    toast.success("Link copied to clipboard");
-                  }
+                  setShareOpen((s) => !s);
                 }}
                 className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
                 aria-label="Share event"
@@ -380,6 +507,9 @@ export default function EventCard({
         {!isList && (
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-50" />
         )}
+        
+        {/* SHARE MENU - inside the card for proper positioning */}
+        {shareOpen && <ShareMenu />}
       </div>
 
       {/* Connection Request Modal */}

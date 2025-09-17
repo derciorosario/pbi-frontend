@@ -97,6 +97,9 @@ export default function PeopleFeedPage() {
   const [date, setDate] = useState("");
   const [registrationType, setRegistrationType] = useState("Free");
 
+  // Industries
+  const [selectedIndustries, setSelectedIndustries] = useState([]);
+
   // Audience Tree
   const [audienceSelections, setAudienceSelections] = useState({
     identityIds: new Set(),
@@ -123,6 +126,20 @@ export default function PeopleFeedPage() {
 
   // Mobile filters
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // Selected filters for TopFilterButtons
+  const [selectedFilters,setSelectedFilters]=useState([])
+
+  // Map button labels to identity IDs
+  const getIdentityIdFromLabel = useCallback((label) => {
+    if (!audienceTree.length) return null;
+    for (const identity of audienceTree) {
+      if (identity.name === label || identity.name.toLowerCase() === label.toLowerCase()) {
+        return identity.id;
+      }
+    }
+    return null;
+  }, [audienceTree]);
 
   // Fetch meta
   useEffect(() => {
@@ -155,7 +172,29 @@ export default function PeopleFeedPage() {
         console.error("Error loading identities:", error);
       }
     })();
-  }, []);
+  }, [currentPage]);
+
+  // Update audienceSelections when selectedFilters changes
+  useEffect(() => {
+    if (selectedFilters.length > 0 && audienceTree.length > 0) {
+      const identityIds = selectedFilters
+        .map(filter => {
+          const id = getIdentityIdFromLabel(filter);
+          return id;
+        })
+        .filter(id => id !== null);
+
+      setAudienceSelections(prev => ({
+        ...prev,
+        identityIds: new Set(identityIds)
+      }));
+    } else {
+      setAudienceSelections(prev => ({
+        ...prev,
+        identityIds: new Set()
+      }));
+    }
+  }, [selectedFilters, audienceTree, getIdentityIdFromLabel]);
 
   // Fetch feed (somente na aba Posts)
   const fetchFeed = useCallback(async () => {
@@ -177,6 +216,7 @@ export default function PeopleFeedPage() {
         audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
         audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
         audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
+        industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
         connectionStatus:activeTab=="My Connections" && showPendingRequests ? 'outgoing_pending,incoming_pending' :  activeTab=="My Connections" && !showPendingRequests ? 'connected' : null,
 
         // include ALL filters so backend can leverage them when needed:
@@ -244,7 +284,8 @@ export default function PeopleFeedPage() {
     deadline,
     eventType,
     date,
-    registrationType,]);
+    registrationType,
+    selectedIndustries,]);
 
   useEffect(() => {
     fetchFeed();
@@ -325,14 +366,16 @@ export default function PeopleFeedPage() {
     audienceTree,
     audienceSelections,
     setAudienceSelections,
-    
+
+    // industries
+    selectedIndustries,
+    setSelectedIndustries,
+
     categories,
     countries,
     onApply: () => setMobileFiltersOpen(false),
   };
 
-
-  const [selectedFilters,setSelectedFilters]=useState([])
 
   const renderMiddle = () => {
    

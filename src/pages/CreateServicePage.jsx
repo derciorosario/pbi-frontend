@@ -482,15 +482,21 @@ export default function CreateServicePage() {
 
 
   // General taxonomy
-    const [generalTree, setGeneralTree] = useState([]);
-    const [selectedGeneral, setSelectedGeneral] = useState({
-      categoryId: "",
-      subcategoryId: "",
-      subsubCategoryId: "",
-    });
-  
-  
-    useEffect(() => {
+  const [generalTree, setGeneralTree] = useState([]);
+  const [selectedGeneral, setSelectedGeneral] = useState({
+    categoryId: "",
+    subcategoryId: "",
+    subsubCategoryId: "",
+  });
+
+  // Industry taxonomy
+  const [industryTree, setIndustryTree] = useState([]);
+  const [selectedIndustry, setSelectedIndustry] = useState({
+    categoryId: "",
+    subcategoryId: "",
+  });
+
+  useEffect(() => {
     (async () => {
       try {
         const { data } = await client.get("/general-categories/tree?type=service");
@@ -500,12 +506,24 @@ export default function CreateServicePage() {
       }
     })();
   }, []);
-  
+
+  // Load INDUSTRY taxonomy tree
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/industry-categories/tree");
+        setIndustryTree(data.industryCategories || []);
+      } catch (err) {
+        console.error("Failed to load industry categories", err);
+      }
+    })();
+  }, []);
+
   const generalCategoryOptions = useMemo(
     () => generalTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
     [generalTree]
   );
-  
+
   const generalSubcategoryOptions = useMemo(() => {
     const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
     return (c?.subcategories || []).map((sc) => ({
@@ -513,7 +531,7 @@ export default function CreateServicePage() {
       label: sc.name || `Subcategory ${sc.id}`,
     }));
   }, [generalTree, selectedGeneral.categoryId]);
-  
+
   const generalSubsubCategoryOptions = useMemo(() => {
     const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
     const sc = c?.subcategories?.find((s) => s.id === selectedGeneral.subcategoryId);
@@ -522,6 +540,16 @@ export default function CreateServicePage() {
       label: ssc.name || `Sub-sub ${ssc.id}`,
     }));
   }, [generalTree, selectedGeneral.categoryId, selectedGeneral.subcategoryId]);
+
+  // Build options for industry pickers
+  const industryCategoryOptions = useMemo(
+    () => industryTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
+    [industryTree]
+  );
+  const industrySubcategoryOptions = useMemo(() => {
+    const c = industryTree.find((x) => x.id === selectedIndustry.categoryId);
+    return (c?.subcategories || []).map((sc) => ({ value: sc.id, label: sc.name || `Subcategory ${sc.id}` }));
+  }, [industryTree, selectedIndustry.categoryId]);
   
   
   
@@ -540,7 +568,7 @@ export default function CreateServicePage() {
     const [activeIndex, setActiveIndex] = useState(0);
     const rootRef = useRef(null);
     const inputRef = useRef(null);
-  
+
     const selected = useMemo(() => options.find((o) => String(o.value) === String(value)) || null, [options, value]);
     const filtered = useMemo(() => {
       const q = query.trim().toLowerCase();
@@ -552,7 +580,10 @@ export default function CreateServicePage() {
         .map((x) => x.o)
         .slice(0, 100);
     }, [query, options]);
-  
+
+    // Show selected value or placeholder
+    const displayValue = selected && !query ? selected.label : query;
+
     useEffect(() => {
       function onDocClick(e) {
         if (!rootRef.current) return;
@@ -561,25 +592,25 @@ export default function CreateServicePage() {
       document.addEventListener("mousedown", onDocClick);
       return () => document.removeEventListener("mousedown", onDocClick);
     }, []);
-  
+
     useEffect(() => {
       if (!open) setActiveIndex(0);
     }, [open, query]);
-  
+
     function pick(opt) {
       onChange?.(opt?.value || "");
       setQuery("");
       setOpen(false);
       inputRef.current?.blur();
     }
-  
+
     function clear() {
       onChange?.("");
       setQuery("");
       setOpen(false);
       inputRef.current?.focus();
     }
-  
+
     function onKeyDown(e) {
       if (disabled) return;
       if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
@@ -601,7 +632,7 @@ export default function CreateServicePage() {
         setOpen(false);
       }
     }
-  
+
     return (
       <div ref={rootRef} className={`relative ${disabled ? "opacity-60" : ""}`}>
         <div className="grid gap-1.5">
@@ -609,9 +640,9 @@ export default function CreateServicePage() {
             <input
               ref={inputRef}
               type="text"
-              value={query}
+              value={displayValue}
               disabled={disabled}
-              placeholder={selected ? selected.label : placeholder}
+              placeholder={placeholder}
               onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
               onFocus={() => !disabled && setOpen(true)}
               onKeyDown={onKeyDown}
@@ -621,7 +652,7 @@ export default function CreateServicePage() {
               aria-label={ariaLabel || placeholder}
               role="combobox"
               autoComplete="off"
-              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-16 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-16 focus:outline-none focus:ring-2 focus:ring-brand-200 text-black"
             />
             {selected && !disabled ? (
               <button
@@ -637,7 +668,7 @@ export default function CreateServicePage() {
               <I.chevron />
             </span>
           </div>
-  
+
           {/* Hidden required input to participate in HTML validity if needed */}
           {required && (
             <input
@@ -650,7 +681,7 @@ export default function CreateServicePage() {
             />
           )}
         </div>
-  
+
         {open && !disabled && (
           <div
             id="ss-results"
@@ -718,6 +749,9 @@ export default function CreateServicePage() {
         generalCategoryId: selectedGeneral.categoryId || null,
         generalSubcategoryId: selectedGeneral.subcategoryId || null,
         generalSubsubCategoryId: selectedGeneral.subsubCategoryId || null,
+        // Industry taxonomy
+        industryCategoryId: selectedIndustry.categoryId || null,
+        industrySubcategoryId: selectedIndustry.subcategoryId || null,
       };
 
       if (form.locationType === "Remote") {
@@ -1007,41 +1041,78 @@ export default function CreateServicePage() {
 
             {/* ===== General Classification (SEARCHABLE) ===== */}
 <section>
-  <h2 className="font-semibold text-brand-600">Classification</h2>
-  <p className="text-xs text-gray-600 mb-3">
-    Search and pick the category that best describes your product.
-  </p>
+ <h2 className="font-semibold text-brand-600">Classification</h2>
+ <p className="text-xs text-gray-600 mb-3">
+   Search and pick the category that best describes your service.
+ </p>
 
-  <div className="grid md:grid-cols-2 gap-4">
-    <div>
-      <label className="text-[12px] font-medium text-gray-700">General Category</label>
-      <SearchableSelect
-        ariaLabel="Category"
-        value={selectedGeneral.categoryId}
-        onChange={(val) =>
-          setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
-        }
-        options={generalCategoryOptions}
-        placeholder="Search & select category…"
-      />
-    </div>
+ <div className="grid md:grid-cols-2 gap-4">
+   <div>
+     <label className="text-[12px] font-medium text-gray-700">General Category</label>
+     <SearchableSelect
+       ariaLabel="Category"
+       value={selectedGeneral.categoryId}
+       onChange={(val) =>
+         setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
+       }
+       options={generalCategoryOptions}
+       placeholder="Search & select category…"
+     />
+   </div>
 
-    <div>
-      <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
-      <SearchableSelect
-        ariaLabel="Subcategory"
-        value={selectedGeneral.subcategoryId}
-        onChange={(val) =>
-          setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
-        }
-        options={generalSubcategoryOptions}
-        placeholder="Search & select subcategory…"
-        disabled={!selectedGeneral.categoryId}
-      />
-    </div>
+   <div>
+     <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+     <SearchableSelect
+       ariaLabel="Subcategory"
+       value={selectedGeneral.subcategoryId}
+       onChange={(val) =>
+         setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
+       }
+       options={generalSubcategoryOptions}
+       placeholder="Search & select subcategory…"
+       disabled={!selectedGeneral.categoryId}
+     />
+   </div>
 
-    
-  </div>
+
+ </div>
+</section>
+
+{/* ===== Industry Classification ===== */}
+<section>
+ <h2 className="font-semibold text-brand-600">Industry Classification</h2>
+ <p className="text-xs text-gray-600 mb-3">
+   Select the industry category and subcategory that best describes your service.
+ </p>
+
+ <div className="grid md:grid-cols-2 gap-4">
+   <div>
+     <label className="text-[12px] font-medium text-gray-700">Industry Category</label>
+     <SearchableSelect
+       ariaLabel="Industry Category"
+       value={selectedIndustry.categoryId}
+       onChange={(val) =>
+         setSelectedIndustry({ categoryId: val, subcategoryId: "" })
+       }
+       options={industryCategoryOptions}
+       placeholder="Search & select industry category…"
+     />
+   </div>
+
+   <div>
+     <label className="text-[12px] font-medium text-gray-700">Industry Subcategory</label>
+     <SearchableSelect
+       ariaLabel="Industry Subcategory"
+       value={selectedIndustry.subcategoryId}
+       onChange={(val) =>
+         setSelectedIndustry((s) => ({ ...s, subcategoryId: val }))
+       }
+       options={industrySubcategoryOptions}
+       placeholder="Search & select industry subcategory…"
+       disabled={!selectedIndustry.categoryId}
+     />
+   </div>
+ </div>
 </section>
 
             {/* Share With (Audience) */}

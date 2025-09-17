@@ -29,7 +29,7 @@ export default function FourStepOnboarding() {
 
   // flow
   const [step, setStep] = useState(1);
-  const progress = useMemo(() => [0, 25, 50, 75, 100][step] ?? 100, [step]);
+  const progress = useMemo(() => [0, 16.67, 33.33, 50, 66.67, 83.33, 100][step] ?? 100, [step]);
 
   // data
   const [loading, setLoading] = useState(true);
@@ -49,11 +49,21 @@ export default function FourStepOnboarding() {
   const [interestSubcategoryIds, setInterestSubcategoryIds] = useState([]);
   const [interestSubsubCategoryIds, setInterestSubsubCategoryIds] = useState([]);
 
+  // industry selections
+  const [industries, setIndustries] = useState([]);
+  const [industryCategoryIds, setIndustryCategoryIds] = useState([]);
+  const [industrySubcategoryIds, setIndustrySubcategoryIds] = useState([]);
+  const [industrySubsubCategoryIds, setIndustrySubsubCategoryIds] = useState([]);
+
   // UI expand/collapse – separate sets for "does" and "wants"
   const [openCatsDoes, setOpenCatsDoes] = useState(() => new Set()); // Set<categoryId>
   const [openSubsDoes, setOpenSubsDoes] = useState(() => new Set()); // Set<subcategoryId>
   const [openCatsWant, setOpenCatsWant] = useState(() => new Set());
   const [openSubsWant, setOpenSubsWant] = useState(() => new Set());
+
+  // UI expand/collapse for industries
+  const [openIndustryCats, setOpenIndustryCats] = useState(() => new Set()); // Set<industryCategoryId>
+  const [openIndustrySubs, setOpenIndustrySubs] = useState(() => new Set()); // Set<industrySubcategoryId>
 
   // load catalog
   useEffect(() => {
@@ -70,6 +80,11 @@ export default function FourStepOnboarding() {
         // gets identities + canonical IDs for categories/subcats/subsubs + goals WITH ids
         const { data } = await client.get("/public/identities");
         setIdentities(Array.isArray(data?.identities) ? data.identities : []);
+
+        // Load industry categories
+        const industryResponse = await client.get("/industry-categories/tree");
+        setIndustries(Array.isArray(industryResponse.data?.industryCategories)
+          ? industryResponse.data.industryCategories : []);
       } catch (e) {
         console.error(e);
         setError("Failed to load onboarding data.");
@@ -357,6 +372,85 @@ export default function FourStepOnboarding() {
     toggleSubsubWantBase(xId);
   };
 
+  // ---------- Industry toggle functions ----------
+
+  function makeToggleIndustryCategory({ industryCatIds, setIndustryCatIds, setIndustrySubIds, setIndustryXIds, setOpenIndustryCats, setOpenIndustrySubs }) {
+    return (industryCatId) => {
+      if (!industryCatId) return;
+      const has = industryCatIds.includes(industryCatId);
+      if (has) {
+        const subIds = industries.find(cat => cat.id === industryCatId)?.subcategories?.map(s => s.id) || [];
+        const xIds = subIds.flatMap((sid) => industries.find(cat => cat.id === industryCatId)?.subcategories?.find(s => s.id === sid)?.subsubs?.map(x => x.id) || []);
+        setIndustryCatIds((prev) => prev.filter((x) => x !== industryCatId));
+        setIndustrySubIds((prev) => prev.filter((sid) => !subIds.includes(sid)));
+        setIndustryXIds((prev) => prev.filter((x) => !xIds.includes(x)));
+        setOpenIndustryCats((prev) => { const next = new Set(prev); next.delete(industryCatId); return next; });
+        setOpenIndustrySubs((prev) => { const next = new Set(prev); for (const sid of subIds) next.delete(sid); return next; });
+      } else {
+        setIndustryCatIds((prev) => [...prev, industryCatId]);
+        setOpenIndustryCats((prev) => new Set(prev).add(industryCatId));
+      }
+    };
+  }
+
+  function makeToggleIndustrySub({ industrySubIds, setIndustrySubIds, setIndustryXIds, setOpenIndustrySubs, setIndustryCatIds, setOpenIndustryCats }) {
+    return (industrySubId) => {
+      if (!industrySubId) return;
+      const parentCatId = industries.find(cat => cat.subcategories?.some(s => s.id === industrySubId))?.id;
+      const has = industrySubIds.includes(industrySubId);
+      if (has) {
+        const xIds = industries.find(cat => cat.id === parentCatId)?.subcategories?.find(s => s.id === industrySubId)?.subsubs?.map(x => x.id) || [];
+        setIndustrySubIds((prev) => prev.filter((x) => x !== industrySubId));
+        setIndustryXIds((prev) => prev.filter((x) => !xIds.includes(x)));
+        setOpenIndustrySubs((prev) => { const n = new Set(prev); n.delete(industrySubId); return n; });
+      } else {
+        if (parentCatId) {
+          setIndustryCatIds((prev) => (prev.includes(parentCatId) ? prev : [...prev, parentCatId]));
+          setOpenIndustryCats((prev) => new Set(prev).add(parentCatId));
+        }
+        setIndustrySubIds((prev) => [...prev, industrySubId]);
+      }
+    };
+  }
+
+  function makeToggleIndustrySubsub({ setIndustryXIds, industrySubIds, setIndustrySubIds, setIndustryCatIds, setOpenIndustryCats }) {
+    return (industryXId) => {
+      if (!industryXId) return;
+      const parentSubId = industries.flatMap(cat => cat.subcategories || []).find(s => s.subsubs?.some(x => x.id === industryXId))?.id;
+      const parentCatId = parentSubId ? industries.find(cat => cat.subcategories?.some(s => s.id === parentSubId))?.id : null;
+      setIndustryXIds((prev) => {
+        const has = prev.includes(industryXId);
+        if (has) return prev.filter((x) => x !== industryXId);
+        if (parentSubId && !industrySubIds.includes(parentSubId)) {
+          setIndustrySubIds((p) => [...p, parentSubId]);
+        }
+        if (parentCatId) {
+          setIndustryCatIds((p) => (p.includes(parentCatId) ? p : [...p, parentCatId]));
+          setOpenIndustryCats((p) => new Set(p).add(parentCatId));
+        }
+        return [...prev, industryXId];
+      });
+    };
+  }
+
+  const toggleIndustryCategory = makeToggleIndustryCategory({
+    industryCatIds: industryCategoryIds, setIndustryCatIds: setIndustryCategoryIds,
+    setIndustrySubIds: setIndustrySubcategoryIds, setIndustryXIds: setIndustrySubsubCategoryIds,
+    setOpenIndustryCats: setOpenIndustryCats, setOpenIndustrySubs: setOpenIndustrySubs,
+  });
+
+  const toggleIndustrySub = makeToggleIndustrySub({
+    industrySubIds: industrySubcategoryIds, setIndustrySubIds: setIndustrySubcategoryIds,
+    setIndustryXIds: setIndustrySubsubCategoryIds, setOpenIndustrySubs: setOpenIndustrySubs,
+    setIndustryCatIds: setIndustryCategoryIds, setOpenIndustryCats: setOpenIndustryCats,
+  });
+
+  const toggleIndustrySubsub = makeToggleIndustrySubsub({
+    setIndustryXIds: setIndustrySubsubCategoryIds,
+    industrySubIds: industrySubcategoryIds, setIndustrySubIds: setIndustrySubcategoryIds,
+    setIndustryCatIds: setIndustryCategoryIds, setOpenIndustryCats: setOpenIndustryCats,
+  });
+
   // Subcategory open/close (panel only)
   const toggleSubOpenDoes = (subId) => {
     if (!subId) return;
@@ -387,6 +481,24 @@ export default function FourStepOnboarding() {
     setOpenCatsWant(prev => {
       const n = new Set(prev);
       n.has(catId) ? n.delete(catId) : n.add(catId);
+      return n;
+    });
+  };
+
+  // Industry panel open/close
+  const handleIndustryCatOpen = (industryCatId) => {
+    setOpenIndustryCats(prev => {
+      const n = new Set(prev);
+      n.has(industryCatId) ? n.delete(industryCatId) : n.add(industryCatId);
+      return n;
+    });
+  };
+
+  const toggleIndustrySubOpen = (industrySubId) => {
+    if (!industrySubId) return;
+    setOpenIndustrySubs(prev => {
+      const n = new Set(prev);
+      n.has(industrySubId) ? n.delete(industrySubId) : n.add(industrySubId);
       return n;
     });
   };
@@ -428,7 +540,8 @@ export default function FourStepOnboarding() {
   const canContinue1 = identityIds.length >= 1;
   const canContinue2 = categoryIds.length >= 1;
   const canContinue3 = interestIdentityIds.length >= 1 && interestIdentityIds.length <= MAX_WANT_IDENTITIES;
-  const canFinish     = interestCategoryIds.length >= 1 && interestCategoryIds.length <= MAX_WANT_CATEGORIES;
+  const canContinue4 = interestCategoryIds.length >= 1 && interestCategoryIds.length <= MAX_WANT_CATEGORIES;
+  const canFinish    = industryCategoryIds.length >= 1;
 
   // UI bits
   const Loading = () => (
@@ -526,6 +639,156 @@ export default function FourStepOnboarding() {
               className="rounded-xl bg-brand-700 text-white px-6 py-3 font-semibold disabled:opacity-50"
             >
               Continue
+            </button>
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  // Industry tree step component
+  function IndustryTreeStep({
+    title, subtitle,
+    industryCatIds, industrySubIds, industryXIds,
+    openIndustryCats, openIndustrySubs,
+    onToggleIndustryCat, onToggleIndustrySub, onToggleIndustrySubsub,
+    onToggleIndustryCatOpen,
+    toggleIndustrySubOpen,
+    prev, nextLabel, onNext, canNext,
+  }) {
+    const hasIndustrySubs = (industryCat) => Array.isArray(industryCat?.subcategories) && industryCat.subcategories.length > 0;
+    const hasIndustrySubsubs = (industrySc) => Array.isArray(industrySc?.subsubs) && industrySc.subsubs.length > 0;
+
+    return (
+      <>
+        <Header
+          icon={"🏭"}
+          title={title}
+          subtitle={subtitle}
+        />
+        <main className="max-w-4xl mx-auto mt-6">
+          <div className="bg-white rounded-2xl shadow-soft p-6">
+            {industries.length === 0 ? (
+              <div className="rounded-xl border bg-white p-6 text-[17px] text-gray-600">
+                Loading industry categories...
+              </div>
+            ) : (
+              <>
+                <p className="text-[17px] text-gray-500 mb-4">
+                  Choose at least one industry category that represents your professional focus.
+                </p>
+
+                <div className="space-y-4">
+                  {industries.map((industryCat, cIdx) => {
+                    const _hasSubs = hasIndustrySubs(industryCat);
+                    const industryCatOpen = !!industryCat.id && openIndustryCats.has(industryCat.id);
+                    const industryCatSelected = !!industryCat.id && industryCatIds.includes(industryCat.id);
+
+                    return (
+                      <div key={`industry-cat-${cIdx}`} className="rounded-xl border">
+                        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-xl">
+                          <div className="font-semibold">{industryCat.name}</div>
+                          <span className="text-xs text-gray-500">
+                            {(industryCat.subcategories || []).length} subcategories
+                          </span>
+                        </div>
+
+                        <div className="px-4 py-4 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              checked={industryCatSelected}
+                              onChange={() => industryCat.id && onToggleIndustryCat(industryCat.id)}
+                            />
+                            <span className="font-medium">{industryCat.name}</span>
+                            {_hasSubs && (
+                              <button
+                                type="button"
+                                className="text-gray-500 hover:text-gray-700 ml-auto"
+                                aria-expanded={industryCatOpen}
+                                onClick={() => industryCat.id && onToggleIndustryCatOpen(industryCat.id)}
+                              >
+                                <span className={`inline-block transition-transform ${industryCatOpen ? "rotate-180" : ""}`}>▾</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {_hasSubs && industryCatOpen && (
+                            <div className="ml-7 space-y-3">
+                              {(industryCat.subcategories || []).map((industrySc, sIdx) => {
+                                const _hasSubsubs = hasIndustrySubsubs(industrySc);
+                                const isOpen = !!industrySc.id && openIndustrySubs.has(industrySc.id);
+                                const isSelected = !!industrySc.id && industrySubIds.includes(industrySc.id);
+
+                                return (
+                                  <div key={`industry-sub-${cIdx}-${sIdx}`} className="border rounded-lg p-3">
+                                    <div className="flex items-center justify-between">
+                                      <label className="flex items-center w-full flex-1 gap-3 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          className="h-4 w-4 text-brand-600"
+                                          checked={isSelected}
+                                          onChange={() => industrySc.id && onToggleIndustrySub(industrySc.id)}
+                                        />
+                                        <span className="font-medium w-full flex flex-1">{industrySc.name}</span>
+                                      </label>
+
+                                      {_hasSubsubs && (
+                                        <button
+                                          type="button"
+                                          onClick={() => industrySc.id && toggleIndustrySubOpen(industrySc.id)}
+                                          className="text-gray-500 hover:text-gray-700"
+                                          aria-expanded={isOpen}
+                                          aria-label={`Toggle ${industrySc.name} sub-items`}
+                                        >
+                                          <span className={`inline-block transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {_hasSubsubs && (isOpen || isSelected) && (
+                                      <div className="mt-2 flex flex-wrap gap-2 ml-7">
+                                        {industrySc.subsubs.map((industrySs, ssIdx) => {
+                                          const ssSelected = !!industrySs.id && industryXIds.includes(industrySs.id);
+                                          return (
+                                            <label
+                                              key={`industry-ss-${cIdx}-${sIdx}-${ssIdx}`}
+                                              className="inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm cursor-pointer"
+                                            >
+                                              <input
+                                                type="checkbox"
+                                                checked={ssSelected}
+                                                onChange={() => industrySs.id && onToggleIndustrySubsub(industrySs.id)}
+                                              />
+                                              <span>{industrySs.name}</span>
+                                            </label>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="mt-6 flex justify-between">
+            <button onClick={prev} className="rounded-xl border px-4 py-3">Previous</button>
+            <button
+              onClick={onNext}
+              disabled={!canNext}
+              className="rounded-xl bg-brand-700 text-white px-6 py-3 font-semibold disabled:opacity-50"
+            >
+              {nextLabel}
             </button>
           </div>
         </main>
@@ -720,8 +983,8 @@ export default function FourStepOnboarding() {
         <IdentityStep
           title={userAccountType === 'company' ? "Tell us about your company" : "Tell us who you are"}
           subtitle={userAccountType === 'company'
-            ? "Choose the identities that best represent what your company DOES."
-            : "Choose the identities that best represent what you DO."
+            ? "Choose the identities that best represent what your company does."
+            : "Choose the identities that best represent what you do."
           }
           picked={identityIds}
           onToggle={toggleIdentityDoes}
@@ -793,6 +1056,32 @@ export default function FourStepOnboarding() {
           onToggleCatOpen={handleCatOpenWant}
           toggleSubOpen={toggleSubOpenWant}
           prev={() => setStep(3)}
+          nextLabel="Continue"
+          onNext={() => setStep(5)}
+          canNext={canContinue4}
+          catLimit={MAX_WANT_CATEGORIES}
+        />
+      )}
+
+      {/* STEP 5: Industry selection */}
+      {step === 5 && (
+        <IndustryTreeStep
+          title={userAccountType === 'company' ? "Choose your company's industry focus" : "Choose your industry focus"}
+          subtitle={userAccountType === 'company'
+            ? "Select the industries that best represent your company's sector and expertise."
+            : "Select the industries that best represent your professional sector and expertise."
+          }
+          industryCatIds={industryCategoryIds}
+          industrySubIds={industrySubcategoryIds}
+          industryXIds={industrySubsubCategoryIds}
+          openIndustryCats={openIndustryCats}
+          openIndustrySubs={openIndustrySubs}
+          onToggleIndustryCat={toggleIndustryCategory}
+          onToggleIndustrySub={toggleIndustrySub}
+          onToggleIndustrySubsub={toggleIndustrySubsub}
+          onToggleIndustryCatOpen={handleIndustryCatOpen}
+          toggleIndustrySubOpen={toggleIndustrySubOpen}
+          prev={() => setStep(4)}
           nextLabel="Save & Finish"
           onNext={async () => {
             if (!canFinish) return;
@@ -808,6 +1097,10 @@ export default function FourStepOnboarding() {
                 interestCategoryIds,
                 interestSubcategoryIds,
                 interestSubsubCategoryIds,
+                // INDUSTRIES
+                industryCategoryIds,
+                industrySubcategoryIds,
+                industrySubsubCategoryIds,
               });
               window.location.href = "/";
             } catch (e) {
@@ -816,7 +1109,6 @@ export default function FourStepOnboarding() {
             }
           }}
           canNext={canFinish}
-          catLimit={MAX_WANT_CATEGORIES}
         />
       )}
     </div>

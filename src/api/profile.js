@@ -14,3 +14,6 @@ export const updateDoSelections = (payload) => client.put("/profile/do-selection
 
 // NOVO: seleções do que PROCURA (identidades/categorias/subs/subsubs)
 export const updateInterestSelections = (payload) => client.put("/profile/interest-selections", payload);
+
+// NOVO: seleções de indústrias (categorias/subs/subsubs)
+export const updateIndustrySelections = (payload) => client.put("/profile/industry-selections", payload);

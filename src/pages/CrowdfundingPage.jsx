@@ -119,6 +119,9 @@ export default function CrowdfundingPage() {
   const [date, setDate] = useState("");
   const [registrationType, setRegistrationType] = useState("Free");
 
+  // Industries
+  const [selectedIndustries, setSelectedIndustries] = useState([]);
+
 
   const [view,setView]=useState('grid')
   let view_types=['grid','list']
@@ -213,7 +216,7 @@ export default function CrowdfundingPage() {
         audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
         audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
         audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
-
+        industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
 
         limit: 20,
         offset: 0,
@@ -254,6 +257,7 @@ export default function CrowdfundingPage() {
    registrationType,
    selectedSubcategories,
    selectedFilters,
+   selectedIndustries,
    generalTree,
    data]);
 
@@ -274,6 +278,7 @@ export default function CrowdfundingPage() {
           subcategoryId: subcategoryId || undefined,
           goalId: goalId || undefined,
           role:role || undefined,
+          industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
           limit: 10,
         };
         const { data } = await client.get("/feed/suggestions", { params });
@@ -285,7 +290,7 @@ export default function CrowdfundingPage() {
         setLoadingSuggestions(false);
       }
     })();
-  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId,role]);
+  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, role, selectedIndustries]);
 
   // Handler for subcategory changes
   const handleSubcategoryChange = (subcategories) => {
@@ -317,6 +322,10 @@ export default function CrowdfundingPage() {
     selectedFilters,
     setSelectedFilters,
     onSubcategoryChange: handleSubcategoryChange,
+
+    // industries
+    selectedIndustries,
+    setSelectedIndustries,
     query,
     setQuery,
     country,

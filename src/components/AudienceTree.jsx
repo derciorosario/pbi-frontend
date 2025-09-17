@@ -174,7 +174,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
   const CountPill = ({ count }) =>
     count > 0 ? (
-      <span className="ml-2 inline-flex items-center rounded-full border border-gray-300 bg-brand-50 px-1.5 py-0.5 text-[10px] leading-none text-brand-600">
+      <span className="ml-2 inline-flex items-center rounded-full border border-gray-200 bg-brand-50 px-1.5 py-0.5 text-[10px] leading-none text-brand-600">
         {count}
       </span>
     ) : null;
@@ -183,17 +183,14 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
   useEffect(() => {
     if (!shown?.length) return;
 
-    const shownSet = new Set(shown.map((s) => String(s).trim().toLowerCase()));
-    const match = tree.find((identity) =>
-      shownSet.has(String(identity.name).trim().toLowerCase())
-    );
-    if (!match) return;
-
-    const identityId = match.id ?? match.name;
-    const idKey = `id-${identityId}`;
-
-    // open only this identity
-    setOpen({ [idKey]: true });
+    // If there are shown filters, open all identities
+    const allOpen = {};
+    tree.forEach((identity) => {
+      const identityId = identity.id || identity.name;
+      const idKey = `id-${identityId}`;
+      allOpen[idKey] = true;
+    });
+    setOpen(allOpen);
 
     // fresh selection
     const next = {
@@ -202,10 +199,6 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       subcategoryIds: new Set(),
       subsubCategoryIds: new Set(),
     };
-
-    if (String(from ?? "").toLowerCase() === "people") {
-      next.identityIds.add(identityId);
-    }
 
     onChange(next);
   }, [shown, tree, from]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -236,13 +229,15 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
           <div
             key={idKey}
             className={`border-b last:border-b-0 ${
-              shown.length && !shown.includes(identity.name) ? "hidden" : ""
+              shown.length && !shown.some(s => s.toLowerCase().includes(identity.name.toLowerCase()) || identity.name.toLowerCase().includes(s.toLowerCase())) ? "hidden" : ""
             }`}
           >
             <div
               role={hasCategories ? "button" : undefined}
               tabIndex={hasCategories ? 0 : -1}
-              onClick={hasCategories ? () => setOpen((o) => ({ ...o, [idKey]: !o[idKey] })) : undefined}
+              onClick={
+                hasCategories ? () => setOpen((o) => ({ ...o, [idKey]: !o[idKey] })) : undefined
+              }
               className={`w-full flex items-center justify-between px-3 py-2 ${
                 hasCategories ? "hover:bg-gray-50 cursor-pointer" : ""
               }`}
@@ -255,7 +250,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                   onChange={(e) => setChecked("identityIds", identityId, e.target.checked)}
                   onClick={stop}
                 />
-                <span className="font-medium w-full flex flex-1 items-center">
+                <span className="font-medium text-gray-900 w-full flex flex-1 items-center">
                   {identity.name}
                   <CountPill count={idCount} />
                 </span>
@@ -266,7 +261,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
             </div>
 
             {openId && hasCategories && (
-              <div className="bg-gray-50/60 px-4 py-3 space-y-3">
+              <div className="bg-slate-50/80 px-4 py-3 space-y-3">
                 {(identity.categories || []).map((cat) => {
                   const cKey = `cat-${cat.id}`;
                   const openCat = !!open[cKey];
@@ -274,10 +269,10 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                   const catCount = countCategoryImmediate(cat);
 
                   return (
-                    <div key={cKey} className="rounded-lg border border-gray-200">
+                    <div key={cKey} className="rounded-lg border border-slate-200">
                       <div
-                        className={`flex items-center justify-between px-3 py-2 bg-white ${
-                          hasSubs ? "cursor-pointer" : ""
+                        className={`flex items-center justify-between px-3 py-2 bg-slate-100 ${
+                          hasSubs ? "cursor-pointer hover:bg-slate-100/80" : ""
                         }`}
                         onClick={hasSubs ? () => onToggleCategory(identity, cat) : undefined}
                       >
@@ -288,7 +283,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                             checked={isChecked("categoryIds", cat.id)}
                             onChange={onCategoryCheck(identityId, cat)}
                           />
-                          <span className="text-sm font-medium w-full flex items-center">
+                          <span className="text-sm font-medium text-slate-800 w-full flex items-center">
                             {cat.name}
                             <CountPill count={catCount} />
                           </span>
@@ -301,7 +296,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                               e.stopPropagation();
                               onToggleCategory(identity, cat);
                             }}
-                            className="text-gray-500 hover:text-gray-700"
+                            className="text-slate-600 hover:text-slate-800"
                             aria-label={openCat ? "Collapse" : "Expand"}
                           >
                             {openCat ? <Icons.caretUp /> : <Icons.caret />}
@@ -310,7 +305,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                       </div>
 
                       {openCat && hasSubs && (
-                        <div className="px-3 py-2 space-y-2 bg-blue-50">
+                        <div className="px-3 py-2 space-y-2 bg-sky-50 border-l-2 border-sky-200">
                           {(cat.subcategories || []).map((sc) => {
                             const scKey = `sc-${sc.id}`;
                             const openSc = !!open[scKey];
@@ -318,10 +313,10 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                             const scCount = countSubcategoryImmediate(sc);
 
                             return (
-                              <div key={scKey} className="border rounded-md overflow-hidden">
+                              <div key={scKey} className="border border-slate-200 rounded-md overflow-hidden">
                                 <div
-                                  className={`flex items-center justify-between px-3 py-2 bg-white ${
-                                    hasSubsubs ? "cursor-pointer" : ""
+                                  className={`flex items-center justify-between px-3 py-2 bg-sky-100 ${
+                                    hasSubsubs ? "cursor-pointer hover:bg-sky-100/80" : ""
                                   }`}
                                   onClick={hasSubsubs ? () => onToggleSubcategory(cat, sc) : undefined}
                                 >
@@ -332,7 +327,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                                       checked={isChecked("subcategoryIds", sc.id)}
                                       onChange={onSubcategoryCheck(identityId, cat.id, sc)}
                                     />
-                                    <span className="text-sm flex items-center">
+                                    <span className="text-sm font-medium text-sky-900 flex items-center">
                                       {sc.name}
                                       <CountPill count={scCount} />
                                     </span>
@@ -345,7 +340,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                                         e.stopPropagation();
                                         onToggleSubcategory(cat, sc);
                                       }}
-                                      className="text-gray-500 hover:text-gray-700"
+                                      className="text-sky-700 hover:text-sky-900"
                                       aria-label={openSc ? "Collapse" : "Expand"}
                                     >
                                       {openSc ? <Icons.caretUp /> : <Icons.caret />}
@@ -354,7 +349,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                                 </div>
 
                                 {openSc && hasSubsubs && (
-                                  <div className="px-3 py-2 bg-emerald-50 grid gap-2">
+                                  <div className="px-3 py-2 bg-[#f0f9ff] border-l-2 border-indigo-200 grid gap-2">
                                     {sc.subsubs.map((ss) => (
                                       <label key={ss.id} className="flex items-center gap-2">
                                         <input
@@ -363,7 +358,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                                           checked={isChecked("subsubCategoryIds", ss.id)}
                                           onChange={onSubsubCheck(identityId, cat.id, sc.id, ss)}
                                         />
-                                        <span className="text-xs">{ss.name}</span>
+                                        <span className="text-xs text-indigo-950/90">{ss.name}</span>
                                       </label>
                                     ))}
                                   </div>

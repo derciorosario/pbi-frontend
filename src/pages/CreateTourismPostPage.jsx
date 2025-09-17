@@ -363,21 +363,39 @@ export default function CreateTourismPostPage() {
 
 
   // General taxonomy
-    const [generalTree, setGeneralTree] = useState([]);
-    const [selectedGeneral, setSelectedGeneral] = useState({
-      categoryId: "",
-      subcategoryId: "",
-      subsubCategoryId: "",
-    });
-  
-  
-    useEffect(() => {
+  const [generalTree, setGeneralTree] = useState([]);
+  const [selectedGeneral, setSelectedGeneral] = useState({
+    categoryId: "",
+    subcategoryId: "",
+    subsubCategoryId: "",
+  });
+
+  // Industry taxonomy
+  const [industryTree, setIndustryTree] = useState([]);
+  const [selectedIndustry, setSelectedIndustry] = useState({
+    categoryId: "",
+    subcategoryId: "",
+  });
+
+  useEffect(() => {
+  (async () => {
+    try {
+      const { data } = await client.get("/general-categories/tree?type=tourism");
+      setGeneralTree(data.generalCategories || []);
+    } catch (err) {
+      console.error("Failed to load general categories", err);
+    }
+  })();
+}, []);
+
+  // Load INDUSTRY taxonomy tree
+  useEffect(() => {
     (async () => {
       try {
-        const { data } = await client.get("/general-categories/tree?type=tourism");
-        setGeneralTree(data.generalCategories || []);
+        const { data } = await client.get("/industry-categories/tree");
+        setIndustryTree(data.industryCategories || []);
       } catch (err) {
-        console.error("Failed to load general categories", err);
+        console.error("Failed to load industry categories", err);
       }
     })();
   }, []);
@@ -403,6 +421,16 @@ export default function CreateTourismPostPage() {
       label: ssc.name || `Sub-sub ${ssc.id}`,
     }));
   }, [generalTree, selectedGeneral.categoryId, selectedGeneral.subcategoryId]);
+
+  // Build options for industry pickers
+  const industryCategoryOptions = useMemo(
+    () => industryTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
+    [industryTree]
+  );
+  const industrySubcategoryOptions = useMemo(() => {
+    const c = industryTree.find((x) => x.id === selectedIndustry.categoryId);
+    return (c?.subcategories || []).map((sc) => ({ value: sc.id, label: sc.name || `Subcategory ${sc.id}` }));
+  }, [industryTree, selectedIndustry.categoryId]);
   
   
   
@@ -433,6 +461,9 @@ export default function CreateTourismPostPage() {
         .map((x) => x.o)
         .slice(0, 100);
     }, [query, options]);
+
+    // Show selected value or placeholder
+    const displayValue = selected && !query ? selected.label : query;
   
     useEffect(() => {
       function onDocClick(e) {
@@ -490,9 +521,9 @@ export default function CreateTourismPostPage() {
             <input
               ref={inputRef}
               type="text"
-              value={query}
+              value={displayValue}
               disabled={disabled}
-              placeholder={selected ? selected.label : placeholder}
+              placeholder={placeholder}
               onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
               onFocus={() => !disabled && setOpen(true)}
               onKeyDown={onKeyDown}
@@ -502,7 +533,7 @@ export default function CreateTourismPostPage() {
               aria-label={ariaLabel || placeholder}
               role="combobox"
               autoComplete="off"
-              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-16 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-16 focus:outline-none focus:ring-2 focus:ring-brand-200 text-black"
             />
             {selected && !disabled ? (
               <button
@@ -593,6 +624,9 @@ export default function CreateTourismPostPage() {
         generalCategoryId: selectedGeneral.categoryId || null,
         generalSubcategoryId: selectedGeneral.subcategoryId || null,
         generalSubsubCategoryId: selectedGeneral.subsubCategoryId || null,
+        // Industry taxonomy
+        industryCategoryId: selectedIndustry.categoryId || null,
+        industrySubcategoryId: selectedIndustry.subcategoryId || null,
       };
 
       if (isEditMode) {
@@ -847,43 +881,80 @@ export default function CreateTourismPostPage() {
             </section>
 
             {/* ===== General Classification (SEARCHABLE) ===== */}
-<section>
-  <h2 className="font-semibold text-brand-600">Classification</h2>
-  <p className="text-xs text-gray-600 mb-3">
-    Search and pick the category that best describes your product.
-  </p>
-
-  <div className="grid md:grid-cols-2 gap-4">
-    <div>
-      <label className="text-[12px] font-medium text-gray-700">General Category</label>
-      <SearchableSelect
-        ariaLabel="Category"
-        value={selectedGeneral.categoryId}
-        onChange={(val) =>
-          setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
-        }
-        options={generalCategoryOptions}
-        placeholder="Search & select category…"
-      />
-    </div>
-
-    <div>
-      <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
-      <SearchableSelect
-        ariaLabel="Subcategory"
-        value={selectedGeneral.subcategoryId}
-        onChange={(val) =>
-          setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
-        }
-        options={generalSubcategoryOptions}
-        placeholder="Search & select subcategory…"
-        disabled={!selectedGeneral.categoryId}
-      />
-    </div>
-
-    
-  </div>
-</section>
+            <section>
+              <h2 className="font-semibold text-brand-600">Classification</h2>
+              <p className="text-xs text-gray-600 mb-3">
+                Search and pick the category that best describes your tourism post.
+              </p>
+            
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">General Category</label>
+                  <SearchableSelect
+                    ariaLabel="Category"
+                    value={selectedGeneral.categoryId}
+                    onChange={(val) =>
+                      setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
+                    }
+                    options={generalCategoryOptions}
+                    placeholder="Search & select category…"
+                  />
+                </div>
+            
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+                  <SearchableSelect
+                    ariaLabel="Subcategory"
+                    value={selectedGeneral.subcategoryId}
+                    onChange={(val) =>
+                      setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
+                    }
+                    options={generalSubcategoryOptions}
+                    placeholder="Search & select subcategory…"
+                    disabled={!selectedGeneral.categoryId}
+                  />
+                </div>
+            
+            
+              </div>
+            </section>
+            
+            {/* ===== Industry Classification ===== */}
+            <section>
+              <h2 className="font-semibold text-brand-600">Industry Classification</h2>
+              <p className="text-xs text-gray-600 mb-3">
+                Select the industry category and subcategory that best describes your tourism post.
+              </p>
+            
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">Industry Category</label>
+                  <SearchableSelect
+                    ariaLabel="Industry Category"
+                    value={selectedIndustry.categoryId}
+                    onChange={(val) =>
+                      setSelectedIndustry({ categoryId: val, subcategoryId: "" })
+                    }
+                    options={industryCategoryOptions}
+                    placeholder="Search & select industry category…"
+                  />
+                </div>
+            
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">Industry Subcategory</label>
+                  <SearchableSelect
+                    ariaLabel="Industry Subcategory"
+                    value={selectedIndustry.subcategoryId}
+                    onChange={(val) =>
+                      setSelectedIndustry((s) => ({ ...s, subcategoryId: val }))
+                    }
+                    options={industrySubcategoryOptions}
+                    placeholder="Search & select industry subcategory…"
+                    disabled={!selectedIndustry.categoryId}
+                  />
+                </div>
+              </div>
+            </section>
 
             {/* ===== Share With (Audience selection) ===== */}
             <section>

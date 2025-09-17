@@ -116,6 +116,9 @@ export default function ProductsPage() {
     const [date, setDate] = useState("");
     const [registrationType, setRegistrationType] = useState("Free");
   
+    // Industries
+    const [selectedIndustries, setSelectedIndustries] = useState([]);
+  
 
   // Metadados
   const [categories, setCategories] = useState([]);
@@ -220,6 +223,7 @@ export default function ProductsPage() {
         audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
         audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
         audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
+        industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
 
         limit: 20,
         offset: 0,
@@ -261,6 +265,7 @@ export default function ProductsPage() {
    registrationType,
    selectedSubcategories,
    selectedFilters,
+   selectedIndustries,
    generalTree,
    data]);
 
@@ -281,6 +286,7 @@ export default function ProductsPage() {
           subcategoryId: subcategoryId || undefined,
           goalId: goalId || undefined,
           role:role || undefined,
+          industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
           limit: 10,
         };
         const { data } = await client.get("/feed/suggestions", { params });
@@ -292,7 +298,7 @@ export default function ProductsPage() {
         setLoadingSuggestions(false);
       }
     })();
-  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId,role]);
+  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, role, selectedIndustries]);
 
   // Handler for subcategory changes
   const handleSubcategoryChange = (subcategories) => {
@@ -390,6 +396,9 @@ export default function ProductsPage() {
     registrationType,
     setRegistrationType,
 
+    // industries
+    selectedIndustries,
+    setSelectedIndustries,
 
     categories,
     countries,

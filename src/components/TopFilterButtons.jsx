@@ -26,7 +26,7 @@ export default function TopFilterButtons({buttons=[], selected=[], setSelected, 
 
   const handleButtonClick = (buttonValue) => {
     if(selected.includes(buttonValue)){
-      if((from=="people")){
+      if((from=="people" || from=="jobs" || from=="products" || from=="services")){
         setSelected([])
         data.setUpdateData(Math.random())
       }else{
@@ -35,7 +35,7 @@ export default function TopFilterButtons({buttons=[], selected=[], setSelected, 
         data.setFiltersToClear([buttonLabels[buttonValue] || buttonValue])
       }
     }else{
-      if((from=="people")){
+      if((from=="people" || from=="jobs" || from=="products" || from=="services")){
         setSelected([buttonValue])
       }else{
         setSelected([...selected,buttonValue])

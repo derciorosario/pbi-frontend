@@ -9,8 +9,10 @@ import {
   getIdentityCatalog,
   updateDoSelections,
   updateInterestSelections,
+  updateIndustrySelections,
 } from "../api/profile";
 import { getUserById, updateUser } from "../api/admin";
+import client from "../api/client";
 import ProfilePhoto from "../components/ProfilePhoto";
 import COUNTRIES from "../constants/countries.js";
 import Header from "../components/Header.jsx";
@@ -20,6 +22,7 @@ const Tab = {
   PROFESSIONAL: "professional",
   DO: "do",
   INTERESTS: "interests",
+  INDUSTRIES: "industries",
 };
 
 export default function ProfilePage() {
@@ -64,11 +67,21 @@ export default function ProfilePage() {
   const [wantSubcategoryIds, setWantSubcategoryIds] = useState([]);
   const [wantSubsubCategoryIds, setWantSubsubCategoryIds] = useState([]);
 
+  // INDUSTRIES
+  const [industries, setIndustries] = useState([]);
+  const [industryCategoryIds, setIndustryCategoryIds] = useState([]);
+  const [industrySubcategoryIds, setIndustrySubcategoryIds] = useState([]);
+  const [industrySubsubCategoryIds, setIndustrySubsubCategoryIds] = useState([]);
+
   // UI open/close (DO / WANT)
   const [openCatsDo, setOpenCatsDo] = useState(() => new Set());
   const [openSubsDo, setOpenSubsDo] = useState(() => new Set());
   const [openCatsWant, setOpenCatsWant] = useState(() => new Set());
   const [openSubsWant, setOpenSubsWant] = useState(() => new Set());
+
+  // UI open/close for industries
+  const [openIndustryCats, setOpenIndustryCats] = useState(() => new Set());
+  const [openIndustrySubs, setOpenIndustrySubs] = useState(() => new Set());
 
   useEffect(() => {
     (async () => {
@@ -148,6 +161,16 @@ export default function ProfilePage() {
         setWantCategoryIds(userData.interestCategoryIds || []);
         setWantSubcategoryIds(userData.interestSubcategoryIds || []);
         setWantSubsubCategoryIds(userData.interestSubsubCategoryIds || []);
+
+        // INDUSTRIES
+        setIndustryCategoryIds(userData.industryCategoryIds || []);
+        setIndustrySubcategoryIds(userData.industrySubcategoryIds || []);
+        setIndustrySubsubCategoryIds(userData.industrySubsubCategoryIds || []);
+
+        // Load industry categories
+        const industryResponse = await client.get("/industry-categories/tree");
+        setIndustries(Array.isArray(industryResponse.data?.industryCategories)
+          ? industryResponse.data.industryCategories : []);
       } catch (e) {
         console.error(e);
         toast.error("Failed to load profile.");
@@ -156,6 +179,21 @@ export default function ProfilePage() {
       }
     })();
   }, [isAdminEditing, userId]);
+
+  // Load industry categories if not loaded yet
+  useEffect(() => {
+    if (industries.length === 0 && !loading) {
+      (async () => {
+        try {
+          const industryResponse = await client.get("/api/industry-categories/tree");
+          setIndustries(Array.isArray(industryResponse.data?.industryCategories)
+            ? industryResponse.data.industryCategories : []);
+        } catch (e) {
+          console.error("Failed to load industry categories:", e);
+        }
+      })();
+    }
+  }, [industries.length, loading]);
 
   // Use the progress percentage from the API response
   const progress = me?.progress?.percent ?? 0;
@@ -288,7 +326,7 @@ export default function ProfilePage() {
   async function saveInterests() {
     try {
       setSaving(true);
-      
+
       if (isAdminEditing && userId) {
         // Admin editing another user - this would require additional backend endpoints
         // for admins to update user taxonomy selections
@@ -303,6 +341,29 @@ export default function ProfilePage() {
         });
         setMe(data);
         toast.success("Updated what you're LOOKING FOR!");
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to save.");
+    } finally { setSaving(false); }
+  }
+
+  async function saveIndustries() {
+    try {
+      setSaving(true);
+
+      if (isAdminEditing && userId) {
+        // Admin editing another user - this would require additional backend endpoints
+        // for admins to update user taxonomy selections
+        toast.error("Admin editing of taxonomy selections is not supported yet.");
+      } else {
+        // User editing their own profile
+        const { data } = await updateIndustrySelections({
+          industryCategoryIds,
+          industrySubcategoryIds,
+          industrySubsubCategoryIds,
+        });
+        setMe(data);
+        toast.success("Updated your industries!");
       }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to save.");
@@ -550,6 +611,85 @@ export default function ProfilePage() {
     });
   };
 
+  /* ---------- INDUSTRY TOGGLE FUNCTIONS ---------- */
+
+  function makeToggleIndustryCategory({ industryCatIds, setIndustryCatIds, setIndustrySubIds, setIndustryXIds, setOpenIndustryCats, setOpenIndustrySubs }) {
+    return (industryCatId) => {
+      if (!industryCatId) return;
+      const has = industryCatIds.includes(industryCatId);
+      if (has) {
+        const subIds = industries.find(cat => cat.id === industryCatId)?.subcategories?.map(s => s.id) || [];
+        const xIds = subIds.flatMap((sid) => industries.find(cat => cat.id === industryCatId)?.subcategories?.find(s => s.id === sid)?.subsubs?.map(x => x.id) || []);
+        setIndustryCatIds((prev) => prev.filter((x) => x !== industryCatId));
+        setIndustrySubIds((prev) => prev.filter((sid) => !subIds.includes(sid)));
+        setIndustryXIds((prev) => prev.filter((x) => !xIds.includes(x)));
+        setOpenIndustryCats((prev) => { const next = new Set(prev); next.delete(industryCatId); return next; });
+        setOpenIndustrySubs((prev) => { const next = new Set(prev); for (const sid of subIds) next.delete(sid); return next; });
+      } else {
+        setIndustryCatIds((prev) => [...prev, industryCatId]);
+        setOpenIndustryCats((prev) => new Set(prev).add(industryCatId));
+      }
+    };
+  }
+
+  function makeToggleIndustrySub({ industrySubIds, setIndustrySubIds, setIndustryXIds, setOpenIndustrySubs, setIndustryCatIds, setOpenIndustryCats }) {
+    return (industrySubId) => {
+      if (!industrySubId) return;
+      const parentCatId = industries.find(cat => cat.subcategories?.some(s => s.id === industrySubId))?.id;
+      const has = industrySubIds.includes(industrySubId);
+      if (has) {
+        const xIds = industries.find(cat => cat.id === parentCatId)?.subcategories?.find(s => s.id === industrySubId)?.subsubs?.map(x => x.id) || [];
+        setIndustrySubIds((prev) => prev.filter((x) => x !== industrySubId));
+        setIndustryXIds((prev) => prev.filter((x) => !xIds.includes(x)));
+        setOpenIndustrySubs((prev) => { const n = new Set(prev); n.delete(industrySubId); return n; });
+      } else {
+        if (parentCatId) {
+          setIndustryCatIds((prev) => (prev.includes(parentCatId) ? prev : [...prev, parentCatId]));
+          setOpenIndustryCats((prev) => new Set(prev).add(parentCatId));
+        }
+        setIndustrySubIds((prev) => [...prev, industrySubId]);
+      }
+    };
+  }
+
+  function makeToggleIndustrySubsub({ setIndustryXIds, industrySubIds, setIndustrySubIds, setIndustryCatIds, setOpenIndustryCats }) {
+    return (industryXId) => {
+      if (!industryXId) return;
+      const parentSubId = industries.flatMap(cat => cat.subcategories || []).find(s => s.subsubs?.some(x => x.id === industryXId))?.id;
+      const parentCatId = parentSubId ? industries.find(cat => cat.subcategories?.some(s => s.id === parentSubId))?.id : null;
+      setIndustryXIds((prev) => {
+        const has = prev.includes(industryXId);
+        if (has) return prev.filter((x) => x !== industryXId);
+        if (parentSubId && !industrySubIds.includes(parentSubId)) {
+          setIndustrySubIds((p) => [...p, parentSubId]);
+        }
+        if (parentCatId) {
+          setIndustryCatIds((p) => (p.includes(parentCatId) ? p : [...p, parentCatId]));
+          setOpenIndustryCats((p) => new Set(p).add(parentCatId));
+        }
+        return [...prev, industryXId];
+      });
+    };
+  }
+
+  const toggleIndustryCategory = makeToggleIndustryCategory({
+    industryCatIds: industryCategoryIds, setIndustryCatIds: setIndustryCategoryIds,
+    setIndustrySubIds: setIndustrySubcategoryIds, setIndustryXIds: setIndustrySubsubCategoryIds,
+    setOpenIndustryCats: setOpenIndustryCats, setOpenIndustrySubs: setOpenIndustrySubs,
+  });
+
+  const toggleIndustrySub = makeToggleIndustrySub({
+    industrySubIds: industrySubcategoryIds, setIndustrySubIds: setIndustrySubcategoryIds,
+    setIndustryXIds: setIndustrySubsubCategoryIds, setOpenIndustrySubs: setOpenIndustrySubs,
+    setIndustryCatIds: setIndustryCategoryIds, setOpenIndustryCats: setOpenIndustryCats,
+  });
+
+  const toggleIndustrySubsub = makeToggleIndustrySubsub({
+    setIndustryXIds: setIndustrySubsubCategoryIds,
+    industrySubIds: industrySubcategoryIds, setIndustrySubIds: setIndustrySubcategoryIds,
+    setIndustryCatIds: setIndustryCategoryIds, setOpenIndustryCats: setOpenIndustryCats,
+  });
+
   /* ---------- AUTO-OPEN ON TAB ENTER ---------- */
   const computeOpenFromSelections = (catIds, subIds, xIds) => {
     const cats = new Set(catIds);
@@ -591,6 +731,15 @@ export default function ProfilePage() {
     setOpenCatsWant(cats);
     setOpenSubsWant(subs);
   }, [active, wantCategoryIds, wantSubcategoryIds, wantSubsubCategoryIds, subToCat, subsubToSub]);
+
+  // Open “INDUSTRIES” sets on entering the INDUSTRIES tab or when selections change
+  useEffect(() => {
+    if (active !== Tab.INDUSTRIES) return;
+    const cats = new Set(industryCategoryIds);
+    const subs = new Set(industrySubcategoryIds);
+    setOpenIndustryCats(cats);
+    setOpenIndustrySubs(subs);
+  }, [active, industryCategoryIds, industrySubcategoryIds]);
 
   /* ---------- UI ---------- */
   const Loading = () => (
@@ -822,6 +971,149 @@ export default function ProfilePage() {
     );
   }
 
+  // Industry tree component
+  function IndustryTreeStep({
+    title, subtitle,
+    industryCatIds, industrySubIds, industryXIds,
+    openIndustryCats, openIndustrySubs,
+    onToggleIndustryCat, onToggleIndustrySub, onToggleIndustrySubsub,
+    setOpenIndustryCats, setOpenIndustrySubs,
+  }) {
+    const hasIndustrySubs = (industryCat) => Array.isArray(industryCat?.subcategories) && industryCat.subcategories.length > 0;
+    const hasIndustrySubsubs = (industrySc) => Array.isArray(industrySc?.subsubs) && industrySc.subsubs.length > 0;
+
+    const toggleIndustryCatOpen = (industryCatId) => {
+      setOpenIndustryCats(prev => {
+        const n = new Set(prev);
+        n.has(industryCatId) ? n.delete(industryCatId) : n.add(industryCatId);
+        return n;
+      });
+    };
+
+    const toggleIndustrySubOpen = (industrySubId) => {
+      setOpenIndustrySubs(prev => {
+        const n = new Set(prev);
+        n.has(industrySubId) ? n.delete(industrySubId) : n.add(industrySubId);
+        return n;
+      });
+    };
+
+    return (
+      <>
+        <div className="text-center mb-6">
+          <h3 className="text-xl font-semibold mb-2">{title}</h3>
+          <p className="text-gray-600">{subtitle}</p>
+        </div>
+
+        <div className="space-y-4">
+          {industries.length === 0 ? (
+            <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
+              Loading industry categories...
+            </div>
+          ) : (
+            industries.map((industryCat, cIdx) => {
+              const _hasSubs = hasIndustrySubs(industryCat);
+              const industryCatOpen = !!industryCat.id && openIndustryCats.has(industryCat.id);
+              const industryCatSelected = !!industryCat.id && industryCatIds.includes(industryCat.id);
+
+              return (
+                <div key={`industry-cat-${cIdx}`} className="rounded-xl border">
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-xl">
+                    <div className="font-semibold">{industryCat.name}</div>
+                    <span className="text-xs text-gray-500">
+                      {(industryCat.subcategories || []).length} subcategories
+                    </span>
+                  </div>
+
+                  <div className="px-4 py-4 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={industryCatSelected}
+                        onChange={() => industryCat.id && onToggleIndustryCat(industryCat.id)}
+                      />
+                      <span className="font-medium">{industryCat.name}</span>
+                      {_hasSubs && (
+                        <button
+                          type="button"
+                          className="text-gray-500 hover:text-gray-700 ml-auto"
+                          aria-expanded={industryCatOpen}
+                          onClick={() => industryCat.id && toggleIndustryCatOpen(industryCat.id)}
+                        >
+                          <span className={`inline-block transition-transform ${industryCatOpen ? "rotate-180" : ""}`}>▾</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {_hasSubs && industryCatOpen && (
+                      <div className="ml-7 space-y-3">
+                        {(industryCat.subcategories || []).map((industrySc, sIdx) => {
+                          const _hasSubsubs = hasIndustrySubsubs(industrySc);
+                          const isOpen = !!industrySc.id && openIndustrySubs.has(industrySc.id);
+                          const isSelected = !!industrySc.id && industrySubIds.includes(industrySc.id);
+
+                          return (
+                            <div key={`industry-sub-${cIdx}-${sIdx}`} className="border rounded-lg p-3">
+                              <div className="flex items-center justify-between">
+                                <label className="flex items-center w-full flex-1 gap-3 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 text-brand-600"
+                                    checked={isSelected}
+                                    onChange={() => industrySc.id && onToggleIndustrySub(industrySc.id)}
+                                  />
+                                  <span className="font-medium w-full flex flex-1">{industrySc.name}</span>
+                                </label>
+
+                                {_hasSubsubs && (
+                                  <button
+                                    type="button"
+                                    onClick={() => industrySc.id && toggleIndustrySubOpen(industrySc.id)}
+                                    className="text-gray-500 hover:text-gray-700"
+                                    aria-expanded={isOpen}
+                                    aria-label={`Toggle ${industrySc.name} sub-items`}
+                                  >
+                                    <span className={`inline-block transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+                                  </button>
+                                )}
+                              </div>
+
+                              {_hasSubsubs && (isOpen || isSelected) && (
+                                <div className="mt-2 flex flex-wrap gap-2 ml-7">
+                                  {industrySc.subsubs.map((industrySs, ssIdx) => {
+                                    const ssSelected = !!industrySs.id && industryXIds.includes(industrySs.id);
+                                    return (
+                                      <label
+                                        key={`industry-ss-${cIdx}-${sIdx}-${ssIdx}`}
+                                        className="inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm cursor-pointer"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={ssSelected}
+                                          onChange={() => industrySs.id && onToggleIndustrySubsub(industrySs.id)}
+                                        />
+                                        <span>{industrySs.name}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </>
+    );
+  }
+
   return (
     <div>
       {!isAdminEditing && <Header/>}
@@ -862,6 +1154,9 @@ export default function ProfilePage() {
           </button>
           <button className={`px-4 py-2 rounded-lg border ${active===Tab.INTERESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INTERESTS)}>
             {isCompany ? "What We're LOOKING FOR" : "What I'm LOOKING FOR"}
+          </button>
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.INDUSTRIES ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INDUSTRIES)}>
+            {isCompany ? "Company Industries" : "Industries"}
           </button>
         </div>
 
@@ -1111,8 +1406,44 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {/* INDUSTRIES */}
+          {active === Tab.INDUSTRIES && (
+            <div className="space-y-6">
+              {industries.length === 0 ? (
+                <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
+                  Loading industry categories...
+                </div>
+              ) : (
+                <>
+                  <IndustryTreeStep
+                    title={isCompany ? "Choose your company's industry focus" : "Choose your industry focus"}
+                    subtitle={isCompany
+                      ? "Select the industries that best represent your company's sector and expertise."
+                      : "Select the industries that best represent your professional sector and expertise."
+                    }
+                    industryCatIds={industryCategoryIds}
+                    industrySubIds={industrySubcategoryIds}
+                    industryXIds={industrySubsubCategoryIds}
+                    openIndustryCats={openIndustryCats}
+                    openIndustrySubs={openIndustrySubs}
+                    onToggleIndustryCat={toggleIndustryCategory}
+                    onToggleIndustrySub={toggleIndustrySub}
+                    onToggleIndustrySubsub={toggleIndustrySubsub}
+                    setOpenIndustryCats={setOpenIndustryCats}
+                    setOpenIndustrySubs={setOpenIndustrySubs}
+                  />
+
+                  <div className="flex justify-end gap-3">
+                    <button disabled={saving} onClick={saveIndustries} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
     </div>
   );
 }
+

@@ -1,5 +1,5 @@
 // src/components/ProductCard.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import {
   MapPin,
   User2,
@@ -10,7 +10,24 @@ import {
   Star,
   Eye,
   Share2,
+  Copy as CopyIcon,
 } from "lucide-react";
+import {
+  FacebookShareButton,
+  FacebookIcon,
+  LinkedinShareButton,
+  LinkedinIcon,
+  TwitterShareButton,
+  TwitterIcon,
+  WhatsappShareButton,
+  WhatsappIcon,
+  TelegramShareButton,
+  TelegramIcon,
+  EmailShareButton,
+  EmailIcon,
+  FacebookMessengerShareButton,
+  FacebookMessengerIcon,
+} from "react-share";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -39,6 +56,33 @@ export default function ProductCard({
   
   // Track connection status locally (for immediate UI updates)
   const [connectionStatus, setConnectionStatus] = useState(item?.connectionStatus || "none");
+  
+  // Share popover
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareMenuRef = useRef(null);
+  const cardRef = useRef(null);
+  
+  // Close share menu on outside click / Esc
+  useEffect(() => {
+    function onDown(e) {
+      if (
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(e.target) &&
+        !cardRef.current?.contains(e.target)
+      ) {
+        setShareOpen(false);
+      }
+    }
+    function onEsc(e) {
+      if (e.key === "Escape") setShareOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
 
   function onSent() {
     toast.success("Connection request sent");
@@ -79,6 +123,7 @@ export default function ProductCard({
   return (
     <>
       <div
+        ref={cardRef}
         className={`${containerBase} ${containerLayout} ${
           !isList && isHovered ? "transform -translate-y-1" : ""
         }`}
@@ -161,18 +206,7 @@ export default function ProductCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Share functionality
-                  if (navigator.share) {
-                    navigator.share({
-                      title: item.title,
-                      text: item.description,
-                      url: window.location.href,
-                    }).catch(err => console.error('Error sharing:', err));
-                  } else {
-                    // Fallback
-                    navigator.clipboard.writeText(window.location.href);
-                    toast.success("Link copied to clipboard");
-                  }
+                  setShareOpen((s) => !s);
                 }}
                 className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
                 aria-label="Share product"
@@ -256,18 +290,7 @@ export default function ProductCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Share functionality
-                  if (navigator.share) {
-                    navigator.share({
-                      title: item.title,
-                      text: item.description,
-                      url: window.location.href,
-                    }).catch(err => console.error('Error sharing:', err));
-                  } else {
-                    // Fallback
-                    navigator.clipboard.writeText(window.location.href);
-                    toast.success("Link copied to clipboard");
-                  }
+                  setShareOpen((s) => !s);
                 }}
                 className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
                 aria-label="Share product"
@@ -483,6 +506,9 @@ export default function ProductCard({
         {!isList && (
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-50" />
         )}
+
+        {/* SHARE MENU - inside the card for proper positioning */}
+        {shareOpen && <ShareMenu item={item} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
       </div>
 
       {/* Connection Request Modal */}
@@ -495,11 +521,11 @@ export default function ProductCard({
       />
 
      <ProfileModal
-              userId={openId}
-              isOpen={!!openId}
-              onClose={() => setOpenId(null)}
-              onSent={onSent}
-      />
+               userId={openId}
+               isOpen={!!openId}
+               onClose={() => setOpenId(null)}
+               onSent={onSent}
+       />
 
       {/* Product Details Modal */}
       <ProductDetails
@@ -566,4 +592,101 @@ export default function ProductCard({
       </button>
     );
   }
+  
+  // Share data and components
+  const ShareMenu = ({ item, shareMenuRef, setShareOpen }) => {
+    const shareUrl = `${window.location.origin}/products?id=${item?.id}`;
+    const shareTitle = item?.title || "Product on 54Links";
+    const shareQuote = (item?.description || "").slice(0, 160) + ((item?.description || "").length > 160 ? "…" : "");
+    const shareHashtags = ["54Links", "Products", "Shopping"].filter(Boolean);
+    const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
+  
+    return (
+      <div
+        ref={shareMenuRef}
+        className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+        role="dialog"
+        aria-label="Share options"
+      >
+        <div className="text-xs font-medium text-gray-500 px-1 pb-2">
+          Share this product
+        </div>
+  
+        <div className="grid grid-cols-3 gap-2">
+          <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <WhatsappIcon size={40} round />
+              <span className="text-xs text-gray-700">WhatsApp</span>
+            </div>
+          </WhatsappShareButton>
+  
+          <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <FacebookIcon size={40} round />
+              <span className="text-xs text-gray-700">Facebook</span>
+            </div>
+          </FacebookShareButton>
+  
+          <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <LinkedinIcon size={40} round />
+              <span className="text-xs text-gray-700">LinkedIn</span>
+            </div>
+          </LinkedinShareButton>
+  
+          <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <TwitterIcon size={40} round />
+              <span className="text-xs text-gray-700">X / Twitter</span>
+            </div>
+          </TwitterShareButton>
+  
+          <TelegramShareButton url={shareUrl} title={shareTitle}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <TelegramIcon size={40} round />
+              <span className="text-xs text-gray-700">Telegram</span>
+            </div>
+          </TelegramShareButton>
+  
+          <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <EmailIcon size={40} round />
+              <span className="text-xs text-gray-700">Email</span>
+            </div>
+          </EmailShareButton>
+  
+          {messengerAppId && (
+            <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
+              <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+                <FacebookMessengerIcon size={40} round />
+                <span className="text-xs text-gray-700">Messenger</span>
+              </div>
+            </FacebookMessengerShareButton>
+          )}
+        </div>
+  
+        <div className="mt-2">
+          <CopyLinkButton shareUrl={shareUrl} setShareOpen={setShareOpen} />
+        </div>
+      </div>
+    );
+  };
+  
+  const CopyLinkButton = ({ shareUrl, setShareOpen }) => (
+    <button
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Link copied");
+          setShareOpen(false);
+        } catch {
+          toast.error("Failed to copy link");
+        }
+      }}
+      className="flex items-center gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+    >
+      <CopyIcon size={16} />
+      Copy link
+    </button>
+  );
 }

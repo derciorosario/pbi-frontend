@@ -109,6 +109,9 @@ export default function EventsPage() {
     const [date, setDate] = useState("");
     const [registrationType, setRegistrationType] = useState("");
   
+    // Industries
+    const [selectedIndustries, setSelectedIndustries] = useState([]);
+  
 
   // Metadados
   const [categories, setCategories] = useState([]);
@@ -214,6 +217,7 @@ export default function EventsPage() {
         audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
         audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
         audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
+        industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
         limit: 20,
         offset: 0,
       };
@@ -254,6 +258,7 @@ export default function EventsPage() {
     registrationType,
     selectedSubcategories,
     selectedFilters,
+    selectedIndustries,
     generalTree,
     data]);
 
@@ -274,6 +279,7 @@ export default function EventsPage() {
           subcategoryId: subcategoryId || undefined,
           goalId: goalId || undefined,
           role:role || undefined,
+          industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
           limit: 10,
         };
         const { data } = await client.get("/feed/suggestions", { params });
@@ -285,7 +291,7 @@ export default function EventsPage() {
         setLoadingSuggestions(false);
       }
     })();
-  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId,role]);
+  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, role, selectedIndustries]);
 
    // State declarations moved to the top of the component
    
@@ -372,6 +378,10 @@ export default function EventsPage() {
     setDate,
     registrationType,
     setRegistrationType,
+
+    // industries
+    selectedIndustries,
+    setSelectedIndustries,
 
     onApply: () => setMobileFiltersOpen(false),
   };

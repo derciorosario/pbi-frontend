@@ -108,6 +108,167 @@ const styles = {
   chip: "inline-flex items-center rounded-full bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1 text-xs",
 };
 
+/* ---------- Reusable SearchableSelect (combobox) ---------- */
+function SearchableSelect({
+  value,
+  onChange,
+  options, // [{ value, label }]
+  placeholder = "Select…",
+  disabled = false,
+  required = false,
+  ariaLabel,
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const rootRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const selected = useMemo(() => options.find((o) => String(o.value) === String(value)) || null, [options, value]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options.slice(0, 100);
+    return options
+      .map((o) => ({ o, score: (o.label || "").toLowerCase().indexOf(q) }))
+      .filter((x) => x.score !== -1)
+      .sort((a, b) => a.score - b.score)
+      .map((x) => x.o)
+      .slice(0, 100);
+  }, [query, options]);
+
+  // Show selected value or placeholder
+  const displayValue = selected && !query ? selected.label : query;
+
+  useEffect(() => {
+    function onDocClick(e) {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  useEffect(() => {
+    if (!open) setActiveIndex(0);
+  }, [open, query]);
+
+  function pick(opt) {
+    onChange?.(opt?.value || "");
+    setQuery("");
+    setOpen(false);
+    inputRef.current?.blur();
+  }
+
+  function clear() {
+    onChange?.("");
+    setQuery("");
+    setOpen(false);
+  }
+
+  function onKeyDown(e) {
+    if (disabled) return;
+    if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      setOpen(true);
+      return;
+    }
+    if (!open) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const opt = filtered[activeIndex];
+      if (opt) pick(opt);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }
+
+  return (
+    <div ref={rootRef} className={`relative ${disabled ? "opacity-60" : ""}`}>
+      <div className="grid gap-1.5">
+        <div className="relative">
+          <input
+            ref={inputRef}
+            type="text"
+            value={displayValue}
+            disabled={disabled}
+            placeholder={placeholder}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => !disabled && setOpen(true)}
+            onKeyDown={onKeyDown}
+            aria-autocomplete="list"
+            aria-expanded={open}
+            aria-controls="ss-results"
+            aria-label={ariaLabel || placeholder}
+            role="combobox"
+            autoComplete="off"
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-16 focus:outline-none focus:ring-2 focus:ring-brand-200 text-black"
+          />
+          {selected && !disabled ? (
+            <button
+              type="button"
+              onClick={clear}
+              className="absolute right-8 top-1/2 -translate-y-1/2 rounded-md p-1 hover:bg-gray-100"
+              title="Clear"
+            >
+              ×
+            </button>
+          ) : null}
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+            <I.chevron />
+          </span>
+        </div>
+
+        {/* Hidden required input to participate in HTML validity if needed */}
+        {required && (
+          <input
+            tabIndex={-1}
+            aria-hidden="true"
+            className="sr-only"
+            required
+            value={value || ""}
+            onChange={() => {}}
+          />
+        )}
+      </div>
+
+      {open && !disabled && (
+        <div
+          id="ss-results"
+          role="listbox"
+          className="absolute z-30 mt-2 w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden"
+        >
+          {filtered.length === 0 ? (
+            <div className="p-3 text-sm text-gray-500">No results</div>
+          ) : (
+            <ul className="max-h-72 overflow-auto">
+              {filtered.map((opt, idx) => {
+                const isActive = idx === activeIndex;
+                return (
+                  <li
+                    key={opt.value}
+                    role="option"
+                    aria-selected={isActive}
+                    className={`cursor-pointer px-3 py-2 text-sm ${isActive ? "bg-brand-50" : "hover:bg-gray-50"}`}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                    onMouseDown={(e) => { e.preventDefault(); pick(opt); }}
+                  >
+                    {opt.label}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function fmtDate(dateStr) {
   if (!dateStr) return "—";
   try {
@@ -551,6 +712,13 @@ export default function CreateJobOpportunity() {
     subsubCategoryId: "",
   });
 
+  // Industry taxonomy
+  const [industryTree, setIndustryTree] = useState([]);
+  const [selectedIndustry, setSelectedIndustry] = useState({
+    categoryId: "",
+    subcategoryId: "",
+  });
+
   useEffect(() => {
     (async () => {
       try {
@@ -558,6 +726,18 @@ export default function CreateJobOpportunity() {
         setGeneralTree(data.generalCategories || []);
       } catch (err) {
         console.error("Failed to load general categories", err);
+      }
+    })();
+  }, []);
+
+  // Load INDUSTRY taxonomy tree
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/industry-categories/tree");
+        setIndustryTree(data.industryCategories || []);
+      } catch (err) {
+        console.error("Failed to load industry categories", err);
       }
     })();
   }, []);
@@ -687,6 +867,12 @@ export default function CreateJobOpportunity() {
         // Collect images/logos/cover
         setMedia(extractMedia(job));
         if (job.coverImageBase64) setCoverImageBase64(job.coverImageBase64);
+
+        // Set industry selections if they exist
+        setSelectedIndustry({
+          categoryId: job.industryCategoryId || "",
+          subcategoryId: job.industrySubcategoryId || "",
+        });
       } catch (error) {
         console.error("Error fetching job data:", error);
         toast.error("Failed to load job data");
@@ -725,6 +911,16 @@ export default function CreateJobOpportunity() {
     const cat = cats.find((c) => c.id === form.categoryId);
     return cat?.subcategories || [];
   }, [cats, form.categoryId]);
+
+  // Build options for industry pickers
+  const industryCategoryOptions = useMemo(
+    () => industryTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
+    [industryTree]
+  );
+  const industrySubcategoryOptions = useMemo(() => {
+    const c = industryTree.find((x) => x.id === selectedIndustry.categoryId);
+    return (c?.subcategories || []).map((sc) => ({ value: sc.id, label: sc.name || `Subcategory ${sc.id}` }));
+  }, [industryTree, selectedIndustry.categoryId]);
 
   const onChange = (e) => {
     if (readOnly) return;
@@ -772,6 +968,10 @@ export default function CreateJobOpportunity() {
 
         companyId: form.companyId || null, // << ensure id is sent
         companyName: form.companyName || "", // keep legacy field populated
+
+        // Industry taxonomy
+        industryCategoryId: selectedIndustry.categoryId || null,
+        industrySubcategoryId: selectedIndustry.subcategoryId || null,
       };
 
       if (isEditMode) {
@@ -970,7 +1170,48 @@ export default function CreateJobOpportunity() {
 
 
 
+         
             <hr className="my-5 border-gray-200" />
+
+            {/* ===== Industry Classification ===== */}
+            <div className="mb-2 flex items-center gap-2">
+              <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
+              <h3 className="font-semibold">Industry Classification</h3>
+            </div>
+            <p className="text-xs text-gray-600 mb-3">
+              Search and pick the industry category that best describes this job opportunity.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <Label>Industry Category</Label>
+                <SearchableSelect
+                  ariaLabel="Industry Category"
+                  value={selectedIndustry.categoryId}
+                  onChange={(val) =>
+                    setSelectedIndustry({ categoryId: val, subcategoryId: "" })
+                  }
+                  options={industryCategoryOptions}
+                  placeholder="Search & select industry category…"
+                />
+              </div>
+
+              <div>
+                <Label>Industry Subcategory</Label>
+                <SearchableSelect
+                  ariaLabel="Industry Subcategory"
+                  value={selectedIndustry.subcategoryId}
+                  onChange={(val) =>
+                    setSelectedIndustry((s) => ({ ...s, subcategoryId: val }))
+                  }
+                  options={industrySubcategoryOptions}
+                  placeholder="Search & select industry subcategory…"
+                  disabled={!selectedIndustry.categoryId}
+                />
+              </div>
+            </div>
+
+               <hr className="my-5 border-gray-200" />
 
             {/* ===== Share With (Audience selection) ===== */}
             <div className="mb-2 flex items-center gap-2">
@@ -986,6 +1227,7 @@ export default function CreateJobOpportunity() {
               selected={audSel}
               onChange={(next) => setAudSel(next)}
             />
+
 
             <hr className="my-5 border-gray-200" />
 

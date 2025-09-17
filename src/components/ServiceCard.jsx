@@ -1,6 +1,6 @@
 
 // src/components/ServiceCard.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -10,7 +10,24 @@ import {
   Edit,
   MessageCircle,
   Share2,
+  Copy as CopyIcon,
 } from "lucide-react";
+import {
+  FacebookShareButton,
+  FacebookIcon,
+  LinkedinShareButton,
+  LinkedinIcon,
+  TwitterShareButton,
+  TwitterIcon,
+  WhatsappShareButton,
+  WhatsappIcon,
+  TelegramShareButton,
+  TelegramIcon,
+  EmailShareButton,
+  EmailIcon,
+  FacebookMessengerShareButton,
+  FacebookMessengerIcon,
+} from "react-share";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ServiceDetails from "./ServiceDetails";
 import ProfileModal from "./ProfileModal";
@@ -42,6 +59,33 @@ export default function ServiceCard({
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(item?.connectionStatus || "none");
   const [openId, setOpenId] = useState(null);               // Profile modal
+  
+  // Share popover
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareMenuRef = useRef(null);
+  const cardRef = useRef(null);
+  
+  // Close share menu on outside click / Esc
+  useEffect(() => {
+    function onDown(e) {
+      if (
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(e.target) &&
+        !cardRef.current?.contains(e.target)
+      ) {
+        setShareOpen(false);
+      }
+    }
+    function onEsc(e) {
+      if (e.key === "Escape") setShareOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
   
   // First image (supports base64url or string URL)
   const imageUrl =
@@ -128,7 +172,7 @@ export default function ServiceCard({
 
   return (
     <>
-      <div className={`${containerBase} ${containerLayout}`}>
+      <div ref={cardRef} className={`${containerBase} ${containerLayout}`}>
         {/* IMAGE */}
         {isList ? (
           <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
@@ -179,14 +223,9 @@ export default function ServiceCard({
             </button>
 
               <button
-                onClick={() => {
-                  const shareUrl = `${window.location.origin}/services?id=${item.id}`;
-                  if (navigator.share) {
-                    navigator.share({ title: item.title, text: item.description, url: shareUrl }).catch(() => {});
-                  } else {
-                    navigator.clipboard.writeText(shareUrl);
-                    toast.success("Link copied to clipboard");
-                  }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShareOpen((s) => !s);
                 }}
                 className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
                 aria-label="Share"
@@ -251,14 +290,9 @@ export default function ServiceCard({
             </button>
             
               <button
-                onClick={() => {
-                  const shareUrl = `${window.location.origin}/services?id=${item.id}`;
-                  if (navigator.share) {
-                    navigator.share({ title: item.title, text: item.description, url: shareUrl }).catch(() => {});
-                  } else {
-                    navigator.clipboard.writeText(shareUrl);
-                    toast.success("Link copied to clipboard");
-                  }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShareOpen((s) => !s);
                 }}
                 className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
                 aria-label="Share"
@@ -297,7 +331,7 @@ export default function ServiceCard({
 
           {/* Price */}
           <div className="mt-2 mb-3">
-            <span className="text-2xl font-bold text-gray-700">{priceLabel}</span>
+            <span className="text-sm font-bold text-gray-700">{priceLabel}</span>
           </div>
 
           {/* Meta (provider + match + time + location) */}
@@ -443,6 +477,9 @@ export default function ServiceCard({
             {!isOwner && renderConnectButton()}
           </div>
         </div>
+
+        {/* SHARE MENU - inside the card for proper positioning */}
+        {shareOpen && <ShareMenu item={item} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
       </div>
 
       {/* Connection Request Modal */}
@@ -522,3 +559,102 @@ export default function ServiceCard({
     );
   }
 }
+
+// Share data and components
+const ShareMenu = ({ item, shareMenuRef, setShareOpen }) => {
+  const shareUrl = `${window.location.origin}/services?id=${item?.id}`;
+  const shareTitle = item?.title || "Service on 54Links";
+  const shareQuote = (item?.description || "").slice(0, 160) + ((item?.description || "").length > 160 ? "…" : "");
+  const shareHashtags = ["54Links", "Services", "Professionals"].filter(Boolean);
+  const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
+
+  return (
+    <div
+      ref={shareMenuRef}
+      className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      role="dialog"
+      aria-label="Share options"
+    >
+      <div className="text-xs font-medium text-gray-500 px-1 pb-2">
+        Share this service
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <WhatsappIcon size={40} round />
+            <span className="text-xs text-gray-700">WhatsApp</span>
+          </div>
+        </WhatsappShareButton>
+
+        <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <FacebookIcon size={40} round />
+            <span className="text-xs text-gray-700">Facebook</span>
+          </div>
+        </FacebookShareButton>
+
+        <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <LinkedinIcon size={40} round />
+            <span className="text-xs text-gray-700">LinkedIn</span>
+          </div>
+        </LinkedinShareButton>
+
+        <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <TwitterIcon size={40} round />
+            <span className="text-xs text-gray-700">X / Twitter</span>
+          </div>
+        </TwitterShareButton>
+
+        <TelegramShareButton url={shareUrl} title={shareTitle}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <TelegramIcon size={40} round />
+            <span className="text-xs text-gray-700">Telegram</span>
+          </div>
+        </TelegramShareButton>
+
+        <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <EmailIcon size={40} round />
+            <span className="text-xs text-gray-700">Email</span>
+          </div>
+        </EmailShareButton>
+
+        {messengerAppId && (
+          <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <FacebookMessengerIcon size={40} round />
+              <span className="text-xs text-gray-700">Messenger</span>
+            </div>
+          </FacebookMessengerShareButton>
+        )}
+      </div>
+
+      <div className="mt-2">
+        <CopyLinkButton shareUrl={shareUrl} setShareOpen={setShareOpen} />
+      </div>
+    </div>
+  );
+};
+
+const CopyLinkButton = ({ shareUrl, setShareOpen }) => {
+  return (
+    <button
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Link copied");
+          setShareOpen(false);
+        } catch {
+          toast.error("Failed to copy link");
+        }
+      }}
+      className="flex items-center gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+    >
+      <CopyIcon size={16} />
+      Copy link
+    </button>
+  );
+};

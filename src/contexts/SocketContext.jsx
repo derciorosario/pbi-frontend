@@ -13,7 +13,7 @@ export const SocketProvider = ({ children }) => {
   const [totalUnreadCount, setTotalUnreadCount] = useState(0);
   const { token, isAuthed, user } = useAuth();
 
-  const env = "dev";
+  const env = "pro";
   const API_URL = env === "dev" ? "http://localhost:5000" : "https://kaziwani-server.visum.co.mz";
 
   useEffect(() => {
