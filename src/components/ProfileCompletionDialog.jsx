@@ -6,7 +6,8 @@ import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function ProfileCompletionDialog({ isOpen, onClose }) {
-  const { profile, refreshAuth } = useAuth();
+  const { profile, refreshAuth, user } = useAuth();
+  const isCompany = user?.accountType === 'company';
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     professionalTitle: profile?.professionalTitle || "",
@@ -27,8 +28,8 @@ export default function ProfileCompletionDialog({ isOpen, onClose }) {
 
   const validate = () => {
     const newErrors = {
-      professionalTitle: !form.professionalTitle ? "Please enter your job title or role" : "",
-      about: !form.about ? "Please tell us a bit about yourself" : "",
+      professionalTitle: !form.professionalTitle ? (isCompany ? "Please enter your company role or position" : "Please enter your job title or role") : "",
+      about: !form.about ? (isCompany ? "Please tell us a bit about your company" : "Please tell us a bit about yourself") : "",
     };
 
     setErrors(newErrors);
@@ -78,16 +79,21 @@ export default function ProfileCompletionDialog({ isOpen, onClose }) {
           <X size={24} />
         </button>
 
-        <h2 className="mt-2 text-[1.4rem] font-bold text-gray-900 mb-[0.5rem]">Help others get to know you</h2>
+        <h2 className="mt-2 text-[1.4rem] font-bold text-gray-900 mb-[0.5rem]">
+          {isCompany ? "Help others get to know your company" : "Help others get to know you"}
+        </h2>
         <p className="mt-1 text-gray-500">
-           Add a title and short intro now. You can update the rest anytime.
+          {isCompany
+            ? "Add a company title and short description now. You can update the rest anytime."
+            : "Add a title and short intro now. You can update the rest anytime."
+          }
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <Input
             name="professionalTitle"
-            label="Job Title or Role"
-            placeholder="e.g. Software Engineer, Marketing Manager"
+            label={isCompany ? "Company Role or Position" : "Job Title or Role"}
+            placeholder={isCompany ? "e.g. CEO, Marketing Director, Operations Manager" : "e.g. Software Engineer, Marketing Manager"}
             value={form.professionalTitle}
             onChange={onChange}
             error={errors.professionalTitle}
@@ -95,12 +101,15 @@ export default function ProfileCompletionDialog({ isOpen, onClose }) {
 
           <div className="space-y-1">
             <label htmlFor="about" className="text-sm font-medium text-gray-700">
-              About You
+              {isCompany ? "About Your Company" : "About You"}
             </label>
             <textarea
               id="about"
               name="about"
-              placeholder="Tell us about yourself, your experience, and what you're looking for"
+              placeholder={isCompany
+                ? "Tell us about your company, what you do, and what you're looking for"
+                : "Tell us about yourself, your experience, and what you're looking for"
+              }
               value={form.about}
               onChange={onChange}
               rows={4}
@@ -127,7 +136,10 @@ export default function ProfileCompletionDialog({ isOpen, onClose }) {
 
           {/* Optional small hint below the button */}
           <p className="text-xs text-gray-500 text-center">
-            Just enough for others to recognize your work.
+            {isCompany
+              ? "Just enough for others to recognize your company's work."
+              : "Just enough for others to recognize your work."
+            }
           </p>
         </form>
       </div>

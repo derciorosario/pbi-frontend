@@ -11,6 +11,9 @@ export default function OneShotOnboarding() {
   const [subsubCategoryIds, setSubsubCategoryIds] = useState([]);
   const [goalIds, setGoalIds] = useState([]);
 
+
+  console.log({userAccountType})
+
   useEffect(() => {
     (async () => {
       try {

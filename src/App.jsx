@@ -95,6 +95,7 @@ function App() {
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/meetings" element={<MeetingsPage />} />
             <Route path="/fundings/create" element={<CrowdfundForm />} />
+            <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
         <Route path="/admin" element={<AdminLayout />}>
@@ -123,7 +124,6 @@ function App() {
             <Route path="/product/:id" element={<CreateProductPage />} />
             <Route path="/experience/:id" element={<CreateTourismPostPage />} />
             <Route path="/service/:id" element={<CreateServicePage />} />
-            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/settings" element={<SettingsPage />} />
         </Route>
 

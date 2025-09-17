@@ -35,6 +35,7 @@ export default function FourStepOnboarding() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [identities, setIdentities] = useState([]);
+  const [userAccountType, setUserAccountType] = useState(null);
 
   // selections (what user DOES)
   const [identityIds, setIdentityIds] = useState([]);
@@ -60,6 +61,13 @@ export default function FourStepOnboarding() {
       try {
         setLoading(true);
         setError("");
+
+        // First get user info to determine account type
+        const userResponse = await client.get("/auth/me");
+        const userAccountType = userResponse.data?.accountType;
+        setUserAccountType(userAccountType);
+
+        // gets identities + canonical IDs for categories/subcats/subsubs + goals WITH ids
         const { data } = await client.get("/public/identities");
         setIdentities(Array.isArray(data?.identities) ? data.identities : []);
       } catch (e) {
@@ -80,10 +88,20 @@ export default function FourStepOnboarding() {
 
   const getIdentityKey = (iden) => iden.id || `name:${iden.name}`;
 
+  // Get the appropriate identities based on account type
+  const identitiesToShow = useMemo(() => {
+    if (userAccountType === 'company') {
+      // For companies, we need to get company identities from the API response
+      // This would be available in the data.company_identities field
+      return Array.isArray(identities) ? identities : [];
+    }
+    return Array.isArray(identities) ? identities : [];
+  }, [identities, userAccountType]);
+
   // maps/relationships (shared)
   const catToIdentityKeys = useMemo(() => {
     const m = {};
-    for (const iden of identities) {
+    for (const iden of identitiesToShow) {
       const ik = getIdentityKey(iden);
       for (const c of iden.categories || []) {
         if (!c?.id) continue;
@@ -92,11 +110,11 @@ export default function FourStepOnboarding() {
       }
     }
     return m;
-  }, [identities]);
+  }, [identitiesToShow]);
 
   const subToIdentityKeys = useMemo(() => {
     const m = {};
-    for (const iden of identities) {
+    for (const iden of identitiesToShow) {
       const ik = getIdentityKey(iden);
       for (const c of iden.categories || []) {
         for (const s of c.subcategories || []) {
@@ -107,11 +125,11 @@ export default function FourStepOnboarding() {
       }
     }
     return m;
-  }, [identities]);
+  }, [identitiesToShow]);
 
   const subsubToIdentityKeys = useMemo(() => {
     const m = {};
-    for (const iden of identities) {
+    for (const iden of identitiesToShow) {
       const ik = getIdentityKey(iden);
       for (const c of iden.categories || []) {
         for (const s of c.subcategories || []) {
@@ -124,11 +142,11 @@ export default function FourStepOnboarding() {
       }
     }
     return m;
-  }, [identities]);
+  }, [identitiesToShow]);
 
   const subToCat = useMemo(() => {
     const m = {};
-    for (const iden of identities) {
+    for (const iden of identitiesToShow) {
       for (const c of iden.categories || []) {
         for (const s of c.subcategories || []) {
           if (s?.id) m[s.id] = c.id;
@@ -136,11 +154,11 @@ export default function FourStepOnboarding() {
       }
     }
     return m;
-  }, [identities]);
+  }, [identitiesToShow]);
 
   const subsubToSub = useMemo(() => {
     const m = {};
-    for (const iden of identities) {
+    for (const iden of identitiesToShow) {
       for (const c of iden.categories || []) {
         for (const s of c.subcategories || []) {
           for (const x of s.subsubs || []) {
@@ -150,11 +168,11 @@ export default function FourStepOnboarding() {
       }
     }
     return m;
-  }, [identities]);
+  }, [identitiesToShow]);
 
   const catToAllSubIds = useMemo(() => {
     const m = {};
-    for (const iden of identities) {
+    for (const iden of identitiesToShow) {
       for (const c of iden.categories || []) {
         if (!c?.id) continue;
         const subs = (c.subcategories || []).map((s) => s.id).filter(Boolean);
@@ -162,11 +180,11 @@ export default function FourStepOnboarding() {
       }
     }
     return m;
-  }, [identities]);
+  }, [identitiesToShow]);
 
   const subToAllSubsubIds = useMemo(() => {
     const m = {};
-    for (const iden of identities) {
+    for (const iden of identitiesToShow) {
       for (const c of iden.categories || []) {
         for (const s of c.subcategories || []) {
           if (!s?.id) continue;
@@ -176,7 +194,7 @@ export default function FourStepOnboarding() {
       }
     }
     return m;
-  }, [identities]);
+  }, [identitiesToShow]);
 
   // ---------- Toggles (generic builders) ----------
 
@@ -398,13 +416,13 @@ export default function FourStepOnboarding() {
   // derived lists
   const selectedIdentitiesDoes = useMemo(() => {
     const keys = new Set(identityIds);
-    return identities.filter((iden) => keys.has(getIdentityKey(iden)));
-  }, [identities, identityIds]);
+    return identitiesToShow.filter((iden) => keys.has(getIdentityKey(iden)));
+  }, [identitiesToShow, identityIds]);
 
   const selectedIdentitiesWant = useMemo(() => {
     const keys = new Set(interestIdentityIds);
-    return identities.filter((iden) => keys.has(getIdentityKey(iden)));
-  }, [identities, interestIdentityIds]);
+    return identitiesToShow.filter((iden) => keys.has(getIdentityKey(iden)));
+  }, [identitiesToShow, interestIdentityIds]);
 
   // guards
   const canContinue1 = identityIds.length >= 1;
@@ -474,7 +492,7 @@ export default function FourStepOnboarding() {
               Choose one or more{typeof limit === "number" ? ` (up to ${limit}).` : "."}
             </p>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {identities.map((iden, i) => {
+              {identitiesToShow.map((iden, i) => {
                 const key = getIdentityKey(iden);
                 const active = picked.includes(key);
                 const disabled = !active && reached; // can't add more
@@ -700,8 +718,11 @@ export default function FourStepOnboarding() {
       {/* STEP 1: Who you are (DO) */}
       {step === 1 && (
         <IdentityStep
-          title="Tell us who you are"
-          subtitle="Choose the identities that best represent what you DO."
+          title={userAccountType === 'company' ? "Tell us about your company" : "Tell us who you are"}
+          subtitle={userAccountType === 'company'
+            ? "Choose the identities that best represent what your company DOES."
+            : "Choose the identities that best represent what you DO."
+          }
           picked={identityIds}
           onToggle={toggleIdentityDoes}
           next={() => setStep(2)}
@@ -712,8 +733,11 @@ export default function FourStepOnboarding() {
       {/* STEP 2: Where you belong (DO) */}
       {step === 2 && (
         <CategoryTreeStep
-          title="Choose where you belong"
-          subtitle="Select the categories that match your expertise and activity."
+          title={userAccountType === 'company' ? "Choose your company's focus areas" : "Choose where you belong"}
+          subtitle={userAccountType === 'company'
+            ? "Select the categories that match your company's expertise and activity."
+            : "Select the categories that match your expertise and activity."
+          }
           selectedIdentities={selectedIdentitiesDoes}
           catIds={categoryIds}
           subIds={subcategoryIds}
@@ -735,8 +759,11 @@ export default function FourStepOnboarding() {
       {/* STEP 3: What you're looking for (WANT) — MAX 3 identities */}
       {step === 3 && (
         <IdentityStep
-          title="What are you looking for?"
-          subtitle="Pick the identities you want to connect with or discover."
+          title={userAccountType === 'company' ? "What is your company looking for?" : "What are you looking for?"}
+          subtitle={userAccountType === 'company'
+            ? "Pick the identities your company wants to connect with or discover."
+            : "Pick the identities you want to connect with or discover."
+          }
           picked={interestIdentityIds}
           onToggle={toggleIdentityWant}
           next={() => setStep(4)}
@@ -749,8 +776,11 @@ export default function FourStepOnboarding() {
       {/* STEP 4: Categories you're looking for (WANT) — MAX 3 categories */}
       {step === 4 && (
         <CategoryTreeStep
-          title="Pick the categories you are looking for"
-          subtitle="Select categories and roles you want to find."
+          title={userAccountType === 'company' ? "Pick the categories your company is looking for" : "Pick the categories you are looking for"}
+          subtitle={userAccountType === 'company'
+            ? "Select categories and roles your company wants to find."
+            : "Select categories and roles you want to find."
+          }
           selectedIdentities={selectedIdentitiesWant}
           catIds={interestCategoryIds}
           subIds={interestSubcategoryIds}

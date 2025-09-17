@@ -18,7 +18,7 @@ import { useData } from "../../contexts/DataContext.jsx";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import DefaultLayout from "../../layout/DefaultLayout.jsx";
 import QuickActions from "../../components/QuickActions.jsx";
-import { CalendarDays, Briefcase, Wrench, Package, Map, PiggyBank, Pencil, PlusCircle, Rocket, ChevronRight } from "lucide-react";
+import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import ProfileCard from "../../components/ProfileCard.jsx";
 import ServiceCard from "../../components/ServiceCard.jsx";
 import ProductCard from "../../components/ProductCard-1.jsx";
@@ -34,49 +34,6 @@ function useDebounce(v, ms = 400) {
     return () => clearTimeout(t);
   }, [v, ms]);
   return val;
-}
-
-// Small section header with icon + count
-function SectionHeader({ icon: Icon, title, subtitle, count, onSeeMore }) {
-  return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon className="h-5 w-5 text-brand-600" />}
-          <h3 className="text-sm font-semibold text-gray-900 tracking-wide uppercase">
-            {title}
-          </h3>
-          <button
-            onClick={onSeeMore}
-            className="ml-2 text-xs font-medium text-brand-600 hover:text-brand-700 inline-flex items-center gap-1 px-0 py-0.5"
-            type="button"
-          >
-            See more <ChevronRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        <span className="text-xs text-gray-500 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full">
-          {count} {count === 1 ? "item" : "items"}
-        </span>
-      </div>
-      {subtitle && (
-        <p className="mt-1 text-xs text-gray-600">{subtitle}</p>
-      )}
-    </div>
-  );
-}
-
-// Grid/List wrapper per section
-function SectionGrid({ children, list, wide }) {
-  return (
-    <div
-      className={
-        "grid grid-cols-1 gap-6" +
-        (list ? " sm:grid-cols-1" : wide ? " sm:grid-cols-3" : " sm:grid-cols-2")
-      }
-    >
-      {children}
-    </div>
-  );
 }
 
 export default function FeedPage() {
@@ -124,41 +81,6 @@ export default function FeedPage() {
 
   const data = useData();
   const { user } = useAuth();
-
-  // Titles and icons per kind
-  const KIND_META = {
-    event: { title: "Events", icon: CalendarDays, subtitle: "Discover amazing events happening out there.", tab: "Events", path: "/events" },
-    job: { title: "Jobs", icon: Briefcase, subtitle: "Find Your Next Opportunity", tab: "Jobs", path: "/jobs" },
-    service: { title: "Services", icon: Wrench, subtitle: "Professional Services", tab: "Services", path: "/services" },
-    product: { title: "Products", icon: Package, subtitle: "Find and engage with innovative products", tab: "Products", path: "/products" },
-    tourism: { title: "Experiences", icon: Map, subtitle: "Discover amazing destinations", tab: "Experiences", path: "/experiences" },
-    funding: { title: "Opportunities", icon: PiggyBank, subtitle: "Raise funds or back bold ideas", tab: "Funding", path: "/funding" },
-  };
-
-  // Group items by kind so the frontend is structured
-  const groups = useMemo(() => {
-    const g = { event: [], job: [], service: [], product: [], tourism: [], funding: [] };
-    (items || []).forEach((it) => {
-      if (g[it.kind]) g[it.kind].push(it);
-    });
-    return g;
-  }, [items]);
-
-  // Which sections to show (order). If tab != All, show only that tab's section
-  const sectionOrder = ["event", "job", "service", "product", "tourism", "funding"];
-  const visibleSections = useMemo(() => {
-    if (activeTab === "All") return sectionOrder.filter((k) => (groups[k] || []).length > 0);
-    const map = {
-      Events: "event",
-      Jobs: "job",
-      Services: "service",
-      Products: "product",
-      Experiences: "tourism",
-      Funding: "funding",
-    };
-    const key = map[activeTab] || "event";
-    return (groups[key] || []).length ? [key] : [];
-  }, [activeTab, groups]);
 
   useEffect(() => {
     (async () => {
@@ -265,66 +187,38 @@ export default function FeedPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
-  const renderSection = (kindKey) => {
-    const itemsOfKind = groups[kindKey] || [];
-    if (!itemsOfKind.length) return null;
-    const meta = KIND_META[kindKey];
-
-    const handleSeeMore = () => {
-      // Navigate to dedicated page for this section, carrying over current filters
-      try {
-        const qs = new URLSearchParams();
-        if (debouncedQ) qs.set('q', debouncedQ);
-        if (country) qs.set('country', country);
-        if (city) qs.set('city', city);
-        if (categoryId) qs.set('categoryId', categoryId);
-        if (subcategoryId) qs.set('subcategoryId', subcategoryId);
-        const search = qs.toString();
-        navigate(search ? `${meta.path}?${search}` : meta.path);
-      } catch {
-        // fallback: still switch tab if navigation fails
-        setActiveTab(meta.tab);
-      }
-    };
-
-    return (
-      <section key={kindKey} id={`section-${kindKey}`} className="mt-10 first:mt-0 scroll-mt-24">
-        <SectionHeader icon={meta.icon} title={meta.title} subtitle={meta.subtitle} count={itemsOfKind.length} onSeeMore={handleSeeMore} />
-        <SectionGrid list={view === "list"} wide={!user}>
-          {itemsOfKind.slice(0, 4).map((item) => {
-            if (kindKey === "job") {
-              return (
-                <JobCard
-                  type={view}
-                  key={`job-${item.id}`}
-                  matchPercentage={item.matchPercentage}
-                  job={{
-                    ...item,
-                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
-                    subcategoryName: categories
-                      .find((c) => String(c.id) === String(item.categoryId))
-                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
-                  }}
-                />
-              );
-            }
-            if (kindKey === "service") {
-              return <ServiceCard type={view} key={`service-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
-            }
-            if (kindKey === "product") {
-              return <ProductCard type={view} key={`product-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
-            }
-            if (kindKey === "tourism") {
-              return <ExperienceCard type={view} key={`tourism-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
-            }
-            if (kindKey === "funding") {
-              return <CrowdfundCard type={view} key={`funding-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
-            }
-            return <EventCard type={view} key={`event-${item.id}`} item={item} e={item} matchPercentage={item.matchPercentage} />;
-          })}
-        </SectionGrid>
-      </section>
-    );
+  const renderItem = (item) => {
+    // Render by kind while preserving order from API
+    if (item.kind === "job") {
+      return (
+        <JobCard
+          type={view}
+          key={`job-${item.id}`}
+          matchPercentage={item.matchPercentage}
+          job={{
+            ...item,
+            categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+            subcategoryName: categories
+              .find((c) => String(c.id) === String(item.categoryId))
+              ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+          }}
+        />
+      );
+    }
+    if (item.kind === "service") {
+      return <ServiceCard type={view} key={`service-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
+    }
+    if (item.kind === "product") {
+      return <ProductCard type={view} key={`product-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
+    }
+    if (item.kind === "tourism") {
+      return <ExperienceCard type={view} key={`tourism-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
+    }
+    if (item.kind === "funding") {
+      return <CrowdfundCard type={view} key={`funding-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
+    }
+    // default = event
+    return <EventCard type={view} key={`event-${item.id}`} item={item} e={item} matchPercentage={item.matchPercentage} />;
   };
 
   return (
@@ -361,9 +255,9 @@ export default function FeedPage() {
                   { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                   { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                   { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
-                  { label: "Post a Product", Icon: PlusCircle,  onClick: () => navigate("/products/create") },
-                  { label: "Post a Service", Icon: PlusCircle,onClick: () => navigate("/services/create") },
-                  { label: "Post a Funding Project or Opportunity", Icon: PlusCircle, onClick: () => navigate("/funding/create")}
+                  { label: "Post a Product", Icon: PlusCircle, onClick: () => navigate("/products/create") },
+                  { label: "Post a Service", Icon: PlusCircle, onClick: () => navigate("/services/create") },
+                  { label: "Post a Funding Project or Opportunity", Icon: PlusCircle, onClick: () => navigate("/funding/create") },
                 ]}
               />
             </section>
@@ -371,12 +265,23 @@ export default function FeedPage() {
             {loadingFeed && <CardSkeletonLoader columns={user ? 2 : 3} />}
 
             {!loadingFeed && showTotalCount && (
-              <div className="text-sm text-gray-600">{totalCount} result{totalCount === 1 ? "" : "s"}</div>
+              <div className="text-sm text-gray-600">
+                {totalCount} result{totalCount === 1 ? "" : "s"}
+              </div>
             )}
 
             {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
 
-            {!loadingFeed && visibleSections.map(renderSection)}
+            {!loadingFeed && items.length > 0 && (
+              <div
+                className={
+                  "grid grid-cols-1 gap-6" +
+                  (view === "list" ? " sm:grid-cols-1" : user ? " sm:grid-cols-2" : " sm:grid-cols-3")
+                }
+              >
+                {items.map(renderItem)}
+              </div>
+            )}
           </section>
 
           <aside className={`${user ? "lg:col-span-3" : "lg:col-span-4"} hidden sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto`}>
