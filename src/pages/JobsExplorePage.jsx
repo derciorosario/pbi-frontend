@@ -161,6 +161,8 @@ export default function PeopleFeedPage() {
 
   // Update audienceSelections when selectedFilters changes
   useEffect(() => {
+    // Set the ref to true to prevent double fetching
+    isUpdatingAudienceRef.current = true;
 
     if (selectedFilters.length > 0 && audienceTree.length > 0) {
       const identityIds = selectedFilters
@@ -169,7 +171,6 @@ export default function PeopleFeedPage() {
           return id;
         })
         .filter(id => id !== null);
-
 
       setAudienceSelections(prev => ({
         ...prev,
@@ -181,6 +182,11 @@ export default function PeopleFeedPage() {
         identityIds: new Set()
       }));
     }
+
+    // Reset the ref after the state update
+    setTimeout(() => {
+      isUpdatingAudienceRef.current = false;
+    }, 0);
   }, [selectedFilters, audienceTree, getIdentityIdFromLabel]);
 
   // Fetch feed (somente na aba Posts)
@@ -280,9 +286,41 @@ export default function PeopleFeedPage() {
     registrationType,
     selectedIndustries,]);
 
+  // Use a ref to track if we're in the middle of updating audience selections
+  const isUpdatingAudienceRef = React.useRef(false);
+
   useEffect(() => {
-    fetchFeed();
-  }, [fetchFeed]);
+    // Only fetch if we're not in the middle of an audience update
+    if (!isUpdatingAudienceRef.current) {
+      fetchFeed();
+    }
+  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,
+    selectedFilters,
+    audienceSelections,
+    // NEW deps:
+    price,
+    serviceType,
+    priceType,
+    deliveryTime,
+    experienceLevel,
+    locationType,
+    jobType,
+    workMode,
+    workLocation,
+    workSchedule,
+    careerLevel,
+    paymentType,
+    postType,
+    season,
+    budgetRange,
+    fundingGoal,
+    amountRaised,
+    currency,
+    deadline,
+    eventType,
+    date,
+    registrationType,
+    selectedIndustries]);
 
   // Fetch suggestions (sempre mostramos na direita)
   useEffect(() => {
