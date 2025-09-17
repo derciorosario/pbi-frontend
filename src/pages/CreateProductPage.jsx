@@ -183,6 +183,212 @@ export default function CreateProductPage() {
     subsubCategoryIds: new Set(),
   });
 
+
+
+  // General taxonomy
+  const [generalTree, setGeneralTree] = useState([]);
+  const [selectedGeneral, setSelectedGeneral] = useState({
+    categoryId: "",
+    subcategoryId: "",
+    subsubCategoryId: "",
+  });
+
+
+  useEffect(() => {
+  (async () => {
+    try {
+      const { data } = await client.get("/general-categories/tree?type=product");
+      setGeneralTree(data.generalCategories || []);
+    } catch (err) {
+      console.error("Failed to load general categories", err);
+    }
+  })();
+}, []);
+
+const generalCategoryOptions = useMemo(
+  () => generalTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
+  [generalTree]
+);
+
+const generalSubcategoryOptions = useMemo(() => {
+  const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
+  return (c?.subcategories || []).map((sc) => ({
+    value: sc.id,
+    label: sc.name || `Subcategory ${sc.id}`,
+  }));
+}, [generalTree, selectedGeneral.categoryId]);
+
+const generalSubsubCategoryOptions = useMemo(() => {
+  const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
+  const sc = c?.subcategories?.find((s) => s.id === selectedGeneral.subcategoryId);
+  return (sc?.subsubcategories || []).map((ssc) => ({
+    value: ssc.id,
+    label: ssc.name || `Sub-sub ${ssc.id}`,
+  }));
+}, [generalTree, selectedGeneral.categoryId, selectedGeneral.subcategoryId]);
+
+
+
+/* ---------- Reusable SearchableSelect (combobox) ---------- */
+function SearchableSelect({
+  value,
+  onChange,
+  options, // [{ value, label }]
+  placeholder = "Select…",
+  disabled = false,
+  required = false,
+  ariaLabel,
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const rootRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const selected = useMemo(() => options.find((o) => String(o.value) === String(value)) || null, [options, value]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options.slice(0, 100);
+    return options
+      .map((o) => ({ o, score: (o.label || "").toLowerCase().indexOf(q) }))
+      .filter((x) => x.score !== -1)
+      .sort((a, b) => a.score - b.score)
+      .map((x) => x.o)
+      .slice(0, 100);
+  }, [query, options]);
+
+  useEffect(() => {
+    function onDocClick(e) {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  useEffect(() => {
+    if (!open) setActiveIndex(0);
+  }, [open, query]);
+
+  function pick(opt) {
+    onChange?.(opt?.value || "");
+    setQuery("");
+    setOpen(false);
+    inputRef.current?.blur();
+  }
+
+  function clear() {
+    onChange?.("");
+    setQuery("");
+    setOpen(false);
+    inputRef.current?.focus();
+  }
+
+  function onKeyDown(e) {
+    if (disabled) return;
+    if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      setOpen(true);
+      return;
+    }
+    if (!open) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const opt = filtered[activeIndex];
+      if (opt) pick(opt);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }
+
+  return (
+    <div ref={rootRef} className={`relative ${disabled ? "opacity-60" : ""}`}>
+      <div className="grid gap-1.5">
+        <div className="relative">
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            disabled={disabled}
+            placeholder={selected ? selected.label : placeholder}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => !disabled && setOpen(true)}
+            onKeyDown={onKeyDown}
+            aria-autocomplete="list"
+            aria-expanded={open}
+            aria-controls="ss-results"
+            aria-label={ariaLabel || placeholder}
+            role="combobox"
+            autoComplete="off"
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-16 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          />
+          {selected && !disabled ? (
+            <button
+              type="button"
+              onClick={clear}
+              className="absolute right-8 top-1/2 -translate-y-1/2 rounded-md p-1 hover:bg-gray-100"
+              title="Clear"
+            >
+              ×
+            </button>
+          ) : null}
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+            <I.chevron />
+          </span>
+        </div>
+
+        {/* Hidden required input to participate in HTML validity if needed */}
+        {required && (
+          <input
+            tabIndex={-1}
+            aria-hidden="true"
+            className="sr-only"
+            required
+            value={value || ""}
+            onChange={() => {}}
+          />
+        )}
+      </div>
+
+      {open && !disabled && (
+        <div
+          id="ss-results"
+          role="listbox"
+          className="absolute z-30 mt-2 w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden"
+        >
+          {filtered.length === 0 ? (
+            <div className="p-3 text-sm text-gray-500">No results</div>
+          ) : (
+            <ul className="max-h-72 overflow-auto">
+              {filtered.map((opt, idx) => {
+                const isActive = idx === activeIndex;
+                return (
+                  <li
+                    key={opt.value}
+                    role="option"
+                    aria-selected={isActive}
+                    className={`cursor-pointer px-3 py-2 text-sm ${isActive ? "bg-brand-50" : "hover:bg-gray-50"}`}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                    onMouseDown={(e) => { e.preventDefault(); pick(opt); }}
+                  >
+                    {opt.label}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
   // Form state
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -364,6 +570,11 @@ export default function CreateProductPage() {
         categoryIds: Array.from(audSel.categoryIds),
         subcategoryIds: Array.from(audSel.subcategoryIds),
         subsubCategoryIds: Array.from(audSel.subsubCategoryIds),
+
+        generalCategoryId: selectedGeneral.categoryId || null,
+        generalSubcategoryId: selectedGeneral.subcategoryId || null,
+        generalSubsubCategoryId: selectedGeneral.subsubCategoryId || null,
+
       };
 
       if (isEditMode) {
@@ -577,6 +788,46 @@ export default function CreateProductPage() {
                   Tags help others find your product
                 </p>
               </div>
+
+
+
+{/* ===== General Classification (SEARCHABLE) ===== */}
+<section>
+  <h2 className="font-semibold text-brand-600">Classification</h2>
+  <p className="text-xs text-gray-600 mb-3">
+    Search and pick the category that best describes your product.
+  </p>
+
+  <div className="grid md:grid-cols-2 gap-4">
+    <div>
+      <label className="text-[12px] font-medium text-gray-700">Category</label>
+      <SearchableSelect
+        ariaLabel="Category"
+        value={selectedGeneral.categoryId}
+        onChange={(val) =>
+          setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
+        }
+        options={generalCategoryOptions}
+        placeholder="Search & select category…"
+      />
+    </div>
+
+    <div>
+      <label className="text-[12px] font-medium text-gray-700">Subcategory</label>
+      <SearchableSelect
+        ariaLabel="Subcategory"
+        value={selectedGeneral.subcategoryId}
+        onChange={(val) =>
+          setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
+        }
+        options={generalSubcategoryOptions}
+        placeholder="Search & select subcategory…"
+        disabled={!selectedGeneral.categoryId}
+      />
+    </div>
+
+  </div>
+</section>
 
               {/* ===== Share With (Audience selection) ===== */}
               <section>

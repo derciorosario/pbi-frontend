@@ -6,8 +6,6 @@ import styles from "../lib/styles";
 import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
 import { useSocket } from "../contexts/SocketContext";
-import * as messageApi from "../api/messages";
-import client from "../api/client";
 import LoginDialog from "./LoginDialog.jsx";
 import logoImg from "../assets/logo.png";
 
@@ -15,15 +13,15 @@ function Header({ page }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const { user, profile, signOut } = useAuth();
-  const { totalUnreadCount, connected } = useSocket();
+  const { socket, totalUnreadCount, connected } = useSocket();
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
-  const [connectionRequestCount, setConnectionRequestCount] = useState(0);
-  const [meetingRequestCount, setMeetingRequestCount] = useState(0);
+  const [connectionRequestCount, setConnectionRequestCount] = useState(0); // socket-driven
+  const [meetingRequestCount, setMeetingRequestCount] = useState(0);       // socket-driven
 
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
@@ -43,7 +41,7 @@ function Header({ page }) {
         setMoreOpen(false);
       }
       if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
-        // Don't close if user clicked the hamburger itself — backdrop handles this
+        // backdrop handles this
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -52,79 +50,59 @@ function Header({ page }) {
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
-  // Get unread message count
+  // Unread messages via socket (mirror SocketContext if it has the count)
   useEffect(() => {
-    if (!user) return;
+    if (!connected || !socket || !user?.id) return;
 
-    async function fetchUnreadCount() {
-      try {
-        const { data } = await messageApi.getUnreadCount();
-        setUnreadMessageCount(data.count || 0);
-      } catch (error) {
-        console.error("Failed to fetch unread message count:", error);
-      }
-    }
+    const handleUnread = (payload) => {
+      const count =
+        (payload && payload.data && typeof payload.data.count === "number" && payload.data.count) ??
+        (typeof payload?.count === "number" ? payload.count : 0);
+      setUnreadMessageCount(count);
+    };
 
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 3000);
-    return () => clearInterval(interval);
-  }, [user]);
+    socket.emit("get_unread_count");
+    socket.on("get_unread_count_result", handleUnread);
+    socket.on("unread_count_update", handleUnread);
 
-  // Get connection request count
+    return () => {
+      socket.off("get_unread_count_result", handleUnread);
+      socket.off("unread_count_update", handleUnread);
+    };
+  }, [connected, socket, user?.id]);
+
   useEffect(() => {
-    if (!user) return;
-
-    async function fetchConnectionRequests() {
-      try {
-        const { data } = await client.get("/connections/requests");
-        setConnectionRequestCount((data.incoming || []).length);
-      } catch (error) {
-        console.error("Failed to fetch connection requests:", error);
-      }
-    }
-
-    fetchConnectionRequests();
-    const interval = setInterval(fetchConnectionRequests, 3000);
-    return () => clearInterval(interval);
-  }, [user]);
-
-  // Get meeting request count
-  useEffect(() => {
-    if (!user) return;
-
-    async function fetchMeetingRequests() {
-      try {
-        const { data } = await client.get("/meeting-requests/upcoming");
-        const pendingRequests = (data || []).filter(
-          (req) => req.status === "pending" && req.requester?.id !== user.id
-        );
-        setMeetingRequestCount(pendingRequests.length);
-      } catch (error) {
-        console.error("Failed to fetch meeting requests:", error);
-      }
-    }
-
-    fetchMeetingRequests();
-    const interval = setInterval(fetchMeetingRequests, 3000);
-    return () => clearInterval(interval);
-  }, [user]);
-
-  // Use socket-provided unread count when available
-  useEffect(() => {
-    if (connected && totalUnreadCount !== undefined) {
+    if (typeof totalUnreadCount === "number") {
       setUnreadMessageCount(totalUnreadCount);
     }
-  }, [connected, totalUnreadCount]);
+  }, [totalUnreadCount]);
+
+  // ⬇️ NEW: Connection + Meeting badge counts via socket
+  useEffect(() => {
+    if (!connected || !socket || !user?.id) return;
+
+    const applyCounts = (counts) => {
+      const c = counts || {};
+      setConnectionRequestCount(
+        typeof c.connectionsPending === "number" ? c.connectionsPending : 0
+      );
+      setMeetingRequestCount(
+        typeof c.meetingsPending === "number" ? c.meetingsPending : 0
+      );
+    };
+
+    // ask current counts (ack) + listen to pushes
+    socket.emit("get_header_badge_counts", (res) => applyCounts(res));
+    socket.on("header_badge_counts", applyCounts);
+
+    return () => {
+      socket.off("header_badge_counts", applyCounts);
+    };
+  }, [connected, socket, user?.id]);
 
   const allNavItems = [
     { name: "feed", label: "Feed", path: "/", icon: <I.feed /> },
@@ -138,8 +116,8 @@ function Header({ page }) {
     { name: "funding", label: "Opportunites", path: "/funding", icon: <I.funding /> },
   ];
 
- const primaryNav = allNavItems.slice(0, 7);   // first 7 items
-const moreNav = allNavItems.slice(7);         // the rest go to "More"
+  const primaryNav = allNavItems.slice(0, 7);
+  const moreNav = allNavItems.slice(7);
 
   function isActive(item) {
     if (page) return page === item.name;
@@ -156,7 +134,10 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
 
   const initials = getInitials(user?.name || profile?.name);
   const anyMoreActive = moreNav.some(isActive);
-  const notifBadgeCount = Math.min(99, (connectionRequestCount || 0) + (meetingRequestCount || 0));
+  const notifBadgeCount = Math.min(
+    99,
+    (connectionRequestCount || 0) + (meetingRequestCount || 0)
+  );
 
   const NavButton = ({ item, onClick }) => {
     const active = isActive(item);
@@ -170,12 +151,24 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
           navigate(item.path);
         }}
         className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-colors ${
-          active ? "bg-brand-50 text-brand-600" : "text-gray-700 hover:bg-brand-50 hover:text-brand-600"
+          active
+            ? "bg-brand-50 text-brand-600"
+            : "text-gray-700 hover:bg-brand-50 hover:text-brand-600"
         }`}
       >
         {item.icon} {!user && item.name === "feed" ? "Home" : item.label}
       </a>
     );
+  };
+
+  // Click handlers that also RESET the two counts via socket
+  const goNotifications = () => {
+    if (connected && socket) {
+      socket.emit("mark_header_badge_seen", { type: "all" }, () => {});
+    }
+    setConnectionRequestCount(0);
+    setMeetingRequestCount(0);
+    navigate("/notifications");
   };
 
   return (
@@ -206,7 +199,7 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
               <NavButton key={item.name} item={item} />
             ))}
 
-            {/* "+" More menu (currently hidden) */}
+            {/* "+" More menu */}
             <div className="relative" ref={moreMenuRef}>
               <button
                 aria-haspopup="menu"
@@ -259,7 +252,7 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
               <>
                 {/* Notifications */}
                 <button
-                  onClick={() => navigate("/notifications")}
+                  onClick={goNotifications}
                   className="relative p-1.5 rounded-lg hover:bg-gray-100"
                   aria-label="Notifications"
                 >
@@ -461,7 +454,7 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
                     <button
                       onClick={() => {
                         setMobileOpen(false);
-                        navigate("/notifications");
+                        goNotifications();
                       }}
                       className="relative flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm hover:bg-gray-50"
                     >
@@ -470,7 +463,7 @@ const moreNav = allNavItems.slice(7);         // the rest go to "More"
                       {notifBadgeCount > 0 && (
                         <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-white text-[11px]">
                           {notifBadgeCount > 9 ? "9+" : notifBadgeCount}
-                        </span>  
+                        </span>
                       )}
                     </button>
                     <button

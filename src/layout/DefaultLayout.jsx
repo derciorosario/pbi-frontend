@@ -4,17 +4,26 @@ import FullPageLoader from '../components/ui/FullPageLoader'
 import LoginPrompt from '../components/LoginPrompt'
 import { useData } from '../contexts/DataContext'
 import { useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 function DefaultLayout({children}) {
-  const {loading}=useAuth()
+  const {loading,user}=useAuth()
   const data=useData()
   const {pathname}=useLocation()
+  const navigate=useNavigate()
 
   useEffect(()=>{
       data._scrollToSection('top',true);
   },[pathname])
 
-  if(loading) {
+  useEffect(()=>{
+     if(user && user?.accountType=="admin"){
+        navigate('/admin')
+     }
+  },[user])
+
+  
+
+  if(loading || user?.accountType=="admin") {
     return <FullPageLoader/>
   }
 

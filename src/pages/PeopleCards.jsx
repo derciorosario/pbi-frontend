@@ -6,7 +6,11 @@ import ConnectionRequestModal from "../components/ConnectionRequestModal.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useData } from "../contexts/DataContext.jsx";
 import { useNavigate } from "react-router-dom";
-import { ExternalLink, MapPin, Clock, Eye } from "lucide-react";
+import { ExternalLink, MapPin, Clock, Eye, UserX, UserCheck, Trash2 } from "lucide-react";
+import ConfirmDialog from "../components/ConfirmDialog.jsx";
+import client from "../api/client";
+import { toast } from "../lib/toast.js";
+
 
 /* --- Small reusable subcomponents --- */
 const Pill = ({ children, className = "" }) => (
@@ -77,6 +81,16 @@ export default function PeopleProfileCard({
   const [modalOpen, setModalOpen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(initialStatus || "none");
   const [isHovered, setIsHovered] = useState(false);
+  const [openConfirmRemove, setOpenConfirmRemove] = useState(false);
+
+
+  async function removeConnectionApi(note) {
+  // `note` comes from ConfirmDialog (when withInput=true)
+  await client.delete(`/connections/${id}`, { data: { note } });
+  setConnectionStatus("none");
+  toast.success("Connection removed");
+}
+
 
   const isList = type === "list";
   const location = [city, country].filter(Boolean).join(", ");
@@ -173,16 +187,15 @@ export default function PeopleProfileCard({
               </div>
               
             </div>
-
-           
-
         
         </div>
       )}
 
       {/* Profile Image (circular) - only when there's no heroUrl */}
+
+       
       
-        <div className="relative translate-x-3 -mt-8 z-10">
+        <div className="relative translate-x-3 -mt-8 z-10 flex justify-between">
           {heroUrl ? (
             <div className={`${isCompany ? 'w-20 h-20 rounded-md' : 'w-16 h-16 rounded-full'}  ${isCompany ? 'bg-blue-50' : 'bg-blue-50'} border-4 ${isCompany ? 'border-blue-50' : 'border-white'} overflow-hidden shadow-md`}>
               
@@ -198,6 +211,18 @@ export default function PeopleProfileCard({
               <span className={`${isCompany ? 'text-blue-600' : 'text-brand-600'} font-medium text-lg`}>{getInitials(name)}</span>
             </div>
           )}
+
+           {/* View profile */}
+          <button
+            onClick={() => {
+              setOpenId(id);
+              data._showPopUp?.("profile");
+            }}
+            className="h-10 w-10 translate-y-10 mr-6 flex-shrink-0 grid place-items-center rounded-xl border-2 border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
+            aria-label="View profile"
+          >
+            <Eye size={16} />
+          </button>
          
         </div>
       
@@ -302,17 +327,7 @@ export default function PeopleProfileCard({
 
         {/* Actions */}
         <div className="mt-auto pt-2 flex items-center gap-2">
-          {/* View profile */}
-          <button
-            onClick={() => {
-              setOpenId(id);
-              data._showPopUp?.("profile");
-            }}
-            className="h-10 w-10 flex-shrink-0 grid place-items-center rounded-xl border-2 border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
-            aria-label="View profile"
-          >
-            <Eye size={16} />
-          </button>
+        
 
           {/* Message */}
           <button
@@ -344,6 +359,23 @@ export default function PeopleProfileCard({
         toName={name}
         onSent={onSent}
       />
+
+      <ConfirmDialog
+      open={openConfirmRemove}
+      onClose={() => setOpenConfirmRemove(false)}
+      title="Remove this connection?"
+      text="This will remove the connection. You can send a new request later."
+      confirmText="Remove"
+      cancelText="Cancel"
+      tone="danger"
+      withInput={true}
+      inputLabel="Optional note"
+      inputPlaceholder="Why are you removing this connection?"
+      inputType="textarea"
+      requireValue={false}
+      onConfirm={removeConnectionApi}
+    />
+
      
     </div>
   );
@@ -353,11 +385,41 @@ export default function PeopleProfileCard({
 
     if (status === "connected") {
       return (
-        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-green-100 text-green-700 cursor-default">
-          Connected
+        <button
+          onClick={() => setOpenConfirmRemove(true)}
+          title="Connected — click to remove"
+          aria-label="Connected. Click to remove connection"
+          className="group/conn rounded-xl px-2.5 py-2 text-sm font-semibold w-full
+                    bg-green-100 text-green-700 border-2 border-green-200
+                    hover:bg-red-50 hover:text-red-700 hover:border-red-300
+                    focus:outline-none focus:ring-2 focus:ring-red-500/30
+                    transition-all duration-200 flex items-center justify-center"
+        >
+          <span className="flex items-center gap-2">
+            {/* Main icon/label swap */}
+            <UserCheck size={16} className="block group-hover/conn:hidden group-focus/conn:hidden" />
+            <UserX     size={16} className="hidden group-hover/conn:block group-focus/conn:block" />
+
+            <span className="block group-hover/conn:hidden group-focus/conn:hidden">Connected</span>
+            <span className="hidden group-hover/conn:block group-focus/conn:block">Remove</span>
+
+            {/* Affordance: delete icon BEFORE hover; 'tap to remove' AFTER hover */}
+            <span className="ml-2 inline-flex items-center">
+              <Trash2
+                size={14}
+                className="block group-hover/conn:hidden group-focus/conn:hidden text-gray-500"
+                aria-hidden="true"
+              />
+              <span className="hidden group-hover/conn:inline group-focus/conn:inline text-[11px] leading-none text-gray-500">
+                tap to remove
+              </span>
+            </span>
+          </span>
         </button>
       );
     }
+
+
     if (status === "pending_outgoing" || status === "outgoing_pending" || status === "pending") {
       return (
         <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-yellow-100 text-yellow-700 cursor-default">
@@ -371,7 +433,7 @@ export default function PeopleProfileCard({
           onClick={() => navigate("/notifications")}
           className="rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-100 text-brand-600 hover:bg-brand-200"
         >
-          <ExternalLink size={16} className="mr-1" />
+         
           Respond
         </button>
       );

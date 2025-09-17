@@ -47,6 +47,10 @@ import CrowdfundForm from './components/CrowdfundForm.jsx';
 import TermsOfServicePage from './pages/legal/TermsOfService.jsx';
 import PrivacyPolicyPage from './pages/legal/PrivacyPolicy.jsx';
 import PublicProfilePage from './pages/ProfilePage.jsx';
+import AdminLayout from './admin/AdminLayout.jsx';
+import AdminDashboard from './admin/AdminDashboard.jsx';
+import AdminUsers from './admin/AdminUsers.jsx';
+import AdminModeration from './admin/AdminModeration.jsx';
 
 
 
@@ -81,8 +85,6 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
 
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
             <Route path="/jobs/create" element={<CreateJobOpportunity />} />
             <Route path="/events/create" element={<CreateEventPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
@@ -93,11 +95,14 @@ function App() {
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/meetings" element={<MeetingsPage />} />
             <Route path="/fundings/create" element={<CrowdfundForm />} />
-            
-            
-            
         </Route>
-        
+
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="content-moderation" element={<AdminModeration/>} />
+          <Route path="user-profile/:id" element={<ProfilePage />} />
+        </Route>
 
         <Route element={<ProtectedRouteOnboarding/>}>
             <Route path="/" element={<Home/>} />
@@ -118,6 +123,8 @@ function App() {
             <Route path="/product/:id" element={<CreateProductPage />} />
             <Route path="/experience/:id" element={<CreateTourismPostPage />} />
             <Route path="/service/:id" element={<CreateServicePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
       </Routes>

@@ -16,6 +16,12 @@ import {
   Video,
   Map as MapIcon,
   Link as LinkIcon,
+  UserCheck,
+  UserMinus,
+  UserX,
+  Trash2,
+  ShieldBan,
+  Flag,
 } from "lucide-react";
 import client from "../api/client";
 import ConnectionRequestModal from "./ConnectionRequestModal";
@@ -23,6 +29,7 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "../lib/toast";
+import ConfirmDialog from "./ConfirmDialog";
 
 /* -------------------------------- utils --------------------------------- */
 function timeAgo(iso) {
@@ -193,6 +200,11 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
       setSubmitting(false);
     }
   }
+
+
+  
+
+
 
   if (!open) return null;
 
@@ -374,6 +386,54 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
   const [crOpen, setCrOpen] = useState(false);
+  const [openConfirmRemoveConnection, setOpenConfirmRemoveConnection] = useState(false);
+
+  // state (near other useState)
+  const [openConfirmBlock, setOpenConfirmBlock] = useState(false);
+  const [openConfirmReport, setOpenConfirmReport] = useState(false);
+
+  // handlers (inside the component)
+  
+  async function handleBlockUser(note) {
+  if (!user) return data._showPopUp("login_prompt");
+  await client.post(`/users/${userId}/block`, { note });
+  setProfile(p => {
+    const next = {
+      ...p,
+      block: { ...(p?.block || {}), iBlockedThem: true, status: "i_blocked" }
+    };
+    if (["connected","outgoing_pending","incoming_pending","pending","pending_outgoing","pending_incoming"].includes(p?.connectionStatus)) {
+      next.connectionStatus = "none";
+    }
+    return next;
+  });
+  toast.success("User blocked");
+}
+
+
+  async function handleUnblockUser() {
+    if (!user) return data._showPopUp("login_prompt");
+    await client.delete(`/users/${userId}/block`);
+    setProfile(p => {
+      const next = {
+        ...p,
+        block: { ...(p?.block || {}), iBlockedThem: false, status: "none" }
+      };
+      if (p?.connectionStatus === "blocked") next.connectionStatus = "none";
+      return next;
+    });
+    toast.success("User unblocked");
+  }
+
+  async function handleReportUser(description) {
+    if (!user) return data._showPopUp("login_prompt");
+    await client.post(`/reports`, {
+      targetType: "user",
+      targetId: userId,
+      description,
+    });
+    toast.success("Report submitted. Thanks for keeping the community safe.");
+  }
 
   // Meeting modal + list
   const [mrOpen, setMrOpen] = useState(false);
@@ -484,11 +544,46 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
         </button>
       );
     } else if (profile.connectionStatus === "connected") {
-      return (
-        <button className="flex-1 rounded-lg px-4 py-2 text-sm font-medium bg-green-100 text-green-700 cursor-default">
-          Connected
-        </button>
-      );
+          return (
+        
+     
+     <div className="flex-1">
+  <button
+    onClick={() => setOpenConfirmRemoveConnection(true)}
+    title="Connected — click to remove"
+    aria-label="Connected. Click to remove connection"
+    className="group/conn w-full inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold
+               bg-green-100 text-green-700 border border-green-200
+               hover:bg-red-50 hover:text-red-700 hover:border-red-300
+               focus:outline-none focus:ring-2 focus:ring-red-500/30
+               transition-all duration-200"
+  >
+    <span className="flex items-center gap-2">
+      {/* Main icon/label swap */}
+      <UserCheck size={16} className="block group-hover/conn:hidden group-focus/conn:hidden" />
+      <UserX     size={16} className="hidden group-hover/conn:block group-focus/conn:block" />
+
+      <span className="block group-hover/conn:hidden group-focus/conn:hidden">Connected</span>
+      <span className="hidden group-hover/conn:block group-focus/conn:block">Remove</span>
+
+      {/* Affordance: show delete icon BEFORE hover; show 'tap to remove' AFTER hover */}
+      <span className="ml-2 inline-flex items-center">
+        <Trash2
+          size={14}
+          className="block group-hover/conn:hidden group-focus/conn:hidden text-gray-500"
+          aria-hidden="true"
+        />
+        <span className="hidden group-hover/conn:inline group-focus/conn:inline text-[11px] leading-none text-gray-500">
+          tap to remove
+        </span>
+      </span>
+    </span>
+  </button>
+</div>
+
+ 
+
+        );
     } else {
       return (
         <button
@@ -500,6 +595,24 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
       );
     }
   }
+
+
+
+  async function handleRemoveConnection(note) {
+      if (!user) return data._showPopUp("login_prompt");
+      try {
+        await client.delete(`/connections/${userId}`, { data: { note } });
+        setProfile((p) => ({ ...p, connectionStatus: "none" }));
+        toast.success("Connection removed");
+      } catch (e) {
+        console.error(e);
+        toast.error(e?.response?.data?.message || "Failed to remove connection");
+      }
+  }
+
+
+  const isUnblock = !!profile?.block?.iBlockedThem;
+
 
   if (!isOpen) return null;
 
@@ -1148,17 +1261,47 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                 Member since {new Date(profile.memberSince).toLocaleDateString()} • {timeAgo(profile.memberSince)}
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-3 mt-6">
-                {renderConnectButton()}
+
+              <div className="flex items-center gap-2 my-4">
+                 {/* NEW: Block / Report with text labels */}
+                
+                {user && <button
+                onClick={() => (isUnblock ? handleUnblockUser() : setOpenConfirmBlock(true))}
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium transition-all
+                  ${isUnblock
+                    ? "border border-red-300 text-red-700 bg-red-50 hover:bg-red-100"
+                    : "border-2 border-gray-200 text-gray-700 bg-white hover:border-red-300 hover:text-red-700 hover:bg-red-50"}`}
+                aria-label={isUnblock ? "Unblock user" : "Block user"}
+                title={isUnblock ? "Unblock user" : "Block user"}
+              >
+                <ShieldBan size={16} />
+                <span>{isUnblock ? "Unblock user" : "Block user"}</span>
+              </button>}
 
                 <button
+                  onClick={() => setOpenConfirmReport(true)}
+                  className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium border-2 border-gray-200 text-gray-700 bg-white hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-all"
+                  aria-label="Report user"
+                  title="Report user"
+                >
+                  <Flag size={16} />
+                  <span>Report user</span>
+                </button>
+              </div>
+
+
+
+              {/* Actions */}
+              <div className={`flex gap-3 mt-6 ${isUnblock ? 'hidden':''}`}>
+              {renderConnectButton()}
+              <button
                   onClick={openMR}
                   className="flex-1 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium border border-brand-200 bg-white text-brand-700 hover:border-brand-500 hover:text-brand-700 transition-colors"
                 >
                   <CalendarDays size={18} className="mr-2" />
                   Request Meeting
-                </button>
+              </button>
+              
 
                 <button
                   onClick={() => {
@@ -1174,6 +1317,9 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                 >
                   Message
                 </button>
+
+              
+
               </div>
             </>
           )}
@@ -1201,6 +1347,64 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
           upsertMeetingList(m); // add to local list for immediate render
         }}
       />
+
+
+
+      <ConfirmDialog
+        open={openConfirmRemoveConnection}
+        onClose={() => setOpenConfirmRemoveConnection(false)}
+        title="Remove this connection?"
+        text="This action will remove the connection. You can send a new request later."
+        confirmText="Remove"
+        cancelText="Cancel"
+        tone="danger"
+        withInput={true}
+        inputLabel="Optional reason"
+        inputPlaceholder="Why are you removing this connection?"
+        inputType="textarea"
+        requireValue={false}
+        onConfirm={handleRemoveConnection}
+        onResult={(r) => {
+         toast.success("Connection removed");
+        }}
+      />
+
+
+
+      {/* Block dialog */}
+      <ConfirmDialog
+        open={openConfirmBlock}
+        onClose={() => setOpenConfirmBlock(false)}
+        title="Block this user?"
+        text="They won’t be able to message or connect with you. Any connection and pending requests will be removed."
+        confirmText="Block"
+        cancelText="Cancel"
+        tone="danger"
+        withInput={true}
+        inputLabel="Optional note"
+        inputPlaceholder="Why are you blocking this user?"
+        inputType="textarea"
+        requireValue={false}
+        onConfirm={handleBlockUser}
+      />
+
+      {/* Report dialog */}
+      <ConfirmDialog
+        open={openConfirmReport}
+        onClose={() => setOpenConfirmReport(false)}
+        title="Report this user?"
+        text="Tell us what’s going on. Our team will review."
+        confirmText="Submit report"
+        cancelText="Cancel"
+        tone="default"
+        withInput={true}
+        inputLabel="Report details"
+        inputPlaceholder="Describe the issue (spam, harassment, impersonation, etc.)"
+        inputType="textarea"
+        requireValue={true}
+        onConfirm={handleReportUser}
+      />
+
     </div>
   );
 }

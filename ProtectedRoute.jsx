@@ -25,10 +25,16 @@ const ProtectedRoute = ({ redirectTo = '/' }) => {
     return <Navigate to="/login" replace />;
   }
 
+   if (user?.accountType=="admin") {
+    return <Navigate to="/admin" replace />;
+  }
+
   // Redirect if onboarding not completed
   if (user && !user?.profile?.onboardingDone) {
     return <Navigate to="/onboarding" replace />;
   }
+
+   
 
   // ✅ Use <Outlet /> for nested routes
   return user ? <Outlet /> : <Navigate to={redirectTo} replace />;

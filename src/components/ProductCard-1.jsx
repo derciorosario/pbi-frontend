@@ -299,7 +299,7 @@ export default function ProductCard({
 
           {/* Price */}
           <div className={`${isList ? "mb-2" : "mb-3"}`}>
-            <span className="text-2xl font-bold text-gray-700">
+            <span className="text-sm font-bold text-gray-700">
               {currency} {item?.price}
             </span>
           </div>

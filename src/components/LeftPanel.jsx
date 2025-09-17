@@ -2,6 +2,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import hero from "../assets/phone-hero.png";
+import Logo from '../assets/logo.png'
+import WhiteLogo from '../assets/logo-white.png'
 
 export default function LeftPanel() {
   const navigate = useNavigate();
@@ -11,7 +13,9 @@ export default function LeftPanel() {
       {/* Home button at the top */}
      
      <div className="absolute left-4 top-4">
-        <h1 onClick={()=>navigate('/')} className="hover:underline cursor-pointer text-[20px]">54Links</h1>
+        <h1 onClick={()=>navigate('/')} className="hover:underline cursor-pointer text-[20px]">
+          <img src={WhiteLogo} width={110}/>
+        </h1>
      </div>
 
       {/* Hero content */}
@@ -29,7 +33,7 @@ export default function LeftPanel() {
           One App
         </h1>
         <p className="mt-8 tracking-wide uppercase text-sm text-white/80">
-          &copy; 2025 55Links
+          &copy; 2025 54Links
         </p>
       </div>
     </div>

@@ -13,6 +13,7 @@ import { useData } from "../../contexts/DataContext.jsx";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import DefaultLayout from "../../layout/DefaultLayout.jsx";
 import Logo from '../../assets/logo.png'
+import WhiteLogo from '../../assets/logo-white.png'
 import Demo from '../../assets/lg-main.png'
 import FeedPage from "../feed/FeedExplorePage.jsx";
 
@@ -31,6 +32,8 @@ export default function HomePage() {
 
   const [activeTab, setActiveTab] = useState("All");
   const tabs = useMemo(() => ["All", "Events", "Jobs","Services","Products"], []);
+
+
 
   // Authentication form state
   const [authTab, setAuthTab] = useState("signup");
@@ -228,7 +231,9 @@ export default function HomePage() {
              <div className="grid lg:grid-cols-12 gap-16 items-center">
                <div className="lg:col-span-7 text-white">
                  <div className="flex items-center gap-3 mb-8">
-                   <span className="text-3xl font-bold">54Links</span>
+                   <span className="text-3xl font-bold">
+                     <img src={WhiteLogo} width={110}/>
+                   </span>
                  </div>
 
                  <h1 className="text-6xl md:text-7xl font-black leading-[0.9] mb-8">
@@ -1210,7 +1215,7 @@ export default function HomePage() {
              <div className="border-t border-white/20 pt-8">
                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                  <div className="text-white/70 text-sm">
-                   © 2024 54Links. All rights reserved. Building global business networks together.
+                   © 2025 54Links. All rights reserved. Building global business networks together.
                  </div>
                  <div className="flex items-center gap-6 text-sm text-white/70">
                    <span>🌍 Global Platform</span>

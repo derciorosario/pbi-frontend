@@ -73,6 +73,10 @@ export default function PeopleFeedPage() {
   // Jobs
   const [jobType, setJobType] = useState("");
   const [workMode, setWorkMode] = useState("");
+  const [workLocation, setWorkLocation] = useState("");
+  const [workSchedule, setWorkSchedule] = useState("");
+  const [careerLevel, setCareerLevel] = useState("");
+  const [paymentType, setPaymentType] = useState("");
 
   // Tourism
   const [postType, setPostType] = useState("");
@@ -98,6 +102,8 @@ export default function PeopleFeedPage() {
   // Feed
   const [items, setItems] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(false);
+  const [totalCount, setTotalCount] = useState(0); // <-- add this
+  const [showTotalCount,setShowTotalCount] = useState(0)
 
   // Sugestões
   const [matches, setMatches] = useState([]);
@@ -167,6 +173,10 @@ export default function PeopleFeedPage() {
         // jobs
         jobType: jobType || undefined,
         workMode: workMode || undefined,
+        workLocation: workLocation || undefined,
+        workSchedule: workSchedule || undefined,
+        careerLevel: careerLevel || undefined,
+        paymentType: paymentType || undefined,
         // tourism
         postType: postType || undefined,
         season: season || undefined,
@@ -186,7 +196,11 @@ export default function PeopleFeedPage() {
       };
       const { data } = await client.get("/feed", { params });
       setItems(Array.isArray(data.items) ? data.items : []);
-      
+      setTotalCount(
+        typeof data.total === "number"
+          ? data.total
+          : Array.isArray(data.items) ? data.items.length : 0
+      );
     } catch (e) {
       console.error("Failed to load feed:", e);
       setItems([]);
@@ -197,7 +211,6 @@ export default function PeopleFeedPage() {
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, 
 
     audienceSelections,
-    
     // NEW deps:
     price,
     serviceType,
@@ -207,6 +220,10 @@ export default function PeopleFeedPage() {
     locationType,
     jobType,
     workMode,
+    workLocation,
+    workSchedule,
+    careerLevel,
+    paymentType,
     postType,
     season,
     budgetRange,
@@ -248,6 +265,7 @@ export default function PeopleFeedPage() {
   }, [debouncedQ, country, city, categoryId, subcategoryId, goalId]);
 
   const filtersProps = {
+    setShowTotalCount,
     query,
     setQuery,
     country,
@@ -284,6 +302,14 @@ export default function PeopleFeedPage() {
     setJobType,
     workMode,
     setWorkMode,
+    workLocation,
+    setWorkLocation,
+    workSchedule,
+    setWorkSchedule,
+    careerLevel,
+    setCareerLevel,
+    paymentType,
+    setPaymentType,
 
     // tourism
     postType,
@@ -321,7 +347,12 @@ export default function PeopleFeedPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
-   const [selectedFilters,setSelectedFilters]=useState([])
+   const [selectedFilters,setSelectedFilters]=useState(['Job Type',
+                                    'Work Mode',
+                                    'Work Location',
+                                    'Work Schedule',
+                                    'Career Level',
+                                    'Payment Type'])
     
   
 
@@ -341,6 +372,12 @@ export default function PeopleFeedPage() {
              <CardSkeletonLoader/>
           </div>
         )}
+
+         {(!loadingFeed && showTotalCount) && (
+            <div className="text-sm text-gray-600">
+              {totalCount} result{totalCount === 1 ? "" : "s"}
+            </div>
+          )}
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
@@ -394,9 +431,13 @@ export default function PeopleFeedPage() {
               <TopFilterButtons selected={selectedFilters} setSelected={setSelectedFilters}
                                     buttons={
                                    [
-                                    'Experience Level',
+                                    //'Experience Level',
                                     'Job Type',
-                                     'Work Mode',
+                                    'Work Mode',
+                                    'Work Location',
+                                    'Work Schedule',
+                                    'Career Level',
+                                    'Payment Type'
                ]}/>
             <div className="flex items-center justify-between gap-y-2 flex-wrap">
               

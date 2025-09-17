@@ -8,6 +8,9 @@ import { toast } from "../../lib/toast";
 import client from "../../api/client.js";
 import COUNTRIES from "../../constants/countries.js";
 import GoogleCustomBtn from "../../components/GoogleBtn.jsx";
+import Logo from '../../assets/logo.png'
+import WhiteLogo from '../../assets/logo-white.png'
+
 
 const emailOK = (v) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").toLowerCase());
@@ -153,7 +156,7 @@ export default function Signup() {
       </div>
 
 
-          <h2 className="text-3xl font-bold text-gray-900">Join 54Links</h2>
+          <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-x-2">Join <img src={Logo} width={110}/></h2>
           <p className="mt-1 text-gray-500">Join the global networking community</p>
 
           <div className="max-w-xs">

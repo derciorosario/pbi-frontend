@@ -82,7 +82,7 @@ function TabsAndAdd({ tabs, activeTab, setActiveTab, items = [], btnClick }) {
                     {Icon ? (
                       <Icon
                         size={16}
-                        className="text-accent-700"
+                        className="text-accent-700 flex-shrink-0"
                       />
                     ) : null}
                     <span>{label}</span>

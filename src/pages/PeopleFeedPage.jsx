@@ -113,6 +113,8 @@ export default function PeopleFeedPage() {
   // Feed
   const [items, setItems] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(false);
+  const [totalCount, setTotalCount] = useState(0); // <-- add this
+  const [showTotalCount,setShowTotalCount] = useState(0)
 
   // Sugestões
   const [matches, setMatches] = useState([]);
@@ -142,8 +144,11 @@ export default function PeopleFeedPage() {
 
   useEffect(() => {
     (async () => {
+      let type=currentPage=="people" ? 'individual' :'company'
       try {
-        const { data } = await client.get("/public/identities");
+        const { data } = await client.get("/public/identities", {
+        params: { type }
+        });
         // Expecting data.identities: same structure you shared
         setAudienceTree(data.identities);
       } catch (error) {
@@ -206,6 +211,11 @@ export default function PeopleFeedPage() {
       };
       const { data } = await client.get('/people', { params });
       setItems(Array.isArray(data.items) ? data.items : []);
+      setTotalCount(
+        typeof data.total === "number"
+          ? data.total
+          : Array.isArray(data.items) ? data.items.length : 0
+      ); 
     } catch (e) {
       console.error("Failed to load feed:", e);
       setItems([]);
@@ -243,6 +253,7 @@ export default function PeopleFeedPage() {
   // Fetch suggestions (sempre mostramos na direita)
 
   const filtersProps = {
+    setShowTotalCount,
     query,
     setQuery,
     country,
@@ -335,12 +346,17 @@ export default function PeopleFeedPage() {
         )}
         
 
-        {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        {/** <PageTabs view={view} loading={loadingFeed} setView={setView} view_types={view_types}/>  
+          {(!loadingFeed && showTotalCount) && (
+            <div className="text-sm text-gray-600">
+              {totalCount} result{totalCount === 1 ? "" : "s"}
+            </div>
+          )}
 
- */}
-        
+          
+          {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
+
+
           <div
                            className={`grid grid-cols-1 mt-3 ${
                              view == "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
@@ -370,14 +386,15 @@ export default function PeopleFeedPage() {
           <div className="_sticky top-0 z-10 _bg-white">
             <FiltersCard selectedFilters={selectedFilters} {...filtersProps} from={"people"}/>
           </div>
-          <QuickActions title="Quick Actions" items={[
+       
+       {/**   <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
               { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
               { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
               { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
               { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
              ]} />
-          <ProfileCard />
+          <ProfileCard /> */}
          
         </aside>
     <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
@@ -385,23 +402,40 @@ export default function PeopleFeedPage() {
          
              <TopFilterButtons from={"people"} selected={selectedFilters} setSelected={setSelectedFilters}
                 buttons={
-              [
-                'Entrepreneur (Startups)',
-                'Established Entrepreneurs / Businesses',
-                'Social Entrepreneurs',
-                'Professional',
-                'Freelancers',
-                'Students',
-                'Government Officials',
-                'Investor',
+                currentPage == "people"
+                  ? [
+                      "Entrepreneur (Startups)",
+                      "Established Entrepreneurs / Businesses",
+                      "Social Entrepreneurs",
+                      "Professional",
+                      "Freelancers",
+                      "Students",
+                      "Government Officials",
+                      "Investor",
+                    ]
+                  : [
+                    "Business & Technology",
+                    "Health & Insurance",
+                    "Finance & Banking",
+                    "Retail & Consumer Goods",
+                    "Energy & Utilities",
+                    "Real Estate & Construction",
+                    "Media & Entertainment",
+                    "Non-Profit Organizations",
+                    "Government & Public Sector",
+                    "Educational & Research Organizations",
+                    "Healthcare Organizations",
+                    "International & Intergovernmental Organizations",
+                    "Hybrid / Special Organizations"
+                  ]
 
-                ]}/>
+              }/>
               <div className="flex items-center justify-end gap-x-2 flex-wrap ">
-                <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
+              {/**  <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                     { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                     { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                     { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
-                  ]} />
+                  ]} /> */}
            </div>
 
           {activeTab === "My Connections" && (

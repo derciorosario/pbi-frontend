@@ -16,6 +16,7 @@ export default function ExperienceLevelSelector({
 }) {
   const wrapRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const selectedLevels = useMemo(
     () =>
@@ -40,6 +41,14 @@ export default function ExperienceLevelSelector({
     return `${selectedLevels.length} selected`;
   }, [selectedLevels, placeholder]);
 
+  // Filtered options
+  const filteredOptions = useMemo(() => {
+    if (!search) return options;
+    return options.filter((opt) =>
+      opt.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [options, search]);
+
   // Close on outside click or Esc
   useEffect(() => {
     const onClick = (e) => {
@@ -60,7 +69,7 @@ export default function ExperienceLevelSelector({
   }, [isOpen]);
 
   return (
-    <div className="mt-4" ref={wrapRef}>
+    <div className="mt-4 relative" ref={wrapRef}>
       <label className="text-xs text-gray-500 mb-2 block">{label}</label>
 
       {/* Trigger button */}
@@ -90,27 +99,58 @@ export default function ExperienceLevelSelector({
         <div
           role="listbox"
           tabIndex={-1}
-          className="absolute z-50 mt-1 w-[calc(100%-2rem)] bg-white border border-gray-200 rounded-xl shadow-lg p-1 max-h-56 overflow-auto"
-          style={{ minWidth: "12rem" }}
+          className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-auto"
         >
-          {options.map((level) => {
-            const checked = selectedLevels.includes(level);
-            return (
-              <label
-                key={level}
-                className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-gray-50 text-sm cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-brand-600"
-                  checked={checked}
-                  onChange={() => toggleLevel(level)}
-                />
-                <span>{level}</span>
-              </label>
-            );
-          })}
-          <div className="flex items-center justify-between gap-2 px-2 py-2">
+          {/* Sticky search bar */}
+          <div className="sticky top-0 z-10 bg-white p-2 border-b border-gray-100">
+            <div className="relative">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search..."
+                className="w-full border border-gray-200 rounded-lg px-2 py-1 text-sm pr-6"
+                autoFocus
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Options */}
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((level) => {
+              const checked = selectedLevels.includes(level);
+              return (
+                <label
+                  key={level}
+                  className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-gray-50 text-sm cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-brand-600"
+                    checked={checked}
+                    onChange={() => toggleLevel(level)}
+                  />
+                  <span>{level}</span>
+                </label>
+              );
+            })
+          ) : (
+            <div className="px-2 py-3 text-sm text-gray-400">
+              No results found
+            </div>
+          )}
+
+          {/* Footer buttons */}
+          <div className="sticky bottom-0 bg-white flex items-center justify-between gap-2 px-2 py-2 border-t border-gray-100">
             <button
               type="button"
               onClick={() => {

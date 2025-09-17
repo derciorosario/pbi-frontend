@@ -223,7 +223,7 @@ export default function EventCard({
 
           {/* Price */}
           <div className={`${isList ? "mt-2 mb-2" : "mt-2 mb-3"}`}>
-            <span className="text-2xl font-bold text-gray-700">{priceText}</span>
+            <span className="text-sm font-bold text-gray-700">{priceText}</span>
           </div>
 
           {/* Meta: organizer + match + time + location */}

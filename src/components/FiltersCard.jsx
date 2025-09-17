@@ -8,11 +8,16 @@ import ExperienceLevelSelector from "./ExperienceLevelSelector.jsx";
 import COUNTRIES from "../constants/countries";
 import { useData } from "../contexts/DataContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import citiesData from "../constants/cities.json";
 
 const libraries = ["places"];
 
+
+
 export default function FiltersCard({
-  selectedFilters=[],
+  setShowTotalCount,
+  selectedFilters = [],
+  setSelectedFilters,
   from,
   query,
   setQuery,
@@ -30,6 +35,8 @@ export default function FiltersCard({
   goals = [],
   goalId,
   role,
+  generalTree = [],
+  onSubcategoryChange,
 
   /* Products */
   price,
@@ -72,6 +79,14 @@ export default function FiltersCard({
   setJobType,
   workMode,
   setWorkMode,
+  workLocation,
+  setWorkLocation,
+  workSchedule,
+  setWorkSchedule,
+  careerLevel,
+  setCareerLevel,
+  paymentType,
+  setPaymentType,
 
   /* Events */
   eventType,
@@ -90,23 +105,20 @@ export default function FiltersCard({
     subsubCategoryIds: new Set(),
   },
   setAudienceSelections = () => {},
-
-
 }) {
+  const data = useData();
+  const { user } = useAuth();
+  const [selectedSubcategories, setSelectedSubcategories] = useState({});
 
-  const data=useData()
+  /** ---------- Google Places (kept, hidden section below) ---------- */
   const inputRef = useRef(null);
-  const [inputValue, setInputValue] = useState("");
-  const {user}=useAuth()
-
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: "AIzaSyAF9zZKiLS2Ep98eFCX-jA871QAJxG5des",
     libraries,
   });
 
-  // Google Places Autocomplete
   useEffect(() => {
-    if (!isLoaded) return;
+    if (!isLoaded || !inputRef.current) return;
 
     const autocomplete = new window.google.maps.places.Autocomplete(
       inputRef.current,
@@ -115,32 +127,121 @@ export default function FiltersCard({
 
     autocomplete.addListener("place_changed", () => {
       const place = autocomplete.getPlace();
-
       const selectedCity = place.address_components.find((c) =>
         c.types.includes("locality")
       )?.long_name;
-
       const selectedCountry = place.address_components.find((c) =>
         c.types.includes("country")
       )?.long_name;
 
       setCity(selectedCity);
       setCountry(selectedCountry);
-      setInputValue(
+      setGoogleInputValue(
         `${selectedCity || ""}${selectedCountry ? ", " + selectedCountry : ""}`
       );
     });
   }, [isLoaded, setCity, setCountry]);
 
-  const handleInputChange = (e) => {
+  const handleGoogleInputChange = (e) => {
     const value = e.target.value;
-    setInputValue(value);
-
+    setGoogleInputValue(value);
     const parts = value.split(",").map((p) => p.trim());
     setCity(parts[0] || undefined);
     setCountry(parts[1] || parts[0] || undefined);
   };
 
+  /** ---------- City dropdown powered by cities.json ---------- */
+  const cityWrapRef = useRef(null);
+  const [cityQuery, setCityQuery] = useState(city || "");
+  const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [googleInputValue, setGoogleInputValue] = useState("");
+
+  // When external city prop changes, keep input synced
+  useEffect(() => {
+    if (city !== cityQuery) setCityQuery(city || "");
+  }, [city]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Close city dropdown on outside click or ESC
+  useEffect(() => {
+    const onClick = (e) => {
+      if (!cityWrapRef.current) return;
+      if (!cityWrapRef.current.contains(e.target)) {
+        setShowCityDropdown(false);
+        setCityQuery("");
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setShowCityDropdown(false);
+        setCityQuery("");
+      }
+    };
+    if (showCityDropdown) {
+      document.addEventListener("mousedown", onClick);
+      document.addEventListener("keydown", onKey);
+    }
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [showCityDropdown]);
+
+  // Parse selected cities from comma-separated string
+  const selectedCities = useMemo(() => {
+    if (!city) return [];
+    return String(city)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }, [city]);
+
+  // Support single or multi-country (comma-separated) selection
+  const selectedCountries = useMemo(() => {
+    if (!country) return [];
+    return String(country)
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  }, [country]);
+
+
+  const toggleCity = (cityName) => {
+    const set = new Set(selectedCities);
+    if (set.has(cityName)) set.delete(cityName);
+    else set.add(cityName);
+    const next = Array.from(set);
+    setCity(next.length ? next.join(", ") : undefined);
+    setCityQuery("");
+  };
+
+  const citySummary = useMemo(() => {
+    if (!selectedCities.length) return "All cities";
+    if (selectedCities.length <= 2) return selectedCities.join(", ");
+    return `${selectedCities.length} cities selected`;
+  }, [selectedCities]);
+
+  // Filtered cities for dropdown
+  const filteredCitiesForDropdown = useMemo(() => {
+    let list = citiesData;
+
+    if (selectedCountries.length > 0) {
+      const setLC = new Set(selectedCountries);
+      list = list.filter((c) => setLC.has(c.country.toLowerCase()));
+    }
+
+    if (cityQuery) {
+      const q = cityQuery.toLowerCase();
+      list = list.filter(
+        (c) =>
+          c.city.toLowerCase().includes(q) ||
+          c.city_ascii?.toLowerCase()?.includes(q)
+      );
+    }
+
+    return list.slice(0, 30);
+  }, [selectedCountries, cityQuery]);
+
+  /** ---------- Derived + UI helpers ---------- */
   const currentCategory = categories.find(
     (c) => String(c.id) === String(categoryId)
   );
@@ -168,7 +269,8 @@ export default function FiltersCard({
   const isFunding = from === "funding";
   const isPeople = from === "people";
 
-  const hasActive = useMemo(
+  
+    const hasActive = useMemo(
     () =>
       !!(
         (query && query.trim()) ||
@@ -178,13 +280,17 @@ export default function FiltersCard({
         subcategoryId ||
         role ||
         goalId ||
+        // general categories
+        selectedFilters.length > 0 ||
+        // selected cities
+        selectedCities.length > 0 ||
         // products
         (from === "products" &&
           price !== undefined &&
           price !== "" &&
           price !== null) ||
         // jobs
-        (from === "jobs" && (experienceLevel || jobType || workMode)) ||
+        (from === "jobs" && (experienceLevel || jobType || workMode || workLocation || workSchedule || careerLevel || paymentType)) ||
         // services
         (isService &&
           (serviceType ||
@@ -199,7 +305,13 @@ export default function FiltersCard({
         // people
         (isPeople && experienceLevel) ||
         // events
-        (from === "events" && (eventType || date || registrationType))
+        (from === "events" && (eventType || date || registrationType)) ||
+        // ✅ audience selections
+        (audienceSelections &&
+          (audienceSelections.identityIds?.size > 0 ||
+           audienceSelections.categoryIds?.size > 0 ||
+           audienceSelections.subcategoryIds?.size > 0 ||
+           audienceSelections.subsubCategoryIds?.size > 0))
       ),
     [
       query,
@@ -209,11 +321,17 @@ export default function FiltersCard({
       subcategoryId,
       role,
       goalId,
+      selectedFilters, // Add selectedFilters to dependency array
+      selectedCities, // Add selectedCities to dependency array
       price,
       from,
       // jobs
       jobType,
       workMode,
+      workLocation,
+      workSchedule,
+      careerLevel,
+      paymentType,
       // shared
       experienceLevel,
       locationType,
@@ -239,9 +357,17 @@ export default function FiltersCard({
       eventType,
       date,
       registrationType,
+      // ✅ audience
+      audienceSelections,
     ]
   );
 
+
+  useEffect(() => {
+    setShowTotalCount(hasActive);
+  }, [hasActive, setShowTotalCount]);
+
+  /** ---------- Reset + external clear orchestration ---------- */
   const handleReset = () => {
     setQuery("");
     setCountry(undefined);
@@ -250,7 +376,15 @@ export default function FiltersCard({
     setSubcategoryId(undefined);
     setRole?.(undefined);
     setGoalId?.(undefined);
-    setInputValue("");
+    setCityQuery("");
+    setGoogleInputValue("");
+
+    // Clear general categories
+    setSelectedFilters?.([]);
+    setSelectedSubcategories({});
+
+    // Close city dropdown
+    setShowCityDropdown(false);
 
     // Products
     setPrice?.("");
@@ -259,13 +393,16 @@ export default function FiltersCard({
     setServiceType?.("");
     setPriceType?.("");
     setDeliveryTime?.("");
-    // Shared reset (also used by People & Jobs)
     setExperienceLevel?.("");
     setLocationType?.("");
 
     // Jobs
     setJobType?.("");
     setWorkMode?.("");
+    setWorkLocation?.("");
+    setWorkSchedule?.("");
+    setCareerLevel?.("");
+    setPaymentType?.("");
 
     // Tourism
     setPostType?.("");
@@ -292,167 +429,162 @@ export default function FiltersCard({
     });
   };
 
-
   useEffect(() => {
+    handleReset();
 
+    const targetElement = selectedFilters.length
+      ? document.querySelector("#secundary-filters")
+      : document.querySelector("#filters");
 
-    handleReset()
+    if (targetElement && user && 0 == 1) {
+      const scrollableContainer =
+        targetElement.closest(".scrollable-container") ||
+        targetElement.closest('[style*="overflow"]') ||
+        targetElement.parentElement;
 
-    // Find the element to scroll to
-    const targetElement = selectedFilters.length ? document.querySelector('#secundary-filters') : document.querySelector('#filters');
-    
-    if (targetElement && user && 0==1) {
-      // Find the parent scrollable container - this should be replaced with the actual container ID or class
-      // For example: const scrollableContainer = document.querySelector('.scrollable-container');
-      // If you don't know the container, you can try to find a parent with overflow
-      const scrollableContainer = targetElement.closest('.scrollable-container') ||
-                                  targetElement.closest('[style*="overflow"]') ||
-                                  targetElement.parentElement;
-      
       if (scrollableContainer) {
-        // Get the position of the target element relative to the scrollable container
-        const targetPosition = targetElement.offsetTop // - scrollableContainer.offsetTop;
-        
-        // Scroll the container to the target position
+        const targetPosition = targetElement.offsetTop;
         scrollableContainer.scrollTo({
           top: targetPosition,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       }
     }
+  }, [data.updateData]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  }, [data.updateData]);
-
-
-
-  
   useEffect(() => {
-        
-      if (!data.filtersToClear || data.filtersToClear.length === 0) return;
+    if (!data.filtersToClear || data.filtersToClear.length === 0) return;
 
-      data.filtersToClear.forEach((label) => {
-        switch (label) {
-          case "Search":
-            setQuery("");
-            break;
-          case "Country":
-            setCountry(undefined);
-            setInputValue(""); // also clear text input
-            break;
-          case "City":
-            setCity(undefined);
-            setInputValue("");
-            break;
-          case "Category":
-            setCategoryId(undefined);
-            break;
-          case "Subcategory":
-            setSubcategoryId(undefined);
-            break;
-          case "Role":
-            setRole?.(undefined);
-            break;
-          case "Goal":
-            setGoalId?.(undefined);
-            break;
+    data.filtersToClear.forEach((label) => {
+      switch (label) {
+        case "Search":
+          setQuery("");
+          break;
+        case "Country":
+          setCountry(undefined);
+          setCityQuery("");
+          setGoogleInputValue("");
+          break;
+        case "City":
+          setCity(undefined);
+          setCityQuery("");
+          break;
+        case "Category":
+          setCategoryId(undefined);
+          break;
+        case "Subcategory":
+          setSubcategoryId(undefined);
+          break;
+        case "Role":
+          setRole?.(undefined);
+          break;
+        case "Goal":
+          setGoalId?.(undefined);
+          break;
+        // Products
+        case "Price":
+          setPrice?.("");
+          break;
+        // Jobs
+        case "Experience Level":
+          setExperienceLevel?.("");
+          break;
+        case "Job Type":
+          setJobType?.("");
+          break;
+        case "Work Mode":
+          setWorkMode?.("");
+          break;
+        case "Work Location":
+          setWorkLocation?.("");
+          break;
+        case "Work Schedule":
+          setWorkSchedule?.("");
+          break;
+        case "Career Level":
+          setCareerLevel?.("");
+          break;
+        case "Payment Type":
+          setPaymentType?.("");
+          break;
+        // Services
+        case "Service Type":
+          setServiceType?.("");
+          break;
+        case "Price Type":
+          setPriceType?.("");
+          break;
+        case "Typical Delivery":
+          setDeliveryTime?.("");
+          break;
+        case "Location Type":
+          setLocationType?.("");
+          break;
+        // Tourism
+        case "Post Type":
+          setPostType?.("");
+          break;
+        case "Best Season to Visit":
+          setSeason?.("");
+          break;
+        case "Budget Range":
+          setBudgetRange?.("");
+          break;
+        // Funding
+        case "Funding Goal":
+          setFundingGoal?.("");
+          break;
+        case "Amount Raised":
+          setAmountRaised?.("");
+          break;
+        case "Currency":
+          setCurrency?.("");
+          break;
+        case "Deadline":
+          setDeadline?.("");
+          break;
+        // Events
+        case "Event Type":
+          setEventType?.("");
+          break;
+        case "Date":
+          setDate?.("");
+          break;
+        case "Registration Type":
+          setRegistrationType?.("");
+          break;
+        // Audience
+        case "Audience Interests":
+          setAudienceSelections?.({
+            identityIds: new Set(),
+            categoryIds: new Set(),
+            subcategoryIds: new Set(),
+            subsubCategoryIds: new Set(),
+          });
+          break;
+      }
+    });
 
-          // Products
-          case "Price":
-            setPrice?.("");
-            break;
+    data.setFiltersToClear([]);
+  }, [data.filtersToClear]); // eslint-disable-line react-hooks/exhaustive-deps
 
-          // Jobs
-          case "Experience Level":
-            setExperienceLevel?.("");
-            break;
-          case "Job Type":
-            setJobType?.("");
-            break;
-          case "Work Mode":
-            setWorkMode?.("");
-            break;
-
-          // Services
-          case "Service Type":
-            setServiceType?.("");
-            break;
-          case "Price Type":
-            setPriceType?.("");
-            break;
-          case "Typical Delivery":
-            setDeliveryTime?.("");
-            break;
-          case "Location Type":
-            setLocationType?.("");
-            break;
-
-          // Tourism
-          case "Post Type":
-            setPostType?.("");
-            break;
-          case "Best Season to Visit":
-            setSeason?.("");
-            break;
-          case "Budget Range":
-            setBudgetRange?.("");
-            break;
-
-          // Funding
-          case "Funding Goal":
-            setFundingGoal?.("");
-            break;
-          case "Amount Raised":
-            setAmountRaised?.("");
-            break;
-          case "Currency":
-            setCurrency?.("");
-            break;
-          case "Deadline":
-            setDeadline?.("");
-            break;
-
-          // Events
-          case "Event Type":
-            setEventType?.("");
-            break;
-          case "Date":
-            setDate?.("");
-            break;
-          case "Registration Type":
-            setRegistrationType?.("");
-            break;
-
-          // Audience
-          case "Audience Interests":
-            setAudienceSelections?.({
-              identityIds: new Set(),
-              categoryIds: new Set(),
-              subcategoryIds: new Set(),
-              subsubCategoryIds: new Set(),
-            });
-            break;
-        }
-      });
-
-      data.setFiltersToClear([]);
-}, [data.filtersToClear]);
-
-
-
+  /** ---------- Render ---------- */
   return (
-    <div id="filters" className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+    <div
+      id="filters"
+      className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4"
+    >
       <div className="flex items-center justify-between">
         <h3 className="font-semibold flex items-center gap-2">Filters</h3>
         <button
           type="button"
           onClick={handleReset}
           disabled={!hasActive}
-          className={`inline-flex items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition
-            ${
-              hasActive
-                ? "border-gray-200 text-gray-700 hover:bg-gray-50"
-                : "border-gray-100 text-gray-400 cursor-not-allowed"
-            }`}
+          className={`inline-flex items-center rounded-lg border px-2.5 py-1.5 text-xs font-medium transition ${
+            hasActive
+              ? "border-gray-200 text-gray-700 hover:bg-gray-50"
+              : "border-gray-100 text-gray-400 cursor-not-allowed"
+          }`}
           aria-disabled={!hasActive}
           title="Reset all filters"
         >
@@ -460,15 +592,14 @@ export default function FiltersCard({
         </button>
       </div>
 
-     
-      {/* City / Country */}
+      {/* City / Country via Google (kept but hidden) */}
       <div className="mt-3 hidden">
         <label className="text-xs text-gray-500">City / Country</label>
         {isLoaded ? (
           <input
             ref={inputRef}
-            value={inputValue}
-            onChange={handleInputChange}
+            value={googleInputValue}
+            onChange={handleGoogleInputChange}
             placeholder="Type city or country"
             className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
           />
@@ -481,13 +612,10 @@ export default function FiltersCard({
         )}
       </div>
 
-      
-  
-      
       <div id="secundary-filters"></div>
 
-      {/* Category */}
-      <div className="mt-3 hidden">{/**hide for now */}
+      {/* Category (hidden for now, unchanged) */}
+      <div className="mt-3 hidden">
         <label className="text-xs text-gray-500">Category</label>
         <select
           className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
@@ -507,8 +635,8 @@ export default function FiltersCard({
         </select>
       </div>
 
-      {/* Subcategory */}
-      <div className="mt-3 hidden">{/*** Hide for now */}
+      {/* Subcategory (hidden for now, unchanged) */}
+      <div className="mt-3 hidden">
         <label className="text-xs text-gray-500">Subcategory</label>
         <select
           className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm"
@@ -526,27 +654,30 @@ export default function FiltersCard({
       </div>
 
       {/* Products */}
-      {from === "products" && (
-        <div className="mt-3">
-          <label className="text-xs text-gray-500">Price</label>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={price ?? ""}
-            onChange={(e) => setPrice?.(e.target.value)}
-            placeholder="0.00"
-            className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-          />
-        </div>
-      )}
+   {from === "products" && (
+  <div className="mt-3">
+    <label className="text-xs text-gray-500">Price</label>
+    <input
+      type="range"
+      min="0"
+      max="1000"
+      step="0.01"
+      value={price ?? 0}
+      onChange={(e) => setPrice?.(e.target.value)}
+      className="mt-1 w-full cursor-pointer"
+    />
+    <div className="text-sm text-gray-700 mt-1">
+      {price ?? "0.00"}
+    </div>
+  </div>
+)}
+
 
       {/* Jobs */}
       {from === "jobs" && (
         <>
-         
-           <MultiSelect
-            hide={!selectedFilters.includes('Experience Level')}
+          <MultiSelect
+            hide={!selectedFilters.includes("Experience Level")}
             value={experienceLevel || ""}
             onChange={setExperienceLevel}
             options={["Junior", "Mid-level", "Senior", "Lead"]}
@@ -555,28 +686,66 @@ export default function FiltersCard({
           />
 
           <MultiSelect
-            hide={!selectedFilters.includes('Job Type')}
+            hide={!selectedFilters.includes("Job Type")}
             value={jobType || ""}
             onChange={setJobType}
-            options={["Full-time", "Part-time", "Contract", "Internship", "Temporary"]}
+            options={[
+              "Full-time",
+              "Part-time",
+              "Contract",
+              "Internship",
+              "Temporary",
+            ]}
             label="Job Type"
           />
 
           <MultiSelect
-           hide={!selectedFilters.includes('Work Mode')}
+            hide={!selectedFilters.includes("Work Mode")}
             value={workMode || ""}
             onChange={setWorkMode}
             options={["On-site", "Remote", "Hybrid"]}
             label="Work Mode"
           />
+
+          <MultiSelect
+            hide={!selectedFilters.includes("Work Location")}
+            value={workLocation || ""}
+            onChange={setWorkLocation}
+            options={["Office", "Field", "Home", "Client Site"]}
+            label="Work Location"
+          />
+
+          <MultiSelect
+            hide={!selectedFilters.includes("Work Schedule")}
+            value={workSchedule || ""}
+            onChange={setWorkSchedule}
+            options={["Regular Hours", "Flexible Hours", "Shifts", "Weekends"]}
+            label="Work Schedule"
+          />
+
+          <MultiSelect
+            hide={!selectedFilters.includes("Career Level")}
+            value={careerLevel || ""}
+            onChange={setCareerLevel}
+            options={["Entry Level", "Mid Level", "Senior Level", "Executive"]}
+            label="Career Level"
+          />
+
+          <MultiSelect
+            hide={!selectedFilters.includes("Payment Type")}
+            value={paymentType || ""}
+            onChange={setPaymentType}
+            options={["Hourly", "Monthly", "Project-based", "Commission"]}
+            label="Payment Type"
+          />
         </>
       )}
 
-      {/* Services (all full-width selects/inputs, no grids) */}
+      {/* Services */}
       {isService && (
         <>
           <MultiSelect
-            hide={!selectedFilters.includes('Service Type')}
+            hide={!selectedFilters.includes("Service Type")}
             value={serviceType || ""}
             onChange={setServiceType}
             options={["Consulting", "Freelance Work", "Product/Service"]}
@@ -584,7 +753,7 @@ export default function FiltersCard({
           />
 
           <MultiSelect
-           hide={!selectedFilters.includes('Price Type')}
+            hide={!selectedFilters.includes("Price Type")}
             value={priceType || ""}
             onChange={setPriceType}
             options={["Fixed Price", "Hourly"]}
@@ -592,7 +761,7 @@ export default function FiltersCard({
           />
 
           <MultiSelect
-            hide={!selectedFilters.includes('Typical Delivery')}
+            hide={!selectedFilters.includes("Typical Delivery")}
             value={deliveryTime || ""}
             onChange={setDeliveryTime}
             options={["1 Day", "3 Days", "1 Week", "2 Weeks", "1 Month"]}
@@ -600,7 +769,7 @@ export default function FiltersCard({
           />
 
           <MultiSelect
-            hide={!selectedFilters.includes('Location Type')}
+            hide={!selectedFilters.includes("Location Type")}
             value={locationType || ""}
             onChange={setLocationType}
             options={["Remote", "On-site"]}
@@ -608,7 +777,7 @@ export default function FiltersCard({
           />
 
           <MultiSelect
-            hide={!selectedFilters.includes('Experience Level')}
+            hide={!selectedFilters.includes("Experience Level")}
             value={experienceLevel || ""}
             onChange={setExperienceLevel}
             options={["Entry Level", "Intermediate", "Expert"]}
@@ -618,11 +787,11 @@ export default function FiltersCard({
         </>
       )}
 
-      {/* Tourism (full-width selects only) */}
+      {/* Tourism */}
       {isTourism && (
         <>
-          <MultiSelect 
-            hide={!selectedFilters.includes('Post Type')}
+          <MultiSelect
+            hide={!selectedFilters.includes("Post Type")}
             value={postType || ""}
             onChange={setPostType}
             options={["Destination", "Experience", "Culture"]}
@@ -630,15 +799,21 @@ export default function FiltersCard({
           />
 
           <MultiSelect
-            hide={!selectedFilters.includes('Best Season to Visit')}
+            hide={!selectedFilters.includes("Best Season to Visit")}
             value={season || ""}
             onChange={setSeason}
-            options={["Summer", "Winter", "All Year", "Rainy Season", "Dry Season"]}
+            options={[
+              "Summer",
+              "Winter",
+              "All Year",
+              "Rainy Season",
+              "Dry Season",
+            ]}
             label="Best Season to Visit"
           />
 
           <MultiSelect
-            hide={!selectedFilters.includes('Budget Range')}
+            hide={!selectedFilters.includes("Budget Range")}
             value={budgetRange || ""}
             onChange={setBudgetRange}
             options={["$100 - $500", "$500 - $2000", "$2000+"]}
@@ -687,36 +862,13 @@ export default function FiltersCard({
       )}
 
       {/* People */}
-      {isPeople && (
-        <>
-        
-         {/**<MultiSelect
-            hide={!selectedFilters.includes('Experience Level')}
-            value={experienceLevel || ""}
-            _hide={true}
-            onChange={setExperienceLevel}
-            options={[
-              "Junior",
-              "Mid",
-              "Senior",
-              "Lead",
-              "Director",
-              "C-level",
-            ]}
-            label="Experience Level"
-            placeholder="Any"
-          />  */}
-
-        </>
-      )}
-
-      
+      {isPeople && <></>}
 
       {/* Events */}
       {from === "events" && (
         <>
           <MultiSelect
-            hide={!selectedFilters.includes('Event Type')}
+            hide={!selectedFilters.includes("Event Type")}
             value={eventType || ""}
             onChange={setEventType}
             options={["Workshop", "Conference", "Networking"]}
@@ -734,66 +886,620 @@ export default function FiltersCard({
           </div>
 
           <MultiSelect
-            hide={!selectedFilters.includes('Registration Type')}
+            hide={!selectedFilters.includes("Registration Type")}
             value={registrationType || ""}
             onChange={setRegistrationType}
             options={["Free", "Paid"]}
             label="Registration Type"
           />
+
+          {/* General Categories and Subcategories for Events */}
+          {generalTree && generalTree.length > 0 && selectedFilters.some(filter => generalTree.some(cat => cat.id === filter)) && (
+            <div className="mt-4">
+              <label className="text-xs text-gray-500 mb-2 block">Categories</label>
+              <div className="space-y-3">
+                {generalTree.map((category) => (
+                  // Only show the category if it's in selectedFilters
+                  selectedFilters.includes(category.id) && (
+                    <div key={category.id} className="rounded-xl border border-gray-200 bg-white p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedFilters.includes(category.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              // Add category to selectedFilters
+                              if (setSelectedFilters && !selectedFilters.includes(category.id)) {
+                                setSelectedFilters([...selectedFilters, category.id]);
+                              }
+                            } else {
+                              // Remove category from selectedFilters
+                              if (setSelectedFilters) {
+                                setSelectedFilters(selectedFilters.filter(f => f !== category.id));
+                                data.setFiltersToClear([category.name]); // Keep name for UI display
+
+                                // Deselect all subcategories for this category
+                                const updatedSubcategories = { ...selectedSubcategories };
+                                category.subcategories?.forEach(subcategory => {
+                                  const key = subcategory.id;
+                                  delete updatedSubcategories[key];
+                                });
+                                setSelectedSubcategories(updatedSubcategories);
+
+                                // Call the callback if provided
+                                if (onSubcategoryChange) {
+                                  onSubcategoryChange(updatedSubcategories);
+                                }
+                              }
+                            }
+                          }}
+                          className="h-4 w-4 accent-brand-600"
+                        />
+                        <label className="text-xs text-gray-500 block">{category.name}</label>
+                      </div>
+
+                      {/* Only show subcategories if category is selected */}
+                      {selectedFilters.includes(category.id) && category.subcategories && category.subcategories.length > 0 && (
+                        <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
+                          <div className="grid grid-cols-1 gap-2">
+                            {category.subcategories.map((subcategory) => {
+                              const subcategoryKey = subcategory.id;
+                              const isChecked = selectedSubcategories[subcategoryKey] || false;
+
+                              return (
+                                <label key={subcategory.id} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-brand-600"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      // Update the selected subcategories
+                                      const updatedSubcategories = {
+                                        ...selectedSubcategories,
+                                        [subcategoryKey]: e.target.checked
+                                      };
+                                      setSelectedSubcategories(updatedSubcategories);
+
+                                      // Call the callback if provided
+                                      if (onSubcategoryChange) {
+                                        onSubcategoryChange(updatedSubcategories);
+                                      }
+                                    }}
+                                  />
+                                  {subcategory.name}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 
+      {/* Products */}
+      {from === "products" && (
+        <>
+          {/* General Categories and Subcategories for Products */}
+          {generalTree && generalTree.length > 0 && selectedFilters.some(filter => generalTree.some(cat => cat.id === filter)) && (
+            <div className="mt-4">
+              <label className="text-xs text-gray-500 mb-2 block">Categories</label>
+              <div className="space-y-3">
+                {generalTree.map((category) => (
+                  // Only show the category if it's in selectedFilters
+                  selectedFilters.includes(category.id) && (
+                    <div key={category.id} className="rounded-xl border border-gray-200 bg-white p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedFilters.includes(category.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              // Add category to selectedFilters
+                              if (setSelectedFilters && !selectedFilters.includes(category.id)) {
+                                setSelectedFilters([...selectedFilters, category.id]);
+                              }
+                            } else {
+                              // Remove category from selectedFilters
+                              if (setSelectedFilters) {
+                                setSelectedFilters(selectedFilters.filter(f => f !== category.id));
+                                data.setFiltersToClear([category.name]); // Keep name for UI display
 
-      
-          {/* Audience Tree */}
-      {Array.isArray(audienceTree) && audienceTree.length > 0 && (
-            <div className={`mt-4 ${!audienceTree.some(i=>selectedFilters.includes(i.name)) ? 'hidden':''}`}>
-              <label className="text-xs text-gray-500 mb-2 block">
-                Audience Interests
-              </label>
-              <AudienceTree
-                tree={audienceTree}
-                shown={selectedFilters}
-                selected={
-                  audienceSelections || {
-                    identityIds: new Set(),
-                    categoryIds: new Set(),
-                    subcategoryIds: new Set(),
-                    subsubCategoryIds: new Set(),
-                  }
-                }
-                onChange={setAudienceSelections}
-              />
+                                // Deselect all subcategories for this category
+                                const updatedSubcategories = { ...selectedSubcategories };
+                                category.subcategories?.forEach(subcategory => {
+                                  const key = subcategory.id;
+                                  delete updatedSubcategories[key];
+                                });
+                                setSelectedSubcategories(updatedSubcategories);
+
+                                // Call the callback if provided
+                                if (onSubcategoryChange) {
+                                  onSubcategoryChange(updatedSubcategories);
+                                }
+                              }
+                            }
+                          }}
+                          className="h-4 w-4 accent-brand-600"
+                        />
+                        <label className="text-xs text-gray-500 block">{category.name}</label>
+                      </div>
+
+                      {/* Only show subcategories if category is selected */}
+                      {selectedFilters.includes(category.id) && category.subcategories && category.subcategories.length > 0 && (
+                        <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
+                          <div className="grid grid-cols-1 gap-2">
+                            {category.subcategories.map((subcategory) => {
+                              const subcategoryKey = subcategory.id;
+                              const isChecked = selectedSubcategories[subcategoryKey] || false;
+
+                              return (
+                                <label key={subcategory.id} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-brand-600"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      // Update the selected subcategories
+                                      const updatedSubcategories = {
+                                        ...selectedSubcategories,
+                                        [subcategoryKey]: e.target.checked
+                                      };
+                                      setSelectedSubcategories(updatedSubcategories);
+
+                                      // Call the callback if provided
+                                      if (onSubcategoryChange) {
+                                        onSubcategoryChange(updatedSubcategories);
+                                      }
+                                    }}
+                                  />
+                                  {subcategory.name}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                ))}
+              </div>
             </div>
-        )}
+          )}
+        </>
+      )}
 
+      {/* Services */}
+      {isService && (
+        <>
+          {/* General Categories and Subcategories for Services */}
+          {generalTree && generalTree.length > 0 && selectedFilters.some(filter => generalTree.some(cat => cat.id === filter)) && (
+            <div className="mt-4">
+              <label className="text-xs text-gray-500 mb-2 block">Categories</label>
+              <div className="space-y-3">
+                {generalTree.map((category) => (
+                  // Only show the category if it's in selectedFilters
+                  selectedFilters.includes(category.id) && (
+                    <div key={category.id} className="rounded-xl border border-gray-200 bg-white p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedFilters.includes(category.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              // Add category to selectedFilters
+                              if (setSelectedFilters && !selectedFilters.includes(category.id)) {
+                                setSelectedFilters([...selectedFilters, category.id]);
+                              }
+                            } else {
+                              // Remove category from selectedFilters
+                              if (setSelectedFilters) {
+                                setSelectedFilters(selectedFilters.filter(f => f !== category.id));
+                                data.setFiltersToClear([category.name]); // Keep name for UI display
 
-            <div>
-        <ExperienceLevelSelector
-            value={country}
-            onChange={setCountry}
-            options={COUNTRIES}
-            label="Country"
-            placeholder="All"
-       />
-      </div>
+                                // Deselect all subcategories for this category
+                                const updatedSubcategories = { ...selectedSubcategories };
+                                category.subcategories?.forEach(subcategory => {
+                                  const key = subcategory.id;
+                                  delete updatedSubcategories[key];
+                                });
+                                setSelectedSubcategories(updatedSubcategories);
 
+                                // Call the callback if provided
+                                if (onSubcategoryChange) {
+                                  onSubcategoryChange(updatedSubcategories);
+                                }
+                              }
+                            }
+                          }}
+                          className="h-4 w-4 accent-brand-600"
+                        />
+                        <label className="text-xs text-gray-500 block">{category.name}</label>
+                      </div>
 
+                      {/* Only show subcategories if category is selected */}
+                      {selectedFilters.includes(category.id) && category.subcategories && category.subcategories.length > 0 && (
+                        <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
+                          <div className="grid grid-cols-1 gap-2">
+                            {category.subcategories.map((subcategory) => {
+                              const subcategoryKey = subcategory.id;
+                              const isChecked = selectedSubcategories[subcategoryKey] || false;
 
-       <div className="mt-3">
-        <label className="text-xs text-gray-500">City</label>
-        <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
-          <I.search />
-          <input
-            className="w-full text-sm outline-none"
-            placeholder="Type name of the city"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
+                              return (
+                                <label key={subcategory.id} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-brand-600"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      // Update the selected subcategories
+                                      const updatedSubcategories = {
+                                        ...selectedSubcategories,
+                                        [subcategoryKey]: e.target.checked
+                                      };
+                                      setSelectedSubcategories(updatedSubcategories);
+
+                                      // Call the callback if provided
+                                      if (onSubcategoryChange) {
+                                        onSubcategoryChange(updatedSubcategories);
+                                      }
+                                    }}
+                                  />
+                                  {subcategory.name}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Tourism */}
+      {isTourism && (
+        <>
+          {/* General Categories and Subcategories for Tourism */}
+          {generalTree && generalTree.length > 0 && selectedFilters.some(filter => generalTree.some(cat => cat.id === filter)) && (
+            <div className="mt-4">
+              <label className="text-xs text-gray-500 mb-2 block">Categories</label>
+              <div className="space-y-3">
+                {generalTree.map((category) => (
+                  // Only show the category if it's in selectedFilters
+                  selectedFilters.includes(category.id) && (
+                    <div key={category.id} className="rounded-xl border border-gray-200 bg-white p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedFilters.includes(category.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              // Add category to selectedFilters
+                              if (setSelectedFilters && !selectedFilters.includes(category.id)) {
+                                setSelectedFilters([...selectedFilters, category.id]);
+                              }
+                            } else {
+                              // Remove category from selectedFilters
+                              if (setSelectedFilters) {
+                                setSelectedFilters(selectedFilters.filter(f => f !== category.id));
+                                data.setFiltersToClear([category.name]); // Keep name for UI display
+
+                                // Deselect all subcategories for this category
+                                const updatedSubcategories = { ...selectedSubcategories };
+                                category.subcategories?.forEach(subcategory => {
+                                  const key = subcategory.id;
+                                  delete updatedSubcategories[key];
+                                });
+                                setSelectedSubcategories(updatedSubcategories);
+
+                                // Call the callback if provided
+                                if (onSubcategoryChange) {
+                                  onSubcategoryChange(updatedSubcategories);
+                                }
+                              }
+                            }
+                          }}
+                          className="h-4 w-4 accent-brand-600"
+                        />
+                        <label className="text-xs text-gray-500 block">{category.name}</label>
+                      </div>
+
+                      {/* Only show subcategories if category is selected */}
+                      {selectedFilters.includes(category.id) && category.subcategories && category.subcategories.length > 0 && (
+                        <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
+                          <div className="grid grid-cols-1 gap-2">
+                            {category.subcategories.map((subcategory) => {
+                              const subcategoryKey = subcategory.id;
+                              const isChecked = selectedSubcategories[subcategoryKey] || false;
+
+                              return (
+                                <label key={subcategory.id} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-brand-600"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      // Update the selected subcategories
+                                      const updatedSubcategories = {
+                                        ...selectedSubcategories,
+                                        [subcategoryKey]: e.target.checked
+                                      };
+                                      setSelectedSubcategories(updatedSubcategories);
+
+                                      // Call the callback if provided
+                                      if (onSubcategoryChange) {
+                                        onSubcategoryChange(updatedSubcategories);
+                                      }
+                                    }}
+                                  />
+                                  {subcategory.name}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Funding */}
+      {isFunding && (
+        <>
+          {/* General Categories and Subcategories for Funding */}
+          {generalTree && generalTree.length > 0 && selectedFilters.some(filter => generalTree.some(cat => cat.id === filter)) && (
+            <div className="mt-4">
+              <label className="text-xs text-gray-500 mb-2 block">Categories</label>
+              <div className="space-y-3">
+                {generalTree.map((category) => (
+                  // Only show the category if it's in selectedFilters
+                  selectedFilters.includes(category.id) && (
+                    <div key={category.id} className="rounded-xl border border-gray-200 bg-white p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedFilters.includes(category.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              // Add category to selectedFilters
+                              if (setSelectedFilters && !selectedFilters.includes(category.id)) {
+                                setSelectedFilters([...selectedFilters, category.id]);
+                              }
+                            } else {
+                              // Remove category from selectedFilters
+                              if (setSelectedFilters) {
+                                setSelectedFilters(selectedFilters.filter(f => f !== category.id));
+                                data.setFiltersToClear([category.name]); // Keep name for UI display
+
+                                // Deselect all subcategories for this category
+                                const updatedSubcategories = { ...selectedSubcategories };
+                                category.subcategories?.forEach(subcategory => {
+                                  const key = subcategory.id;
+                                  delete updatedSubcategories[key];
+                                });
+                                setSelectedSubcategories(updatedSubcategories);
+
+                                // Call the callback if provided
+                                if (onSubcategoryChange) {
+                                  onSubcategoryChange(updatedSubcategories);
+                                }
+                              }
+                            }
+                          }}
+                          className="h-4 w-4 accent-brand-600"
+                        />
+                        <label className="text-xs text-gray-500 block">{category.name}</label>
+                      </div>
+
+                      {/* Only show subcategories if category is selected */}
+                      {selectedFilters.includes(category.id) && category.subcategories && category.subcategories.length > 0 && (
+                        <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
+                          <div className="grid grid-cols-1 gap-2">
+                            {category.subcategories.map((subcategory) => {
+                              const subcategoryKey = subcategory.id;
+                              const isChecked = selectedSubcategories[subcategoryKey] || false;
+
+                              return (
+                                <label key={subcategory.id} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4 accent-brand-600"
+                                    checked={isChecked}
+                                    onChange={(e) => {
+                                      // Update the selected subcategories
+                                      const updatedSubcategories = {
+                                        ...selectedSubcategories,
+                                        [subcategoryKey]: e.target.checked
+                                      };
+                                      setSelectedSubcategories(updatedSubcategories);
+
+                                      // Call the callback if provided
+                                      if (onSubcategoryChange) {
+                                        onSubcategoryChange(updatedSubcategories);
+                                      }
+                                    }}
+                                  />
+                                  {subcategory.name}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Audience Tree */}
+      {Array.isArray(audienceTree) && audienceTree.length > 0 && (
+        <div
+          className={`mt-4 ${
+            !audienceTree.some((i) => selectedFilters.includes(i.name))
+              ? "hidden"
+              : ""
+          }`}
+        >
+          <label className="text-xs text-gray-500 mb-2 block">
+            Audience Interests
+          </label>
+          <AudienceTree
+            tree={audienceTree}
+            shown={selectedFilters}
+            from={from}
+            selected={
+              audienceSelections || {
+                identityIds: new Set(),
+                categoryIds: new Set(),
+                subcategoryIds: new Set(),
+                subsubCategoryIds: new Set(),
+              }
+            }
+            onChange={setAudienceSelections}
           />
         </div>
+      )}
+
+      {/* Country (uses ExperienceLevelSelector) */}
+      <div className="mt-3">
+        <ExperienceLevelSelector
+          value={country}
+          onChange={(val) => {
+            setCountry(val);
+            // Don't auto-open city dropdown to prevent positioning conflicts
+          }}
+          options={COUNTRIES}
+          label="Country"
+          placeholder="All"
+        />
       </div>
 
-       {/* Search */}
+      {/* City with multi-select dropdown (like ExperienceLevelSelector) */}
+      <div className="mt-3 relative" ref={cityWrapRef}>
+        <label className="text-xs text-gray-500 mb-2 block">City</label>
+
+        {/* Trigger button */}
+        <button
+          type="button"
+          onClick={() => setShowCityDropdown((v) => !v)}
+          aria-haspopup="listbox"
+          aria-expanded={showCityDropdown}
+          className="w-full flex items-center justify-between rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
+        >
+          <span className="truncate">{citySummary}</span>
+          <svg
+            className={`h-4 w-4 transition-transform ${
+              showCityDropdown ? "rotate-180" : ""
+            }`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+
+        {/* Floating list */}
+        {showCityDropdown && (
+          <div
+            role="listbox"
+            tabIndex={-1}
+            className="absolute z-[100] mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-64 overflow-auto"
+          >
+            {/* Sticky search bar */}
+            <div className="sticky top-0 z-10 bg-white p-2 border-b border-gray-100">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={cityQuery}
+                  onChange={(e) => setCityQuery(e.target.value)}
+                  placeholder="Search cities..."
+                  className="w-full border border-gray-200 rounded-lg px-2 py-1 text-sm pr-6"
+                  autoFocus
+                />
+                {cityQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setCityQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* City options */}
+            {filteredCitiesForDropdown.length > 0 ? (
+              filteredCitiesForDropdown.map((c) => {
+                const checked = selectedCities.includes(c.city);
+                return (
+                  <label
+                    key={c.id}
+                    className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-gray-50 text-sm cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-brand-600"
+                      checked={checked}
+                      onChange={() => toggleCity(c.city)}
+                    />
+                    <span>{c.city}, {c.country}</span>
+                  </label>
+                );
+              })
+            ) : (
+              <div className="px-2 py-3 text-sm text-gray-400">
+                No cities found
+              </div>
+            )}
+
+            {/* Footer buttons */}
+            <div className="sticky bottom-0 bg-white flex items-center justify-between gap-2 px-2 py-2 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setCity(undefined);
+                  setCityQuery("");
+                  setShowCityDropdown(false);
+                }}
+                className="text-xs px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-50"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCityDropdown(false)}
+                className="text-xs px-2 py-1 rounded-lg bg-gray-900 text-white hover:bg-black"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Search */}
       <div className="mt-3">
         <label className="text-xs text-gray-500">Search</label>
         <div className="mt-1 flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2">
@@ -807,9 +1513,7 @@ export default function FiltersCard({
         </div>
       </div>
 
-
-
-      {/* Hidden (unchanged) */}
+      {/* Hidden Goal */}
       <div className="mt-3 hidden">
         <label className="text-xs text-gray-500">Goal</label>
         <select
@@ -826,6 +1530,7 @@ export default function FiltersCard({
         </select>
       </div>
 
+      {/* Hidden Role */}
       <div className="mt-3 hidden">
         <label className="text-xs text-gray-500">Role</label>
         <select

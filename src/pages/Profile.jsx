@@ -1,5 +1,6 @@
 // src/pages/Profile.jsx
 import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import { toast } from "../lib/toast";
 import {
   getMe,
@@ -9,6 +10,7 @@ import {
   updateDoSelections,
   updateInterestSelections,
 } from "../api/profile";
+import { getUserById, updateUser } from "../api/admin";
 import ProfilePhoto from "../components/ProfilePhoto";
 import COUNTRIES from "../constants/countries.js";
 import Header from "../components/Header.jsx";
@@ -21,6 +23,10 @@ const Tab = {
 };
 
 export default function ProfilePage() {
+  const { id: userId } = useParams();
+  const location = useLocation();
+  const isAdminEditing = location.pathname.includes('/admin/user-profile/');
+  
   const [active, setActive]   = useState(Tab.PERSONAL);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
@@ -68,17 +74,49 @@ export default function ProfilePage() {
     (async () => {
       try {
         setLoading(true);
-        const [{ data: meData }, { data: catalog }] = await Promise.all([
-          getMe(),
-          getIdentityCatalog(),
-        ]);
+        
+        let userData;
+        const { data: catalog } = await getIdentityCatalog();
+        
+        if (isAdminEditing && userId) {
+          // Admin editing another user
+          const { data } = await getUserById(userId);
+          userData = {
+            user: {
+              id: data.id,
+              name: data.name,
+              email: data.email,
+              phone: data.phone,
+              nationality: data.nationality,
+              country: data.country,
+              countryOfResidence: data.countryOfResidence,
+              city: data.city,
+              accountType: data.accountType,
+              avatarUrl: data.avatarUrl
+            },
+            profile: data.profile || {},
+            progress: data.progress || { percent: 0 },
+            doIdentityIds: data.identities?.map(i => i.id) || [],
+            doCategoryIds: data.categories?.map(c => c.id) || [],
+            doSubcategoryIds: data.subcategories?.map(s => s.id) || [],
+            doSubsubCategoryIds: data.subsubcategories?.map(s => s.id) || [],
+            interestIdentityIds: data.interests?.identities?.map(i => i.id) || [],
+            interestCategoryIds: data.interests?.categories?.map(c => c.id) || [],
+            interestSubcategoryIds: data.interests?.subcategories?.map(s => s.id) || [],
+            interestSubsubCategoryIds: data.interests?.subsubcategories?.map(s => s.id) || []
+          };
+        } else {
+          // User editing their own profile
+          const { data } = await getMe();
+          userData = data;
+        }
 
-        setMe(meData);
+        setMe(userData);
         setIdentities(Array.isArray(catalog?.identities) ? catalog.identities : []);
 
         // hydrate personal
-        const u = meData.user || {};
-        const p = meData.profile || {};
+        const u = userData.user || {};
+        const p = userData.profile || {};
         setPersonal({
           name: u.name || "",
           phone: u.phone || "",
@@ -100,16 +138,16 @@ export default function ProfilePage() {
         });
 
         // DOES
-        setDoIdentityIds(meData.doIdentityIds || []);
-        setDoCategoryIds(meData.doCategoryIds || []);
-        setDoSubcategoryIds(meData.doSubcategoryIds || []);
-        setDoSubsubCategoryIds(meData.doSubsubCategoryIds || []);
+        setDoIdentityIds(userData.doIdentityIds || []);
+        setDoCategoryIds(userData.doCategoryIds || []);
+        setDoSubcategoryIds(userData.doSubcategoryIds || []);
+        setDoSubsubCategoryIds(userData.doSubsubCategoryIds || []);
 
         // WANTS
-        setWantIdentityIds(meData.interestIdentityIds || []);
-        setWantCategoryIds(meData.interestCategoryIds || []);
-        setWantSubcategoryIds(meData.interestSubcategoryIds || []);
-        setWantSubsubCategoryIds(meData.interestSubsubCategoryIds || []);
+        setWantIdentityIds(userData.interestIdentityIds || []);
+        setWantCategoryIds(userData.interestCategoryIds || []);
+        setWantSubcategoryIds(userData.interestSubcategoryIds || []);
+        setWantSubsubCategoryIds(userData.interestSubsubCategoryIds || []);
       } catch (e) {
         console.error(e);
         toast.error("Failed to load profile.");
@@ -117,8 +155,9 @@ export default function ProfilePage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [isAdminEditing, userId]);
 
+  // Use the progress percentage from the API response
   const progress = me?.progress?.percent ?? 0;
   const levels = ["Junior", "Mid", "Senior", "Lead", "Director", "C-level"];
 
@@ -126,9 +165,55 @@ export default function ProfilePage() {
   async function savePersonal() {
     try {
       setSaving(true);
-      const { data } = await updatePersonal(personal);
-      setMe(data);
-      toast.success("Personal info saved!");
+      
+      if (isAdminEditing && userId) {
+        // Admin editing another user
+        const userData = {
+          name: personal.name,
+          phone: personal.phone,
+          nationality: personal.nationality,
+          country: personal.country,
+          countryOfResidence: personal.countryOfResidence,
+          city: personal.city,
+          profile: {
+            birthDate: personal.birthDate,
+            professionalTitle: personal.professionalTitle,
+            about: personal.about,
+            avatarUrl: personal.avatarUrl
+          }
+        };
+        
+        await updateUser(userId, userData);
+        toast.success("Personal info saved!");
+        
+        // Refresh user data
+        const { data } = await getUserById(userId);
+        setMe({
+          ...me,
+          user: {
+            ...me.user,
+            name: personal.name,
+            phone: personal.phone,
+            nationality: personal.nationality,
+            country: personal.country,
+            countryOfResidence: personal.countryOfResidence,
+            city: personal.city
+          },
+          profile: {
+            ...me.profile,
+            birthDate: personal.birthDate,
+            professionalTitle: personal.professionalTitle,
+            about: personal.about,
+            avatarUrl: personal.avatarUrl
+          },
+          progress: data.progress
+        });
+      } else {
+        // User editing their own profile
+        const { data } = await updatePersonal(personal);
+        setMe(data);
+        toast.success("Personal info saved!");
+      }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to save.");
     } finally { setSaving(false); }
@@ -137,9 +222,40 @@ export default function ProfilePage() {
   async function saveProfessional() {
     try {
       setSaving(true);
-      const { data } = await updateProfessional(professional);
-      setMe(data);
-      toast.success("Professional info saved!");
+      
+      if (isAdminEditing && userId) {
+        // Admin editing another user
+        const userData = {
+          profile: {
+            experienceLevel: professional.experienceLevel,
+            skills: professional.skills,
+            languages: professional.languages
+          }
+        };
+        
+        await updateUser(userId, userData);
+        toast.success("Professional info saved!");
+        
+        // Refresh user data
+        const { data } = await getUserById(userId);
+        
+        // Update local state with the latest data from the API
+        setMe({
+          ...me,
+          profile: {
+            ...me.profile,
+            experienceLevel: professional.experienceLevel,
+            skills: professional.skills,
+            languages: professional.languages
+          },
+          progress: data.progress
+        });
+      } else {
+        // User editing their own profile
+        const { data } = await updateProfessional(professional);
+        setMe(data);
+        toast.success("Professional info saved!");
+      }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to save.");
     } finally { setSaving(false); }
@@ -148,14 +264,22 @@ export default function ProfilePage() {
   async function saveDo() {
     try {
       setSaving(true);
-      const { data } = await updateDoSelections({
-        identityIds: doIdentityIds,
-        categoryIds: doCategoryIds,
-        subcategoryIds: doSubcategoryIds,
-        subsubCategoryIds: doSubsubCategoryIds,
-      });
-      setMe(data);
-      toast.success("Updated what you DO!");
+      
+      if (isAdminEditing && userId) {
+        // Admin editing another user - this would require additional backend endpoints
+        // for admins to update user taxonomy selections
+        toast.error("Admin editing of taxonomy selections is not supported yet.");
+      } else {
+        // User editing their own profile
+        const { data } = await updateDoSelections({
+          identityIds: doIdentityIds,
+          categoryIds: doCategoryIds,
+          subcategoryIds: doSubcategoryIds,
+          subsubCategoryIds: doSubsubCategoryIds,
+        });
+        setMe(data);
+        toast.success("Updated what you DO!");
+      }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to save.");
     } finally { setSaving(false); }
@@ -164,14 +288,22 @@ export default function ProfilePage() {
   async function saveInterests() {
     try {
       setSaving(true);
-      const { data } = await updateInterestSelections({
-        identityIds: wantIdentityIds,
-        categoryIds: wantCategoryIds,
-        subcategoryIds: wantSubcategoryIds,
-        subsubCategoryIds: wantSubsubCategoryIds,
-      });
-      setMe(data);
-      toast.success("Updated what you’re LOOKING FOR!");
+      
+      if (isAdminEditing && userId) {
+        // Admin editing another user - this would require additional backend endpoints
+        // for admins to update user taxonomy selections
+        toast.error("Admin editing of taxonomy selections is not supported yet.");
+      } else {
+        // User editing their own profile
+        const { data } = await updateInterestSelections({
+          identityIds: wantIdentityIds,
+          categoryIds: wantCategoryIds,
+          subcategoryIds: wantSubcategoryIds,
+          subsubCategoryIds: wantSubsubCategoryIds,
+        });
+        setMe(data);
+        toast.success("Updated what you're LOOKING FOR!");
+      }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to save.");
     } finally { setSaving(false); }
@@ -692,7 +824,7 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <Header/>
+      {!isAdminEditing && <Header/>}
       <div className="max-w-5xl mx-auto p-4 md:p-8">
         {/* Header + progress */}
         <div className="bg-white rounded-2xl shadow-soft p-5">
@@ -748,7 +880,7 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Email</label>
-                  <input className="w-full border rounded-lg px-3 py-2 bg-gray-50" value={me?.user?.email || ""} readOnly/>
+                  <input disabled={!isAdminEditing} className={`w-full ${!isAdminEditing ? 'opacity-50 pointer-events-none':''} border rounded-lg px-3 py-2 bg-gray-50`} value={me?.user?.email || ""} readOnly/>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Phone</label>

@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+// src/pages/CreateEventPage.jsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import client from "../api/client";
 import COUNTRIES from "../constants/countries";
@@ -86,6 +87,165 @@ function buildAudienceMaps(tree = []) {
   return { ids, cats, subs, subsubs };
 }
 
+/* ---------- Reusable SearchableSelect (combobox) ---------- */
+function SearchableSelect({
+  value,
+  onChange,
+  options, // [{ value, label }]
+  placeholder = "Select…",
+  disabled = false,
+  required = false,
+  ariaLabel,
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const rootRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const selected = useMemo(() => options.find((o) => String(o.value) === String(value)) || null, [options, value]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options.slice(0, 100);
+    return options
+      .map((o) => ({ o, score: (o.label || "").toLowerCase().indexOf(q) }))
+      .filter((x) => x.score !== -1)
+      .sort((a, b) => a.score - b.score)
+      .map((x) => x.o)
+      .slice(0, 100);
+  }, [query, options]);
+
+  useEffect(() => {
+    function onDocClick(e) {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  useEffect(() => {
+    if (!open) setActiveIndex(0);
+  }, [open, query]);
+
+  function pick(opt) {
+    onChange?.(opt?.value || "");
+    setQuery("");
+    setOpen(false);
+    inputRef.current?.blur();
+  }
+
+  function clear() {
+    onChange?.("");
+    setQuery("");
+    setOpen(false);
+    inputRef.current?.focus();
+  }
+
+  function onKeyDown(e) {
+    if (disabled) return;
+    if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+      setOpen(true);
+      return;
+    }
+    if (!open) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const opt = filtered[activeIndex];
+      if (opt) pick(opt);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  }
+
+  return (
+    <div ref={rootRef} className={`relative ${disabled ? "opacity-60" : ""}`}>
+      <div className="grid gap-1.5">
+        <div className="relative">
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            disabled={disabled}
+            placeholder={selected ? selected.label : placeholder}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => !disabled && setOpen(true)}
+            onKeyDown={onKeyDown}
+            aria-autocomplete="list"
+            aria-expanded={open}
+            aria-controls="ss-results"
+            aria-label={ariaLabel || placeholder}
+            role="combobox"
+            autoComplete="off"
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-16 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          />
+          {selected && !disabled ? (
+            <button
+              type="button"
+              onClick={clear}
+              className="absolute right-8 top-1/2 -translate-y-1/2 rounded-md p-1 hover:bg-gray-100"
+              title="Clear"
+            >
+              ×
+            </button>
+          ) : null}
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+            <I.chevron />
+          </span>
+        </div>
+
+        {/* Hidden required input to participate in HTML validity if needed */}
+        {required && (
+          <input
+            tabIndex={-1}
+            aria-hidden="true"
+            className="sr-only"
+            required
+            value={value || ""}
+            onChange={() => {}}
+          />
+        )}
+      </div>
+
+      {open && !disabled && (
+        <div
+          id="ss-results"
+          role="listbox"
+          className="absolute z-30 mt-2 w-full rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden"
+        >
+          {filtered.length === 0 ? (
+            <div className="p-3 text-sm text-gray-500">No results</div>
+          ) : (
+            <ul className="max-h-72 overflow-auto">
+              {filtered.map((opt, idx) => {
+                const isActive = idx === activeIndex;
+                return (
+                  <li
+                    key={opt.value}
+                    role="option"
+                    aria-selected={isActive}
+                    className={`cursor-pointer px-3 py-2 text-sm ${isActive ? "bg-brand-50" : "hover:bg-gray-50"}`}
+                    onMouseEnter={() => setActiveIndex(idx)}
+                    onMouseDown={(e) => { e.preventDefault(); pick(opt); }}
+                  >
+                    {opt.label}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Read-only view for non-owners ---------- */
 function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
   const tz = form.timezone || "Africa/Lagos";
@@ -103,7 +263,7 @@ function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
         <div className="relative aspect-[16/6] w-full bg-gray-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={coverSrc} alt="Event cover" className="h-full w-full object-cover" />
-          <span className="absolute left-4 top-4 {styles.badge} bg-white/90 border-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
+          <span className="absolute left-4 top-4 bg-white/90 border-gray-200 text-gray-700 px-2 py-0.5 rounded-full border text-xs">
             {form.eventType || "Event"}
           </span>
         </div>
@@ -115,7 +275,6 @@ function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
             <h1 className="text-xl font-bold">{form.title || "Untitled event"}</h1>
             <p className="mt-1 text-sm text-gray-600">{form.description || "No description provided."}</p>
           </div>
-        
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -167,8 +326,7 @@ function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
               </div>
               <div>Capacity: {form.capacity || "—"}</div>
               <div>
-                Deadline:{" "}
-                {form.registrationDeadline ? fmtDate(form.registrationDeadline, tz) : "—"}
+                Deadline: {form.registrationDeadline ? fmtDate(form.registrationDeadline, tz) : "—"}
               </div>
             </div>
           </div>
@@ -177,18 +335,10 @@ function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
         <div>
           <h3 className="text-sm font-semibold text-gray-700">Target Audience</h3>
           <div className="mt-2 flex flex-wrap gap-2">
-            {identities.map((x) => (
-              <span key={`i-${x}`} className={styles.chip}>{x}</span>
-            ))}
-            {categories.map((x) => (
-              <span key={`c-${x}`} className={styles.chip}>{x}</span>
-            ))}
-            {subcategories.map((x) => (
-              <span key={`s-${x}`} className={styles.chip}>{x}</span>
-            ))}
-            {subsubs.map((x) => (
-              <span key={`ss-${x}`} className={styles.chip}>{x}</span>
-            ))}
+            {identities.map((x) => (<span key={`i-${x}`} className={styles.chip}>{x}</span>))}
+            {categories.map((x) => (<span key={`c-${x}`} className={styles.chip}>{x}</span>))}
+            {subcategories.map((x) => (<span key={`s-${x}`} className={styles.chip}>{x}</span>))}
+            {subsubs.map((x) => (<span key={`ss-${x}`} className={styles.chip}>{x}</span>))}
             {identities.length + categories.length + subcategories.length + subsubs.length === 0 && (
               <span className="text-sm text-gray-500">Everyone</span>
             )}
@@ -196,7 +346,6 @@ function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          {/* You can wire this to a “message organizer” flow later */}
           <button type="button" className={styles.primaryGhost} onClick={() => history.back()}>
             Back
           </button>
@@ -225,6 +374,14 @@ export default function CreateEventPage() {
     categoryIds: new Set(),
     subcategoryIds: new Set(),
     subsubCategoryIds: new Set(),
+  });
+
+  // General taxonomy
+  const [generalTree, setGeneralTree] = useState([]);
+  const [selectedGeneral, setSelectedGeneral] = useState({
+    categoryId: "",
+    subcategoryId: "",
+    subsubCategoryId: "",
   });
 
   const [form, setForm] = useState({
@@ -256,6 +413,7 @@ export default function CreateEventPage() {
 
   const readOnly = isEditMode && organizerUserId && user?.id !== organizerUserId;
 
+  // Load single event (edit)
   useEffect(() => {
     if (!id) return;
     setIsEditMode(true);
@@ -294,6 +452,7 @@ export default function CreateEventPage() {
           capacity: data.capacity?.toString() || "",
           registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline).toISOString().split("T")[0] : "",
           coverImageUrl: data.coverImageUrl || "",
+          coverImageBase64:data.coverImageBase64 || data.coverImageUrl 
         });
 
         if (data.coverImageBase64) setCoverImageBase64(data.coverImageBase64);
@@ -311,6 +470,13 @@ export default function CreateEventPage() {
             subsubCategoryIds: new Set(data.audienceSubsubs?.map((s) => s.id) || []),
           });
         }
+
+        // If event already has general taxonomy set, prefill selectedGeneral
+        setSelectedGeneral({
+          categoryId: data.generalCategoryId || "",
+          subcategoryId: data.generalSubcategoryId || "",
+          subsubCategoryId: data.generalSubsubCategoryId || "",
+        });
       } catch (e) {
         console.error(e);
         alert("Failed to load event data");
@@ -321,6 +487,7 @@ export default function CreateEventPage() {
     })();
   }, [id, navigate]);
 
+  // Load meta
   useEffect(() => {
     (async () => {
       try {
@@ -340,6 +507,7 @@ export default function CreateEventPage() {
     })();
   }, []);
 
+  // Load audience identities tree
   useEffect(() => {
     (async () => {
       try {
@@ -347,6 +515,18 @@ export default function CreateEventPage() {
         setAudTree(data.identities || []);
       } catch (error) {
         console.error("Error loading identities:", error);
+      }
+    })();
+  }, []);
+
+  // Load GENERAL taxonomy tree (searchable pickers)
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/general-categories/tree?type=event");
+        setGeneralTree(data.generalCategories || []);
+      } catch (err) {
+        console.error("Failed to load general categories", err);
       }
     })();
   }, []);
@@ -395,10 +575,15 @@ export default function CreateEventPage() {
       const payload = {
         ...form,
         coverImageBase64,
+        coverImageUrl:coverImageBase64,
         identityIds,
         categoryIds,
         subcategoryIds,
         subsubCategoryIds,
+        // NEW — general taxonomy from searchable pickers
+        generalCategoryId: selectedGeneral.categoryId || null,
+        generalSubcategoryId: selectedGeneral.subcategoryId || null,
+        generalSubsubCategoryId: selectedGeneral.subsubCategoryId || null,
       };
 
       if (!payload.subcategoryId) delete payload.subcategoryId;
@@ -430,6 +615,21 @@ export default function CreateEventPage() {
     }
   }
 
+  // Build options for searchable pickers
+  const generalCategoryOptions = useMemo(
+    () => generalTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
+    [generalTree]
+  );
+  const generalSubcategoryOptions = useMemo(() => {
+    const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
+    return (c?.subcategories || []).map((sc) => ({ value: sc.id, label: sc.name || `Subcategory ${sc.id}` }));
+  }, [generalTree, selectedGeneral.categoryId]);
+  const generalSubsubCategoryOptions = useMemo(() => {
+    const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
+    const sc = c?.subcategories?.find((s) => s.id === selectedGeneral.subcategoryId);
+    return (sc?.subsubcategories || []).map((ssc) => ({ value: ssc.id, label: ssc.name || `Sub-sub ${ssc.id}` }));
+  }, [generalTree, selectedGeneral.categoryId, selectedGeneral.subcategoryId]);
+
   if (loadingMeta) {
     return (
       <FullPageLoader message="Loading event form…" tip="Fetching categories and preferences" />
@@ -448,10 +648,10 @@ export default function CreateEventPage() {
         </button>
 
         {user?.id && <>
-        <h1 className="text-2xl font-bold mt-3">{isEditMode ? "Edit Event" : "Create Event"}</h1>
-        <p className="text-sm text-gray-600">
-          {isEditMode ? "Update your event details" : "Share your event with the community"}
-        </p>
+          <h1 className="text-2xl font-bold mt-3">{isEditMode ? "Edit Event" : "Create Event"}</h1>
+          <p className="text-sm text-gray-600">
+            {isEditMode ? "Update your event details" : "Share your event with the community"}
+          </p>
         </>}
 
         {/* Non-owner gets a friendly read-only presentation */}
@@ -692,6 +892,44 @@ export default function CreateEventPage() {
                 onChange={(e) => setField("registrationDeadline", e.target.value)}
                 className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
               />
+            </section>
+
+            {/* General Classification (SEARCHABLE) */}
+            <section>
+              <h2 className="font-semibold text-brand-600">Classification</h2>
+              <p className="text-xs text-gray-600 mb-3">
+                Search and pick the category that best describes your event.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">General Category</label>
+                  <SearchableSelect
+                    ariaLabel="General Category"
+                    value={selectedGeneral.categoryId}
+                    onChange={(val) =>
+                      setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
+                    }
+                    options={generalCategoryOptions}
+                    placeholder="Search & select category…"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+                  <SearchableSelect
+                    ariaLabel="General Subcategory"
+                    value={selectedGeneral.subcategoryId}
+                    onChange={(val) =>
+                      setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
+                    }
+                    options={generalSubcategoryOptions}
+                    placeholder="Search & select subcategory…"
+                    disabled={!selectedGeneral.categoryId}
+                  />
+                </div>
+
+              </div>
             </section>
 
             {/* Audience */}

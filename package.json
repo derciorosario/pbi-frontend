@@ -23,6 +23,7 @@
     "@react-oauth/google": "^0.12.2",
     "axios": "^1.11.0",
     "core-js": "^3.39.0",
+    "file-saver": "^2.0.5",
     "framer-motion": "^11.3.2",
     "html2canvas": "^1.4.1",
     "i18next": "^23.11.5",
@@ -39,13 +40,15 @@
     "react-qr-code": "^2.0.15",
     "react-qr-scanner": "^1.0.0-alpha.11",
     "react-router-dom": "^6.24.1",
+    "react-share": "^5.2.2",
     "react-simple-typewriter": "^5.0.1",
     "react-slick": "^0.30.2",
     "react-toastify": "^11.0.5",
     "react-typewriter-effect": "^1.1.0",
     "regenerator-runtime": "^0.14.1",
     "slick-carousel": "^1.8.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@babel/plugin-proposal-optional-chaining": "^7.21.0",

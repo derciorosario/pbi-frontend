@@ -38,8 +38,7 @@ export default function ServicesPage() {
   const data=useData()
   const [view,setView]=useState('grid')
   let view_types=['grid','list']
-
-
+  const from = "services"; // Define the 'from' variable
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -52,8 +51,22 @@ export default function ServicesPage() {
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
 
+  const [generalTree, setGeneralTree] = useState([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState({});
+  const [selectedFilters,setSelectedFilters]=useState([])
+  const [filterOptions,setFilterOptions]=useState([])
 
-  
+  useEffect(() => {
+      (async () => {
+        try {
+          const { data } = await client.get("/general-categories/tree?type=service");
+          setGeneralTree(data.generalCategories || []);
+        } catch (err) {
+          console.error("Failed to load general categories", err);
+        }
+      })();
+  }, []);
+
     const [audienceTree, setAudienceTree] = useState([]);
     // Audience Tree
     const [audienceSelections, setAudienceSelections] = useState({
@@ -108,6 +121,8 @@ export default function ServicesPage() {
   // Feed
   const [items, setItems] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(false);
+  const [totalCount, setTotalCount] = useState(0); // <-- add this
+  const [showTotalCount,setShowTotalCount] = useState(0)
 
   // Sugestões
   const [matches, setMatches] = useState([]);
@@ -187,6 +202,16 @@ export default function ServicesPage() {
         date: date || undefined,
         registrationType: registrationType || undefined,
 
+        // Include selected categories as IDs
+        generalCategoryIds: selectedFilters.filter(id =>
+          generalTree.some(category => category.id === id)
+        ).join(',') || undefined,
+
+        // Include selected subcategories as IDs
+        generalSubcategoryIds: Object.keys(selectedSubcategories)
+          .filter(key => selectedSubcategories[key])
+          .join(',') || undefined,
+
         audienceIdentityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
         audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
         audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
@@ -197,6 +222,11 @@ export default function ServicesPage() {
       };
       const { data } = await client.get("/feed", { params });
       setItems(Array.isArray(data.items) ? data.items : []);
+      setTotalCount(
+        typeof data.total === "number"
+          ? data.total
+          : Array.isArray(data.items) ? data.items.length : 0
+      ); 
     } catch (e) {
       console.error("Failed to load feed:", e);
       setItems([]);
@@ -205,25 +235,29 @@ export default function ServicesPage() {
     }
     data._scrollToSection('top',true);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
-        audienceSelections,
-    price,
-    serviceType,
-    priceType,
-    deliveryTime,
-    experienceLevel,
-    locationType,
-    jobType,
-    workMode,
-    postType,
-    season,
-    budgetRange,
-    fundingGoal,
-    amountRaised,
-    currency,
-    deadline,
-    eventType,
-    date,
-    registrationType,]);
+       audienceSelections,
+   price,
+   serviceType,
+   priceType,
+   deliveryTime,
+   experienceLevel,
+   locationType,
+   jobType,
+   workMode,
+   postType,
+   season,
+   budgetRange,
+   fundingGoal,
+   amountRaised,
+   currency,
+   deadline,
+   eventType,
+   date,
+   registrationType,
+   selectedSubcategories,
+   selectedFilters,
+   generalTree,
+   data]);
 
   useEffect(() => {
     fetchFeed();
@@ -255,12 +289,36 @@ export default function ServicesPage() {
     })();
   }, [debouncedQ, country, city, categoryId, subcategoryId, goalId,role]);
 
-  const filtersProps = {
+  // Handler for subcategory changes
+  const handleSubcategoryChange = (subcategories) => {
+    setSelectedSubcategories(subcategories);
+    // No need to trigger fetchFeed here, it will be triggered by the dependency array
+  };
 
+  // Create a mapping of category IDs to names for display
+  const [categoryIdToNameMap, setCategoryIdToNameMap] = useState({});
+
+  useEffect(() => {
+    // Map category IDs to names for display in buttons
+    const idToNameMap = {};
+    generalTree.forEach(category => {
+      idToNameMap[category.id] = category.name;
+    });
+    setCategoryIdToNameMap(idToNameMap);
+
+    // Set filter options as category IDs
+    setFilterOptions(generalTree.map(i => i.id));
+  }, [generalTree]);
+
+  const filtersProps = {
+    setShowTotalCount,
     audienceSelections,
     setAudienceSelections,
     audienceTree,
-
+    generalTree,
+    selectedFilters,
+    setSelectedFilters,
+    onSubcategoryChange: handleSubcategoryChange,
     query,
     setQuery,
     country,
@@ -337,6 +395,13 @@ export default function ServicesPage() {
 
   const renderMiddle = () => {
 
+     {(!loadingFeed && showTotalCount) && (
+            <div className="text-sm text-gray-600">
+              {totalCount} result{totalCount === 1 ? "" : "s"}
+            </div>
+          )}
+          
+
     if(!loadingFeed && items.length == 0){
          return <EmptyFeedState />
     }
@@ -380,8 +445,6 @@ export default function ServicesPage() {
       </>
     );
   };
-
-   const [selectedFilters,setSelectedFilters]=useState([])
     
   
 
@@ -395,7 +458,13 @@ export default function ServicesPage() {
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
             <div className="_sticky top-0 z-10 _bg-white">
-            <FiltersCard selectedFilters={selectedFilters} {...filtersProps} from={"services"} />
+            <FiltersCard
+              selectedFilters={selectedFilters}
+              setSelectedFilters={setSelectedFilters}
+              generalTree={generalTree}
+              {...filtersProps}
+              from={"services"}
+            />
           </div>
         <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
@@ -411,15 +480,13 @@ export default function ServicesPage() {
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5 overflow-hidden">
           
-           <TopFilterButtons selected={selectedFilters} setSelected={setSelectedFilters}
-                                              buttons={
-                                             [
-                                              'Service Type',
-                                              'Price Type',
-                                               'Typical Delivery',
-                                               'Location Type',
-                                               'Experience Level'
-                         ]}/>
+           <TopFilterButtons
+             selected={selectedFilters}
+             setSelected={setSelectedFilters}
+             buttons={filterOptions}
+             buttonLabels={categoryIdToNameMap}
+             from={from}
+           />
 
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
               <h3 className="font-semibold text-2xl mt-1 hidden">Professional Services</h3>

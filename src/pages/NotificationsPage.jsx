@@ -4,6 +4,7 @@ import Header from "../components/Header";
 import client from "../api/client";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
+import { useSocket } from "../contexts/SocketContext"; // ⬅️ add
 
 const styles = {
   primary:
@@ -32,6 +33,7 @@ function timeAgo(d) {
 export default function NotificationsPage() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("All");
+  const { socket, connected } = useSocket(); // ⬅️ add
 
   const [loadingConn, setLoadingConn] = useState(false);
   const [incoming, setIncoming] = useState([]);
@@ -47,6 +49,14 @@ export default function NotificationsPage() {
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [meetingRequests, setMeetingRequests] = useState([]);
   const [errorMeetings, setErrorMeetings] = useState("");
+
+
+   useEffect(() => {
+    // When notifications page mounts, reset header badges via socket
+    if (connected && socket) {
+      socket.emit("mark_header_badge_seen", { type: "all" }, () => {});
+    }
+  }, [connected, socket]);
 
   async function loadConnections() {
     setLoadingConn(true);
@@ -273,13 +283,39 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <Header />
       <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-2xl font-bold">Notifications</h1>
-        <p className="text-sm text-gray-500">
-          Stay updated with your network activities
-        </p>
+       <div className="flex items-center justify-between">
+          <div>
+          <h1 className="text-2xl font-bold">Notifications</h1>
+          <p className="text-sm text-gray-500">
+            Stay updated with your network activities
+          </p>  
+        </div>
+
+         <button
+          className={`mt-6 block ${styles.outline}`}
+          onClick={async () => {
+            await Promise.all([
+              loadConnections(),
+              loadNotifications(),
+              loadMeetingRequests()
+            ]);
+            
+            // Force an immediate refresh of the counts in the header
+            await Promise.all([
+              client.get("/connections/requests"),
+              client.get("/meeting-requests/upcoming")
+            ]);
+          }}
+        >
+          Refresh
+        </button>
+
+       </div>
+       
+       
 
         <div className="mt-6 flex items-center justify-between">
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {["All", "Connections", "Meetings", "Posts", "Messages", "System"].map(
               (t) => (
                 <button
@@ -534,24 +570,7 @@ export default function NotificationsPage() {
           )}
         </div>
 
-        <button
-          className={`mt-6 mx-auto block ${styles.outline}`}
-          onClick={async () => {
-            await Promise.all([
-              loadConnections(),
-              loadNotifications(),
-              loadMeetingRequests()
-            ]);
-            
-            // Force an immediate refresh of the counts in the header
-            await Promise.all([
-              client.get("/connections/requests"),
-              client.get("/meeting-requests/upcoming")
-            ]);
-          }}
-        >
-          Refresh
-        </button>
+        
       </main>
     </div>
   );
