@@ -490,11 +490,11 @@ export default function PeopleFeedPage() {
                     ]
                   : [
                     "Business",
-                    "Non-Profit Organizations",
-                    "Government & Public Sector",
+                    "Non-Profit Organizations (NPOs/NGOs)",
+                    "Government / Public Sector Organizations",
                     "Educational & Research Organizations",
                     "Healthcare Organizations",
-                    "International & Intergovernmental Organizations",
+                    "International / Intergovernmental Organizations",
                     "Hybrid / Special Organizations"
                   ]
 
