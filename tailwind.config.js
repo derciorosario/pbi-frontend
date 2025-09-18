@@ -15,6 +15,13 @@ export default {
           600: "#03428a",
           700: "#023771", // gradient start
         },
+         accent: {
+          50:  "#dff2e4",
+          100: "#bee5c9",
+          500: "#27a84a", // success / accent
+          600: "#218f3f",
+          700: "#1b7634",
+        }
       },
       boxShadow: {
         soft: "0 10px 30px rgba(0,0,0,0.08)"

@@ -261,7 +261,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
             </div>
 
             {openId && hasCategories && (
-              <div className="bg-slate-50/80 px-4 py-3 space-y-3">
+              <div className="bg-white px-4 py-3 space-y-3">
                 {(identity.categories || []).map((cat) => {
                   const cKey = `cat-${cat.id}`;
                   const openCat = !!open[cKey];
@@ -271,8 +271,8 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                   return (
                     <div key={cKey} className="rounded-lg border border-slate-200">
                       <div
-                        className={`flex items-center justify-between px-3 py-2 bg-slate-100 ${
-                          hasSubs ? "cursor-pointer hover:bg-slate-100/80" : ""
+                        className={`flex items-center justify-between px-3 py-2 bg-brand-50 ${
+                          hasSubs ? "cursor-pointer" : ""
                         }`}
                         onClick={hasSubs ? () => onToggleCategory(identity, cat) : undefined}
                       >
@@ -283,7 +283,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                             checked={isChecked("categoryIds", cat.id)}
                             onChange={onCategoryCheck(identityId, cat)}
                           />
-                          <span className="text-sm font-medium text-slate-800 w-full flex items-center">
+                          <span className="text-sm font-medium text-brand-600 w-full flex items-center">
                             {cat.name}
                             <CountPill count={catCount} />
                           </span>
@@ -305,7 +305,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                       </div>
 
                       {openCat && hasSubs && (
-                        <div className="px-3 py-2 space-y-2 bg-sky-50 border-l-2 border-sky-200">
+                        <div className="px-3 py-2 space-y-2 border-l-2 border-sky-200">
                           {(cat.subcategories || []).map((sc) => {
                             const scKey = `sc-${sc.id}`;
                             const openSc = !!open[scKey];
@@ -315,8 +315,8 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                             return (
                               <div key={scKey} className="border border-slate-200 rounded-md overflow-hidden">
                                 <div
-                                  className={`flex items-center justify-between px-3 py-2 bg-sky-100 ${
-                                    hasSubsubs ? "cursor-pointer hover:bg-sky-100/80" : ""
+                                  className={`flex items-center justify-between px-3 py-2 bg-white ${
+                                    hasSubsubs ? "cursor-pointer" : ""
                                   }`}
                                   onClick={hasSubsubs ? () => onToggleSubcategory(cat, sc) : undefined}
                                 >
@@ -349,7 +349,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                                 </div>
 
                                 {openSc && hasSubsubs && (
-                                  <div className="px-3 py-2 bg-[#f0f9ff] border-l-2 border-indigo-200 grid gap-2">
+                                  <div className="px-3 py-2 bg-[#f0f9ff]  border-indigo-200 grid gap-2">
                                     {sc.subsubs.map((ss) => (
                                       <label key={ss.id} className="flex items-center gap-2">
                                         <input
