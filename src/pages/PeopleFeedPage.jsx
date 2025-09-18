@@ -489,13 +489,7 @@ export default function PeopleFeedPage() {
                       "Investor",
                     ]
                   : [
-                    "Business & Technology",
-                    "Health & Insurance",
-                    "Finance & Banking",
-                    "Retail & Consumer Goods",
-                    "Energy & Utilities",
-                    "Real Estate & Construction",
-                    "Media & Entertainment",
+                    "Business",
                     "Non-Profit Organizations",
                     "Government & Public Sector",
                     "Educational & Research Organizations",
