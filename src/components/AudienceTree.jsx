@@ -319,8 +319,8 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                             return (
                               <div key={scKey} className="border border-slate-200 rounded-md overflow-hidden">
                                 <div
-                                  className={`flex items-center justify-between px-3 py-2 bg-sky-100 ${
-                                    hasSubsubs ? "cursor-pointer hover:bg-sky-100/80" : ""
+                                  className={`flex items-center justify-between px-3 py-2 bg-brand-50 ${
+                                    hasSubsubs ? "cursor-pointer" : ""
                                   }`}
                                   onClick={hasSubsubs ? () => onToggleSubcategory(cat, sc) : undefined}
                                 >
@@ -353,7 +353,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                                 </div>
 
                                 {openSc && hasSubsubs && (
-                                  <div className="px-3 py-2 bg-[#f0f9ff] border-l-2 border-indigo-200 grid gap-2">
+                                  <div className="px-3 py-2 bg-[#f0f9ff] border-l-2 border-sky-200 grid gap-2">
                                     {sc.subsubs.map((ss) => (
                                       <label key={ss.id} className="flex items-center gap-2">
                                         <input

@@ -105,7 +105,7 @@ export default function CrowdfundCard({
   const isOwner = !!user?.id && user.id === item?.creatorUserId;
 
   // Share data
-  const shareUrl = `${window.location.origin}/funding?id=${item?.id}`;
+  const shareUrl = `${window.location.origin}/funding/${item?.id}`;
   const shareTitle = item?.title || "Crowdfunding project on 54Links";
   const shareQuote = (item?.pitch || "").slice(0, 160) + ((item?.pitch || "").length > 160 ? "…" : "");
   const shareHashtags = ["54Links", "Crowdfunding", "Support"].filter(Boolean);

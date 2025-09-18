@@ -120,6 +120,104 @@ export default function ProductCard({
     ? "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch"
     : "flex flex-col";
 
+
+    const CopyLinkButton = () => (
+    <button
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Link copied");
+          setShareOpen(false);
+        } catch {
+          toast.error("Failed to copy link");
+        }
+      }}
+      className="flex items-center gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+    >
+      <CopyIcon size={16} />
+      Copy link
+    </button>
+  );
+
+     // Share data and components
+  const ShareMenu = () => {
+    const shareUrl = `${window.location.origin}/products?id=${item?.id}`;
+    const shareTitle = item?.title || "Product on 54Links";
+    const shareQuote = (item?.description || "").slice(0, 160) + ((item?.description || "").length > 160 ? "…" : "");
+    const shareHashtags = ["54Links", "Products", "Shopping"].filter(Boolean);
+    const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
+  
+    return (
+      <div
+        ref={shareMenuRef}
+        className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+        role="dialog"
+        aria-label="Share options"
+      >
+        <div className="text-xs font-medium text-gray-500 px-1 pb-2">
+          Share this product
+        </div>
+  
+        <div className="grid grid-cols-3 gap-2">
+          <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <WhatsappIcon size={40} round />
+              <span className="text-xs text-gray-700">WhatsApp</span>
+            </div>
+          </WhatsappShareButton>
+  
+          <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <FacebookIcon size={40} round />
+              <span className="text-xs text-gray-700">Facebook</span>
+            </div>
+          </FacebookShareButton>
+  
+          <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <LinkedinIcon size={40} round />
+              <span className="text-xs text-gray-700">LinkedIn</span>
+            </div>
+          </LinkedinShareButton>
+  
+          <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <TwitterIcon size={40} round />
+              <span className="text-xs text-gray-700">X / Twitter</span>
+            </div>
+          </TwitterShareButton>
+  
+          <TelegramShareButton url={shareUrl} title={shareTitle}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <TelegramIcon size={40} round />
+              <span className="text-xs text-gray-700">Telegram</span>
+            </div>
+          </TelegramShareButton>
+  
+          <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <EmailIcon size={40} round />
+              <span className="text-xs text-gray-700">Email</span>
+            </div>
+          </EmailShareButton>
+  
+          {messengerAppId && (
+            <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
+              <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+                <FacebookMessengerIcon size={40} round />
+                <span className="text-xs text-gray-700">Messenger</span>
+              </div>
+            </FacebookMessengerShareButton>
+          )}
+        </div>
+  
+        <div className="mt-2">
+          <CopyLinkButton />
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <div
@@ -508,7 +606,7 @@ export default function ProductCard({
         )}
 
         {/* SHARE MENU - inside the card for proper positioning */}
-        {shareOpen && <ShareMenu item={item} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
+        {shareOpen && <ShareMenu />}
       </div>
 
       {/* Connection Request Modal */}
@@ -550,7 +648,7 @@ export default function ProductCard({
         </button>
       );
     }
-    
+
     if (status === "pending_outgoing" || status === "outgoing_pending") {
       return (
         <button
@@ -560,7 +658,7 @@ export default function ProductCard({
         </button>
       );
     }
-    
+
     if (status === "pending_incoming" || status === "incoming_pending") {
       return (
         <button
@@ -571,7 +669,7 @@ export default function ProductCard({
         </button>
       );
     }
-    
+
     if (!user?.id) {
       return (
         <button
@@ -582,7 +680,7 @@ export default function ProductCard({
         </button>
       );
     }
-    
+
     return (
       <button
         onClick={() => setModalOpen(true)}
@@ -592,101 +690,8 @@ export default function ProductCard({
       </button>
     );
   }
+
+ 
   
-  // Share data and components
-  const ShareMenu = ({ item, shareMenuRef, setShareOpen }) => {
-    const shareUrl = `${window.location.origin}/products?id=${item?.id}`;
-    const shareTitle = item?.title || "Product on 54Links";
-    const shareQuote = (item?.description || "").slice(0, 160) + ((item?.description || "").length > 160 ? "…" : "");
-    const shareHashtags = ["54Links", "Products", "Shopping"].filter(Boolean);
-    const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
   
-    return (
-      <div
-        ref={shareMenuRef}
-        className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
-        role="dialog"
-        aria-label="Share options"
-      >
-        <div className="text-xs font-medium text-gray-500 px-1 pb-2">
-          Share this product
-        </div>
-  
-        <div className="grid grid-cols-3 gap-2">
-          <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
-            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-              <WhatsappIcon size={40} round />
-              <span className="text-xs text-gray-700">WhatsApp</span>
-            </div>
-          </WhatsappShareButton>
-  
-          <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
-            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-              <FacebookIcon size={40} round />
-              <span className="text-xs text-gray-700">Facebook</span>
-            </div>
-          </FacebookShareButton>
-  
-          <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
-            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-              <LinkedinIcon size={40} round />
-              <span className="text-xs text-gray-700">LinkedIn</span>
-            </div>
-          </LinkedinShareButton>
-  
-          <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
-            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-              <TwitterIcon size={40} round />
-              <span className="text-xs text-gray-700">X / Twitter</span>
-            </div>
-          </TwitterShareButton>
-  
-          <TelegramShareButton url={shareUrl} title={shareTitle}>
-            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-              <TelegramIcon size={40} round />
-              <span className="text-xs text-gray-700">Telegram</span>
-            </div>
-          </TelegramShareButton>
-  
-          <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
-            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-              <EmailIcon size={40} round />
-              <span className="text-xs text-gray-700">Email</span>
-            </div>
-          </EmailShareButton>
-  
-          {messengerAppId && (
-            <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
-              <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-                <FacebookMessengerIcon size={40} round />
-                <span className="text-xs text-gray-700">Messenger</span>
-              </div>
-            </FacebookMessengerShareButton>
-          )}
-        </div>
-  
-        <div className="mt-2">
-          <CopyLinkButton shareUrl={shareUrl} setShareOpen={setShareOpen} />
-        </div>
-      </div>
-    );
-  };
-  
-  const CopyLinkButton = ({ shareUrl, setShareOpen }) => (
-    <button
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(shareUrl);
-          toast.success("Link copied");
-          setShareOpen(false);
-        } catch {
-          toast.error("Failed to copy link");
-        }
-      }}
-      className="flex items-center gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-    >
-      <CopyIcon size={16} />
-      Copy link
-    </button>
-  );
 }

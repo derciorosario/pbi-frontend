@@ -562,7 +562,7 @@ export default function ServiceCard({
 
 // Share data and components
 const ShareMenu = ({ item, shareMenuRef, setShareOpen }) => {
-  const shareUrl = `${window.location.origin}/services?id=${item?.id}`;
+  const shareUrl = `${window.location.origin}/service/${item?.id}`;
   const shareTitle = item?.title || "Service on 54Links";
   const shareQuote = (item?.description || "").slice(0, 160) + ((item?.description || "").length > 160 ? "…" : "");
   const shareHashtags = ["54Links", "Services", "Professionals"].filter(Boolean);
