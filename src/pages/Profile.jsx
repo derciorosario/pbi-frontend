@@ -1019,21 +1019,30 @@ export default function ProfilePage() {
               return (
                 <div key={`industry-cat-${cIdx}`} className="rounded-xl border">
                   <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-xl">
-                    <div className="font-semibold">{industryCat.name}</div>
-                    <span className="text-xs text-gray-500">
-                      {(industryCat.subcategories || []).length} subcategories
-                    </span>
-                  </div>
+                    <div className="flex items-center gap-2">
 
-                  <div className="px-4 py-4 space-y-3">
-                    <div className="flex items-center gap-3">
+                    
+                         <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
                         className="h-4 w-4"
                         checked={industryCatSelected}
                         onChange={() => industryCat.id && onToggleIndustryCat(industryCat.id)}
                       />
-                      <span className="font-medium">{industryCat.name}</span>
+                      
+                    </div>
+
+                       <div className="font-semibold">{industryCat.name}</div>
+                  
+
+
+                    </div>
+                  
+                    <div className="flex items-center gap-1">
+                     
+                        <span className="text-xs text-gray-500">
+                      {(industryCat.subcategories || []).length} subcategories
+                    </span>
                       {_hasSubs && (
                         <button
                           type="button"
@@ -1044,7 +1053,12 @@ export default function ProfilePage() {
                           <span className={`inline-block transition-transform ${industryCatOpen ? "rotate-180" : ""}`}>▾</span>
                         </button>
                       )}
+
                     </div>
+                  </div>
+
+                  <div className={`${ (_hasSubs && industryCatOpen) ? 'px-4 py-4 space-y-3':''}`}>
+                 
 
                     {_hasSubs && industryCatOpen && (
                       <div className="ml-7 space-y-3">

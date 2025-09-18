@@ -4,6 +4,22 @@ import { useNavigate } from "react-router-dom";
 import client from "../../api/client";
 import { useAuth } from "../../contexts/AuthContext";
 
+import {
+  Users,           // step 1: identities (you/company)
+  Layers,          // step 2: categories you DO
+  Handshake,       // step 3: identities you WANT
+  Tags,            // step 4: categories you WANT
+  Factory,         // step 5: industries
+} from "lucide-react";
+
+export const OnboardingIcons = {
+  step1: (props) => <Users className="h-6 w-6" {...props} />,
+  step2: (props) => <Layers className="h-6 w-6" {...props} />,
+  step3: (props) => <Handshake className="h-6 w-6" {...props} />,
+  step4: (props) => <Tags className="h-6 w-6" {...props} />,
+  step5: (props) => <Factory className="h-6 w-6" {...props} />,
+};
+
 /**
  * FourStepOnboarding.jsx
  * - Step 1: Who you are (identities)            → what you DO
@@ -30,6 +46,11 @@ export default function FourStepOnboarding() {
   // flow
   const [step, setStep] = useState(1);
   const progress = useMemo(() => [0, 16.67, 33.33, 50, 66.67, 83.33, 100][step] ?? 100, [step]);
+
+  // ⬇️ NEW: always scroll to top when the step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step]);
 
   // data
   const [loading, setLoading] = useState(true);
@@ -83,8 +104,11 @@ export default function FourStepOnboarding() {
 
         // Load industry categories
         const industryResponse = await client.get("/industry-categories/tree");
-        setIndustries(Array.isArray(industryResponse.data?.industryCategories)
-          ? industryResponse.data.industryCategories : []);
+        setIndustries(
+          Array.isArray(industryResponse.data?.industryCategories)
+            ? industryResponse.data.industryCategories
+            : []
+        );
       } catch (e) {
         console.error(e);
         setError("Failed to load onboarding data.");
@@ -105,9 +129,7 @@ export default function FourStepOnboarding() {
 
   // Get the appropriate identities based on account type
   const identitiesToShow = useMemo(() => {
-    if (userAccountType === 'company') {
-      // For companies, we need to get company identities from the API response
-      // This would be available in the data.company_identities field
+    if (userAccountType === "company") {
       return Array.isArray(identities) ? identities : [];
     }
     return Array.isArray(identities) ? identities : [];
@@ -214,9 +236,13 @@ export default function FourStepOnboarding() {
   // ---------- Toggles (generic builders) ----------
 
   function makeToggleIdentity({
-    pickIds, setPickIds,
-    setCats, setSubs, setSubsubs,
-    setOpenCats, setOpenSubs,
+    pickIds,
+    setPickIds,
+    setCats,
+    setSubs,
+    setSubsubs,
+    setOpenCats,
+    setOpenSubs,
   }) {
     return (identityKey) => {
       setPickIds((prev) => {
@@ -257,7 +283,14 @@ export default function FourStepOnboarding() {
     };
   }
 
-  function makeToggleCategory({ catIds, setCatIds, setSubIds, setXIds, setOpenCats, setOpenSubs }) {
+  function makeToggleCategory({
+    catIds,
+    setCatIds,
+    setSubIds,
+    setXIds,
+    setOpenCats,
+    setOpenSubs,
+  }) {
     return (catId) => {
       if (!catId) return;
       const has = catIds.includes(catId);
@@ -267,8 +300,16 @@ export default function FourStepOnboarding() {
         setCatIds((prev) => prev.filter((x) => x !== catId));
         setSubIds((prev) => prev.filter((sid) => !subIds.includes(sid)));
         setXIds((prev) => prev.filter((x) => !xIds.includes(x)));
-        setOpenCats((prev) => { const next = new Set(prev); next.delete(catId); return next; });
-        setOpenSubs((prev) => { const next = new Set(prev); for (const sid of subIds) next.delete(sid); return next; });
+        setOpenCats((prev) => {
+          const next = new Set(prev);
+          next.delete(catId);
+          return next;
+        });
+        setOpenSubs((prev) => {
+          const next = new Set(prev);
+          for (const sid of subIds) next.delete(sid);
+          return next;
+        });
       } else {
         setCatIds((prev) => [...prev, catId]);
         setOpenCats((prev) => new Set(prev).add(catId));
@@ -276,7 +317,14 @@ export default function FourStepOnboarding() {
     };
   }
 
-  function makeToggleSub({ subIds, setSubIds, setXIds, setOpenSubs, setCatIds, setOpenCats }) {
+  function makeToggleSub({
+    subIds,
+    setSubIds,
+    setXIds,
+    setOpenSubs,
+    setCatIds,
+    setOpenCats,
+  }) {
     return (subId) => {
       if (!subId) return;
       const parentCatId = subToCat[subId];
@@ -285,7 +333,11 @@ export default function FourStepOnboarding() {
         const xIds = subToAllSubsubIds[subId] || [];
         setSubIds((prev) => prev.filter((x) => x !== subId));
         setXIds((prev) => prev.filter((x) => !xIds.includes(x)));
-        setOpenSubs((prev) => { const n = new Set(prev); n.delete(subId); return n; });
+        setOpenSubs((prev) => {
+          const n = new Set(prev);
+          n.delete(subId);
+          return n;
+        });
       } else {
         if (parentCatId) {
           setCatIds((prev) => (prev.includes(parentCatId) ? prev : [...prev, parentCatId]));
@@ -319,9 +371,13 @@ export default function FourStepOnboarding() {
   // ---------- LIMITED versions for the WANT track ----------
 
   const toggleIdentityWantBase = makeToggleIdentity({
-    pickIds: interestIdentityIds, setPickIds: setInterestIdentityIds,
-    setCats: setInterestCategoryIds, setSubs: setInterestSubcategoryIds, setSubsubs: setInterestSubsubCategoryIds,
-    setOpenCats: setOpenCatsWant, setOpenSubs: setOpenSubsWant,
+    pickIds: interestIdentityIds,
+    setPickIds: setInterestIdentityIds,
+    setCats: setInterestCategoryIds,
+    setSubs: setInterestSubcategoryIds,
+    setSubsubs: setInterestSubsubCategoryIds,
+    setOpenCats: setOpenCatsWant,
+    setOpenSubs: setOpenSubsWant,
   });
 
   const toggleIdentityWant = (identityKey) => {
@@ -331,9 +387,12 @@ export default function FourStepOnboarding() {
   };
 
   const toggleCategoryWantBase = makeToggleCategory({
-    catIds: interestCategoryIds, setCatIds: setInterestCategoryIds,
-    setSubIds: setInterestSubcategoryIds, setXIds: setInterestSubsubCategoryIds,
-    setOpenCats: setOpenCatsWant, setOpenSubs: setOpenSubsWant,
+    catIds: interestCategoryIds,
+    setCatIds: setInterestCategoryIds,
+    setSubIds: setInterestSubcategoryIds,
+    setXIds: setInterestSubsubCategoryIds,
+    setOpenCats: setOpenCatsWant,
+    setOpenSubs: setOpenSubsWant,
   });
 
   const toggleCategoryWant = (catId) => {
@@ -343,9 +402,12 @@ export default function FourStepOnboarding() {
   };
 
   const toggleSubWantBase = makeToggleSub({
-    subIds: interestSubcategoryIds, setSubIds: setInterestSubcategoryIds,
-    setXIds: setInterestSubsubCategoryIds, setOpenSubs: setOpenSubsWant,
-    setCatIds: setInterestCategoryIds, setOpenCats: setOpenCatsWant,
+    subIds: interestSubcategoryIds,
+    setSubIds: setInterestSubcategoryIds,
+    setXIds: setInterestSubsubCategoryIds,
+    setOpenSubs: setOpenSubsWant,
+    setCatIds: setInterestCategoryIds,
+    setOpenCats: setOpenCatsWant,
   });
 
   const toggleSubWant = (subId) => {
@@ -359,8 +421,10 @@ export default function FourStepOnboarding() {
 
   const toggleSubsubWantBase = makeToggleSubsub({
     setXIds: setInterestSubsubCategoryIds,
-    subIds: interestSubcategoryIds, setSubIds: setInterestSubcategoryIds,
-    setCatIds: setInterestCategoryIds, setOpenCats: setOpenCatsWant,
+    subIds: interestSubcategoryIds,
+    setSubIds: setInterestSubcategoryIds,
+    setCatIds: setInterestCategoryIds,
+    setOpenCats: setOpenCatsWant,
   });
 
   const toggleSubsubWant = (xId) => {
@@ -374,18 +438,40 @@ export default function FourStepOnboarding() {
 
   // ---------- Industry toggle functions ----------
 
-  function makeToggleIndustryCategory({ industryCatIds, setIndustryCatIds, setIndustrySubIds, setIndustryXIds, setOpenIndustryCats, setOpenIndustrySubs }) {
+  function makeToggleIndustryCategory({
+    industryCatIds,
+    setIndustryCatIds,
+    setIndustrySubIds,
+    setIndustryXIds,
+    setOpenIndustryCats,
+    setOpenIndustrySubs,
+  }) {
     return (industryCatId) => {
       if (!industryCatId) return;
       const has = industryCatIds.includes(industryCatId);
       if (has) {
-        const subIds = industries.find(cat => cat.id === industryCatId)?.subcategories?.map(s => s.id) || [];
-        const xIds = subIds.flatMap((sid) => industries.find(cat => cat.id === industryCatId)?.subcategories?.find(s => s.id === sid)?.subsubs?.map(x => x.id) || []);
+        const subIds =
+          industries.find((cat) => cat.id === industryCatId)?.subcategories?.map((s) => s.id) ||
+          [];
+        const xIds = subIds.flatMap(
+          (sid) =>
+            industries
+              .find((cat) => cat.id === industryCatId)
+              ?.subcategories?.find((s) => s.id === sid)?.subsubs?.map((x) => x.id) || []
+        );
         setIndustryCatIds((prev) => prev.filter((x) => x !== industryCatId));
         setIndustrySubIds((prev) => prev.filter((sid) => !subIds.includes(sid)));
         setIndustryXIds((prev) => prev.filter((x) => !xIds.includes(x)));
-        setOpenIndustryCats((prev) => { const next = new Set(prev); next.delete(industryCatId); return next; });
-        setOpenIndustrySubs((prev) => { const next = new Set(prev); for (const sid of subIds) next.delete(sid); return next; });
+        setOpenIndustryCats((prev) => {
+          const next = new Set(prev);
+          next.delete(industryCatId);
+          return next;
+        });
+        setOpenIndustrySubs((prev) => {
+          const next = new Set(prev);
+          for (const sid of subIds) next.delete(sid);
+          return next;
+        });
       } else {
         setIndustryCatIds((prev) => [...prev, industryCatId]);
         setOpenIndustryCats((prev) => new Set(prev).add(industryCatId));
@@ -393,16 +479,33 @@ export default function FourStepOnboarding() {
     };
   }
 
-  function makeToggleIndustrySub({ industrySubIds, setIndustrySubIds, setIndustryXIds, setOpenIndustrySubs, setIndustryCatIds, setOpenIndustryCats }) {
+  function makeToggleIndustrySub({
+    industrySubIds,
+    setIndustrySubIds,
+    setIndustryXIds,
+    setOpenIndustrySubs,
+    setIndustryCatIds,
+    setOpenIndustryCats,
+  }) {
     return (industrySubId) => {
       if (!industrySubId) return;
-      const parentCatId = industries.find(cat => cat.subcategories?.some(s => s.id === industrySubId))?.id;
+      const parentCatId = industries.find((cat) =>
+        cat.subcategories?.some((s) => s.id === industrySubId)
+      )?.id;
       const has = industrySubIds.includes(industrySubId);
       if (has) {
-        const xIds = industries.find(cat => cat.id === parentCatId)?.subcategories?.find(s => s.id === industrySubId)?.subsubs?.map(x => x.id) || [];
+        const xIds =
+          industries
+            .find((cat) => cat.id === parentCatId)
+            ?.subcategories?.find((s) => s.id === industrySubId)
+            ?.subsubs?.map((x) => x.id) || [];
         setIndustrySubIds((prev) => prev.filter((x) => x !== industrySubId));
         setIndustryXIds((prev) => prev.filter((x) => !xIds.includes(x)));
-        setOpenIndustrySubs((prev) => { const n = new Set(prev); n.delete(industrySubId); return n; });
+        setOpenIndustrySubs((prev) => {
+          const n = new Set(prev);
+          n.delete(industrySubId);
+          return n;
+        });
       } else {
         if (parentCatId) {
           setIndustryCatIds((prev) => (prev.includes(parentCatId) ? prev : [...prev, parentCatId]));
@@ -413,11 +516,21 @@ export default function FourStepOnboarding() {
     };
   }
 
-  function makeToggleIndustrySubsub({ setIndustryXIds, industrySubIds, setIndustrySubIds, setIndustryCatIds, setOpenIndustryCats }) {
+  function makeToggleIndustrySubsub({
+    setIndustryXIds,
+    industrySubIds,
+    setIndustrySubIds,
+    setIndustryCatIds,
+    setOpenIndustryCats,
+  }) {
     return (industryXId) => {
       if (!industryXId) return;
-      const parentSubId = industries.flatMap(cat => cat.subcategories || []).find(s => s.subsubs?.some(x => x.id === industryXId))?.id;
-      const parentCatId = parentSubId ? industries.find(cat => cat.subcategories?.some(s => s.id === parentSubId))?.id : null;
+      const parentSubId = industries
+        .flatMap((cat) => cat.subcategories || [])
+        .find((s) => s.subsubs?.some((x) => x.id === industryXId))?.id;
+      const parentCatId = parentSubId
+        ? industries.find((cat) => cat.subcategories?.some((s) => s.id === parentSubId))?.id
+        : null;
       setIndustryXIds((prev) => {
         const has = prev.includes(industryXId);
         if (has) return prev.filter((x) => x !== industryXId);
@@ -434,27 +547,35 @@ export default function FourStepOnboarding() {
   }
 
   const toggleIndustryCategory = makeToggleIndustryCategory({
-    industryCatIds: industryCategoryIds, setIndustryCatIds: setIndustryCategoryIds,
-    setIndustrySubIds: setIndustrySubcategoryIds, setIndustryXIds: setIndustrySubsubCategoryIds,
-    setOpenIndustryCats: setOpenIndustryCats, setOpenIndustrySubs: setOpenIndustrySubs,
+    industryCatIds: industryCategoryIds,
+    setIndustryCatIds: setIndustryCategoryIds,
+    setIndustrySubIds: setIndustrySubcategoryIds,
+    setIndustryXIds: setIndustrySubsubCategoryIds,
+    setOpenIndustryCats: setOpenIndustryCats,
+    setOpenIndustrySubs: setOpenIndustrySubs,
   });
 
   const toggleIndustrySub = makeToggleIndustrySub({
-    industrySubIds: industrySubcategoryIds, setIndustrySubIds: setIndustrySubcategoryIds,
-    setIndustryXIds: setIndustrySubsubCategoryIds, setOpenIndustrySubs: setOpenIndustrySubs,
-    setIndustryCatIds: setIndustryCategoryIds, setOpenIndustryCats: setOpenIndustryCats,
+    industrySubIds: industrySubcategoryIds,
+    setIndustrySubIds: setIndustrySubcategoryIds,
+    setIndustryXIds: setIndustrySubsubCategoryIds,
+    setOpenIndustrySubs: setOpenIndustrySubs,
+    setIndustryCatIds: setIndustryCategoryIds,
+    setOpenIndustryCats: setOpenIndustryCats,
   });
 
   const toggleIndustrySubsub = makeToggleIndustrySubsub({
     setIndustryXIds: setIndustrySubsubCategoryIds,
-    industrySubIds: industrySubcategoryIds, setIndustrySubIds: setIndustrySubcategoryIds,
-    setIndustryCatIds: setIndustryCategoryIds, setOpenIndustryCats: setOpenIndustryCats,
+    industrySubIds: industrySubcategoryIds,
+    setIndustrySubIds: setIndustrySubcategoryIds,
+    setIndustryCatIds: setIndustryCategoryIds,
+    setOpenIndustryCats: setOpenIndustryCats,
   });
 
   // Subcategory open/close (panel only)
   const toggleSubOpenDoes = (subId) => {
     if (!subId) return;
-    setOpenSubsDoes(prev => {
+    setOpenSubsDoes((prev) => {
       const n = new Set(prev);
       n.has(subId) ? n.delete(subId) : n.add(subId);
       return n;
@@ -462,7 +583,7 @@ export default function FourStepOnboarding() {
   };
   const toggleSubOpenWant = (subId) => {
     if (!subId) return;
-    setOpenSubsWant(prev => {
+    setOpenSubsWant((prev) => {
       const n = new Set(prev);
       n.has(subId) ? n.delete(subId) : n.add(subId);
       return n;
@@ -471,14 +592,14 @@ export default function FourStepOnboarding() {
 
   // Category panel open/close
   const handleCatOpenDoes = (catId) => {
-    setOpenCatsDoes(prev => {
+    setOpenCatsDoes((prev) => {
       const n = new Set(prev);
       n.has(catId) ? n.delete(catId) : n.add(catId);
       return n;
     });
   };
   const handleCatOpenWant = (catId) => {
-    setOpenCatsWant(prev => {
+    setOpenCatsWant((prev) => {
       const n = new Set(prev);
       n.has(catId) ? n.delete(catId) : n.add(catId);
       return n;
@@ -487,7 +608,7 @@ export default function FourStepOnboarding() {
 
   // Industry panel open/close
   const handleIndustryCatOpen = (industryCatId) => {
-    setOpenIndustryCats(prev => {
+    setOpenIndustryCats((prev) => {
       const n = new Set(prev);
       n.has(industryCatId) ? n.delete(industryCatId) : n.add(industryCatId);
       return n;
@@ -496,7 +617,7 @@ export default function FourStepOnboarding() {
 
   const toggleIndustrySubOpen = (industrySubId) => {
     if (!industrySubId) return;
-    setOpenIndustrySubs(prev => {
+    setOpenIndustrySubs((prev) => {
       const n = new Set(prev);
       n.has(industrySubId) ? n.delete(industrySubId) : n.add(industrySubId);
       return n;
@@ -505,24 +626,36 @@ export default function FourStepOnboarding() {
 
   // build per-track handlers (DOES)
   const toggleIdentityDoes = makeToggleIdentity({
-    pickIds: identityIds, setPickIds: setIdentityIds,
-    setCats: setCategoryIds, setSubs: setSubcategoryIds, setSubsubs: setSubsubCategoryIds,
-    setOpenCats: setOpenCatsDoes, setOpenSubs: setOpenSubsDoes,
+    pickIds: identityIds,
+    setPickIds: setIdentityIds,
+    setCats: setCategoryIds,
+    setSubs: setSubcategoryIds,
+    setSubsubs: setSubsubCategoryIds,
+    setOpenCats: setOpenCatsDoes,
+    setOpenSubs: setOpenSubsDoes,
   });
   const toggleCategoryDoes = makeToggleCategory({
-    catIds: categoryIds, setCatIds: setCategoryIds,
-    setSubIds: setSubcategoryIds, setXIds: setSubsubCategoryIds,
-    setOpenCats: setOpenCatsDoes, setOpenSubs: setOpenSubsDoes,
+    catIds: categoryIds,
+    setCatIds: setCategoryIds,
+    setSubIds: setSubcategoryIds,
+    setXIds: setSubsubCategoryIds,
+    setOpenCats: setOpenCatsDoes,
+    setOpenSubs: setOpenSubsDoes,
   });
   const toggleSubDoes = makeToggleSub({
-    subIds: subcategoryIds, setSubIds: setSubcategoryIds,
-    setXIds: setSubsubCategoryIds, setOpenSubs: setOpenSubsDoes,
-    setCatIds: setCategoryIds, setOpenCats: setOpenCatsDoes,
+    subIds: subcategoryIds,
+    setSubIds: setSubcategoryIds,
+    setXIds: setSubsubCategoryIds,
+    setOpenSubs: setOpenSubsDoes,
+    setCatIds: setCategoryIds,
+    setOpenCats: setOpenCatsDoes,
   });
   const toggleSubsubDoes = makeToggleSubsub({
     setXIds: setSubsubCategoryIds,
-    subIds: subcategoryIds, setSubIds: setSubcategoryIds,
-    setCatIds: setCategoryIds, setOpenCats: setOpenCatsDoes,
+    subIds: subcategoryIds,
+    setSubIds: setSubcategoryIds,
+    setCatIds: setCategoryIds,
+    setOpenCats: setOpenCatsDoes,
   });
 
   // derived lists
@@ -540,8 +673,9 @@ export default function FourStepOnboarding() {
   const canContinue1 = identityIds.length >= 1;
   const canContinue2 = categoryIds.length >= 1;
   const canContinue3 = interestIdentityIds.length >= 1 && interestIdentityIds.length <= MAX_WANT_IDENTITIES;
-  const canContinue4 = interestCategoryIds.length >= 1 && interestCategoryIds.length <= MAX_WANT_CATEGORIES;
-  const canFinish    = industryCategoryIds.length >= 1;
+  const canContinue4 =
+    interestCategoryIds.length >= 1 && interestCategoryIds.length <= MAX_WANT_CATEGORIES;
+  const canFinish = industryCategoryIds.length >= 1;
 
   // UI bits
   const Loading = () => (
@@ -549,7 +683,11 @@ export default function FourStepOnboarding() {
       <div className="flex items-center gap-2">
         <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"
+          />
         </svg>
         <span>Loading…</span>
       </div>
@@ -590,14 +728,14 @@ export default function FourStepOnboarding() {
     return (
       <>
         <Header
-          icon={"👥"}
+          icon={<OnboardingIcons.step1 />}
           title={title}
           subtitle={subtitle}
-          extra={typeof limit === "number" ? (
-            <div className="mt-2 text-sm text-gray-500">
-              Selected {picked.length}/{limit}
-            </div>
-          ) : null}
+          extra={
+            typeof limit === "number" ? (
+              <div className="mt-2 text-sm text-gray-500">Selected {picked.length}/{limit}</div>
+            ) : null
+          }
         />
         <main className="max-w-3xl mx-auto mt-6">
           <div className="bg-white rounded-2xl shadow-soft p-6">
@@ -620,7 +758,9 @@ export default function FourStepOnboarding() {
                   >
                     <div>
                       <div className="font-medium">{iden.name}</div>
-                      <div className="text-xs text-gray-500">{(iden.categories || []).length} categories</div>
+                      <div className="text-xs text-gray-500">
+                        {(iden.categories || []).length} categories
+                      </div>
                     </div>
                     <input type="checkbox" className="h-4 w-4 pointer-events-none" checked={active} readOnly />
                   </button>
@@ -631,8 +771,12 @@ export default function FourStepOnboarding() {
 
           <div className="mt-6 flex justify-between">
             {prev ? (
-              <button onClick={prev} className="rounded-xl border px-4 py-3">Previous</button>
-            ) : <span />}
+              <button onClick={prev} className="rounded-xl border px-4 py-3">
+                Previous
+              </button>
+            ) : (
+              <span />
+            )}
             <button
               onClick={next}
               disabled={!canNext}
@@ -648,24 +792,31 @@ export default function FourStepOnboarding() {
 
   // Industry tree step component
   function IndustryTreeStep({
-    title, subtitle,
-    industryCatIds, industrySubIds, industryXIds,
-    openIndustryCats, openIndustrySubs,
-    onToggleIndustryCat, onToggleIndustrySub, onToggleIndustrySubsub,
+    title,
+    subtitle,
+    industryCatIds,
+    industrySubIds,
+    industryXIds,
+    openIndustryCats,
+    openIndustrySubs,
+    onToggleIndustryCat,
+    onToggleIndustrySub,
+    onToggleIndustrySubsub,
     onToggleIndustryCatOpen,
     toggleIndustrySubOpen,
-    prev, nextLabel, onNext, canNext,
+    prev,
+    nextLabel,
+    onNext,
+    canNext,
   }) {
-    const hasIndustrySubs = (industryCat) => Array.isArray(industryCat?.subcategories) && industryCat.subcategories.length > 0;
-    const hasIndustrySubsubs = (industrySc) => Array.isArray(industrySc?.subsubs) && industrySc.subsubs.length > 0;
+    const hasIndustrySubs = (industryCat) =>
+      Array.isArray(industryCat?.subcategories) && industryCat.subcategories.length > 0;
+    const hasIndustrySubsubs = (industrySc) =>
+      Array.isArray(industrySc?.subsubs) && industrySc.subsubs.length > 0;
 
     return (
       <>
-        <Header
-          icon={"🏭"}
-          title={title}
-          subtitle={subtitle}
-        />
+        <Header icon={<OnboardingIcons.step4 />} title={title} subtitle={subtitle} />
         <main className="max-w-4xl mx-auto mt-6">
           <div className="bg-white rounded-2xl shadow-soft p-6">
             {industries.length === 0 ? (
@@ -682,67 +833,108 @@ export default function FourStepOnboarding() {
                   {industries.map((industryCat, cIdx) => {
                     const _hasSubs = hasIndustrySubs(industryCat);
                     const industryCatOpen = !!industryCat.id && openIndustryCats.has(industryCat.id);
-                    const industryCatSelected = !!industryCat.id && industryCatIds.includes(industryCat.id);
+                    const industryCatSelected =
+                      !!industryCat.id && industryCategoryIds.includes(industryCat.id);
 
                     return (
                       <div key={`industry-cat-${cIdx}`} className="rounded-xl border">
+                        {/* Header shows the main category name */}
                         <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-xl">
-                          <div className="font-semibold">{industryCat.name}</div>
-                          <span className="text-xs text-gray-500">
-                            {(industryCat.subcategories || []).length} subcategories
-                          </span>
-                        </div>
-
-                        <div className="px-4 py-4 space-y-3">
-                          <div className="flex items-center gap-3">
-                            <input
+                          <div  onClick={() =>
+                                industryCat.id && onToggleIndustryCat(industryCat.id)
+                              } className="flex items-center gap-2 cursor-pointer">
+                             <input
+                              aria-label={`Select ${industryCat.name}`}
                               type="checkbox"
                               className="h-4 w-4"
                               checked={industryCatSelected}
-                              onChange={() => industryCat.id && onToggleIndustryCat(industryCat.id)}
-                            />
-                            <span className="font-medium">{industryCat.name}</span>
+                             
+                          />
+                          <div className="font-semibold">{industryCat.name}</div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">
+                            {(industryCat.subcategories || []).length} subcategories
+                          </span>
+
+                           <div className="flex items-center gap-3">
+                            {/* Checkbox selects the main category; we DON'T repeat the name here */}
+                           
                             {_hasSubs && (
                               <button
                                 type="button"
                                 className="text-gray-500 hover:text-gray-700 ml-auto"
                                 aria-expanded={industryCatOpen}
-                                onClick={() => industryCat.id && onToggleIndustryCatOpen(industryCat.id)}
+                                onClick={() =>
+                                  industryCat.id && onToggleIndustryCatOpen(industryCat.id)
+                                }
                               >
-                                <span className={`inline-block transition-transform ${industryCatOpen ? "rotate-180" : ""}`}>▾</span>
+                                <span
+                                  className={`inline-block transition-transform ${
+                                    industryCatOpen ? "rotate-180" : ""
+                                  }`}
+                                >
+                                  ▾
+                                </span>
                               </button>
                             )}
+                            
                           </div>
+                          </div>
+
+                          
+                        </div>
+
+                        <div className={`${_hasSubs && industryCatOpen ? ' px-4 py-4 space-y-3':''}`}>
+                         
 
                           {_hasSubs && industryCatOpen && (
                             <div className="ml-7 space-y-3">
                               {(industryCat.subcategories || []).map((industrySc, sIdx) => {
                                 const _hasSubsubs = hasIndustrySubsubs(industrySc);
-                                const isOpen = !!industrySc.id && openIndustrySubs.has(industrySc.id);
-                                const isSelected = !!industrySc.id && industrySubIds.includes(industrySc.id);
+                                const isOpen =
+                                  !!industrySc.id && openIndustrySubs.has(industrySc.id);
+                                const isSelected =
+                                  !!industrySc.id && industrySubIds.includes(industrySc.id);
 
                                 return (
-                                  <div key={`industry-sub-${cIdx}-${sIdx}`} className="border rounded-lg p-3">
+                                  <div
+                                    key={`industry-sub-${cIdx}-${sIdx}`}
+                                    className="border rounded-lg p-3"
+                                  >
                                     <div className="flex items-center justify-between">
                                       <label className="flex items-center w-full flex-1 gap-3 cursor-pointer">
                                         <input
                                           type="checkbox"
                                           className="h-4 w-4 text-brand-600"
                                           checked={isSelected}
-                                          onChange={() => industrySc.id && onToggleIndustrySub(industrySc.id)}
+                                          onChange={() =>
+                                            industrySc.id && onToggleIndustrySub(industrySc.id)
+                                          }
                                         />
-                                        <span className="font-medium w-full flex flex-1">{industrySc.name}</span>
+                                        <span className="font-medium w-full flex flex-1">
+                                          {industrySc.name}
+                                        </span>
                                       </label>
 
                                       {_hasSubsubs && (
                                         <button
                                           type="button"
-                                          onClick={() => industrySc.id && toggleIndustrySubOpen(industrySc.id)}
+                                          onClick={() =>
+                                            industrySc.id && toggleIndustrySubOpen(industrySc.id)
+                                          }
                                           className="text-gray-500 hover:text-gray-700"
                                           aria-expanded={isOpen}
                                           aria-label={`Toggle ${industrySc.name} sub-items`}
                                         >
-                                          <span className={`inline-block transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+                                          <span
+                                            className={`inline-block transition-transform ${
+                                              isOpen ? "rotate-180" : ""
+                                            }`}
+                                          >
+                                            ▾
+                                          </span>
                                         </button>
                                       )}
                                     </div>
@@ -750,20 +942,25 @@ export default function FourStepOnboarding() {
                                     {_hasSubsubs && (isOpen || isSelected) && (
                                       <div className="mt-2 flex flex-wrap gap-2 ml-7">
                                         {industrySc.subsubs.map((industrySs, ssIdx) => {
-                                          const ssSelected = !!industrySs.id && industryXIds.includes(industrySs.id);
-                                          return (
-                                            <label
-                                              key={`industry-ss-${cIdx}-${sIdx}-${ssIdx}`}
-                                              className="inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm cursor-pointer"
-                                            >
-                                              <input
-                                                type="checkbox"
-                                                checked={ssSelected}
-                                                onChange={() => industrySs.id && onToggleIndustrySubsub(industrySs.id)}
-                                              />
-                                              <span>{industrySs.name}</span>
-                                            </label>
-                                          );
+                                          const ssSelected =
+                                            !!industrySs.id &&
+                                            industryXIds.includes(industrySs.id);
+                                        return (
+                                          <label
+                                            key={`industry-ss-${cIdx}-${sIdx}-${ssIdx}`}
+                                            className="inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm cursor-pointer"
+                                          >
+                                            <input
+                                              type="checkbox"
+                                              checked={ssSelected}
+                                              onChange={() =>
+                                                industrySs.id &&
+                                                onToggleIndustrySubsub(industrySs.id)
+                                              }
+                                            />
+                                            <span>{industrySs.name}</span>
+                                          </label>
+                                        );
                                         })}
                                       </div>
                                     )}
@@ -782,7 +979,9 @@ export default function FourStepOnboarding() {
           </div>
 
           <div className="mt-6 flex justify-between">
-            <button onClick={prev} className="rounded-xl border px-4 py-3">Previous</button>
+            <button onClick={prev} className="rounded-xl border px-4 py-3">
+              Previous
+            </button>
             <button
               onClick={onNext}
               disabled={!canNext}
@@ -798,15 +997,24 @@ export default function FourStepOnboarding() {
 
   // Fully controlled collapsible category tree (no <details>)
   function CategoryTreeStep({
-    title, subtitle,
+    title,
+    subtitle,
     selectedIdentities,
-    catIds, subIds, xIds,
-    openCats, openSubs,
-    onToggleCat, onToggleSub, onToggleSubsub,
-    onToggleCatOpen,      // (catId) => void
-    toggleSubOpen,        // (subId) => void
-    prev, nextLabel, onNext, canNext,
-    catLimit,             // optional (number)
+    catIds,
+    subIds,
+    xIds,
+    openCats,
+    openSubs,
+    onToggleCat,
+    onToggleSub,
+    onToggleSubsub,
+    onToggleCatOpen, // (catId) => void
+    toggleSubOpen, // (subId) => void
+    prev,
+    nextLabel,
+    onNext,
+    canNext,
+    catLimit, // optional (number)
   }) {
     const hasSubs = (cat) => Array.isArray(cat?.subcategories) && cat.subcategories.length > 0;
     const hasSubsubs = (sc) => Array.isArray(sc?.subsubs) && sc.subsubs.length > 0;
@@ -815,12 +1023,16 @@ export default function FourStepOnboarding() {
     return (
       <>
         <Header
-          icon={"🧩"}
+          icon={<OnboardingIcons.step3 />}
           title={title}
           subtitle={subtitle}
-          extra={typeof catLimit === "number" ? (
-            <div className="mt-2 text-sm text-gray-500">Selected categories {catIds.length}/{catLimit}</div>
-          ) : null}
+          extra={
+            typeof catLimit === "number" ? (
+              <div className="mt-2 text-sm text-gray-500">
+                Selected categories {catIds.length}/{catLimit}
+              </div>
+            ) : null
+          }
         />
         <main className="max-w-4xl mx-auto mt-6">
           <div className="bg-white rounded-2xl shadow-soft p-6">
@@ -854,14 +1066,24 @@ export default function FourStepOnboarding() {
                           return (
                             <div key={`cat-${iIdx}-${cIdx}`} className="border rounded-lg">
                               <div className="flex items-center justify-between px-4 py-3">
-                                <label className={`flex flex-1 items-center gap-2 ${catDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
+                                <label
+                                  className={`flex flex-1 items-center gap-2 ${
+                                    catDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                                  }`}
+                                >
                                   <input
                                     type="checkbox"
                                     className="h-4 w-4"
                                     checked={catSelected}
                                     onChange={() => !catDisabled && cat.id && onToggleCat(cat.id)}
                                     disabled={!cat.id || catDisabled}
-                                    title={!cat.id ? "Category not found in DB" : (catDisabled ? "Category limit reached" : "")}
+                                    title={
+                                      !cat.id
+                                        ? "Category not found in DB"
+                                        : catDisabled
+                                        ? "Category limit reached"
+                                        : ""
+                                    }
                                   />
                                   <span className="font-medium w-full flex-1 flex">{cat.name}</span>
                                 </label>
@@ -873,7 +1095,13 @@ export default function FourStepOnboarding() {
                                     aria-expanded={catOpen}
                                     onClick={() => cat.id && onToggleCatOpen(cat.id)}
                                   >
-                                    <span className={`inline-block transition-transform ${catOpen ? "rotate-180" : ""}`}>▾</span>
+                                    <span
+                                      className={`inline-block transition-transform ${
+                                        catOpen ? "rotate-180" : ""
+                                      }`}
+                                    >
+                                      ▾
+                                    </span>
                                   </button>
                                 )}
                               </div>
@@ -893,7 +1121,9 @@ export default function FourStepOnboarding() {
                                       <div key={`sub-${iIdx}-${cIdx}-${sIdx}`} className="border rounded-lg p-3">
                                         <div className="flex items-center justify-between">
                                           <label
-                                            className={`flex items-center w-full flex-1 gap-3 ${subDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                            className={`flex items-center w-full flex-1 gap-3 ${
+                                              subDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                                            }`}
                                           >
                                             <input
                                               type="checkbox"
@@ -901,7 +1131,13 @@ export default function FourStepOnboarding() {
                                               checked={isSelected}
                                               onChange={() => !subDisabled && sc.id && onToggleSub(sc.id)}
                                               disabled={!sc.id || subDisabled}
-                                              title={!sc.id ? "Subcategory not found in DB" : (subDisabled ? "Category limit reached" : "")}
+                                              title={
+                                                !sc.id
+                                                  ? "Subcategory not found in DB"
+                                                  : subDisabled
+                                                  ? "Category limit reached"
+                                                  : ""
+                                              }
                                             />
                                             <span className="font-medium w-full flex flex-1">{sc.name}</span>
                                           </label>
@@ -914,7 +1150,13 @@ export default function FourStepOnboarding() {
                                               aria-expanded={isOpen}
                                               aria-label={`Toggle ${sc.name} sub-items`}
                                             >
-                                              <span className={`inline-block transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+                                              <span
+                                                className={`inline-block transition-transform ${
+                                                  isOpen ? "rotate-180" : ""
+                                                }`}
+                                              >
+                                                ▾
+                                              </span>
                                             </button>
                                           )}
                                         </div>
@@ -928,14 +1170,22 @@ export default function FourStepOnboarding() {
                                               return (
                                                 <label
                                                   key={`ss-${iIdx}-${cIdx}-${sIdx}-${ssIdx}`}
-                                                  className={`inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm ${ssDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                                                  className={`inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm ${
+                                                    ssDisabled ? "opacity-50 cursor-not-allowed" : ""
+                                                  }`}
                                                 >
                                                   <input
                                                     type="checkbox"
                                                     checked={!!ss.id && ssSelected}
                                                     onChange={() => !ssDisabled && ss.id && onToggleSubsub(ss.id)}
                                                     disabled={!ss.id || ssDisabled}
-                                                    title={!ss.id ? "Level-3 not found in DB" : (ssDisabled ? "Category limit reached" : "")}
+                                                    title={
+                                                      !ss.id
+                                                        ? "Level-3 not found in DB"
+                                                        : ssDisabled
+                                                        ? "Category limit reached"
+                                                        : ""
+                                                    }
                                                   />
                                                   <span>{ss.name}</span>
                                                 </label>
@@ -960,7 +1210,9 @@ export default function FourStepOnboarding() {
           </div>
 
           <div className="mt-6 flex justify-between">
-            <button onClick={prev} className="rounded-xl border px-4 py-3">Previous</button>
+            <button onClick={prev} className="rounded-xl border px-4 py-3">
+              Previous
+            </button>
             <button
               onClick={onNext}
               disabled={!canNext}
@@ -981,10 +1233,11 @@ export default function FourStepOnboarding() {
       {/* STEP 1: Who you are (DO) */}
       {step === 1 && (
         <IdentityStep
-          title={userAccountType === 'company' ? "Tell us about your company" : "Tell us who you are"}
-          subtitle={userAccountType === 'company'
-            ? "Choose the identities that best represent what your company does."
-            : "Choose the identities that best represent what you do."
+          title={userAccountType === "company" ? "Tell us about your company" : "Tell us who you are"}
+          subtitle={
+            userAccountType === "company"
+              ? "Choose the identities that best represent what your company does."
+              : "Choose the identities that best represent what you do."
           }
           picked={identityIds}
           onToggle={toggleIdentityDoes}
@@ -996,10 +1249,11 @@ export default function FourStepOnboarding() {
       {/* STEP 2: Where you belong (DO) */}
       {step === 2 && (
         <CategoryTreeStep
-          title={userAccountType === 'company' ? "Choose your company's focus areas" : "Choose where you belong"}
-          subtitle={userAccountType === 'company'
-            ? "Select the categories that match your company's expertise and activity."
-            : "Select the categories that match your expertise and activity."
+          title={userAccountType === "company" ? "Choose your company's focus areas" : "Choose where you belong"}
+          subtitle={
+            userAccountType === "company"
+              ? "Select the categories that match your company's expertise and activity."
+              : "Select the categories that match your expertise and activity."
           }
           selectedIdentities={selectedIdentitiesDoes}
           catIds={categoryIds}
@@ -1022,10 +1276,11 @@ export default function FourStepOnboarding() {
       {/* STEP 3: What you're looking for (WANT) — MAX 3 identities */}
       {step === 3 && (
         <IdentityStep
-          title={userAccountType === 'company' ? "What is your company looking for?" : "What are you looking for?"}
-          subtitle={userAccountType === 'company'
-            ? "Pick the identities your company wants to connect with or discover."
-            : "Pick the identities you want to connect with or discover."
+          title={userAccountType === "company" ? "What is your company looking for?" : "What are you looking for?"}
+          subtitle={
+            userAccountType === "company"
+              ? "Pick the identities your company wants to connect with or discover."
+              : "Pick the identities you want to connect with or discover."
           }
           picked={interestIdentityIds}
           onToggle={toggleIdentityWant}
@@ -1039,10 +1294,15 @@ export default function FourStepOnboarding() {
       {/* STEP 4: Categories you're looking for (WANT) — MAX 3 categories */}
       {step === 4 && (
         <CategoryTreeStep
-          title={userAccountType === 'company' ? "Pick the categories your company is looking for" : "Pick the categories you are looking for"}
-          subtitle={userAccountType === 'company'
-            ? "Select categories and roles your company wants to find."
-            : "Select categories and roles you want to find."
+          title={
+            userAccountType === "company"
+              ? "Pick the categories your company is looking for"
+              : "Pick the categories you are looking for"
+          }
+          subtitle={
+            userAccountType === "company"
+              ? "Select categories and roles your company wants to find."
+              : "Select categories and roles you want to find."
           }
           selectedIdentities={selectedIdentitiesWant}
           catIds={interestCategoryIds}
@@ -1066,10 +1326,11 @@ export default function FourStepOnboarding() {
       {/* STEP 5: Industry selection */}
       {step === 5 && (
         <IndustryTreeStep
-          title={userAccountType === 'company' ? "Choose your company's industry focus" : "Choose your industry focus"}
-          subtitle={userAccountType === 'company'
-            ? "Select the industries that best represent your company's sector and expertise."
-            : "Select the industries that best represent your professional sector and expertise."
+          title={userAccountType === "company" ? "Choose your company's industry focus" : "Choose your industry focus"}
+          subtitle={
+            userAccountType === "company"
+              ? "Select the industries that best represent your company's sector and expertise."
+              : "Select the industries that best represent your professional sector and expertise."
           }
           industryCatIds={industryCategoryIds}
           industrySubIds={industrySubcategoryIds}
