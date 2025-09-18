@@ -515,7 +515,13 @@ export default function PeopleFeedPage() {
               
               <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
 
-              <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  btnClick={()=>navigate('/jobs/create')} />
+              <TabsAndAdd
+               tabs={[]}
+               items={[
+                    { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+                    { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create") },
+               ]}
+              activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
             {renderMiddle()}
           </section>

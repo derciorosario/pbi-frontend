@@ -242,7 +242,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                 hasCategories ? "hover:bg-gray-50 cursor-pointer" : ""
               }`}
             >
-                 <div className="flex items-center bg-brand-50  gap-2 flex-1 min-w-0 px-5 rounded-full py-1.5 border border-gray-200">
+                 <div className={`flex items-center ${openId ? 'bg-brand-50':''}  gap-2 flex-1 min-w-0 px-5 rounded-full py-1.5 border border-gray-200`}>
               <input
                 type="checkbox"
                 className="h-4 w-4 accent-brand-600 shrink-0"
@@ -264,7 +264,8 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
             
             </div>
 
-            {openId && hasCategories && (
+            <div className={`${shown.length ? '':'px-4'}`}>
+               {openId && hasCategories && (
               <div className="bg-slate-50/80 px-4 py-3 space-y-3">
                 {(identity.categories || []).map((cat) => {
                   const cKey = `cat-${cat.id}`;
@@ -377,6 +378,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                 })}
               </div>
             )}
+            </div>
           </div>
         );
       })}

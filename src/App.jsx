@@ -51,6 +51,7 @@ import AdminLayout from './admin/AdminLayout.jsx';
 import AdminDashboard from './admin/AdminDashboard.jsx';
 import AdminUsers from './admin/AdminUsers.jsx';
 import AdminModeration from './admin/AdminModeration.jsx';
+import CreateMomentPage from './pages/CreateMomentPage.jsx';
 
 
 
@@ -108,6 +109,7 @@ function App() {
         <Route element={<ProtectedRouteOnboarding/>}>
             <Route path="/" element={<Home/>} />
             <Route path="/dashboard" element={<Home/>} />
+            <Route path="/moment/:type/create" element={<CreateMomentPage/>} />
             <Route path="/funding" element={<CrowdfundingPage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/jobs" element={<JobsExplorePage />} />
