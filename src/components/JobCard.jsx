@@ -579,7 +579,7 @@ export default function JobCard({
           )}
 
           {/* NEW: social row (like / comment / report) hidden for now */}
-          <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600 hidden">
+          <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600">
             <button
               onClick={toggleLike}
               className="inline-flex items-center gap-1 hover:text-brand-700"
