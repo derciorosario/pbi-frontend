@@ -11,6 +11,8 @@ import FiltersCard from "../components/FiltersCard";
 import SuggestedMatches from "../components/SuggestedMatches";
 import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
+import NeedCard from "../components/NeedCard";
+import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -430,9 +432,50 @@ export default function CrowdfundingPage() {
                  } gap-6`}
                >
                   {!loadingFeed &&
-          items.map((p) => (
-          <CrowdfundCard type={view} matchPercentage={p.matchPercentage} key={p.id} item={p} />
-        ))}
+          items.map((item) => {
+            if (item.kind === "funding") {
+              return <CrowdfundCard type={view} matchPercentage={item.matchPercentage} key={item.id} item={item} />;
+            }
+            if (item.kind === "need") {
+              return (
+                <NeedCard
+                  type={view}
+                  key={`need-${item.id}`}
+                  matchPercentage={item.matchPercentage}
+                  need={{
+                    ...item,
+                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                    subcategoryName: categories
+                      .find((c) => String(c.id) === String(item.categoryId))
+                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                  }}
+                />
+              );
+            }
+            if (item.kind === "moment") {
+              return (
+                <MomentCard
+                  type={view}
+                  key={`moment-${item.id}`}
+                  matchPercentage={item.matchPercentage}
+                  moment={{
+                    ...item,
+                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                    subcategoryName: categories
+                      .find((c) => String(c.id) === String(item.categoryId))
+                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                  }}
+                />
+              );
+            }
+            if (item.kind === "job") {
+              return <JobCard key={`job-${item.id}`} job={item} />;
+            }
+            if (item.kind === "event") {
+              return <EventCard key={`event-${item.id}`} e={item} />;
+            }
+            return null;
+          })}
 
        </div>
 
@@ -459,8 +502,9 @@ export default function CrowdfundingPage() {
           </div>
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Post a Funding Project", Icon: PlusCircle, path: "/funding/create" }
+           { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
+            { label: "Share Opportunity Experience", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create") },
+            { label: "Ask About an Opportunity", Icon: PlusCircle, onClick: () => navigate("/need/funding/create") },
           ]} />
           <ProfileCard />
           
@@ -474,12 +518,22 @@ export default function CrowdfundingPage() {
               buttons={filterOptions}
               buttonLabels={categoryIdToNameMap}
               from={from}
+              loading={loadingFeed}
             />
             <div className="flex items-center justify-between gap-y-2">
              <h3 className="font-semibold text-2xl mt-1 hidden">Find inspiring projects and contribute directly</h3>
               <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
 
-             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/fundings/create')} />
+           <TabsAndAdd 
+          tabs={[]}  
+          items={[
+            { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
+            { label: "Share Opportunity Experience", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create") },
+            { label: "Ask About an Opportunity", Icon: PlusCircle, onClick: () => navigate("/need/funding/create") },
+          ]}
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab}  
+        />
              </div>
                {renderMiddle()}
            </section>
@@ -495,3 +549,4 @@ export default function CrowdfundingPage() {
    </DefaultLayout>
   );
 }
+

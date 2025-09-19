@@ -11,6 +11,8 @@ import TabsAndAdd from "../../components/TabsAndAdd.jsx";
 import SuggestedMatches from "../../components/SuggestedMatches.jsx";
 import EventCard from "../../components/EventCard.jsx";
 import JobCard from "../../components/JobCard.jsx";
+import NeedCard from "../../components/NeedCard.jsx";
+import MomentCard from "../../components/MomentCard.jsx";
 import Header from "../../components/Header.jsx";
 import EmptyFeedState from "../../components/EmptyFeedState.jsx";
 import FullPageLoader from "../../components/ui/FullPageLoader.jsx";
@@ -41,7 +43,7 @@ export default function FeedPage() {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState("All");
-  const tabs = useMemo(() => ["All", "Events", "Jobs", "Services", "Products", "Experiences", "Funding"], []);
+  const tabs = useMemo(() => ["All", "Events", "Jobs", "Needs", "Moments", "Services", "Products", "Experiences", "Funding"], []);
 
   const [query, setQuery] = useState("");
   const debouncedQ = useDebounce(query, 400);
@@ -107,6 +109,10 @@ export default function FeedPage() {
             ? "events"
             : activeTab === "Jobs"
             ? "jobs"
+            : activeTab === "Needs"
+            ? "needs"
+            : activeTab === "Moments"
+            ? "moments"
             : activeTab === "Services"
             ? "services"
             : activeTab === "Products"
@@ -212,11 +218,43 @@ export default function FeedPage() {
         />
       );
     }
+    if (item.kind === "need") {
+      return (
+        <NeedCard
+          type={view}
+          key={`need-${item.id}`}
+          matchPercentage={item.matchPercentage}
+          need={{
+            ...item,
+            categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+            subcategoryName: categories
+              .find((c) => String(c.id) === String(item.categoryId))
+              ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+          }}
+        />
+      );
+    }
     if (item.kind === "service") {
       return <ServiceCard type={view} key={`service-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
     }
     if (item.kind === "product") {
       return <ProductCard type={view} key={`product-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
+    }
+    if (item.kind === "moment") {
+      return (
+        <MomentCard
+          type={view}
+          key={`moment-${item.id}`}
+          matchPercentage={item.matchPercentage}
+          moment={{
+            ...item,
+            categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+            subcategoryName: categories
+              .find((c) => String(c.id) === String(item.categoryId))
+              ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+          }}
+        />
+      );
     }
     if (item.kind === "tourism") {
       return <ExperienceCard type={view} key={`tourism-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;

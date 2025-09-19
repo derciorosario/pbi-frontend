@@ -52,6 +52,8 @@ import AdminDashboard from './admin/AdminDashboard.jsx';
 import AdminUsers from './admin/AdminUsers.jsx';
 import AdminModeration from './admin/AdminModeration.jsx';
 import CreateMomentPage from './pages/CreateMomentPage.jsx';
+import CreateOfferingPage from './pages/CreateOfferingPage.jsx';
+import CreateNeedPage from './pages/CreateNeedPage.jsx';
 
 
 
@@ -96,6 +98,8 @@ function App() {
             <Route path="/messages" element={<MessagesPage />} />
             <Route path="/meetings" element={<MeetingsPage />} />
             <Route path="/fundings/create" element={<CrowdfundForm />} />
+            <Route path="/offerings/create" element={<CreateOfferingPage />} />
+            <Route path="/need/:type/create" element={<CreateNeedPage />} />
             <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
@@ -126,6 +130,9 @@ function App() {
             <Route path="/product/:id" element={<CreateProductPage />} />
             <Route path="/experience/:id" element={<CreateTourismPostPage />} />
             <Route path="/service/:id" element={<CreateServicePage />} />
+            <Route path="/offering/:id" element={<CreateOfferingPage />} />
+            <Route path="/need/:id" element={<CreateNeedPage />} />
+            <Route path="/moment/:id" element={<CreateMomentPage />} />
             <Route path="/settings" element={<SettingsPage />} />
         </Route>
 

@@ -12,6 +12,8 @@ import FiltersCard from "../components/FiltersCard";
 import SuggestedMatches from "../components/SuggestedMatches";
 import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
+import NeedCard from "../components/NeedCard";
+import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -438,7 +440,47 @@ export default function EventsPage() {
                    view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
                  } gap-6`}
                >
-                 {items?.map((item) =><EventCard type={view} key={`event-${item.id}`} matchPercentage={item.matchPercentage} e={item} />)}
+                 {items?.map((item) => {
+                   if (item.kind === "event") {
+                     return <EventCard type={view} key={`event-${item.id}`} matchPercentage={item.matchPercentage} e={item} />;
+                   }
+                   if (item.kind === "need") {
+                     return (
+                       <NeedCard
+                         type={view}
+                         key={`need-${item.id}`}
+                         matchPercentage={item.matchPercentage}
+                         need={{
+                           ...item,
+                           categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                           subcategoryName: categories
+                             .find((c) => String(c.id) === String(item.categoryId))
+                             ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                         }}
+                       />
+                     );
+                   }
+                   if (item.kind === "moment") {
+                     return (
+                       <MomentCard
+                         type={view}
+                         key={`moment-${item.id}`}
+                         matchPercentage={item.matchPercentage}
+                         moment={{
+                           ...item,
+                           categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                           subcategoryName: categories
+                             .find((c) => String(c.id) === String(item.categoryId))
+                             ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                         }}
+                       />
+                     );
+                   }
+                   if (item.kind === "job") {
+                     return <JobCard key={`job-${item.id}`} job={item} />;
+                   }
+                   return null;
+                 })}
                </div>
           )}
 
@@ -465,11 +507,10 @@ export default function EventsPage() {
             />
                       </div>
           <QuickActions title="Quick Actions" items={[
-            { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Post an Event", Icon: PlusCircle, path: "/events/create" },
-            //{ label: "Calendar View", Icon: Calendar, path: "/calendar/create" },
-          //  { label: "Set Reminders", Icon: AlarmClock, path: "/calendar/create" },
+            { label: "Edit Profile", Icon: Pencil,onClick: () => navigate("profile") },
+            { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
+            { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create") },
+            { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create") },
           ]} />
 
           <ProfileCard />
@@ -485,6 +526,7 @@ export default function EventsPage() {
              buttons={filterOptions}
              buttonLabels={categoryIdToNameMap}
              from={from}
+            loading={loadingFeed}
            />
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
               <h3 className="font-semibold text-2xl mt-1 hidden hidden">Your Path to Knowledge</h3>
@@ -492,7 +534,17 @@ export default function EventsPage() {
 
              <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
              
-            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/events/create')} />
+            <TabsAndAdd tabs={[]}
+            
+            items={[
+              { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
+              { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create") },
+              { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create") },
+            ]}
+            
+
+            
+            activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
               {renderMiddle()}
           </section>

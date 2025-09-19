@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import AudienceTree from "../components/AudienceTree";
 import COUNTRIES from "../constants/countries";
+import CITIES from "../constants/cities.json";
 import client from "../api/client";
 import { toast } from "../lib/toast";
 import Header from "../components/Header";
@@ -369,6 +370,21 @@ export default function CreateTourismPostPage() {
     subcategoryId: "",
     subsubCategoryId: "",
   });
+  
+  // Create country options for SearchableSelect
+  const countryOptions = COUNTRIES.map(country => ({
+    value: country,
+    label: country
+  }));
+  
+  // Create city options for SearchableSelect (limit to reasonable number)
+  const cityOptions = CITIES.slice(0, 1000).map(city => ({
+    value: city.city,
+    label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+  }));
+  
+  // Use cityOptions as locationOptions for consistency
+  const locationOptions = cityOptions;
 
   // Industry taxonomy
   const [industryTree, setIndustryTree] = useState([]);
@@ -726,29 +742,25 @@ export default function CreateTourismPostPage() {
             <section>
               <h2 className="font-semibold">Country & City/Location *</h2>
               <div className="mt-2 grid sm:grid-cols-2 gap-4">
-                <div className="relative">
-                  <select
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">Country *</label>
+                  <SearchableSelect
                     value={form.country}
-                    onChange={(e) => setField("country", e.target.value)}
-                    className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full bg-white appearance-none focus:outline-none focus:ring-2 focus:ring-brand-200 pr-8"
+                    onChange={(value) => setField("country", value)}
+                    options={countryOptions}
+                    placeholder="Search and select country..."
                     required
-                  >
-                    <option value="">Select Country</option>
-                    {COUNTRIES.map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-2 top-3">
-                    <I.chevron />
-                  </span>
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={form.location}
-                  onChange={(e) => setField("location", e.target.value)}
-                  placeholder="Enter specific location (e.g., Zanzibar, Stone Town)"
-                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
-                />
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">City/Location</label>
+                  <SearchableSelect
+                    value={form.location}
+                    onChange={(value) => setField("location", value)}
+                    options={locationOptions}
+                    placeholder="Search and select location..."
+                  />
+                </div>
               </div>
             </section>
 

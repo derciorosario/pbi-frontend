@@ -11,6 +11,8 @@ import FiltersCard from "../components/FiltersCard";
 import SuggestedMatches from "../components/SuggestedMatches";
 import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
+import NeedCard from "../components/NeedCard";
+import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -430,10 +432,50 @@ export default function TourismPage() {
                    view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
                  } gap-6`}
                >
-                 {!loadingFeed && items.map((exp) => (
-                 <ExperienceCard matchPercentage={exp.matchPercentage} type={view} key={exp.id} item={exp} />
-                  ))
-                }
+                 {!loadingFeed && items.map((item) => {
+                   if (item.kind === "tourism") {
+                     return <ExperienceCard matchPercentage={item.matchPercentage} type={view} key={item.id} item={item} />;
+                   }
+                   if (item.kind === "need") {
+                     return (
+                       <NeedCard
+                         type={view}
+                         key={`need-${item.id}`}
+                         matchPercentage={item.matchPercentage}
+                         need={{
+                           ...item,
+                           categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                           subcategoryName: categories
+                             .find((c) => String(c.id) === String(item.categoryId))
+                             ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                         }}
+                       />
+                     );
+                   }
+                   if (item.kind === "moment") {
+                     return (
+                       <MomentCard
+                         type={view}
+                         key={`moment-${item.id}`}
+                         matchPercentage={item.matchPercentage}
+                         moment={{
+                           ...item,
+                           categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                           subcategoryName: categories
+                             .find((c) => String(c.id) === String(item.categoryId))
+                             ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                         }}
+                       />
+                     );
+                   }
+                   if (item.kind === "job") {
+                     return <JobCard key={`job-${item.id}`} job={item} />;
+                   }
+                   if (item.kind === "event") {
+                     return <EventCard key={`event-${item.id}`} e={item} />;
+                   }
+                   return null;
+                 })}
                       </div>
        
 
@@ -462,10 +504,10 @@ export default function TourismPage() {
             />
           </div>
           <QuickActions title="Quick Actions" items={[
-            { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Share experience", Icon: PlusCircle, path: "/experiences/create" }
-        ]} />
+              { label: "Edit Profile", Icon: Pencil, path: "/profile" },
+              { label: "Share Tourism Experience", Icon: PlusCircle, onClick: () => navigate('/experiences/create') },
+              { label: "Ask About Tourism", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create") },
+           ]} />
 
           <ProfileCard />
          
@@ -474,6 +516,7 @@ export default function TourismPage() {
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-5 overflow-hidden">
               <TopFilterButtons
+               loading={loadingFeed}
                 selected={selectedFilters}
                 setSelected={setSelectedFilters}
                 buttons={filterOptions}
@@ -484,7 +527,18 @@ export default function TourismPage() {
               <h3 className="font-semibold text-2xl mt-1 hidden">Explore Africa’s Rich Culture & Tourism</h3>
              <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>  
 
-            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/experiences/create')} />
+          
+            <TabsAndAdd 
+            tabs={[]}  
+            items={[
+              { label: "Share Tourism Experience", Icon: PlusCircle, onClick: () => navigate('/experiences/create') },
+              { label: "Ask About Tourism", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create") },
+            ]}
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab}  
+          />
+
+            
             </div>
               {renderMiddle()}
           </section>

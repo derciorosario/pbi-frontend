@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import client from "../api/client";
 import COUNTRIES from "../constants/countries";
+import CITIES from "../constants/cities.json";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import CoverImagePicker from "../components/CoverImagePicker";
 import Header from "../components/Header";
@@ -248,6 +249,18 @@ function SearchableSelect({
     </div>
   );
 }
+
+// Create country options for SearchableSelect
+const countryOptions = COUNTRIES.map(country => ({
+value: country,
+label: country
+}));
+
+// Create city options for SearchableSelect (limit to reasonable number)
+const cityOptions = CITIES.slice(0, 1000).map(city => ({
+value: city.city,
+label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+}));
 
 /* ---------- Read-only view for non-owners ---------- */
 function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
@@ -823,31 +836,25 @@ export default function CreateEventPage() {
               {form.locationType !== "Virtual" ? (
                 <>
                   <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                    <div className="relative">
-                      <select
+                    <div>
+                      <label className="text-[12px] font-medium text-gray-700">Country</label>
+                      <SearchableSelect
                         value={form.country}
-                        onChange={(e) => setField("country", e.target.value)}
-                        className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                      >
-                        <option value="">Select country</option>
-                        {COUNTRIES.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-                        <I.chevron />
-                      </span>
+                        onChange={(value) => setField("country", value)}
+                        options={countryOptions}
+                        placeholder="Search and select country..."
+                      />
                     </div>
 
-                    <input
-                      type="text"
-                      value={form.city}
-                      onChange={(e) => setField("city", e.target.value)}
-                      placeholder="City"
-                      className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
-                    />
+                    <div>
+                      <label className="text-[12px] font-medium text-gray-700">City</label>
+                      <SearchableSelect
+                        value={form.city}
+                        onChange={(value) => setField("city", value)}
+                        options={cityOptions}
+                        placeholder="Search and select city..."
+                      />
+                    </div>
                   </div>
 
                   <input

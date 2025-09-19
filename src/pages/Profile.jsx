@@ -6,6 +6,12 @@ import {
   getMe,
   updatePersonal,
   updateProfessional,
+  updatePortfolio,
+  updateAvailability,
+  getWorkSamples,
+  createWorkSample,
+  updateWorkSample,
+  deleteWorkSample,
   getIdentityCatalog,
   updateDoSelections,
   updateInterestSelections,
@@ -20,6 +26,7 @@ import Header from "../components/Header.jsx";
 const Tab = {
   PERSONAL: "personal",
   PROFESSIONAL: "professional",
+  PORTFOLIO: "portfolio",
   DO: "do",
   INTERESTS: "interests",
   INDUSTRIES: "industries",
@@ -52,6 +59,31 @@ export default function ProfilePage() {
     skills: [],
     languages: [],
   });
+
+  // Portfolio
+  const [portfolio, setPortfolio] = useState({
+    cvBase64: "",
+    cvFileName: "",
+    workSamples: [],
+  });
+  const [workSamples, setWorkSamples] = useState([]);
+
+  // Availability
+  const [isOpenToWork, setIsOpenToWork] = useState(false);
+
+  // Work sample form state
+  const [editingSample, setEditingSample] = useState(null);
+  const [showSampleForm, setShowSampleForm] = useState(false);
+  const [sampleForm, setSampleForm] = useState({
+    title: "",
+    description: "",
+    projectUrl: "",
+    skillsTags: [],
+    attachments: [],
+  });
+  const [skillTagInput, setSkillTagInput] = useState("");
+  const [attachmentTitle, setAttachmentTitle] = useState("");
+  const [editingAttachmentTitle, setEditingAttachmentTitle] = useState(null);
 
   // DOES (what I DO)
   const [doIdentityIds, setDoIdentityIds] = useState([]);
@@ -87,10 +119,10 @@ export default function ProfilePage() {
     (async () => {
       try {
         setLoading(true);
-        
+
         let userData;
         const { data: catalog } = await getIdentityCatalog();
-        
+
         if (isAdminEditing && userId) {
           // Admin editing another user
           const { data } = await getUserById(userId);
@@ -122,6 +154,15 @@ export default function ProfilePage() {
           // User editing their own profile
           const { data } = await getMe();
           userData = data;
+
+          // Load work samples separately
+          try {
+            const { data: workSamplesData } = await getWorkSamples();
+            setWorkSamples(Array.isArray(workSamplesData?.workSamples) ? workSamplesData.workSamples : []);
+          } catch (workSampleError) {
+            console.error("Failed to load work samples:", workSampleError);
+            setWorkSamples([]);
+          }
         }
 
         setMe(userData);
@@ -149,6 +190,15 @@ export default function ProfilePage() {
           skills: Array.isArray(p.skills) ? p.skills : [],
           languages: Array.isArray(p.languages) ? p.languages : [],
         });
+
+        // hydrate portfolio
+        setPortfolio({
+          cvBase64: p.cvBase64 || "",
+          cvFileName: p.cvFileName || "",
+        });
+
+        // hydrate availability
+        setIsOpenToWork(Boolean(p.isOpenToWork));
 
         // DOES
         setDoIdentityIds(userData.doIdentityIds || []);
@@ -260,7 +310,7 @@ export default function ProfilePage() {
   async function saveProfessional() {
     try {
       setSaving(true);
-      
+
       if (isAdminEditing && userId) {
         // Admin editing another user
         const userData = {
@@ -270,13 +320,13 @@ export default function ProfilePage() {
             languages: professional.languages
           }
         };
-        
+
         await updateUser(userId, userData);
         toast.success("Professional info saved!");
-        
+
         // Refresh user data
         const { data } = await getUserById(userId);
-        
+
         // Update local state with the latest data from the API
         setMe({
           ...me,
@@ -297,6 +347,232 @@ export default function ProfilePage() {
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to save.");
     } finally { setSaving(false); }
+  }
+
+  async function savePortfolio() {
+    try {
+      setSaving(true);
+
+      if (isAdminEditing && userId) {
+        // Admin editing another user
+        const userData = {
+          profile: {
+            cvBase64: portfolio.cvBase64,
+            cvFileName: portfolio.cvFileName
+          }
+        };
+
+        await updateUser(userId, userData);
+        toast.success("Portfolio info saved!");
+
+        // Refresh user data
+        const { data } = await getUserById(userId);
+
+        // Update local state with the latest data from the API
+        setMe({
+          ...me,
+          profile: {
+            ...me.profile,
+            cvBase64: portfolio.cvBase64,
+            cvFileName: portfolio.cvFileName
+          },
+          progress: data.progress
+        });
+      } else {
+        // User editing their own profile
+        const { data } = await updatePortfolio({
+          cvBase64: portfolio.cvBase64,
+          cvFileName: portfolio.cvFileName
+        });
+        setMe(data);
+        toast.success("Portfolio info saved!");
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to save.");
+    } finally { setSaving(false); }
+  }
+
+  async function saveAvailability() {
+    try {
+      setSaving(true);
+
+      if (isAdminEditing && userId) {
+        // Admin editing another user
+        const userData = {
+          profile: {
+            isOpenToWork: isOpenToWork
+          }
+        };
+
+        await updateUser(userId, userData);
+        toast.success("Availability updated!");
+
+        // Refresh user data
+        const { data } = await getUserById(userId);
+
+        // Update local state with the latest data from the API
+        setMe({
+          ...me,
+          profile: {
+            ...me.profile,
+            isOpenToWork: isOpenToWork
+          },
+          progress: data.progress
+        });
+      } else {
+        // User editing their own profile
+        const { data } = await updateAvailability({
+          isOpenToWork: isOpenToWork
+        });
+        setMe(data);
+        toast.success("Availability updated!");
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to update availability.");
+    } finally { setSaving(false); }
+  }
+
+  // Work sample functions
+  function addSkillTag() {
+    const v = (skillTagInput || "").trim();
+    if (!v) return;
+    setSampleForm(f =>
+      f.skillsTags.includes(v) ? f : { ...f, skillsTags: [...f.skillsTags, v] }
+    );
+    setSkillTagInput("");
+  }
+
+  function removeSkillTag(idx) {
+    setSampleForm(f => ({ ...f, skillsTags: f.skillsTags.filter((_, i) => i !== idx) }));
+  }
+
+  async function handleSampleFiles(files) {
+    const arr = Array.from(files || []);
+    if (!arr.length) return;
+
+    try {
+      const mapped = await Promise.all(
+        arr.map(async (file) => {
+          const base64url = await fileToDataURL(file);
+          return {
+            name: attachmentTitle || file.name,
+            base64url,
+            isImage: isImage(base64url)
+          };
+        })
+      );
+      setSampleForm(f => ({ ...f, attachments: [...f.attachments, ...mapped] }));
+      setAttachmentTitle("");
+    } catch (err) {
+      console.error(err);
+      toast.error("Some files could not be read.");
+    }
+  }
+
+  function removeSampleAttachment(idx) {
+    setSampleForm(f => ({ ...f, attachments: f.attachments.filter((_, i) => i !== idx) }));
+  }
+
+  function startEditingAttachmentTitle(idx) {
+    setEditingAttachmentTitle(idx);
+  }
+
+  function saveAttachmentTitle(idx, newTitle) {
+    if (!newTitle.trim()) return;
+    setSampleForm(f => ({
+      ...f,
+      attachments: f.attachments.map((att, i) =>
+        i === idx ? { ...att, name: newTitle.trim() } : att
+      )
+    }));
+    setEditingAttachmentTitle(null);
+  }
+
+  function cancelEditingAttachmentTitle() {
+    setEditingAttachmentTitle(null);
+  }
+
+  function startEditingSample(sample) {
+    setEditingSample(sample.id);
+    setShowSampleForm(true);
+    setSampleForm({
+      title: sample.title || "",
+      description: sample.description || "",
+      projectUrl: sample.projectUrl || "",
+      skillsTags: Array.isArray(sample.technologies) ? sample.technologies : [],
+      attachments: Array.isArray(sample.attachments) ? sample.attachments : [],
+    });
+  }
+
+  function cancelEditingSample() {
+    setEditingSample(null);
+    setSampleForm({
+      title: "",
+      description: "",
+      projectUrl: "",
+      skillsTags: [],
+      attachments: [],
+    });
+    setSkillTagInput("");
+    setAttachmentTitle("");
+    setEditingAttachmentTitle(null);
+  }
+
+  async function saveWorkSample() {
+    // Validation
+    if (!sampleForm.title.trim()) {
+      toast.error("Project title is required");
+      return;
+    }
+
+    try {
+      const payload = {
+        title: sampleForm.title.trim(),
+        description: sampleForm.description.trim() || null,
+        projectUrl: sampleForm.projectUrl.trim() || null,
+        technologies: sampleForm.skillsTags,
+        attachments: sampleForm.attachments,
+        isPublic: true
+      };
+
+      if (editingSample) {
+        // Update existing sample
+        await updateWorkSample(editingSample, payload);
+        // Refresh work samples
+        const { data: workSamplesData } = await getWorkSamples();
+        setWorkSamples(Array.isArray(workSamplesData?.workSamples) ? workSamplesData.workSamples : []);
+        toast.success("Work sample updated successfully");
+      } else {
+        // Create new sample
+        const { data } = await createWorkSample(payload);
+        setWorkSamples(prev => [data.workSample, ...prev]);
+        toast.success("Work sample added successfully");
+      }
+
+      cancelEditingSample();
+      setShowSampleForm(false);
+    } catch (error) {
+      toast.error("Failed to save work sample");
+    }
+  }
+
+  // Helper functions (same as CreateServicePage)
+  function fileToDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function isImage(base64url) {
+    return typeof base64url === "string" && base64url.startsWith("data:image");
+  }
+
+  // Helper function to check if attachment is image
+  function isAttachmentImage(attachment) {
+    return attachment && typeof attachment.base64url === "string" && attachment.base64url.startsWith("data:image");
   }
 
   async function saveDo() {
@@ -1155,6 +1431,45 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Availability Status - Compact design with subtle message */}
+        {!isAdminEditing && (
+          <div className="mt-4 bg-white rounded-xl shadow-soft p-4 border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${isOpenToWork ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {isOpenToWork ? "Open to work" : "Not looking for work"}
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {isOpenToWork ? "Available for opportunities" : "Tap to show availability"}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  const newStatus = !isOpenToWork;
+                  setIsOpenToWork(newStatus);
+                  try {
+                    await saveAvailability();
+                  } catch (error) {
+                    // Revert on error
+                    setIsOpenToWork(!newStatus);
+                  }
+                }}
+                disabled={saving}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  isOpenToWork
+                    ? 'bg-green-600 hover:bg-green-700 text-white'
+                    : 'bg-gray-600 hover:bg-gray-700 text-white'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {saving ? '...' : (isOpenToWork ? 'Close' : 'Open')}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="mt-6 flex gap-2 flex-wrap">
           <button className={`px-4 py-2 rounded-lg border ${active===Tab.PERSONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PERSONAL)}>
@@ -1162,6 +1477,9 @@ export default function ProfilePage() {
           </button>
           <button className={`px-4 py-2 rounded-lg border ${active===Tab.PROFESSIONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PROFESSIONAL)}>
             {isCompany ? "Company Details" : "Professional"}
+          </button>
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.PORTFOLIO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PORTFOLIO)}>
+            {isCompany ? "Company Portfolio" : "Portfolio"}
           </button>
           <button className={`px-4 py-2 rounded-lg border ${active===Tab.DO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.DO)}>
             {isCompany ? "What We Offer" : "What I DO"}
@@ -1333,6 +1651,482 @@ export default function ProfilePage() {
 
               <div className="flex justify-end gap-3">
                 <button disabled={saving} onClick={saveProfessional} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+              </div>
+            </div>
+          )}
+
+          {/* PORTFOLIO */}
+          {active === Tab.PORTFOLIO && (
+            <div className="space-y-6">
+              {/* CV Upload */}
+              <div>
+                <h3 className="font-semibold mb-4">
+                  {isCompany ? "Company CV/Resume" : "CV/Resume"}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Upload CV (PDF, DOC, DOCX)
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        className="hidden"
+                        id="cv-upload"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            // Validate file size (max 10MB)
+                            if (file.size > 10 * 1024 * 1024) {
+                              toast.error("File size must be less than 10MB");
+                              return;
+                            }
+
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              const base64 = event.target.result;
+                              setPortfolio(p => ({
+                                ...p,
+                                cvBase64: base64,
+                                cvFileName: file.name
+                              }));
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <label
+                        htmlFor="cv-upload"
+                        className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-500 hover:bg-brand-50 transition-colors"
+                      >
+                        <div className="text-center">
+                          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <p className="mt-1 text-sm text-gray-600">
+                            {portfolio.cvFileName ? `Selected: ${portfolio.cvFileName}` : "Click to upload or drag and drop"}
+                          </p>
+                          <p className="text-xs text-gray-500">PDF, DOC, DOCX up to 10MB</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Work Samples */}
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold">
+                    {isCompany ? "Company Work Samples" : "Work Samples"}
+                  </h3>
+                  <button
+                    onClick={() => setShowSampleForm(true)}
+                    className="px-4 py-2 rounded-lg bg-brand-700 text-white hover:bg-brand-800 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors"
+                  >
+                    Add Work Sample
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Empty state */}
+                  {workSamples.length === 0 && !showSampleForm && (
+                    <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      <h3 className="mt-2 text-sm font-medium text-gray-900">No work samples yet</h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Showcase your work by adding projects, case studies, or portfolio pieces.
+                      </p>
+                      <div className="mt-6">
+                        <button
+                          onClick={() => setShowSampleForm(true)}
+                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500"
+                        >
+                          <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          Add Your First Work Sample
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {workSamples.map((sample, index) => (
+                    <div key={sample.id || index} className="border rounded-lg p-4 bg-white">
+                      <div className="flex justify-between items-start mb-3">
+                        <h4 className="font-medium text-lg">{sample.title}</h4>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => startEditingSample(sample)}
+                            className="text-blue-500 hover:text-blue-700 p-1"
+                            title="Edit"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await deleteWorkSample(sample.id);
+                                setWorkSamples(prev => prev.filter((_, i) => i !== index));
+                                toast.success("Work sample deleted successfully");
+                              } catch (error) {
+                                toast.error("Failed to delete work sample");
+                              }
+                            }}
+                            className="text-red-500 hover:text-red-700 p-1"
+                            title="Delete"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      {sample.description && (
+                        <p className="text-gray-700 mb-3">{sample.description}</p>
+                      )}
+                      {sample.projectUrl && (
+                        <a
+                          href={sample.projectUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium mb-2"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          View Project
+                        </a>
+                      )}
+                      {sample.technologies && sample.technologies.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {sample.technologies.map((tech, techIndex) => (
+                            <span key={techIndex} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Attachments */}
+                      {sample.attachments && sample.attachments.length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Attachments</h5>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {sample.attachments.map((attachment, attIndex) => (
+                              <div key={attIndex} className="flex items-center gap-3 border rounded-lg p-3 bg-gray-50">
+                                <div className="h-10 w-10 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
+                                  {isAttachmentImage(attachment) ? (
+                                    <img src={attachment.base64url} alt={attachment.name} className="h-full w-full object-cover" />
+                                  ) : (
+                                    <span className="text-xs text-gray-500">DOC</span>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="truncate text-sm font-medium">{attachment.name}</div>
+                                  <div className="text-[11px] text-gray-500 truncate">
+                                    {isAttachmentImage(attachment) ? "Image" : "Document"}
+                                  </div>
+                                </div>
+                                <a
+                                  href={attachment.base64url}
+                                  download={attachment.name}
+                                  className="text-blue-600 hover:text-blue-800 p-1"
+                                  title="Download"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Add/Edit work sample */}
+                  {showSampleForm && (
+                    <div className="border rounded-lg p-6 bg-gray-50">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="font-medium text-lg">
+                          {editingSample ? "Edit Work Sample" : "Add New Work Sample"}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            cancelEditingSample();
+                            setShowSampleForm(false);
+                          }}
+                          className="text-gray-400 hover:text-gray-600 p-1"
+                          title="Close"
+                        >
+                          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">
+                          Project/Sample Title
+                          <span className="text-red-500 ml-1">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter project title"
+                          className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                          value={sampleForm.title}
+                          onChange={(e) => setSampleForm(f => ({ ...f, title: e.target.value }))}
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">Description</label>
+                        <textarea
+                          placeholder="Describe your project"
+                          className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                          rows="3"
+                          value={sampleForm.description}
+                          onChange={(e) => setSampleForm(f => ({ ...f, description: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Project URL</label>
+                        <input
+                          type="url"
+                          placeholder="https://example.com"
+                          className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                          value={sampleForm.projectUrl}
+                          onChange={(e) => setSampleForm(f => ({ ...f, projectUrl: e.target.value }))}
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">Skills & Tags</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            value={skillTagInput}
+                            onChange={(e) => setSkillTagInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                addSkillTag();
+                              }
+                            }}
+                            placeholder="Add skills (e.g., JavaScript, Marketing, Design)"
+                            className="flex-1 border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                          />
+                          <button
+                            type="button"
+                            onClick={addSkillTag}
+                            className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700"
+                            aria-label="Add skill"
+                          >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M12 5v14M5 12h14" />
+                            </svg>
+                            Add
+                          </button>
+                        </div>
+
+                        {sampleForm.skillsTags.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {sampleForm.skillsTags.map((s, idx) => (
+                              <span
+                                key={`${s}-${idx}`}
+                                className="inline-flex items-center gap-2 rounded-full bg-brand-50 text-brand-700 px-3 py-1 text-xs border border-brand-100"
+                              >
+                                {s}
+                                <button
+                                  type="button"
+                                  className="text-gray-500 hover:text-gray-700"
+                                  onClick={() => removeSkillTag(idx)}
+                                  title="Remove"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Attachments */}
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium mb-1">Portfolio Samples (Optional)</label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
+                          <div className="mb-2">
+                            <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path d="M12 4v16m8-8H4" />
+                            </svg>
+                          </div>
+                          Upload images or documents showcasing your work
+                          <div className="mt-3 flex gap-2 justify-center">
+                            <input
+                              type="text"
+                              placeholder="File title (optional)"
+                              className="flex-1 max-w-xs border rounded-lg px-3 py-2 text-sm"
+                              value={attachmentTitle}
+                              onChange={(e) => setAttachmentTitle(e.target.value)}
+                            />
+                            <input
+                              type="file"
+                              multiple
+                              accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                              className="hidden"
+                              id="sample-files"
+                              onChange={(e) => handleSampleFiles(e.target.files)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => document.getElementById("sample-files").click()}
+                              className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                            >
+                              Choose Files
+                            </button>
+                          </div>
+
+                          {sampleForm.attachments.length > 0 && (
+                            <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
+                              {sampleForm.attachments.map((a, idx) => (
+                                <div key={`${a.name}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                                  <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
+                                    {a.isImage ? (
+                                      <img src={a.base64url} alt={a.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                      <span className="text-xs text-gray-500">DOC</span>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    {editingAttachmentTitle === idx ? (
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="text"
+                                          value={a.name}
+                                          onChange={(e) => {
+                                            const newName = e.target.value;
+                                            setSampleForm(f => ({
+                                              ...f,
+                                              attachments: f.attachments.map((att, i) =>
+                                                i === idx ? { ...att, name: newName } : att
+                                              )
+                                            }));
+                                          }}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                              saveAttachmentTitle(idx, a.name);
+                                            } else if (e.key === 'Escape') {
+                                              cancelEditingAttachmentTitle();
+                                            }
+                                          }}
+                                          onBlur={() => saveAttachmentTitle(idx, a.name)}
+                                          className="flex-1 text-sm border rounded px-2 py-1 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                          autoFocus
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => saveAttachmentTitle(idx, a.name)}
+                                          className="text-green-600 hover:text-green-800 p-1"
+                                          title="Save"
+                                        >
+                                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={cancelEditingAttachmentTitle}
+                                          className="text-gray-600 hover:text-gray-800 p-1"
+                                          title="Cancel"
+                                        >
+                                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div>
+                                        <div className="truncate text-sm font-medium flex items-center gap-2">
+                                          {a.name}
+                                          <button
+                                            type="button"
+                                            onClick={() => startEditingAttachmentTitle(idx)}
+                                            className="text-gray-400 hover:text-gray-600 p-1"
+                                            title="Edit title"
+                                          >
+                                            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                          </button>
+                                        </div>
+                                        <div className="text-[11px] text-gray-500 truncate">Attached</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeSampleAttachment(idx)}
+                                    className="p-1 rounded hover:bg-gray-100"
+                                    title="Remove"
+                                  >
+                                    <svg className="h-4 w-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
+                                      <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v9h-2V9Zm4 0h2v9h-2V9ZM6 9h2v9H6V9Z" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2 flex justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            cancelEditingSample();
+                            setShowSampleForm(false);
+                          }}
+                          className="px-6 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="px-6 py-2 rounded-lg bg-brand-700 text-white hover:bg-brand-800 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors"
+                          onClick={saveWorkSample}
+                        >
+                          {editingSample ? "Update Work Sample" : "Add Work Sample"}
+                        </button>
+                      </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <button
+                  disabled={saving}
+                  onClick={async () => {
+                    // Validate CV upload
+                    if (!portfolio.cvBase64) {
+                      toast.error("Please upload a CV before saving");
+                      return;
+                    }
+
+                    await savePortfolio();
+                  }}
+                  className="px-6 py-2 rounded-xl bg-brand-700 text-white hover:bg-brand-800 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {saving ? "Saving..." : "Save Portfolio"}
+                </button>
               </div>
             </div>
           )}

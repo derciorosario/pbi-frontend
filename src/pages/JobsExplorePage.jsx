@@ -11,6 +11,8 @@ import FiltersCard from "../components/FiltersCard";
 import SuggestedMatches from "../components/SuggestedMatches";
 import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
+import NeedCard from "../components/NeedCard";
+import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -163,6 +165,8 @@ export default function PeopleFeedPage() {
   // Fetch feed (somente na aba Posts)
   const fetchFeed = useCallback(async () => {
     if (activeTab !== "Posts") return;
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setLoadingFeed(true);
     try {
       // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre "all"
@@ -226,6 +230,7 @@ export default function PeopleFeedPage() {
       console.error("Failed to load feed:", e);
       setItems([]);
     } finally {
+      isFetchingRef.current = false;
       setLoadingFeed(false);
     }
     data._scrollToSection('top',true);
@@ -257,20 +262,67 @@ export default function PeopleFeedPage() {
     registrationType,
     selectedIndustries,]);
 
-  // Track last fetch time to prevent rapid successive calls
-  const lastFetchTimeRef = useRef(0);
+  const isFetchingRef = useRef(false);
+  const hasLoadedOnce = useRef(false);
+  const lastParamsRef = useRef({});
+  const fetchTimeoutRef = useRef(null);
 
   useEffect(() => {
-    const now = Date.now();
-    // Prevent fetches more frequent than 200ms apart
-    if (now - lastFetchTimeRef.current < 200) return;
+    const currentParams = {
+      activeTab,
+      debouncedQ,
+      country,
+      city,
+      categoryId,
+      subcategoryId,
+      goalId,
+      selectedFilters,
+      audienceSelections: {
+        identityIds: Array.from(audienceSelections.identityIds),
+        categoryIds: Array.from(audienceSelections.categoryIds),
+        subcategoryIds: Array.from(audienceSelections.subcategoryIds),
+        subsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds),
+      },
+      price,
+      serviceType,
+      priceType,
+      deliveryTime,
+      experienceLevel,
+      locationType,
+      jobType,
+      workMode,
+      workLocation,
+      workSchedule,
+      careerLevel,
+      paymentType,
+      postType,
+      season,
+      budgetRange,
+      fundingGoal,
+      amountRaised,
+      currency,
+      deadline,
+      eventType,
+      date,
+      registrationType,
+      selectedIndustries,
+    };
 
-    lastFetchTimeRef.current = now;
-    fetchFeed();
+    if (JSON.stringify(currentParams) === JSON.stringify(lastParamsRef.current)) return;
+    lastParamsRef.current = currentParams;
+
+    if (!hasLoadedOnce.current) {
+      hasLoadedOnce.current = true;
+      fetchFeed(); // Immediate fetch for initial load
+    } else {
+      clearTimeout(fetchTimeoutRef.current);
+      fetchTimeoutRef.current = setTimeout(() => {
+        fetchFeed();
+      }, 200);
+    }
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,
     selectedFilters,
     audienceSelections,
-    // NEW deps:
     price,
     serviceType,
     priceType,
@@ -463,13 +515,54 @@ export default function PeopleFeedPage() {
             view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
           } gap-6`}
         >
-          {items?.map((item) =>
-            item.kind === "job" ? (
-              <JobCard type={view}  key={`job-${item.id}`} job={item} matchPercentage={item.matchPercentage} />
-            ) : item.kind === "event" ? (
-              <EventCard key={`event-${item.id}`} e={item} />
-            ) : null
-          )}
+          {items?.map((item) => {
+            if (item.kind === "job") {
+              return (
+                <JobCard
+                  type={view}
+                  key={`job-${item.id}`}
+                  job={item}
+                  matchPercentage={item.matchPercentage}
+                />
+              );
+            }
+            if (item.kind === "need") {
+              return (
+                <NeedCard
+                  type={view}
+                  key={`need-${item.id}`}
+                  matchPercentage={item.matchPercentage}
+                  need={{
+                    ...item,
+                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                    subcategoryName: categories
+                      .find((c) => String(c.id) === String(item.categoryId))
+                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                  }}
+                />
+              );
+            }
+            if (item.kind === "moment") {
+              return (
+                <MomentCard
+                  type={view}
+                  key={`moment-${item.id}`}
+                  matchPercentage={item.matchPercentage}
+                  moment={{
+                    ...item,
+                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                    subcategoryName: categories
+                      .find((c) => String(c.id) === String(item.categoryId))
+                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                  }}
+                />
+              );
+            }
+            if (item.kind === "event") {
+              return <EventCard key={`event-${item.id}`} e={item} />;
+            }
+            return null;
+          })}
         </div>
       )}
 
@@ -493,6 +586,8 @@ export default function PeopleFeedPage() {
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
               { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
               { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+              { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create") },
+              { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create") },
             ]} />
           <ProfileCard />
          
@@ -502,7 +597,7 @@ export default function PeopleFeedPage() {
     
         <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-4 overflow-hidden">
-              <TopFilterButtons from={'jobs'} selected={selectedFilters} setSelected={setSelectedFilters}
+              <TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
                                     buttons={
                                    [
                                   "Professional",
@@ -520,7 +615,8 @@ export default function PeopleFeedPage() {
                items={[
                     { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                     { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create") },
-               ]}
+                    { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create") },
+                ]}
               activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
             {renderMiddle()}

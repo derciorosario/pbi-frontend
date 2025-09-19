@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import COUNTRIES from "../constants/countries";
+import CITIES from "../constants/cities.json";
 import client from "../api/client";
 import AudienceTree from "../components/AudienceTree";
 import DefaultLayout from "../layout/DefaultLayout";
@@ -396,6 +397,7 @@ export default function CrowdfundForm() {
         setLoading(false)
       } catch (err) {
         console.error(err);
+        console.log({err})
         alert("Could not load the project.");
         navigate("/funding");
       }
@@ -484,6 +486,18 @@ export default function CrowdfundForm() {
     subcategoryId: "",
     subsubCategoryId: "",
   });
+  
+  // Create country options for SearchableSelect
+  const countryOptions = COUNTRIES.map(country => ({
+    value: country,
+    label: country
+  }));
+  
+  // Create city options for SearchableSelect (limit to reasonable number)
+  const cityOptions = CITIES.slice(0, 1000).map(city => ({
+    value: city.city,
+    label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+  }));
 
   // Industry taxonomy
   const [industryTree, setIndustryTree] = useState([]);
@@ -825,18 +839,22 @@ export default function CrowdfundForm() {
             <div className="mt-4 grid md:grid-cols-2 gap-4">
               <div>
                 <Label required>Country</Label>
-                <Select name="country" value={form.country} onChange={change} required>
-                  <option value="">Select a country</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </Select>
+                <SearchableSelect
+                  value={form.country}
+                  onChange={(value) => setForm({ ...form, country: value })}
+                  options={countryOptions}
+                  placeholder="Search and select country..."
+                  required
+                />
               </div>
               <div>
                 <Label>City</Label>
-                <Input name="city" value={form.city} onChange={change} placeholder="e.g., Accra, Lagos" />
+                <SearchableSelect
+                  value={form.city}
+                  onChange={(value) => setForm({ ...form, city: value })}
+                  options={cityOptions}
+                  placeholder="Search and select city..."
+                />
               </div>
             </div>
 

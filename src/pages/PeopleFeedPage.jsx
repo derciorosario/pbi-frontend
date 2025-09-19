@@ -174,20 +174,68 @@ export default function PeopleFeedPage() {
     })();
   }, [currentPage]);
 
-  // Track last fetch time to prevent rapid successive calls
-  const lastFetchTimeRef = useRef(0);
+  const isFetchingRef = useRef(false);
+  const hasLoadedOnce = useRef(false);
+  const lastParamsRef = useRef({});
+  const fetchTimeoutRef = useRef(null);
 
   useEffect(() => {
-    const now = Date.now();
-    // Prevent fetches more frequent than 200ms apart
-    if (now - lastFetchTimeRef.current < 200) return;
+    const currentParams = {
+      activeTab,
+      debouncedQ,
+      country,
+      city,
+      categoryId,
+      subcategoryId,
+      goalId,
+      role,
+      showPendingRequests,
+      audienceSelections: {
+        identityIds: Array.from(audienceSelections.identityIds),
+        categoryIds: Array.from(audienceSelections.categoryIds),
+        subcategoryIds: Array.from(audienceSelections.subcategoryIds),
+        subsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds),
+      },
+      price,
+      serviceType,
+      priceType,
+      deliveryTime,
+      experienceLevel,
+      locationType,
+      jobType,
+      workMode,
+      postType,
+      season,
+      budgetRange,
+      fundingGoal,
+      amountRaised,
+      currency,
+      deadline,
+      eventType,
+      date,
+      registrationType,
+      selectedIndustries,
+    };
 
-    lastFetchTimeRef.current = now;
-    fetchFeed();
+    if (JSON.stringify(currentParams) === JSON.stringify(lastParamsRef.current)) return;
+    lastParamsRef.current = currentParams;
+
+    if (!hasLoadedOnce.current) {
+      hasLoadedOnce.current = true;
+      fetchFeed(); // Immediate fetch for initial load
+    } else {
+      setLoadingFeed(true);
+      clearTimeout(fetchTimeoutRef.current);
+      fetchTimeoutRef.current = setTimeout(() => {
+        fetchFeed();
+      }, 100);
+      return () => {
+        clearTimeout(fetchTimeoutRef.current);
+        setLoadingFeed(false);
+      };
+    }
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role, showPendingRequests,
-    selectedFilters,
     audienceSelections,
-    // NEW deps:
     price,
     serviceType,
     priceType,
@@ -233,9 +281,11 @@ export default function PeopleFeedPage() {
 
   // Fetch feed (somente na aba Posts)
   const fetchFeed = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setLoadingFeed(true);
     try {
-      // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre “all”
+      // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre "all"
       const params = {
         accountType: currentPage=="people" ? 'individual' :'company',
         q: debouncedQ || undefined,
@@ -245,7 +295,7 @@ export default function PeopleFeedPage() {
         subcategoryId: subcategoryId || undefined,
         goalId:goalId || undefined,
         role:role || undefined,
-        
+
         // Add audience selections to the API request
         identityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
         audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
@@ -290,11 +340,12 @@ export default function PeopleFeedPage() {
         typeof data.total === "number"
           ? data.total
           : Array.isArray(data.items) ? data.items.length : 0
-      ); 
+      );
     } catch (e) {
       console.error("Failed to load feed:", e);
       setItems([]);
     } finally {
+      isFetchingRef.current = false;
       setLoadingFeed(false);
     }
     data._scrollToSection('top',true);
@@ -320,7 +371,7 @@ export default function PeopleFeedPage() {
     eventType,
     date,
     registrationType,
-    selectedIndustries,]);
+    selectedIndustries]);
 
 
   // Fetch suggestions (sempre mostramos na direita)
@@ -417,7 +468,7 @@ export default function PeopleFeedPage() {
          <div className="min-h-[160px] grid text-gray-600">
           <CardSkeletonLoader/>
         </div>
-                   
+
         )}
         
 
@@ -475,7 +526,7 @@ export default function PeopleFeedPage() {
     <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-4 w-full overflow-hidden">
          
-             <TopFilterButtons from={"people"} selected={selectedFilters} setSelected={setSelectedFilters}
+             <TopFilterButtons from={"people"} loading={loadingFeed} selected={selectedFilters} setSelected={setSelectedFilters}
                 buttons={
                 currentPage == "people"
                   ? [

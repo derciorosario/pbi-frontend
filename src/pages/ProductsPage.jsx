@@ -11,6 +11,8 @@ import FiltersCard from "../components/FiltersCard";
 import SuggestedMatches from "../components/SuggestedMatches";
 import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
+import NeedCard from "../components/NeedCard";
+import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -453,13 +455,47 @@ export default function ProductsPage() {
     </div>}
 
         {!loadingFeed &&
-          items.map((item) =>
-            item.kind === "job" ? (
-              <JobCard key={`job-${item.id}`} job={item} />
-            ) : item.kind === "event" ? (
-              <EventCard key={`event-${item.id}`} e={item} />
-            ) : null
-          )}
+          items.map((item) => {
+            if (item.kind === "job") {
+              return <JobCard key={`job-${item.id}`} job={item} />;
+            }
+            if (item.kind === "need") {
+              return (
+                <NeedCard
+                  type={view}
+                  key={`need-${item.id}`}
+                  matchPercentage={item.matchPercentage}
+                  need={{
+                    ...item,
+                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                    subcategoryName: categories
+                      .find((c) => String(c.id) === String(item.categoryId))
+                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                  }}
+                />
+              );
+            }
+            if (item.kind === "moment") {
+              return (
+                <MomentCard
+                  type={view}
+                  key={`moment-${item.id}`}
+                  matchPercentage={item.matchPercentage}
+                  moment={{
+                    ...item,
+                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                    subcategoryName: categories
+                      .find((c) => String(c.id) === String(item.categoryId))
+                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                  }}
+                />
+              );
+            }
+            if (item.kind === "event") {
+              return <EventCard key={`event-${item.id}`} e={item} />;
+            }
+            return null;
+          })}
       </>
     );
   };
@@ -484,8 +520,10 @@ export default function ProductsPage() {
           </div>
            <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Post a Product", Icon: PlusCircle, path: "/products/create" },
+            { label: "Post a Product", Icon: PlusCircle, onClick: () => navigate("/products/create") },
+            { label: "Share Your Experience", Icon: PlusCircle, onClick: () => navigate("/moment/product/create") },
+            { label: "Ask About a Product", Icon: PlusCircle, onClick: () => navigate("/need/product/create") },
+          
         ]} />
           <ProfileCard />
         
@@ -500,6 +538,7 @@ export default function ProductsPage() {
               buttons={filterOptions}
               buttonLabels={categoryIdToNameMap}
               from={from}
+              loading={loadingFeed}
             />
             <div className="flex items-center justify-between gap-y-2">
              <h3 className="font-semibold text-2xl mt-1 hidden">Explore and Discover New Products</h3>
@@ -508,7 +547,11 @@ export default function ProductsPage() {
 
             <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
 
-             <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/products/create')} />
+             <TabsAndAdd tabs={[]}  items={[
+                           { label: "Post a Product", Icon: PlusCircle, onClick: () => navigate("/products/create") },
+                           { label: "Share Your Experience", Icon: PlusCircle, onClick: () => navigate("/moment/product/create") },
+                           { label: "Ask About a Product", Icon: PlusCircle, onClick: () => navigate("/need/product/create") },
+            ]} activeTab={activeTab} setActiveTab={setActiveTab}  />
              </div>
                {renderMiddle()}
            </section>

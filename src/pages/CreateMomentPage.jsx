@@ -1,11 +1,13 @@
 // src/pages/CreateMomentPage.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, Plus } from "lucide-react";
 import COUNTRIES from "../constants/countries"; // optional: if you want to suggest locations, else unused
+import CITIES from "../constants/cities.json";
 import client from "../api/client";
 import { toast } from "../lib/toast";
 import Header from "../components/Header";
+import AudienceTree from "../components/AudienceTree";
 import { useAuth } from "../contexts/AuthContext";
 import FullPageLoader from "../components/ui/FullPageLoader";
 
@@ -32,6 +34,11 @@ const I = {
       <path d="m6 9 6 6 6-6" />
     </svg>
   ),
+  plus: () => (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  ),
 };
 
 /* File → data URL */
@@ -42,6 +49,130 @@ function fileToDataURL(file) {
     r.onload = () => resolve(r.result);
     r.readAsDataURL(file);
   });
+}
+
+/* ---------- Read-only view for non-owners ---------- */
+function ReadOnlyMomentView({ form, tags, images, audSel, audTree }) {
+  const maps = React.useMemo(() => {
+    const ids = new Map();
+    const cats = new Map();
+    const subs = new Map();
+    const subsubs = new Map();
+    for (const idn of audTree) {
+      ids.set(String(idn.id), idn.name || idn.title || `Identity ${idn.id}`);
+      for (const c of idn.categories || []) {
+        cats.set(String(c.id), c.name || c.title || `Category ${c.id}`);
+        for (const s of c.subcategories || []) {
+          subs.set(String(s.id), s.name || s.title || `Subcategory ${s.id}`);
+          for (const ss of s.subsubs || []) {
+            subsubs.set(String(ss.id), ss.name || ss.title || `Sub-sub ${ss.id}`);
+          }
+        }
+      }
+    }
+    return { ids, cats, subs, subsubs };
+  }, [audTree]);
+
+  const identities = Array.from(audSel.identityIds || []).map((k) => maps.ids.get(String(k))).filter(Boolean);
+  const categories = Array.from(audSel.categoryIds || []).map((k) => maps.cats.get(String(k))).filter(Boolean);
+  const subcategories = Array.from(audSel.subcategoryIds || []).map((k) => maps.subs.get(String(k))).filter(Boolean);
+  const subsubs = Array.from(audSel.subsubCategoryIds || []).map((k) => maps.subsubs.get(String(k))).filter(Boolean);
+
+  const coverImageUrl = images && images.length > 0 ? images[0].base64url : null;
+
+  return (
+    <div className="mt-6 rounded-2xl bg-white border p-0 shadow-sm overflow-hidden">
+      {/* Cover hero */}
+      {coverImageUrl ? (
+        <div className="relative aspect-[16/6] w-full bg-gray-100">
+          <img src={coverImageUrl} alt="Experience cover" className="h-full w-full object-cover" />
+          <span className="absolute left-4 top-4 bg-white/90 border-gray-200 text-gray-700 rounded-full px-2 py-0.5 text-xs font-medium">
+            {form.type || "Experience"}
+          </span>
+        </div>
+      ) : null}
+
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold">{form.title || "Untitled Experience"}</h1>
+            <p className="mt-1 text-sm text-gray-700">{form.description || "No description provided."}</p>
+          </div>
+        </div>
+
+        {/* Quick facts */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-xl border p-4">
+            <div className="flex items-center gap-2 text-gray-700 font-medium">Type</div>
+            <div className="mt-2 text-sm text-gray-700">{form.type || "Not specified"}</div>
+          </div>
+          {form.date && (
+            <div className="rounded-xl border p-4">
+              <div className="flex items-center gap-2 text-gray-700 font-medium">Date</div>
+              <div className="mt-2 text-sm text-gray-700">{form.date}</div>
+            </div>
+          )}
+          {(form.location || form.city || form.country) && (
+            <div className="rounded-xl border p-4">
+              <div className="flex items-center gap-2 text-gray-700 font-medium">Location</div>
+              <div className="mt-2 text-sm text-gray-700">
+                {[form.location, form.city, form.country].filter(Boolean).join(", ") || "Not specified"}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Gallery */}
+        {images && images.length > 1 && (
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700">Images</h3>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {images.slice(1).map((img, idx) => (
+                <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
+                  <img src={img.base64url} alt={img.title || `Experience image ${idx + 1}`} className="h-full w-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tags */}
+        {tags && tags.length > 0 && (
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700">Tags</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {tags.map((tag, idx) => (
+                <span key={`${tag}-${idx}`} className={styles.chip}>{tag}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Audience */}
+        {(identities.length > 0 || categories.length > 0 || subcategories.length > 0 || subsubs.length > 0) && (
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700">Target Audience</h3>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {identities.map((x) => <span key={`i-${x}`} className={styles.chip}>{x}</span>)}
+              {categories.map((x) => <span key={`c-${x}`} className={styles.chip}>{x}</span>)}
+              {subcategories.map((x) => <span key={`s-${x}`} className={styles.chip}>{x}</span>)}
+              {subsubs.map((x) => <span key={`ss-${x}`} className={styles.chip}>{x}</span>)}
+              {!identities.length && !categories.length && !subcategories.length && !subsubs.length && (
+                <span className="text-sm text-gray-500">Everyone</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3 pt-2">
+          <button type="button" className={styles.ghost} onClick={() => window.history.back()}>
+            Back
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /* ---------- Reusable SearchableSelect (combobox) ---------- */
@@ -218,25 +349,31 @@ function SearchableSelect({
 /* ------------------------- Page ------------------------- */
 export default function CreateMomentPage() {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id, type: urlType } = useParams(); // Extract id and type from URL
   const isEditMode = Boolean(id);
   const { user } = useAuth();
 
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [ownerUserId, setOwnerUserId] = useState(null);
+  const [currentType, setCurrentType] = useState("need");
 
-  // Form (Moment fields)
+  // Form (Experience fields)
   const [form, setForm] = useState({
     title: "",
     description: "",
     type: "Achievement", // ENUM: Achievement | Milestone | Learning | Challenge | Opportunity
     date: "", // yyyy-mm-dd
     location: "",
-    tagsInput: "",
+    country: "",
+    city: "",
     relatedEntityType: "", // job | event | product | service | tourism | funding
     relatedEntityId: "",
   });
+  
+  // Tags state
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState([]);
 
   // Images ONLY: [{ title, base64url }]
   const [images, setImages] = useState([]);
@@ -258,17 +395,39 @@ export default function CreateMomentPage() {
     subsubCategoryId: "",
   });
 
+  // Create country options for SearchableSelect
+  const countryOptions = COUNTRIES.map(country => ({
+    value: country,
+    label: country
+  }));
+
+  // Create city options for SearchableSelect (limit to reasonable number)
+  const cityOptions = CITIES.slice(0, 1000).map(city => ({
+    value: city.city,
+    label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+  }));
+
+  // AudienceTree data + selections (Sets, like Events page)
+  const [audTree, setAudTree] = useState([]);
+  const [audSel, setAudSel] = useState({
+    identityIds: new Set(),
+    categoryIds: new Set(),
+    subcategoryIds: new Set(),
+    subsubCategoryIds: new Set(),
+  });
+
   /* -------- Load taxonomy trees -------- */
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await client.get("/general-categories/tree"); // can add ?type=moment if you filter server-side
+        const typeParam = currentType ? `?type=${currentType}` : "?type=need";
+        const { data } = await client.get(`/general-categories/tree${typeParam}`);
         setGeneralTree(data.generalCategories || []);
       } catch (err) {
         console.error("Failed to load general categories", err);
       }
     })();
-  }, []);
+  }, [currentType]);
 
   useEffect(() => {
     (async () => {
@@ -280,6 +439,26 @@ export default function CreateMomentPage() {
       }
     })();
   }, []);
+
+  // Load identities tree (for AudienceTree)
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/public/identities");
+        setAudTree(data.identities || []);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+  }, []);
+
+  // Set currentType based on URL type when creating
+  useEffect(() => {
+    if (urlType && !isEditMode) {
+      setCurrentType(urlType);
+      setField("relatedEntityType", urlType);
+    }
+  }, [urlType, isEditMode]);
 
   /* -------- Options builders -------- */
   const generalCategoryOptions = useMemo(
@@ -331,15 +510,22 @@ export default function CreateMomentPage() {
 
         setForm((f) => ({
           ...f,
+          ...data,
           title: data.title || "",
           description: data.description || "",
           type: data.type || "Achievement",
           date: data.date || "",
           location: data.location || "",
-          tagsInput: Array.isArray(data.tags) ? data.tags.join(", ") : (data.tagsInput || ""),
           relatedEntityType: data.relatedEntityType || "",
           relatedEntityId: data.relatedEntityId || "",
         }));
+        
+
+        console.log({data})
+        // Set tags
+        if (Array.isArray(data.tags)) {
+          setTags(data.tags);
+        }
 
         if (Array.isArray(data.images)) {
           setImages(
@@ -353,9 +539,9 @@ export default function CreateMomentPage() {
         }
 
         setSelectedGeneral({
-          categoryId: data.categoryId || "",
-          subcategoryId: data.subcategoryId || "",
-          subsubCategoryId: data.subsubCategoryId || "",
+          categoryId: data.generalCategoryId || "",
+          subcategoryId: data.generalSubcategoryId || "",
+          subsubCategoryId: data.generalSubsubCategoryId || "",
         });
 
         setSelectedIndustry({
@@ -364,11 +550,22 @@ export default function CreateMomentPage() {
           subsubCategoryId: data.industrySubsubCategoryId || "",
         });
 
+        // Set currentType for general categories
+        setCurrentType(data.relatedEntityType || "need");
+
+        // audience selections
+        setAudSel({
+          identityIds: new Set((data.audienceIdentities || []).map((x) => x.id)),
+          categoryIds: new Set((data.audienceCategories || []).map((x) => x.id)),
+          subcategoryIds: new Set((data.audienceSubcategories || []).map((x) => x.id)),
+          subsubCategoryIds: new Set((data.audienceSubsubs || []).map((x) => x.id)),
+        });
+
         setLoading(false);
       } catch (err) {
         console.error(err);
-        toast.error("Failed to load moment");
-        navigate("/moments");
+        toast.error("Failed to load experience");
+        navigate("/experiences");
       }
     })();
   }, [isEditMode, id, navigate]);
@@ -380,15 +577,25 @@ export default function CreateMomentPage() {
     if (readOnly) return;
     setForm((f) => ({ ...f, [name]: value }));
   }
-
-  function parsedTags() {
-    return (form.tagsInput || "")
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
+  
+  function addTag() {
+    if (readOnly) return;
+    const tag = tagInput.trim();
+    if (!tag) return;
+    
+    if (!tags.includes(tag)) {
+      setTags((prev) => [...prev, tag]);
+    }
+    setTagInput("");
+  }
+  
+  function removeTag(index) {
+    if (readOnly) return;
+    setTags((prev) => prev.filter((_, i) => i !== index));
   }
 
   function validate() {
+    if (!form.relatedEntityType) return "Related entity type is required.";
     if (!form.title.trim()) return "Title is required.";
     if (!form.description.trim()) return "Description is required.";
     return null;
@@ -448,19 +655,32 @@ export default function CreateMomentPage() {
 
     setSaving(true);
     try {
+      const identityIds = Array.from(audSel.identityIds);
+      const categoryIds = Array.from(audSel.categoryIds);
+      const subcategoryIds = Array.from(audSel.subcategoryIds);
+      const subsubCategoryIds = Array.from(audSel.subsubCategoryIds);
+
       const payload = {
         title: form.title,
         description: form.description,
         type: form.type,
         date: form.date || null,
         location: form.location || undefined,
-        tags: parsedTags(),
+        country: form.country || undefined,
+        city: form.city || undefined,
+        tags: tags,
         images, // [{ title, base64url }]
 
+        // Audience selections
+        identityIds,
+        categoryIds,
+        subcategoryIds,
+        subsubCategoryIds,
+
         // General taxonomy
-        categoryId: selectedGeneral.categoryId || null,
-        subcategoryId: selectedGeneral.subcategoryId || null,
-        subsubCategoryId: selectedGeneral.subsubCategoryId || null,
+        generalCategoryId: selectedGeneral.categoryId || null,
+        generalSubcategoryId: selectedGeneral.subcategoryId || null,
+        generalSubsubCategoryId: selectedGeneral.subsubCategoryId || null,
 
         // Industry taxonomy
         industryCategoryId: selectedIndustry.categoryId || null,
@@ -474,12 +694,12 @@ export default function CreateMomentPage() {
 
       if (isEditMode) {
         await client.put(`/moments/${id}`, payload);
-        toast.success("Moment updated!");
+        toast.success("Experience updated!");
       } else {
         await client.post("/moments", payload);
-        toast.success("Moment published!");
+        toast.success("Experience published!");
+        navigate("/");
       }
-      navigate("/moments");
     } catch (error) {
       console.error(error);
       toast.error(error?.response?.data?.message || "Could not save moment");
@@ -489,43 +709,72 @@ export default function CreateMomentPage() {
   }
 
   if (loading && id) {
-    return <FullPageLoader message="Loading moment…" tip="Fetching..." />;
+    return <FullPageLoader message="Loading experience…" tip="Fetching..." />;
   }
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
       {/* ===== Header ===== */}
-      <Header page={"moments"} />
+      <Header page={"experiences"} />
 
       {/* ===== Content ===== */}
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
-        <button
-          onClick={() => navigate("/moments")}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:underline"
-          type="button"
-        >
-          ← Back
-        </button>
+        <div>
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:underline"
+            type="button"
+          >
+            ← Feed
+          </button>
+  
+          {!isEditMode && (
+            <div>
+              <h1 className="text-2xl font-bold mt-3">
+                {isEditMode ? "Edit Experience" : "Create Experience"}
+              </h1>
+              <p className="text-sm text-gray-600">
+                {form.relatedEntityType
+                  ? `Share an experience of ${form.relatedEntityType} — an achievement, milestone, or learning — and classify it for better discovery.`
+                  : "Share an experience — an achievement, milestone, or learning — and classify it for better discovery."
+                }
+              </p>
+            </div>
+          )}
+  
+          {/* Read-only view for non-owners */}
+          {readOnly ? (
+            <ReadOnlyMomentView form={form} tags={tags} images={images} audSel={audSel} audTree={audTree} />
+          ) : (
+            <form
+              onSubmit={onSubmit}
+              className="mt-6 rounded-2xl bg-white border border-gray-100 p-6 shadow-sm space-y-8"
+            >
+          {/* Related Entity (Required) - Moved to first position */}
+          <section>
+            <h2 className="font-semibold">What is this experience about? *</h2>
+            <div className="mt-2 grid sm:grid-cols-2 gap-4">
+              <select
+                value={form.relatedEntityType}
+                onChange={(e) => setField("relatedEntityType", e.target.value)}
+                className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-brand-200"
+                required
+              >
+                <option value="">Select entity type</option>
+                <option value="job">Job</option>
+                <option value="event">Event</option>
+                <option value="product">Product</option>
+                <option value="service">Service</option>
+                <option value="tourism">Tourism</option>
+                <option value="funding">Opportunity</option>
+              </select>
 
-        {!isEditMode && (
-          <>
-            <h1 className="text-2xl font-bold mt-3">
-              {isEditMode ? "Edit Moment" : "Create Moment"}
-            </h1>
-            <p className="text-sm text-gray-600">
-              Share a moment — an achievement, milestone, or learning — and classify it for better discovery.
-            </p>
-          </>
-        )}
+            </div>
+          </section>
 
-        {/* Form */}
-        <form
-          onSubmit={onSubmit}
-          className="mt-6 rounded-2xl bg-white border border-gray-100 p-6 shadow-sm space-y-8"
-        >
           {/* Type */}
           <section>
-            <h2 className="font-semibold">Moment Type</h2>
+            <h2 className="font-semibold">Experience Type</h2>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-5 gap-3">
               {["Achievement", "Milestone", "Learning", "Challenge", "Opportunity"].map((label) => (
                 <button
@@ -544,39 +793,7 @@ export default function CreateMomentPage() {
             </div>
           </section>
 
-          {/* Title */}
-          <section>
-            <h2 className="font-semibold">Title *</h2>
-            <input
-              type="text"
-              value={form.title}
-              onChange={(e) => setField("title", e.target.value)}
-              placeholder="Give your moment a clear, strong title"
-              className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-              required
-            />
-          </section>
-
-          {/* Date & Location */}
-          <section>
-            <h2 className="font-semibold">When & Where</h2>
-            <div className="mt-2 grid sm:grid-cols-2 gap-4">
-              <input
-                type="date"
-                value={form.date || ""}
-                onChange={(e) => setField("date", e.target.value)}
-                className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-              />
-              <input
-                type="text"
-                value={form.location}
-                onChange={(e) => setField("location", e.target.value)}
-                placeholder="Location (e.g., Lagos, Nigeria)"
-                className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-              />
-            </div>
-          </section>
-
+          
           {/* Photos */}
           <section>
             <h2 className="font-semibold">Photos</h2>
@@ -636,6 +853,66 @@ export default function CreateMomentPage() {
             </div>
           </section>
 
+          {/* Title */}
+          <section>
+            <h2 className="font-semibold">Title *</h2>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(e) => setField("title", e.target.value)}
+              placeholder="Give your experience a clear, strong title"
+              className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+              required
+            />
+          </section>
+
+          {/* Date & Location */}
+          <section>
+            <h2 className="font-semibold">When & Where</h2>
+            <div className="mt-2 grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[12px] font-medium text-gray-700">Date</label>
+                <input
+                  type="date"
+                  value={form.date || ""}
+                  onChange={(e) => setField("date", e.target.value)}
+                  className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                />
+              </div>
+              <div>
+                <label className="text-[12px] font-medium text-gray-700">Location</label>
+                <input
+                  type="text"
+                  value={form.location}
+                  onChange={(e) => setField("location", e.target.value)}
+                  placeholder="Location (e.g., Lagos, Nigeria)"
+                  className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                />
+              </div>
+            </div>
+            <div className="mt-3 grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[12px] font-medium text-gray-700">Country</label>
+                <SearchableSelect
+                  value={form.country}
+                  onChange={(value) => setField("country", value)}
+                  options={countryOptions}
+                  placeholder="Search and select country..."
+                />
+              </div>
+              <div>
+                <label className="text-[12px] font-medium text-gray-700">City</label>
+                <SearchableSelect
+                  value={form.city}
+                  onChange={(value) => setField("city", value)}
+                  options={cityOptions}
+                  placeholder="Search and select city..."
+                />
+              </div>
+            </div>
+          </section>
+
+
           {/* Description */}
           <section>
             <h2 className="font-semibold">Description *</h2>
@@ -652,20 +929,56 @@ export default function CreateMomentPage() {
           {/* Tags */}
           <section>
             <h2 className="font-semibold">Tags</h2>
-            <input
-              type="text"
-              value={form.tagsInput}
-              onChange={(e) => setField("tagsInput", e.target.value)}
-              placeholder="e.g., AI, grants, partnership, networking"
-              className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-            />
-            <p className="mt-1 text-xs text-gray-500">Separate tags with commas</p>
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTag();
+                  }
+                }}
+                placeholder="e.g., AI, grants, partnership, networking"
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+              />
+              <button
+                type="button"
+                onClick={addTag}
+                className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700"
+                aria-label="Add tag"
+              >
+                <I.plus /> Add
+              </button>
+            </div>
+
+            {tags.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {tags.map((tag, idx) => (
+                  <span
+                    key={`${tag}-${idx}`}
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-50 text-brand-700 px-3 py-1 text-xs border border-brand-100"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      className="text-gray-500 hover:text-gray-700"
+                      onClick={() => removeTag(idx)}
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </section>
 
-          {/* Classification (General) */}
+         
           <section>
             <h2 className="font-semibold text-brand-600">General Classification</h2>
-            <div className="grid md:grid-cols-3 gap-4 mt-2">
+            <div className="grid md:grid-cols-2 gap-4 mt-2">
               <div>
                 <label className="text-[12px] font-medium text-gray-700">Category</label>
                 <SearchableSelect
@@ -689,7 +1002,7 @@ export default function CreateMomentPage() {
                   disabled={!selectedGeneral.categoryId}
                 />
               </div>
-              <div>
+              <div className="hidden">{/*** Hide for now */}
                 <label className="text-[12px] font-medium text-gray-700">Sub-sub</label>
                 <SearchableSelect
                   ariaLabel="Sub-subcategory"
@@ -703,10 +1016,11 @@ export default function CreateMomentPage() {
             </div>
           </section>
 
-          {/* Industry Classification */}
+          {/* Industry Classification  */}
+       
           <section>
             <h2 className="font-semibold text-brand-600">Industry Classification</h2>
-            <div className="grid md:grid-cols-3 gap-4 mt-2">
+            <div className="grid md:grid-cols-2 gap-4 mt-2">
               <div>
                 <label className="text-[12px] font-medium text-gray-700">Industry Category</label>
                 <SearchableSelect
@@ -728,7 +1042,7 @@ export default function CreateMomentPage() {
                   disabled={!selectedIndustry.categoryId}
                 />
               </div>
-              <div>
+              <div className="hidden"> {/*** Hide for now */}
                 <label className="text-[12px] font-medium text-gray-700">Industry Sub-sub</label>
                 <SearchableSelect
                   ariaLabel="Industry Sub-subcategory"
@@ -741,45 +1055,34 @@ export default function CreateMomentPage() {
               </div>
             </div>
           </section>
+       
 
-          {/* Related Entity (Optional) */}
+
+          {/* Share With (Audience) */}
           <section>
-            <h2 className="font-semibold">Link to Related Entity (optional)</h2>
-            <div className="mt-2 grid sm:grid-cols-2 gap-4">
-              <select
-                value={form.relatedEntityType}
-                onChange={(e) => setField("relatedEntityType", e.target.value)}
-                className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-brand-200"
-              >
-                <option value="">None</option>
-                <option value="job">Job</option>
-                <option value="event">Event</option>
-                <option value="product">Product</option>
-                <option value="service">Service</option>
-                <option value="tourism">Tourism</option>
-                <option value="funding">Funding</option>
-              </select>
-              <input
-                type="text"
-                value={form.relatedEntityId}
-                onChange={(e) => setField("relatedEntityId", e.target.value)}
-                placeholder="Related entity ID (UUID)"
-                className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                disabled={!form.relatedEntityType}
-              />
-            </div>
+            <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
+            <p className="text-xs text-gray-600 mb-3">
+              Select who should see this experience. Choose multiple identities, categories, subcategories, and sub-subs.
+            </p>
+            <AudienceTree
+              tree={audTree}
+              selected={audSel}
+              onChange={(next) => setAudSel(next)}
+            />
           </section>
 
           {/* Actions */}
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => navigate("/moments")} className={styles.ghost}>
+            <button type="button" onClick={() => navigate("/experiences")} className={styles.ghost}>
               Cancel
             </button>
             <button type="submit" className={styles.primaryWide} disabled={saving}>
-              {saving ? "Saving…" : isEditMode ? "Update Moment" : "Publish Moment"}
+              {saving ? "Saving…" : isEditMode ? "Update Experience" : "Publish Experience"}
             </button>
           </div>
-        </form>
+            </form>
+          )}
+        </div>
       </main>
     </div>
   );

@@ -1,8 +1,10 @@
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function QuickActions({ title = "Quick Actions", items = [] }) {
   const { user } = useAuth();
+  const navigate=useNavigate()
 
   return (
     <>
@@ -11,11 +13,13 @@ export default function QuickActions({ title = "Quick Actions", items = [] }) {
       >
         <h3 className="font-semibold text-brand-600">{title}</h3>
         <ul className="mt-3 space-y-2 text-sm text-gray-700">
-          {items.filter(i=>!i.hide).map(({ label, Icon, onClick, disabled }, idx) => (
+          {items.filter(i=>!i.hide).map(({ label, Icon, onClick, disabled,path }, idx) => (
             <li key={idx}>
               <button
                 type="button"
-                onClick={onClick}
+                onClick={path ? ()=>{
+                  navigate(path)
+                } : onClick}
                 disabled={disabled}
                 className={`w-full text-left rounded-lg px-3 py-2 flex items-center gap-2 hover:bg-brand-50 hover:text-brand-600 transition-colors ${
                   disabled ? "opacity-50 cursor-not-allowed" : ""

@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import client from "../api/client";
 import COUNTRIES from "../constants/countries";
+import CITIES from "../constants/cities.json";
 import Header from "../components/Header";
 import CoverImagePicker from "../components/CoverImagePicker";
 import AudienceTree from "../components/AudienceTree";
@@ -101,6 +102,18 @@ const CURRENCY_OPTIONS = [
   "USD","EUR","GBP","NGN","GHS","ZAR","KES","UGX","TZS","XOF","XAF","MAD","DZD","TND","EGP","ETB",
   "NAD","BWP","MZN","ZMW","RWF","BIF","SOS","SDG","CDF"
 ];
+
+// Create country options for SearchableSelect
+const countryOptions = COUNTRIES.map(country => ({
+  value: country,
+  label: country
+}));
+
+// Create city options for SearchableSelect (limit to reasonable number)
+const cityOptions = CITIES.slice(0, 1000).map(city => ({
+  value: city.city,
+  label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+}));
 
 /* ---------- helpers for read-only view ---------- */
 const styles = {
@@ -1236,13 +1249,22 @@ export default function CreateJobOpportunity() {
             <div className="mt-3 grid md:grid-cols-2 gap-4">
               <div>
                 <Label required>Country</Label>
-                <Select required name="country" value={form.country} onChange={onChange}>
-                  {COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </Select>
+                <SearchableSelect
+                  value={form.country}
+                  onChange={(value) => setForm({ ...form, country: value })}
+                  options={countryOptions}
+                  placeholder="Search and select country..."
+                  required
+                />
               </div>
               <div>
                 <Label>City</Label>
-                <Input name="city" value={form.city} onChange={onChange} placeholder="e.g. Lagos, Cape Town" />
+                <SearchableSelect
+                  value={form.city}
+                  onChange={(value) => setForm({ ...form, city: value })}
+                  options={cityOptions}
+                  placeholder="Search and select city..."
+                />
               </div>
             </div>
 

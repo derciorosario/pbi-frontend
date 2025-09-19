@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "../components/Header";
 import COUNTRIES from "../constants/countries";
+import CITIES from "../constants/cities.json";
 import AudienceTree from "../components/AudienceTree";
 import client from "../api/client";
 import { toast } from "../lib/toast";
@@ -192,6 +193,18 @@ export default function CreateProductPage() {
     subcategoryId: "",
     subsubCategoryId: "",
   });
+  
+  // Create country options for SearchableSelect
+  const countryOptions = COUNTRIES.map(country => ({
+    value: country,
+    label: country
+  }));
+  
+  // Create city options for SearchableSelect (limit to reasonable number)
+  const cityOptions = CITIES.slice(0, 1000).map(city => ({
+    value: city.city,
+    label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+  }));
 
   // Industry taxonomy
   const [industryTree, setIndustryTree] = useState([]);
@@ -430,6 +443,7 @@ function SearchableSelect({
     quantity: "",
     description: "",
     country: "",
+    city: "",
     tagsInput: "",
   });
 
@@ -474,6 +488,7 @@ function SearchableSelect({
           quantity: data.quantity?.toString?.() || "",
           description: data.description || "",
           country: data.country || "",
+          city: data.city || "",
           tagsInput: Array.isArray(data.tags) ? data.tags.join(", ") : "",
         }));
 
@@ -595,6 +610,7 @@ function SearchableSelect({
             : undefined,
         description: form.description,
         country: form.country || undefined,
+        city: form.city || undefined,
         tags: parsedTags(),
         images,
         identityIds: Array.from(audSel.identityIds),
@@ -789,22 +805,25 @@ function SearchableSelect({
               {/* Location */}
               <div>
                 <h2 className="font-semibold">Location</h2>
-                <div className="relative">
-                  <select
-                    value={form.country}
-                    onChange={(e) => setField("country", e.target.value)}
-                    className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  >
-                    <option value="">Select country</option>
-                    {COUNTRIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-2 top-[38px]">
-                    <I.chevron />
-                  </span>
+                <div className="mt-3 grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[12px] font-medium text-gray-700">Country</label>
+                    <SearchableSelect
+                      value={form.country}
+                      onChange={(value) => setField("country", value)}
+                      options={countryOptions}
+                      placeholder="Search and select country..."
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-medium text-gray-700">City</label>
+                    <SearchableSelect
+                      value={form.city}
+                      onChange={(value) => setField("city", value)}
+                      options={cityOptions}
+                      placeholder="Search and select city..."
+                    />
+                  </div>
                 </div>
               </div>
 

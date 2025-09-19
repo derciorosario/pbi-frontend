@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import client from "../api/client";
 import COUNTRIES from "../constants/countries";
+import CITIES from "../constants/cities.json";
 import AudienceTree from "../components/AudienceTree";
 import Header from "../components/Header";
 import { toast } from "../lib/toast";
@@ -488,6 +489,18 @@ export default function CreateServicePage() {
     subcategoryId: "",
     subsubCategoryId: "",
   });
+  
+  // Create country options for SearchableSelect
+  const countryOptions = COUNTRIES.map(country => ({
+    value: country,
+    label: country
+  }));
+  
+  // Create city options for SearchableSelect (limit to reasonable number)
+  const cityOptions = CITIES.slice(0, 1000).map(city => ({
+    value: city.city,
+    label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+  }));
 
   // Industry taxonomy
   const [industryTree, setIndustryTree] = useState([]);
@@ -820,7 +833,7 @@ export default function CreateServicePage() {
                 {[
                   { label: "Consulting", desc: "Professional advice and expertise" },
                   { label: "Freelance Work", desc: "Project-based services" },
-                  { label: "Product/Service", desc: "Physical or digital products" },
+                  { label: "Managed Services", desc: "Ongoing support (IT, HR, etc.)." },
                 ].map((t) => (
                   <button
                     type="button"
@@ -954,39 +967,28 @@ export default function CreateServicePage() {
                 </div>
               </div>
 
-              {form.locationType === "On-site" && (
-                <div className="mt-3 grid md:grid-cols-2 gap-4">
-                  <div className="relative">
-                    <Label required>Country</Label>
-                    <select
-                      value={form.country}
-                      onChange={(e) => setField("country", e.target.value)}
-                      className="mt-1 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                      required
-                    >
-                      <option value="">Select country</option>
-                      {COUNTRIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="pointer-events-none absolute right-2 bottom-3">
-                      <I.chevron />
-                    </span>
-                  </div>
-                  <div>
-                    <Label>City</Label>
-                    <input
-                      type="text"
-                      value={form.city}
-                      onChange={(e) => setField("city", e.target.value)}
-                      placeholder="City"
-                      className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                    />
-                  </div>
+              {/* Country & City */}
+              <div className="mt-3 grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label required>Country</Label>
+                  <SearchableSelect
+                    value={form.country}
+                    onChange={(value) => setField("country", value)}
+                    options={countryOptions}
+                    placeholder="Search and select country..."
+                    required
+                  />
                 </div>
-              )}
+                <div>
+                  <Label>City</Label>
+                  <SearchableSelect
+                    value={form.city}
+                    onChange={(value) => setField("city", value)}
+                    options={cityOptions}
+                    placeholder="Search and select city..."
+                  />
+                </div>
+              </div>
             </section>
 
             {/* Skills & Tags */}

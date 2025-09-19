@@ -11,6 +11,8 @@ import FiltersCard from "../components/FiltersCard";
 import SuggestedMatches from "../components/SuggestedMatches";
 import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
+import NeedCard from "../components/NeedCard";
+import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -424,22 +426,65 @@ export default function ServicesPage() {
                  className={`grid grid-cols-1 ${
                    view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
                  } gap-6`}
-        >
-        {items.map((s) => (
-            <ServiceCard
-            key={s.id}
-            type={view}
-            item={s}
-            matchPercentage={s.matchPercentage}
-            currentUserId={s?.id}
-            onContact={() => alert(`${s.type} - Contact ${s.provider}`)}
-            onConnect={() => console.log(`Connect with ${s.providerUserName}`)}
-            />
-        ))}
-      </div>
-    )
+       >
+       {items.map((item) => {
+         if (item.kind === "service") {
+           return (
+             <ServiceCard
+               key={item.id}
+               type={view}
+               item={item}
+               matchPercentage={item.matchPercentage}
+               currentUserId={item?.id}
+               onContact={() => alert(`${item.type} - Contact ${item.provider}`)}
+               onConnect={() => console.log(`Connect with ${item.providerUserName}`)}
+             />
+           );
+         }
+         if (item.kind === "need") {
+           return (
+             <NeedCard
+               type={view}
+               key={`need-${item.id}`}
+               matchPercentage={item.matchPercentage}
+               need={{
+                 ...item,
+                 categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                 subcategoryName: categories
+                   .find((c) => String(c.id) === String(item.categoryId))
+                   ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+               }}
+             />
+           );
+         }
+         if (item.kind === "moment") {
+           return (
+             <MomentCard
+               type={view}
+               key={`moment-${item.id}`}
+               matchPercentage={item.matchPercentage}
+               moment={{
+                 ...item,
+                 categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                 subcategoryName: categories
+                   .find((c) => String(c.id) === String(item.categoryId))
+                   ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+               }}
+             />
+           );
+         }
+         if (item.kind === "job") {
+           return <JobCard key={`job-${item.id}`} job={item} />;
+         }
+         if (item.kind === "event") {
+           return <EventCard key={`event-${item.id}`} e={item} />;
+         }
+         return null;
+       })}
+     </div>
+   )
 
-    }
+   }
     
     
 
@@ -478,9 +523,10 @@ export default function ServicesPage() {
           </div>
         <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { hide:true, label: "Boost Profile", Icon: Rocket, path: "/settings" },
-            { label: "Post a Service", Icon: PlusCircle, path: "/services/create" },
-        ]} />
+           { label: "Post a Service", Icon: PlusCircle, onClick: () => navigate("/services/create") },
+          { label: "Share Service Experience", Icon: PlusCircle, onClick: () => navigate("/moment/service/create") },
+          { label: "Ask About a Service", Icon: PlusCircle, onClick: () => navigate("/need/service/create") },
+           ]} />
          
           <ProfileCard />
          
@@ -496,14 +542,24 @@ export default function ServicesPage() {
              buttons={filterOptions}
              buttonLabels={categoryIdToNameMap}
              from={from}
+             loading={loadingFeed}
            />
 
            <div className="flex items-center justify-between gap-y-2 flex-wrap">
               <h3 className="font-semibold text-2xl mt-1 hidden">Professional Services</h3>
            
                <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
-      
-            <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab} btnClick={()=>navigate('/services/create')} />
+      <TabsAndAdd 
+        tabs={[]}  
+        items={[
+          { label: "Post a Service", Icon: PlusCircle, onClick: () => navigate("/services/create") },
+          { label: "Share Service Experience", Icon: PlusCircle, onClick: () => navigate("/moment/service/create") },
+          { label: "Ask About a Service", Icon: PlusCircle, onClick: () => navigate("/need/service/create") },
+        ]}
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab}  
+      />
+           
             </div>
             <div>
               
