@@ -11,6 +11,9 @@ import {
   Share2,
   MapPin,
   Clock,
+  Heart,
+  MessageCircle,
+  Flag,
   User as UserIcon,
   Copy as CopyIcon,
 } from "lucide-react";
@@ -57,7 +60,7 @@ export default function MomentCard({
   type = "grid", // "grid" | "list"
   matchPercentage = 20, // show % chip
 }) {
-  const { user } = useAuth();
+  const { user, settings } = useAuth();
   const navigate = useNavigate();
   const data = useData();
 
@@ -199,7 +202,9 @@ export default function MomentCard({
   const containerBase =
     "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
   const containerLayout = isList
-    ? "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch"
+    ? (settings?.contentType === 'text'
+        ? "flex flex-col" // Full width for text mode in list
+        : "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch")
     : "flex flex-col";
 
   /* ----------------------- Like handler ----------------------- */
@@ -343,65 +348,68 @@ export default function MomentCard({
       >
         {/* IMAGE SIDE */}
         {isList ? (
-          <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-            {imageUrl ? (
-              <>
-                <img
-                  src={imageUrl}
-                  alt={moment?.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                {/* audience on IMAGE when there IS image */}
-                {Array.isArray(moment?.audienceCategories) &&
-                  moment.audienceCategories.length > 0 && (
-                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                      {moment.audienceCategories.map((c) => (
-                        <span
-                          key={c.id || c.name}
-                          className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                        >
-                          {c.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-              </>
-            ) : (
-              <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
-                  <img src={LogoGray} className="w-[100px]"/>
+          // Only show image side in list view if not text mode
+          settings?.contentType !== 'text' && (
+            <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
+              {imageUrl ? (
+                <>
+                  <img
+                    src={imageUrl}
+                    alt={moment?.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {/* audience on IMAGE when there IS image */}
+                  {Array.isArray(moment?.audienceCategories) &&
+                    moment.audienceCategories.length > 0 && (
+                      <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                        {moment.audienceCategories.map((c) => (
+                          <span
+                            key={c.id || c.name}
+                            className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
+                          >
+                            {c.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                </>
+              ) : (
+                <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
+                    <img src={LogoGray} className="w-[100px]"/>
+                </div>
+              )}
+
+              {/* Quick actions on image */}
+              <div className="absolute top-3 right-3 flex gap-2">
+                <button
+                  onClick={() => {
+                    if (isOwner) navigate(`/moment/${moment.id}`);
+                    else setMomentDetailsOpen(true);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label={isOwner ? "Edit moment" : "View moment"}
+                >
+                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label="Share moment"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
               </div>
-            )}
-
-            {/* Quick actions on image */}
-            <div className="absolute top-3 right-3 flex gap-2">
-              <button
-                onClick={() => {
-                  if (isOwner) navigate(`/moment/${moment.id}`);
-                  else setMomentDetailsOpen(true);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label={isOwner ? "Edit moment" : "View moment"}
-              >
-                {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShareOpen((s) => !s);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label="Share moment"
-              >
-                <Share2 size={16} className="text-gray-600" />
-              </button>
             </div>
-          </div>
+          )
         ) : (
           // GRID IMAGE
           <div className="relative overflow-hidden">
-            {imageUrl ? (
+            {settings?.contentType === 'text' ? null : imageUrl ? (
               <div className="relative">
                 <img
                   src={imageUrl}
@@ -429,32 +437,34 @@ export default function MomentCard({
               </div>
             )}
 
-            {/* View & Share */}
-            <div className="absolute top-4 right-4 flex gap-2">
-              <button
-                onClick={() => {
-                  if (isOwner) navigate(`/moment/${moment.id}`);
-                  else setMomentDetailsOpen(true);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label={isOwner ? "Edit moment" : "View moment"}
-              >
-                {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShareOpen((s) => !s);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
-                aria-label="Share moment"
-              >
-                <Share2
-                  size={16}
-                  className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200"
-                />
-              </button>
-            </div>
+            {/* View & Share - only show when not text mode */}
+            {settings?.contentType !== 'text' && (
+              <div className="absolute top-4 right-4 flex gap-2">
+                <button
+                  onClick={() => {
+                    if (isOwner) navigate(`/moment/${moment.id}`);
+                    else setMomentDetailsOpen(true);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label={isOwner ? "Edit moment" : "View moment"}
+                >
+                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
+                  aria-label="Share moment"
+                >
+                  <Share2
+                    size={16}
+                    className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200"
+                  />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -463,6 +473,47 @@ export default function MomentCard({
 
         {/* CONTENT SIDE */}
         <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
+          {/* Text mode: Buttons and audience categories at top */}
+          {settings?.contentType === 'text' && (
+            <div className={`${!isList ? 'flex-col gap-y-2':'items-center justify-between gap-2'} flex  mb-3`}>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (isOwner) navigate(`/moment/${moment.id}`);
+                    else setMomentDetailsOpen(true);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label={isOwner ? "Edit moment" : "View moment"}
+                >
+                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label="Share moment"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
+              </div>
+              {Array.isArray(moment?.audienceCategories) &&
+                moment.audienceCategories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {moment.audienceCategories.map((c) => (
+                      <span
+                        key={c.id || c.name}
+                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      >
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+            </div>
+          )}
+
           {/* Title */}
           <h3 className="font-semibold text-lg text-gray-900 truncate mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
             {moment?.title}
@@ -596,6 +647,39 @@ export default function MomentCard({
               )}
             </div>
           )}
+
+          {/* NEW: social row (like / comment / report) hidden for now */}
+          <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600">
+            <button
+              onClick={toggleLike}
+              className="inline-flex items-center gap-1 hover:text-brand-700"
+              title={liked ? "Unlike" : "Like"}
+            >
+              <Heart
+                size={16}
+                className={liked ? "fill-brand-500 text-brand-500" : ""}
+              />
+              <span>{likeCount}</span>
+            </button>
+
+            <button
+              onClick={() => setCommentsDialogOpen(true)}
+              className="inline-flex items-center gap-1 hover:text-brand-700"
+              title="Comments"
+            >
+              <MessageCircle size={16} />
+              <span>{commentCount}</span>
+            </button>
+
+            <button
+              onClick={() => setReportOpen(true)}
+              className="inline-flex items-center gap-1 hover:text-rose-700"
+              title="Report this moment"
+            >
+              <Flag size={16} />
+              <span>Report</span>
+            </button>
+          </div>
 
           {/* Actions */}
           <div

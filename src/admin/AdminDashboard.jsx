@@ -1,177 +1,250 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { toast } from "../lib/toast";
+import { RefreshCcw } from "lucide-react";
 
-/* mini helpers */
-const Stat = ({ title, value, delta, icon }) => (
-  <div className="rounded-xl border border-gray-200 bg-white p-4">
-    <div className="flex items-center justify-between">
-      <div className="text-sm text-gray-500">{title}</div>
-      <div className="h-8 w-8 grid place-items-center rounded-md bg-brand-50 text-brand-600">
-        {icon}
-      </div>
-    </div>
-    <div className="mt-1 text-2xl font-bold">{value}</div>
-    {delta && <div className="text-xs text-emerald-600 mt-1">{delta}</div>}
-  </div>
-);
+// Import dashboard components
+import DashboardStatCard from "../components/ui/DashboardStatCard";
+import ActivityFeed from "../components/ui/ActivityFeed";
+import ContentDistributionChart from "../components/ui/ContentDistributionChart";
+import UserGrowthChart from "../components/ui/UserGrowthChart";
+import QuickActions from "../components/ui/QuickActions";
 
-const LineChart = () => (
-  <svg viewBox="0 0 400 160" className="w-full h-40">
-    <polyline
-      className="fill-none stroke-brand-500"
-      strokeWidth="3"
-      points="10,140 60,110 110,100 160,70 210,55 260,40 310,25 360,15"
-    />
-    <line x1="10" y1="140" x2="380" y2="140" className="stroke-gray-200" />
-  </svg>
-);
-
-const Pie = () => (
-  <svg viewBox="0 0 32 32" className="w-36 h-36">
-    <circle r="16" cx="16" cy="16" className="fill-gray-100" />
-    <path d="M16 16 L16 0 A16 16 0 0 1 30 22 Z" className="fill-brand-500" />
-    <path d="M16 16 L30 22 A16 16 0 0 1 6 28 Z" className="fill-brand-700" />
-    <path d="M16 16 L6 28 A16 16 0 0 1 2 10 Z" className="fill-amber-500" />
-    <path d="M16 16 L2 10 A16 16 0 0 1 16 0 Z" className="fill-emerald-500" />
-  </svg>
-);
+// Import API functions
+import {
+  getDashboardStats,
+  getRecentActivity,
+  getUserGrowthData
+} from "../api/admin";
 
 export default function AdminDashboard() {
+  // State for dashboard data
+  const [dashboardData, setDashboardData] = useState({
+    users: { total: 0, active: 0, suspended: 0, newToday: 0, growth: { daily: 0, weekly: 0, monthly: 0 } },
+    connections: { total: 0, pendingRequests: 0 },
+    content: { total: 0, distribution: { jobs: 0, events: 0, services: 0, products: 0, tourism: 0, funding: 0, moments: 0, needs: 0 } },
+    moderation: { reported: 0, underReview: 0, approved: 0, removed: 0, suspended: 0, today: { approved: 0, removed: 0 } },
+    engagement: { likes: 0, comments: 0, reports: 0 },
+    communication: { messages: 0, conversations: 0, meetingRequests: 0 },
+    notifications: { total: 0 },
+    organizations: { companies: 0, pendingJoinRequests: 0 },
+    demographics: { identities: [], goals: [] }
+  });
+  const [userGrowthData, setUserGrowthData] = useState([]);
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Load dashboard data
+  const loadDashboardData = async (showRefreshIndicator = false) => {
+    try {
+      if (showRefreshIndicator) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      // Load all dashboard data in parallel
+      const [dashboardStats, activities, growthData] = await Promise.all([
+        getDashboardStats(),
+        getRecentActivity(10),
+        getUserGrowthData(30)
+      ]);
+
+      setDashboardData(dashboardStats.data || dashboardStats);
+      setRecentActivities(activities.data?.activities || activities.activities || []);
+      setUserGrowthData(growthData.data?.growth || growthData.growth || []);
+
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+      toast.error("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  // Handle manual refresh
+  const handleRefresh = () => {
+    loadDashboardData(true);
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-xl md:text-2xl font-bold">Dashboard Overview</h1>
-
-      {/* Stats */}
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat
-          title="Total Users"
-          value="12,847"
-          delta="↑ 12% from last month"
-          icon={<span>👥</span>}
-        />
-        <Stat
-          title="Active Connections"
-          value="8,234"
-          delta="↑ 8% from last month"
-          icon={<span>🔗</span>}
-        />
-        <Stat
-          title="Disabled users"
-          value="2"
-          icon={<span>
-             {/*** add icon */}
-          </span>}
-        />
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500">Pending Reports</div>
-            <div className="h-8 w-8 grid place-items-center rounded-md bg-red-50 text-red-500">
-              🚩
-            </div>
-          </div>
-          <div className="mt-1 text-2xl font-bold">23</div>
-          <div className="text-xs text-red-600 mt-1">Requires attention</div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold">Dashboard Overview</h1>
+          <p className="text-sm text-gray-500">Monitor platform activity and manage content</p>
         </div>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+        >
+          <RefreshCcw size={16} className={refreshing ? 'animate-spin' : ''} />
+          Refresh
+        </button>
       </div>
 
-      {/* Charts */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <div className="font-semibold">User Growth</div>
-          <LineChart />
-        </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
-          <div className="font-semibold">User Identities  Distribution</div>
-          <div className="flex items-center gap-6 mt-2">
-            <Pie />
-            <ul className="text-sm space-y-1">
-              <li>
-                <span className="inline-block h-3 w-3 rounded-sm mr-2 bg-brand-500" />
-                Entrepreneur (Startups)
-              </li>
-              <li>
-                <span className="inline-block h-3 w-3 rounded-sm mr-2 bg-brand-700" />
-                Established Entrepreneurs / Businesses
-              </li>
-              <li>
-                <span className="inline-block h-3 w-3 rounded-sm mr-2 bg-amber-500" />
-                Social Entrepreneurs
-              </li>
-              <li>
-                <span className="inline-block h-3 w-3 rounded-sm mr-2 bg-emerald-500" />
-                Professional
-              </li>
+      {/* User Statistics */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <DashboardStatCard
+          title="Total Users"
+          value={(dashboardData.users?.total || 0).toLocaleString()}
+          delta={`+${dashboardData.users?.growth?.monthly || 0}% from last month`}
+          icon="👥"
+          tone="brand"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Active Users"
+          value={(dashboardData.users?.active || 0).toLocaleString()}
+          delta={`+${dashboardData.users?.growth?.weekly || 0}% from last week`}
+          icon="✅"
+          tone="green"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Suspended Users"
+          value={(dashboardData.users?.suspended || 0).toLocaleString()}
+          icon="🚫"
+          tone="rose"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Pending Reports"
+          value={(dashboardData.moderation?.reported || 0).toLocaleString()}
+          delta="Requires attention"
+          icon="🚩"
+          tone="rose"
+          loading={loading}
+        />
+      </div>
 
-                <li>
-                <span className="inline-block h-3 w-3 rounded-sm mr-2 bg-emerald-500" />
-                Freelancers
-              </li>
+      {/* Content Statistics */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <DashboardStatCard
+          title="Total Content"
+          value={(dashboardData.content?.total || 0).toLocaleString()}
+          icon="📄"
+          tone="blue"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Jobs Posted"
+          value={(dashboardData.content.distribution?.jobs || 0).toLocaleString()}
+          icon="💼"
+          tone="blue"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Events Created"
+          value={(dashboardData.content.distribution?.events || 0).toLocaleString()}
+          icon="📅"
+          tone="green"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Services Offered"
+          value={(dashboardData.content.distribution?.services || 0).toLocaleString()}
+          icon="🛠️"
+          tone="purple"
+          loading={loading}
+        />
+      </div>
 
-              <li>
-                <span className="inline-block h-3 w-3 rounded-sm mr-2 bg-emerald-500" />
-                Students
-              </li>
-
-              
-              <li>
-                <span className="inline-block h-3 w-3 rounded-sm mr-2 bg-emerald-500" />
-                Government Officials
-              </li>
-
-                <li>
-                <span className="inline-block h-3 w-3 rounded-sm mr-2 bg-emerald-500" />
-                Investor
-              </li>
-              
-              <li>
-                <span className="inline-block h-3 w-3 rounded-sm mr-2 bg-gray-300" />
-                Others
-              </li>
-            </ul>
-          </div>
-        </div>
+      {/* Charts and Activity */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <UserGrowthChart
+          data={userGrowthData}
+          loading={loading}
+          title="User Growth (30 Days)"
+        />
+        <ContentDistributionChart
+          data={dashboardData.content.distribution}
+          loading={loading}
+          title="Content Distribution"
+        />
       </div>
 
       {/* Recent Activity */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4">
-        <div className="font-semibold">Recent Activity</div>
-        <ul className="divide-y divide-gray-100 mt-2">
-          {[
-            {
-              t: "New user registration",
-              s: "Sarah Johnson joined as an Entrepreneur",
-              time: "2 minutes ago",
-              icon: "🧑‍💼",
-            },
-            {
-              t: "Content reported",
-              s: "Post flagged for inappropriate content",
-              time: "15 minutes ago",
-              icon: "🚩",
-            },
-           
-          ].map((a, i) => (
-            <li key={i} className="py-3 flex items-center">
-              <span className="mr-3 text-lg">{a.icon}</span>
-              <div className="flex-1">
-                <div className="text-sm font-medium">{a.t}</div>
-                <div className="text-xs text-gray-500">{a.s}</div>
-              </div>
-              <div className="text-xs text-gray-500">{a.time}</div>
-            </li>
-          ))}
-        </ul>
+      <ActivityFeed
+        activities={recentActivities}
+        loading={loading}
+        title="Recent Activity"
+      />
+
+      {/* Moderation Statistics */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <DashboardStatCard
+          title="Under Review"
+          value={(dashboardData.moderation?.underReview || 0).toLocaleString()}
+          icon="⏳"
+          tone="amber"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Approved Today"
+          value={(dashboardData.moderation?.today?.approved || 0).toLocaleString()}
+          icon="✅"
+          tone="green"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Removed Today"
+          value={(dashboardData.moderation?.today?.removed || 0).toLocaleString()}
+          icon="🗑️"
+          tone="rose"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Total Moderated"
+          value={((dashboardData.moderation?.approved || 0) + (dashboardData.moderation?.removed || 0)).toLocaleString()}
+          icon="⚖️"
+          tone="gray"
+          loading={loading}
+        />
+      </div>
+
+      {/* Additional Statistics */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <DashboardStatCard
+          title="Total Connections"
+          value={(dashboardData.connections?.total || 0).toLocaleString()}
+          icon="🤝"
+          tone="blue"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Pending Requests"
+          value={(dashboardData.connections?.pendingRequests || 0).toLocaleString()}
+          icon="⏳"
+          tone="amber"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Total Likes"
+          value={(dashboardData.engagement?.likes || 0).toLocaleString()}
+          icon="❤️"
+          tone="pink"
+          loading={loading}
+        />
+        <DashboardStatCard
+          title="Total Comments"
+          value={(dashboardData.engagement?.comments || 0).toLocaleString()}
+          icon="💬"
+          tone="blue"
+          loading={loading}
+        />
       </div>
 
       {/* Quick Actions */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <button className="rounded-xl px-4 py-6 text-white font-semibold bg-brand-500 hover:bg-brand-600">
-          ➕ Send Notification
-        </button>
-        <button className="rounded-xl px-4 py-6 text-white font-semibold bg-blue-600">
-          ⬇️ Export Data
-        </button>
-       
-      </div>
+      <QuickActions loading={loading} />
     </div>
   );
 }

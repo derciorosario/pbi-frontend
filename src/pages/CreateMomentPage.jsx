@@ -402,10 +402,27 @@ export default function CreateMomentPage() {
   }));
 
   // Create city options for SearchableSelect (limit to reasonable number)
-  const cityOptions = CITIES.slice(0, 1000).map(city => ({
+  const allCityOptions = CITIES.slice(0, 10000).map(city => ({
     value: city.city,
-    label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+    label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
+    country: city.country
   }));
+
+  // Support single or multi-country (comma-separated) selection
+  const selectedCountries = useMemo(() => {
+    if (!form.country) return [];
+    return String(form.country)
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  }, [form.country]);
+
+  // Filtered cities for dropdown based on selected countries
+  const cityOptions = useMemo(() => {
+    if (selectedCountries.length === 0) return allCityOptions;
+    const setLC = new Set(selectedCountries);
+    return allCityOptions.filter((c) => setLC.has(c.country.toLowerCase()));
+  }, [selectedCountries, allCityOptions]);
 
   // AudienceTree data + selections (Sets, like Events page)
   const [audTree, setAudTree] = useState([]);
@@ -898,11 +915,13 @@ export default function CreateMomentPage() {
                   onChange={(value) => setField("country", value)}
                   options={countryOptions}
                   placeholder="Search and select country..."
+                  key={form.country} // Force remount when country changes to reset internal state
                 />
               </div>
               <div>
                 <label className="text-[12px] font-medium text-gray-700">City</label>
                 <SearchableSelect
+                  key={form.country} // Force remount when country changes to reset internal state
                   value={form.city}
                   onChange={(value) => setField("city", value)}
                   options={cityOptions}

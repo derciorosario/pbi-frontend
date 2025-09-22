@@ -23,6 +23,7 @@ import { useData } from "../contexts/DataContext";
 import PageTabs from "../components/PageTabs";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import TopFilterButtons from "../components/TopFilterButtons";
+import { useAuth } from "../contexts/AuthContext";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -38,6 +39,7 @@ export default function EventsPage() {
   const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
   const navigate=useNavigate()
   const data=useData()
+  const {user} = useAuth()
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -508,9 +510,9 @@ export default function EventsPage() {
                       </div>
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil,onClick: () => navigate("profile") },
-            { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
-            { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create") },
-            { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create") },
+            { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
+            { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company"},
+            { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company"},
           ]} />
 
           <ProfileCard />
@@ -537,9 +539,9 @@ export default function EventsPage() {
             <TabsAndAdd tabs={[]}
             
             items={[
-              { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
-              { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create") },
-              { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create") },
+              { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
+              { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
+              { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
             ]}
             
 

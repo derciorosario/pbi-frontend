@@ -203,20 +203,22 @@ export default function HomePage() {
 
   const data=useData()
 
-  const {user}=useAuth()
+  const {user,settings}=useAuth()
 
- 
+
+  
 
 
   return (
     <DefaultLayout>
      <Header page={'feed'}/>
 
-       {user && <FeedPage/>}
+       {settings?.hideMainFeed && <></>}
+
+       {(user && !settings?.hideMainFeed) && <FeedPage/>}
 
       {/* Enhanced Landing Page - Only show when user is not logged in */}
       <section className={`relative overflow-visible ${user?.id ? "hidden" : ""}`}>
-
 
          {/* Hero Section */}
          <div className="relative bg-brand-600 overflow-hidden">
@@ -237,15 +239,14 @@ export default function HomePage() {
                  </div>
 
                  <h1 className="text-6xl md:text-7xl font-black leading-[0.9] mb-8">
-                   <span className="block">Connect</span>
-                   <span className="block text-accent-100">
-                     with Your Matches
-                   </span>
-                  
+                   <span className="block"><label className="text-accent-100">Connect. </label> Collaborate. Grow.</span>
+                 
                  </h1>
 
                  <p className="text-xl text-white/90 leading-relaxed mb-10 max-w-2xl">
-                   <strong className="text-white">54Links</strong> is a comprehensive business networking platform connecting entrepreneurs, professionals, and businesses. Discover opportunities, build partnerships, and accelerate your growth.
+                   <strong className="text-white">54Links</strong> is where entrepreneurs, professionals, and businesses meet to build real connections, unlock new opportunities, and grow together.
+Whether you're a startup founder, freelancer, or corporate leader, 54Links gives you the network you need to succeed.
+
                  </p>
 
                  <div className="flex flex-col sm:flex-row gap-4 mb-12">
@@ -253,13 +254,13 @@ export default function HomePage() {
                      onClick={() => setLoginDialogOpen(true)}
                      className="px-10 py-4 bg-white text-brand-600 font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-lg"
                    >
-                     Start Building Connections
+                    Join the Network
                    </button>
                    <button
                      onClick={() => navigate("/people")}
                      className="px-10 py-4 border-2 border-white/60 text-white font-semibold rounded-xl hover:bg-white/10 hover:border-white transition-all duration-200 text-lg"
                    >
-                     Explore Network
+                     Explore 
                    </button>
                  </div>
 
@@ -319,124 +320,140 @@ export default function HomePage() {
 
         {/* How It Works Section */}
         <div id="features" className="py-24 bg-white">
+
            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
              <div className="text-center mb-20">
                <h2 className="text-5xl font-bold text-gray-900 mb-6">
                  How <span className="text-brand-600">54Links</span> Works
                </h2>
                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                 Join our growing business network in just three simple steps and unlock unlimited opportunities
+                Join our growing business network in just 3 simple steps and start unlocking unlimited opportunities.
                </p>
              </div>
 
-             <div className="grid md:grid-cols-3 gap-12">
-               <div className="text-center group">
-                 <div className="relative mb-8">
-                   <div className="w-24 h-24 bg-brand-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-shadow duration-300">
-                     <span className="text-3xl font-bold text-white">1</span>
-                   </div>
-                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent-500 rounded-full flex items-center justify-center">
-                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                     </svg>
-                   </div>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Create Your Profile</h3>
-                 <p className="text-gray-600 text-lg leading-relaxed">
-                   Set up your professional profile showcasing your skills, experience, and business interests.
-                   Our smart system learns what you're looking for and connects you with relevant opportunities.
-                 </p>
-               </div>
+           
+           <div className="grid md:grid-cols-3 gap-12">
+  {/* Step 1 */}
+  <div className="text-center group">
+    <div className="relative mb-8">
+      <div className="w-24 h-24 bg-brand-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+        <span className="text-3xl font-bold text-white">1</span>
+      </div>
+      <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent-500 rounded-full flex items-center justify-center">
+        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      </div>
+    </div>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Sign Up & Create Your Profile</h3>
+    <p className="text-gray-600 text-lg leading-relaxed">
+      Tell us who you are, what you do, and what you're looking for. Whether you're a founder, freelancer, or job seeker — your journey starts here.
+    </p>
+  </div>
 
-               <div className="text-center group">
-                 <div className="relative mb-8">
-                   <div className="w-24 h-24 bg-accent-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-shadow duration-300">
-                     <span className="text-3xl font-bold text-white">2</span>
-                   </div>
-                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-brand-500 rounded-full flex items-center justify-center">
-                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                       <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
-                     </svg>
-                   </div>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Connect & Network</h3>
-                 <p className="text-gray-600 text-lg leading-relaxed">
-                   Discover and connect with professionals, businesses, and entrepreneurs.
-                   Attend virtual events, join communities, and build meaningful business relationships.
-                 </p>
-               </div>
+  {/* Step 2 */}
+  <div className="text-center group">
+    <div className="relative mb-8">
+      <div className="w-24 h-24 bg-accent-500 rounded-2xl flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+        <span className="text-3xl font-bold text-white">2</span>
+      </div>
+      <div className="absolute -top-2 -right-2 w-8 h-8 bg-brand-500 rounded-full flex items-center justify-center">
+        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
+        </svg>
+      </div>
+    </div>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Matched Instantly</h3>
+    <p className="text-gray-600 text-lg leading-relaxed">
+      Our smart AI connects you with the right people, jobs, and businesses based on your profile and interests.
+    </p>
+  </div>
 
-               <div className="text-center group">
-                 <div className="relative mb-8">
-                   <div className="w-24 h-24 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-shadow duration-300">
-                     <span className="text-3xl font-bold text-white">3</span>
-                   </div>
-                   <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent-600 rounded-full flex items-center justify-center">
-                     <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                     </svg>
-                   </div>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Grow & Succeed</h3>
-                 <p className="text-gray-600 text-lg leading-relaxed">
-                   Access exclusive opportunities, secure partnerships, and accelerate your business growth.
-                   Join our growing community of successful entrepreneurs who have transformed their businesses through 54Links.
-                 </p>
-               </div>
-             </div>
+  {/* Step 3 */}
+  <div className="text-center group">
+    <div className="relative mb-8">
+      <div className="w-24 h-24 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-shadow duration-300">
+        <span className="text-3xl font-bold text-white">3</span>
+      </div>
+      <div className="absolute -top-2 -right-2 w-8 h-8 bg-accent-600 rounded-full flex items-center justify-center">
+        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      </div>
+    </div>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Connect & Grow</h3>
+    <p className="text-gray-600 text-lg leading-relaxed">
+      Chat, collaborate, buy, sell, hire, or partner. 54Links helps you build meaningful relationships that drive real results.
+    </p>
+  </div>
+</div>
+
+
            </div>
          </div>
 
         {/* Platform Showcase Section */}
-        <div className="py-20 bg-gray-100">
-           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-             <div className="text-center mb-12">
-               <h2 className="text-5xl font-bold text-gray-900 mb-6">
-                 See <span className="text-brand-600">54Links</span> in Action
-               </h2>
-               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                 Our intuitive platform makes it easy to discover opportunities, connect with professionals,
-                 and build meaningful business relationships
-               </p>
-             </div>
-             
-             <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 mx-auto max-w-5xl">
-               <img
-                 src={Demo}
-                 alt="54Links Platform Interface"
-                 className="w-full h-auto object-cover"
-               />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
-               <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                 <div className="flex items-center gap-4 mb-4">
-                   <div className="w-12 h-12 bg-brand-600 rounded-full flex items-center justify-center">
-                     <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                       <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
-                     </svg>
-                   </div>
-                   <div>
-                     <div className="text-xl font-bold">Powerful Networking Tools</div>
-                     <div className="text-white/80 max-md:hidden">Connect with the right people at the right time</div>
-                   </div>
-                 </div>
-                 <div className="grid grid-cols-3 gap-4 max-md:hidden">
-                   <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
-                     <div className="font-semibold">Smart Matching</div>
-                     <div className="text-sm text-white/80">AI-powered connections</div>
-                   </div>
-                   <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
-                     <div className="font-semibold">Business Marketplace</div>
-                     <div className="text-sm text-white/80">Products & Services</div>
-                   </div>
-                   <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
-                     <div className="font-semibold">Business Opportunities</div>
-                     <div className="text-sm text-white/80">Valuable connections</div>
-                   </div>
-                 </div>
-               </div>
-             </div>
-           </div>
-         </div>
+   
+   <div className="py-20 bg-gray-100">
+  <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    {/* Heading */}
+    <div className="text-center mb-12">
+      <h2 className="text-5xl font-bold text-gray-900 mb-6">
+        See <span className="text-brand-600">54Links</span> in Action
+      </h2>
+      <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+        Experience how easy it is to find opportunities, connect with professionals,
+        and grow your network — all in one powerful platform.
+      </p>
+    </div>
+
+    {/* Demo Preview */}
+    <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200 mx-auto max-w-5xl">
+      <img
+        src={Demo}
+        alt="54Links Platform Interface"
+        className="w-full h-auto object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+
+      {/* Overlay Content */}
+      <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-12 h-12 bg-brand-600 rounded-full flex items-center justify-center">
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
+            </svg>
+          </div>
+          <div>
+            <div className="text-xl font-bold">Build Meaningful Business Connections</div>
+            <div className="text-white/80 max-md:hidden">
+              Connect with professionals, entrepreneurs, and businesses — all in one smart, secure platform.
+            </div>
+          </div>
+        </div>
+
+        {/* Feature Grid */}
+        <div className="grid grid-cols-3 gap-4 max-md:hidden">
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
+            <div className="font-semibold">Discover Opportunities</div>
+            <div className="text-sm text-white/80">Business & Career Growth</div>
+          </div>
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
+            <div className="font-semibold">Connect Instantly</div>
+            <div className="text-sm text-white/80">Like-minded Professionals</div>
+          </div>
+          <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
+            <div className="font-semibold">Smart & Effective</div>
+            <div className="text-sm text-white/80">Simple. Secure. Powerful.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 
         {/* Platform Features Section */}
         <div className="py-24 bg-gray-50">
@@ -446,196 +463,231 @@ export default function HomePage() {
                  Everything You Need to <span className="text-brand-600">Succeed</span>
                </h2>
                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                 From job opportunities to business partnerships, our comprehensive platform provides all the tools
-                 and connections you need to thrive in today's global economy.
+               From career growth to business partnerships, 54Links gives you the tools, connections, and community to thrive in today’s global economy.
                </p>
              </div>
 
-             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-               {/* People Network */}
-               <div onClick={() => navigate("/people")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-brand-200 cursor-pointer">
-                 <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
-                   </svg>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart People Network</h3>
-                 <p className="text-gray-600 mb-6 leading-relaxed">
-                   Connect with professionals, entrepreneurs, and business leaders. Our AI-powered matching algorithm finds the most relevant connections based on your interests, location, and business goals.
-                 </p>
-                 <button
-                   onClick={() => navigate("/people")}
-                   className="flex items-center text-brand-600 font-semibold"
-                 >
-                   <span>Explore Network</span>
-                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
-                   </svg>
-                 </button>
-               </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+  {/* People Network */}
+  <div
+    onClick={() => navigate("/people")}
+    className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-brand-200 cursor-pointer"
+  >
+    <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
+      </svg>
+    </div>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart People Network</h3>
+    <p className="text-gray-600 mb-6 leading-relaxed">
+      Connect with the right people, effortlessly. Our AI-powered matching algorithm links you with professionals, entrepreneurs, and business leaders based on your goals, interests, and location.
+    </p>
+    <button
+      onClick={() => navigate("/people")}
+      className="flex items-center text-brand-600 font-semibold"
+    >
+      <span>Explore Network</span>
+      <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+      </svg>
+    </button>
+  </div>
 
-               {/* Job Opportunities */}
-               <div onClick={() => navigate("/jobs")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-accent-200 cursor-pointer">
-                 <div className="w-16 h-16 bg-accent-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/>
-                   </svg>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Premium Job Market</h3>
-                 <p className="text-gray-600 mb-6 leading-relaxed">
-                   Access exclusive job opportunities from top companies. Whether you're seeking your dream career or looking to hire talented professionals, find the perfect match with our advanced filtering system.
-                 </p>
-                 <button
-                   onClick={() => navigate("/jobs")}
-                   className="flex items-center text-accent-600 font-semibold"
-                 >
-                   <span>Find Opportunities</span>
-                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
-                   </svg>
-                 </button>
-               </div>
+  {/* Job Opportunities */}
+  <div
+    onClick={() => navigate("/jobs")}
+    className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-accent-200 cursor-pointer"
+  >
+    <div className="w-16 h-16 bg-accent-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/>
+      </svg>
+    </div>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Premium Job Market</h3>
+    <p className="text-gray-600 mb-6 leading-relaxed">
+      Find your next opportunity or the talent you need. Discover exclusive job openings or hire top professionals with smart filters that make matching easy.
+    </p>
+    <button
+      onClick={() => navigate("/jobs")}
+      className="flex items-center text-accent-600 font-semibold"
+    >
+      <span>Find Opportunities</span>
+      <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+      </svg>
+    </button>
+  </div>
 
-               {/* Business Marketplace */}
-               <div onClick={() => navigate("/products")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-brand-200 cursor-pointer">
-                 <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M7 4V2C7 1.45 7.45 1 8 1h8c.55 0 1 .45 1 1v2h4c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H3c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h4zM9 2v2h6V2H9z"/>
-                   </svg>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Business Marketplace</h3>
-                 <p className="text-gray-600 mb-6 leading-relaxed">
-                   Buy, sell, and discover products and services from verified businesses. Support entrepreneurship, find suppliers, and grow your business network with our secure marketplace.
-                 </p>
-                 <button
-                   onClick={() => navigate("/products")}
-                   className="flex items-center text-brand-600 font-semibold"
-                 >
-                   <span>Explore Marketplace</span>
-                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
-                   </svg>
-                 </button>
-               </div>
+  {/* Business Marketplace */}
+  <div
+    onClick={() => navigate("/products")}
+    className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-brand-200 cursor-pointer"
+  >
+    <div className="w-16 h-16 bg-brand-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M7 4V2C7 1.45 7.45 1 8 1h8c.55 0 1 .45 1 1v2h4c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H3c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h4zM9 2v2h6V2H9z"/>
+      </svg>
+    </div>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Business Marketplace</h3>
+    <p className="text-gray-600 mb-6 leading-relaxed">
+      Buy, sell, and grow with confidence. Trade products and services with verified businesses. Support entrepreneurs, discover suppliers, and scale your network securely.
+    </p>
+    <button
+      onClick={() => navigate("/products")}
+      className="flex items-center text-brand-600 font-semibold"
+    >
+      <span>Explore Marketplace</span>
+      <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+      </svg>
+    </button>
+  </div>
 
-               {/* Events & Networking */}
-               <div onClick={() => navigate("/events")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-accent-200 cursor-pointer">
-                 <div className="w-16 h-16 bg-accent-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 6v2h14V6H5z"/>
-                   </svg>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Events & Communities</h3>
-                 <p className="text-gray-600 mb-6 leading-relaxed">
-                   Attend exclusive business events, conferences, and networking sessions. Join industry-specific communities and connect with leaders shaping the global business landscape.
-                 </p>
-                 <button
-                   onClick={() => navigate("/events")}
-                   className="flex items-center text-accent-600 font-semibold"
-                 >
-                   <span>Join Events</span>
-                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
-                   </svg>
-                 </button>
-               </div>
+  {/* Events & Communities */}
+  <div
+    onClick={() => navigate("/events")}
+    className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-accent-200 cursor-pointer"
+  >
+    <div className="w-16 h-16 bg-accent-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 6v2h14V6H5z"/>
+      </svg>
+    </div>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Events & Communities</h3>
+    <p className="text-gray-600 mb-6 leading-relaxed">
+      Learn. Network. Lead. Join exclusive events, conferences, and industry-specific communities. Engage with global leaders and stay ahead of the curve.
+    </p>
+    <button
+      onClick={() => navigate("/events")}
+      className="flex items-center text-accent-600 font-semibold"
+    >
+      <span>Join Events</span>
+      <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+      </svg>
+    </button>
+  </div>
 
-               {/* Tourism & Culture */}
-               <div onClick={() => navigate("/tourism")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-brand-200 cursor-pointer">
-                 <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                   </svg>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Tourism & Culture</h3>
-                 <p className="text-gray-600 mb-6 leading-relaxed">
-                   Discover cultural heritage and tourism opportunities. Connect with tourism businesses, share experiences, and promote diverse destinations globally.
-                 </p>
-                 <button
-                   onClick={() => navigate("/tourism")}
-                   className="flex items-center text-brand-600 font-semibold"
-                 >
-                   <span>Explore the world</span>
-                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
-                   </svg>
-                 </button>
-               </div>
+  {/* Tourism & Culture */}
+  <div
+    onClick={() => navigate("/tourism")}
+    className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-brand-200 cursor-pointer"
+  >
+    <div className="w-16 h-16 bg-brand-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+      </svg>
+    </div>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Tourism & Culture</h3>
+    <p className="text-gray-600 mb-6 leading-relaxed">
+      Explore the world through business. Connect with tourism entrepreneurs, promote destinations, and celebrate cultural heritage across borders.
+    </p>
+    <button
+      onClick={() => navigate("/tourism")}
+      className="flex items-center text-brand-600 font-semibold"
+    >
+      <span>Explore the World</span>
+      <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+      </svg>
+    </button>
+  </div>
 
-               {/* Funding & Investment */}
-               <div onClick={() => navigate("/funding")} className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-accent-200 cursor-pointer">
-                 <div className="w-16 h-16 bg-accent-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                   <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                   </svg>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Funding & Investment</h3>
-                 <p className="text-gray-600 mb-6 leading-relaxed">
-                   Access crowdfunding opportunities, connect with investors, and secure funding for your business ventures. Join the growing startup ecosystem and investment community.
-                 </p>
-                 <button
-                   onClick={() => navigate("/funding")}
-                   className="flex items-center text-accent-600 font-semibold"
-                 >
-                   <span>Get Funded</span>
-                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
-                   </svg>
-                 </button>
-               </div>
-             </div>
+  {/* Funding & Investment */}
+  <div
+    onClick={() => navigate("/funding")}
+    className="group bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-accent-200 cursor-pointer"
+  >
+    <div className="w-16 h-16 bg-accent-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+    </div>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Funding & Investment</h3>
+    <p className="text-gray-600 mb-6 leading-relaxed">
+      Fuel your ideas with funding. Access crowdfunding, connect with investors, and join a vibrant startup ecosystem.
+    </p>
+    <button
+      onClick={() => navigate("/funding")}
+      className="flex items-center text-accent-600 font-semibold"
+    >
+      <span>Get Funded</span>
+      <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+      </svg>
+    </button>
+  </div>
+          </div>
+
+
            </div>
          </div>
 
-        {/* Platform Benefits Section */}
-        <div id="benefits" className="py-24 bg-white">
-           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-             <div className="text-center mb-20">
-               <h2 className="text-5xl font-bold text-gray-900 mb-6">
-                 Why Choose <span className="text-brand-600">54Links</span>
-               </h2>
-               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                 Join a platform designed to help you build meaningful business connections and accelerate your growth
-               </p>
-             </div>
+              {/* Platform Benefits Section */}
+              <div id="benefits" className="py-24 bg-white">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                  <div className="text-center mb-20">
+                    <h2 className="text-5xl font-bold text-gray-900 mb-6">
+                      Why Choose <span className="text-brand-600">54Links</span>
+                    </h2>
+                    <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                      Join a platform designed to help you build meaningful business connections and accelerate your growth
+                    </p>
+                  </div>
 
-             <div className="grid md:grid-cols-3 gap-8">
-               <div onClick={() => navigate("/people")} className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform">
-                 <div className="w-20 h-20 bg-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                   <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                   </svg>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Verified Network</h3>
-                 <p className="text-gray-600 leading-relaxed">
-                   Every member is verified, ensuring you connect with genuine professionals and businesses you can trust.
-                 </p>
-               </div>
+                
+                <div className="grid md:grid-cols-3 gap-8">
+        {/* Verified Network */}
+        <div
+          onClick={() => navigate("/people")}
+          className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform"
+        >
+          <div className="w-20 h-20 bg-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Verified Network</h3>
+          <p className="text-gray-600 leading-relaxed">
+            Every member is verified, ensuring you connect with genuine professionals and businesses you can trust.
+          </p>
+        </div>
 
-               <div onClick={() => navigate("/people")} className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform">
-                 <div className="w-20 h-20 bg-accent-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                   <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
-                   </svg>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart Matching</h3>
-                 <p className="text-gray-600 leading-relaxed">
-                   Our AI-powered algorithm analyzes your interests, goals, and location to find the most relevant connections.
-                 </p>
-               </div>
+        {/* Smart Matching */}
+        <div
+          onClick={() => navigate("/people")}
+          className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform"
+        >
+          <div className="w-20 h-20 bg-accent-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart Matching</h3>
+          <p className="text-gray-600 leading-relaxed">
+            Our intelligent algorithm connects you with the most relevant people and opportunities.
+          </p>
+        </div>
 
-               <div onClick={() => navigate("/privacy")} className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform">
-                 <div className="w-20 h-20 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                   <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                   </svg>
-                 </div>
-                 <h3 className="text-2xl font-bold text-gray-900 mb-4">Secure & Private</h3>
-                 <p className="text-gray-600 leading-relaxed">
-                   Your data is protected with enterprise-grade security. Control who sees your information and how you connect.
-                 </p>
-               </div>
-             </div>
+        {/* Secure & Private */}
+        <div
+          onClick={() => navigate("/privacy")}
+          className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform"
+        >
+          <div className="w-20 h-20 bg-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Secure & Private</h3>
+          <p className="text-gray-600 leading-relaxed">
+            Your data is protected with enterprise-grade security. You control your visibility and connections.
+          </p>
+        </div>
+      </div>
+
+
            </div>
          </div>
 
@@ -647,7 +699,7 @@ export default function HomePage() {
                  Join Our Growing Business Community
                </h2>
                <p className="text-xl text-white/90 max-w-3xl mx-auto">
-                 Connect with entrepreneurs, professionals, and businesses from around the world
+                54Links is where ideas grow, partnerships form, and businesses scale.
                </p>
              </div>
 
@@ -659,18 +711,9 @@ export default function HomePage() {
                    </svg>
                  </div>
                  <div className="text-white font-semibold mb-2">Professional Network</div>
-                 <div className="text-white/80 text-sm">Connect with verified professionals</div>
+                 <div className="text-white/80 text-sm">Connect with verified professionals around the world.</div>
                </div>
-               <div onClick={() => navigate("/people")} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/20 transition-colors">
-                 <div className="w-12 h-12 bg-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                   </svg>
-                 </div>
-                 <div className="text-white font-semibold mb-2">Smart Matching</div>
-                 <div className="text-white/80 text-sm">AI-powered connection algorithm</div>
-               </div>
-               <div onClick={() => navigate("/events")} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/20 transition-colors">
+            <div onClick={() => navigate("/events")} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/20 transition-colors">
                  <div className="w-12 h-12 bg-accent-700 rounded-full flex items-center justify-center mx-auto mb-4">
                    <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                      <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 6v2h14V6H5z"/>
@@ -679,6 +722,16 @@ export default function HomePage() {
                  <div className="text-white font-semibold mb-2">Business Events</div>
                  <div className="text-white/80 text-sm">Exclusive networking opportunities</div>
                </div>
+               <div onClick={() => navigate("/people")} className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 cursor-pointer hover:bg-white/20 transition-colors">
+                 <div className="w-12 h-12 bg-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                   <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                   </svg>
+                 </div>
+                 <div className="text-white font-semibold mb-2">Smart Matching</div>
+                 <div className="text-white/80 text-sm">Get connected to the right people — automatically.</div>
+               </div>
+             
              </div>
            </div>
          </div>
@@ -729,7 +782,7 @@ export default function HomePage() {
                   Ready to Get Started?
                </h2>
                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                 Create your account or sign in to start building meaningful business connections
+                Create your account and start building connections that matter.
                </p>
              </div>
 
@@ -893,7 +946,7 @@ export default function HomePage() {
                          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                            <path d="M3 21V3h8v6h10v12H3Z" />
                          </svg>
-                         Company
+                         Organization
                        </button>
                      </div>
 
@@ -1098,7 +1151,7 @@ export default function HomePage() {
                  </span>
                </h2>
                <p className="text-xl text-white/90 mb-12 max-w-4xl mx-auto leading-relaxed">
-                 Join our growing community of professionals and entrepreneurs who are building meaningful connections and accelerating their business success through <strong>54Links</strong>.
+                Join our growing community of professionals and entrepreneurs using <strong>54Links</strong> to grow faster, connect smarter, and build stronger partnerships.
                </p>
              </div>
 
@@ -1119,7 +1172,7 @@ export default function HomePage() {
                  onClick={() => navigate("/people")}
                  className="px-12 py-5 border-2 border-white/60 text-white font-bold rounded-2xl hover:bg-white/10 hover:border-white transition-all duration-300 text-xl"
                >
-                 🌍 Explore Our Network
+                 🌍 Explore the Network
                </button>
              </div>
 

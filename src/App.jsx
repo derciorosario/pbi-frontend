@@ -54,6 +54,9 @@ import AdminModeration from './admin/AdminModeration.jsx';
 import CreateMomentPage from './pages/CreateMomentPage.jsx';
 import CreateOfferingPage from './pages/CreateOfferingPage.jsx';
 import CreateNeedPage from './pages/CreateNeedPage.jsx';
+import AuthorizeRepresentative from './pages/AuthorizeRepresentative.jsx';
+ import ConfirmStaffInvitation from './pages/ConfirmStaffInvitation.jsx';
+ import OrganizationJoinRequests from './pages/OrganizationJoinRequests.jsx';
 
 
 
@@ -101,6 +104,12 @@ function App() {
             <Route path="/offerings/create" element={<CreateOfferingPage />} />
             <Route path="/need/:type/create" element={<CreateNeedPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/company/:companyId/authorize" element={<AuthorizeRepresentative />} />
+            <Route path="/profile/company/:companyId/staff/confirm" element={<ConfirmStaffInvitation />} />
+            <Route path="/organization/join-requests" element={<OrganizationJoinRequests />} />
+            <Route path="/organization/join-request/:id/:token" element={<OrganizationJoinRequests />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            
         </Route>
 
         <Route path="/admin" element={<AdminLayout />}>
@@ -133,7 +142,6 @@ function App() {
             <Route path="/offering/:id" element={<CreateOfferingPage />} />
             <Route path="/need/:id" element={<CreateNeedPage />} />
             <Route path="/moment/:id" element={<CreateMomentPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
       </Routes>

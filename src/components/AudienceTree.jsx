@@ -14,6 +14,7 @@ const Icons = {
   ),
 };
 
+
 function AudienceTree({ tree, selected, onChange, shown = [], from }) {
   const [open, setOpen] = useState({}); // { 'id-..': bool, 'cat-..': bool, 'sc-..': bool }
 
@@ -46,7 +47,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
   // Exclusive open: category (closes siblings & their subcats)
   const onToggleCategory = (identity, cat) => {
-    const identityId = identity.id || identity.name;
+    const identityId = identity.id;
     const idKey = `id-${identityId}`;
     const cKey = `cat-${cat.id}`;
 
@@ -186,7 +187,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     // If there are shown filters, open all identities
     const allOpen = {};
     tree.forEach((identity) => {
-      const identityId = identity.id || identity.name;
+      const identityId = identity.id;
       const idKey = `id-${identityId}`;
       allOpen[idKey] = true;
     });
@@ -219,7 +220,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       )}
 
       {tree.map((identity) => {
-        const identityId = identity.id || identity.name;
+        const identityId = identity.id;
         const idKey = `id-${identityId}`;
         const openId = !!open[idKey];
         const hasCategories = (identity.categories || []).length > 0;

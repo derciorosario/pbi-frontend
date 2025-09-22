@@ -23,6 +23,7 @@ import ServiceCard from "../components/ServiceCard";
 import PageTabs from "../components/PageTabs";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import TopFilterButtons from "../components/TopFilterButtons";
+import { useAuth } from "../contexts/AuthContext";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -41,6 +42,7 @@ export default function ServicesPage() {
   const [view,setView]=useState('grid')
   let view_types=['grid','list']
   const from = "services"; // Define the 'from' variable
+  const {user}=useAuth()
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -523,9 +525,9 @@ export default function ServicesPage() {
           </div>
         <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-           { label: "Post a Service", Icon: PlusCircle, onClick: () => navigate("/services/create") },
-          { label: "Share Service Experience", Icon: PlusCircle, onClick: () => navigate("/moment/service/create") },
-          { label: "Ask About a Service", Icon: PlusCircle, onClick: () => navigate("/need/service/create") },
+            { label: "Post a Service", Icon: PlusCircle, onClick: () => navigate("/services/create"),hide:user?.accountType=="individual"},
+            { label: "Share Service Experience", Icon: PlusCircle, onClick: () => navigate("/moment/service/create"),hide:user?.accountType=="company" },
+            { label: "Ask About a Service", Icon: PlusCircle, onClick: () => navigate("/need/service/create"),hide:user?.accountType=="company" },
            ]} />
          
           <ProfileCard />
@@ -552,10 +554,10 @@ export default function ServicesPage() {
       <TabsAndAdd 
         tabs={[]}  
         items={[
-          { label: "Post a Service", Icon: PlusCircle, onClick: () => navigate("/services/create") },
-          { label: "Share Service Experience", Icon: PlusCircle, onClick: () => navigate("/moment/service/create") },
-          { label: "Ask About a Service", Icon: PlusCircle, onClick: () => navigate("/need/service/create") },
-        ]}
+         { label: "Post a Service", Icon: PlusCircle, onClick: () => navigate("/services/create"),hide:user?.accountType=="individual"},
+            { label: "Share Service Experience", Icon: PlusCircle, onClick: () => navigate("/moment/service/create"),hide:user?.accountType=="company" },
+            { label: "Ask About a Service", Icon: PlusCircle, onClick: () => navigate("/need/service/create"),hide:user?.accountType=="company" },
+          ]}
         activeTab={activeTab} 
         setActiveTab={setActiveTab}  
       />

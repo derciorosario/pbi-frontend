@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { getContentForModeration, updateModerationStatus, getModerationStats } from "../api/admin";
 import { toast } from "../lib/toast";
+import { RefreshCcw, ChevronDown, ChevronUp, Eye, EyeOff, MessageSquare, Heart, Flag, MoreHorizontal } from "lucide-react";
 
 /* --- small helpers --- */
-const Stat = ({ icon, title, value, tone = "gray", sub }) => {
+const Stat = ({ icon, title, value, tone = "gray", sub, loading = false }) => {
   const toneMap = {
     gray: "bg-gray-50 text-gray-600",
     amber: "bg-amber-50 text-amber-600",
@@ -11,6 +12,22 @@ const Stat = ({ icon, title, value, tone = "gray", sub }) => {
     rose: "bg-rose-50 text-rose-600",
     brand: "bg-brand-50 text-brand-700",
   };
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <div className="flex items-center gap-3">
+          <div className="h-9 w-9 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="flex-1">
+            <div className="h-3 bg-gray-200 rounded w-20 mb-1 animate-pulse"></div>
+            <div className="h-6 bg-gray-200 rounded w-12 mb-1 animate-pulse"></div>
+            <div className="h-2 bg-gray-200 rounded w-16 animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <div className="flex items-center gap-3">
@@ -43,17 +60,19 @@ const Badge = ({ children, color = "gray" }) => {
 const RowMeta = ({ reports, views, comments }) => (
   <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
     <span>📣 {reports} reports</span>
-    <span>👁️ {views} views</span>
+    <span>👁️ {views} likes</span>
     <span>💬 {comments} comments</span>
   </div>
 );
 
 export default function AdminModeration() {
-  const [contentType, setContentType] = useState("job");
-  const [moderationStatus, setModerationStatus] = useState("all");
-  const [postType, setPostType] = useState("All");
-  const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState([]);
+   const [contentType, setContentType] = useState("all");
+   const [moderationStatus, setModerationStatus] = useState("all");
+   const [postType, setPostType] = useState("All");
+   const [loading, setLoading] = useState(false);
+   const [items, setItems] = useState([]);
+   const [expandedItems, setExpandedItems] = useState(new Set());
+   const [expandedSections, setExpandedSections] = useState({});
   const [stats, setStats] = useState({
     reported: 0,
     underReview: 0,
@@ -62,6 +81,7 @@ export default function AdminModeration() {
     suspended: 0,
     today: { approved: 0, removed: 0 }
   });
+  const [statsLoading, setStatsLoading] = useState(true);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -110,6 +130,7 @@ export default function AdminModeration() {
   // Fetch moderation stats
   const fetchStats = async () => {
     try {
+      setStatsLoading(true);
       const response = await getModerationStats();
       if (response.data) {
         setStats({
@@ -126,11 +147,13 @@ export default function AdminModeration() {
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
+    } finally {
+      setStatsLoading(false);
     }
   };
 
   // Update moderation status
-  const handleUpdateStatus = async (id, newStatus) => {
+  const handleUpdateStatus = async (id, newStatus,contentType) => {
     try {
       try {
         await updateModerationStatus(id, contentType, newStatus);
@@ -150,6 +173,27 @@ export default function AdminModeration() {
   // Handle pagination
   const handlePageChange = (newPage) => {
     setPagination(prev => ({ ...prev, page: newPage }));
+  };
+
+  // Toggle item expansion
+  const toggleItemExpansion = (itemId) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  // Toggle section expansion
+  const toggleSectionExpansion = (itemId, section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [`${itemId}-${section}`]: !prev[`${itemId}-${section}`]
+    }));
   };
 
   // Initial fetch
@@ -174,10 +218,10 @@ export default function AdminModeration() {
 
       {/* Stats */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat icon={<span>🚩</span>} title="Pending Reports" value={stats.reported} tone="rose" />
-        <Stat icon={<span>🟡</span>} title="Under Review" value={stats.underReview} tone="amber" />
-        <Stat icon={<span>✅</span>} title="Approved Today" value={stats.today.approved} tone="green" />
-        <Stat icon={<span>⛔</span>} title="Removed Today" value={stats.today.removed} tone="brand" />
+        <Stat icon={<span>🚩</span>} title="Pending Reports" value={stats.reported} tone="rose" loading={statsLoading && stats.reported === 0} />
+        <Stat icon={<span>🟡</span>} title="Under Review" value={stats.underReview} tone="amber" loading={statsLoading && stats.underReview === 0} />
+        <Stat icon={<span>✅</span>} title="Approved Today" value={stats.today.approved} tone="green" loading={statsLoading && stats.today.approved === 0} />
+        <Stat icon={<span>⛔</span>} title="Removed Today" value={stats.today.removed} tone="brand" loading={statsLoading && stats.today.removed === 0} />
       </div>
 
       {/* Filters */}
@@ -187,16 +231,29 @@ export default function AdminModeration() {
           <div className="flex items-center gap-2">
             <select
               value={contentType}
-              onChange={(e) => setContentType(e.target.value)}
+              onChange={(e) => {
+                setContentType(e.target.value);
+                setPagination(prev => ({ ...prev, page: 1 })); // Reset to page 1
+              }}
               className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
             >
+              <option value="all">All Post Types</option>
               <option value="job">Jobs</option>
-              <option value="comment">Comments</option>
-              <option value="profile">Profiles</option>
+              <option value="event">Events</option>
+              <option value="product">Products</option>
+              <option value="service">Services</option>
+              <option value="tourism">Tourism</option>
+              <option value="funding">Opportunities</option>
+              <option value="moment">Experience</option>
+              <option value="need">Need / Offer</option>
+
             </select>
             <select
               value={moderationStatus}
-              onChange={(e) => setModerationStatus(e.target.value)}
+              onChange={(e) => {
+                setModerationStatus(e.target.value)
+                setPagination(prev => ({ ...prev, page: 1 })); // Reset to page 1
+              }}
               className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
             >
               <option value="all">All Statuses</option>
@@ -207,7 +264,7 @@ export default function AdminModeration() {
               <option value="suspended">Suspended</option>
             </select>
 
-            <select
+            {/**  <select
               value={postType}
               onChange={(e) => setPostType(e.target.value)}
               className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm"
@@ -219,12 +276,12 @@ export default function AdminModeration() {
               <option value="Service">Service</option>
               <option value="Tourism">Tourism</option>
               <option value="Funding">Funding</option>
-            </select>
+            </select> */}
             <button
               onClick={fetchContent}
               className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white bg-brand-500 hover:bg-brand-600"
             >
-              <span>🧰</span> Filter
+               <RefreshCcw size={12}/>
             </button>
           </div>
         </div>
@@ -241,102 +298,263 @@ export default function AdminModeration() {
               <p className="text-gray-500">No content found matching the selected filters.</p>
             </div>
           ) : (
-            filtered.map((item) => (
-              <div key={item.id} className="rounded-xl border border-gray-200 bg-white p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <img
-                      src={item.postedBy?.avatarUrl || "https://i.pravatar.cc/80"}
-                      className="h-10 w-10 rounded-full object-cover flex-shrink-0"
-                      alt=""
-                    />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <div className="font-medium">{item.postedBy?.name || "User"}</div>
-                        {item.moderation_status === "reported" && <Badge color="rose">Reported</Badge>}
-                        {item.moderation_status === "under_review" && <Badge color="amber">Under Review</Badge>}
-                        {item.moderation_status === "approved" && <Badge color="green">Approved</Badge>}
-                        {item.moderation_status === "removed" && <Badge color="rose">Removed</Badge>}
-                        {item.moderation_status === "suspended" && <Badge color="rose">Suspended</Badge>}
-                      </div>
-                      <div className="text-[11px] text-gray-500">
-                        {new Date(item.createdAt).toLocaleString()}
-                      </div>
-                      <h3 className="mt-1 font-semibold">{item.title}</h3>
-                      <p className="mt-2 text-[15px] text-gray-700">{item.description}</p>
-                      <RowMeta
-                        reports={item.stats?.reports || 0}
-                        views={0}
-                        comments={item.stats?.comments || 0}
-                      />
-                      
-                      {/* Show reports if any */}
-                      {item.reports && item.reports.length > 0 && (
-                        <div className="mt-3 border-t border-gray-100 pt-3">
-                          <div className="text-xs font-semibold text-gray-500 mb-2">Reports:</div>
-                          <div className="space-y-2">
-                            {item.reports.map(report => (
-                              <div key={report.id} className="bg-red-50 p-2 rounded-md text-xs">
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    src={report.reporter?.avatarUrl || "https://i.pravatar.cc/40"}
-                                    className="h-5 w-5 rounded-full"
-                                    alt=""
-                                  />
-                                  <span className="font-medium">{report.reporter?.name || "User"}</span>
-                                  <span className="text-gray-500 text-[10px]">
-                                    {new Date(report.createdAt).toLocaleString()}
-                                  </span>
-                                </div>
-                                <div className="mt-1 text-gray-700">{report.description}</div>
-                              </div>
-                            ))}
+            filtered.map((item) => {
+              const isExpanded = expandedItems.has(item.id);
+              const hasReports = item.reports && item.reports.length > 0;
+              const hasComments = item.comments && item.comments.length > 0;
+              const hasLikes = item.likes && item.likes.length > 0;
+
+              return (
+                <div key={item.id} className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                  {/* Header */}
+                  <div className="p-4 border-b border-gray-100">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 min-w-0 flex-1">
+                        <img
+                          src={item.postedBy?.avatarUrl || "https://i.pravatar.cc/80"}
+                          className="h-10 w-10 rounded-full object-cover flex-shrink-0"
+                          alt=""
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="font-medium">{item.postedBy?.name || "User"}</div>
+                            <Badge color={
+                              item.moderation_status === "reported" ? "rose" :
+                              item.moderation_status === "under_review" ? "amber" :
+                              item.moderation_status === "approved" ? "green" :
+                              item.moderation_status === "removed" ? "rose" :
+                              item.moderation_status === "suspended" ? "rose" : "gray"
+                            }>
+                              {item.moderation_status === "reported" ? "Reported" :
+                               item.moderation_status === "under_review" ? "Under Review" :
+                               item.moderation_status === "approved" ? "Approved" :
+                               item.moderation_status === "removed" ? "Removed" :
+                               item.moderation_status === "suspended" ? "Suspended" : "Unknown"}
+                            </Badge>
+                            <Badge color="brand">{item.contentType}</Badge>
+                          </div>
+                          <div className="text-[11px] text-gray-500 mt-1">
+                            {new Date(item.createdAt).toLocaleString()}
                           </div>
                         </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 ml-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => window.open(`${window.location.origin}/${item.contentType}/${item.id}`, '_blank')}
+                            className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors flex-1 sm:flex-none"
+                            title="View item on public page"
+                          >
+                            <Eye size={14} />
+                            <span className="hidden sm:inline">View</span>
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(item.id, "approved",item.contentType)}
+                            className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors flex-1 sm:flex-none"
+                            title="Approve content"
+                          >
+                            <span className="hidden sm:inline">✓</span>
+                            <span className="sm:hidden">✓</span>
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(item.id, "under_review",item.contentType)}
+                            className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors flex-1 sm:flex-none"
+                            title="Mark for review"
+                          >
+                            <span className="hidden sm:inline">⏳</span>
+                            <span className="sm:hidden">⏳</span>
+                            Review
+                          </button>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleUpdateStatus(item.id, "removed",item.contentType)}
+                            className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex-1 sm:flex-none"
+                            title="Remove content"
+                          >
+                            <span className="hidden sm:inline">✕</span>
+                            <span className="sm:hidden">✕</span>
+                            Remove
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(item.id, "suspended",item.contentType)}
+                            className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors flex-1 sm:flex-none"
+                            title="Suspend content"
+                          >
+                            <span className="hidden sm:inline">⚠️</span>
+                            <span className="sm:hidden">⚠️</span>
+                            Suspend
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4">
+                    <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
+                    <div className={`text-gray-700 ${!isExpanded ? 'line-clamp-3' : ''}`}>
+                      {item.description}
+                    </div>
+                    {!isExpanded && item.description && item.description.length > 200 && (
+                      <button
+                        onClick={() => toggleItemExpansion(item.id)}
+                        className="text-brand-600 hover:text-brand-700 text-sm font-medium mt-2"
+                      >
+                        Show more
+                      </button>
+                    )}
+                    {isExpanded && item.description && item.description.length > 200 && (
+                      <button
+                        onClick={() => toggleItemExpansion(item.id)}
+                        className="text-brand-600 hover:text-brand-700 text-sm font-medium mt-2"
+                      >
+                        Show less
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Stats and expandable sections */}
+                  <div className="px-4 pb-4">
+                    <div className="flex items-center gap-6 text-sm text-gray-600 mb-3">
+                      <div className="flex items-center gap-1">
+                        <Flag size={16} />
+                        <span>{item.stats?.reports || 0} reports</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Heart size={16} />
+                        <span>{item.stats?.likes || 0} likes</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageSquare size={16} />
+                        <span>{item.stats?.comments || 0} comments</span>
+                      </div>
+                    </div>
+
+                    {/* Expandable sections */}
+                    <div className="space-y-2">
+                      {hasReports && (
+                        <div className="border border-red-200 rounded-lg">
+                          <button
+                            onClick={() => toggleSectionExpansion(item.id, 'reports')}
+                            className="w-full flex items-center justify-between p-3 text-left hover:bg-red-50 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Flag size={16} className="text-red-600" />
+                              <span className="font-medium text-red-700">Reports ({item.reports.length})</span>
+                            </div>
+                            {expandedSections[`${item.id}-reports`] ?
+                              <ChevronUp size={16} className="text-red-600" /> :
+                              <ChevronDown size={16} className="text-red-600" />
+                            }
+                          </button>
+                          {expandedSections[`${item.id}-reports`] && (
+                            <div className="px-3 pb-3 space-y-2">
+                              {item.reports.map(report => (
+                                <div key={report.id} className="bg-red-50 p-3 rounded-md">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <img
+                                      src={report.reporter?.avatarUrl || "https://i.pravatar.cc/32"}
+                                      className="h-6 w-6 rounded-full"
+                                      alt=""
+                                    />
+                                    <span className="font-medium text-sm">{report.reporter?.name || "User"}</span>
+                                    <span className="text-xs text-gray-500">
+                                      {new Date(report.createdAt).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <div className="text-sm text-gray-700">{report.description}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
+
+                      {hasComments && (
+                        <div className="border border-blue-200 rounded-lg">
+                          <button
+                            onClick={() => toggleSectionExpansion(item.id, 'comments')}
+                            className="w-full flex items-center justify-between p-3 text-left hover:bg-blue-50 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <MessageSquare size={16} className="text-blue-600" />
+                              <span className="font-medium text-blue-700">Comments ({item.comments.length})</span>
+                            </div>
+                            {expandedSections[`${item.id}-comments`] ?
+                              <ChevronUp size={16} className="text-blue-600" /> :
+                              <ChevronDown size={16} className="text-blue-600" />
+                            }
+                          </button>
+                          {expandedSections[`${item.id}-comments`] && (
+                            <div className="px-3 pb-3 space-y-2">
+                              {item.comments.map(comment => (
+                                <div key={comment.id} className="bg-blue-50 p-3 rounded-md">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <img
+                                      src={comment.user?.avatarUrl || "https://i.pravatar.cc/32"}
+                                      className="h-6 w-6 rounded-full"
+                                      alt=""
+                                    />
+                                    <span className="font-medium text-sm">{comment.user?.name || "User"}</span>
+                                    <span className="text-xs text-gray-500">
+                                      {new Date(comment.createdAt).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <div className="text-sm text-gray-700">{comment.content || "No content"}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {hasLikes && (
+                        <div className="border border-pink-200 rounded-lg">
+                          <button
+                            onClick={() => toggleSectionExpansion(item.id, 'likes')}
+                            className="w-full flex items-center justify-between p-3 text-left hover:bg-pink-50 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Heart size={16} className="text-pink-600" />
+                              <span className="font-medium text-pink-700">Likes ({item.likes.length})</span>
+                            </div>
+                            {expandedSections[`${item.id}-likes`] ?
+                              <ChevronUp size={16} className="text-pink-600" /> :
+                              <ChevronDown size={16} className="text-pink-600" />
+                            }
+                          </button>
+                          {expandedSections[`${item.id}-likes`] && (
+                            <div className="px-3 pb-3">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {item.likes.map(like => (
+                                  <div key={like.id} className="bg-pink-50 p-2 rounded-md flex items-center gap-2">
+                                    <img
+                                      src={like.user?.avatarUrl || "https://i.pravatar.cc/24"}
+                                      className="h-5 w-5 rounded-full"
+                                      alt=""
+                                    />
+                                    <div className="min-w-0">
+                                      <div className="font-medium text-xs truncate">{like.user?.name || "User"}</div>
+                                      <div className="text-[10px] text-gray-500">
+                                        {new Date(like.createdAt).toLocaleString()}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
-                  <button
-                    onClick={() => handleUpdateStatus(item.id, "approved")}
-                    className="rounded-lg bg-emerald-50 text-emerald-700 px-3 py-1.5 text-sm font-semibold"
-                    title="Approve"
-                  >
-                    ✓ Approve
-                  </button>
-                  <button
-                    onClick={() => handleUpdateStatus(item.id, "removed")}
-                    className="rounded-lg bg-rose-50 text-rose-700 px-3 py-1.5 text-sm font-semibold"
-                    title="Remove"
-                  >
-                    ✕ Remove
-                  </button>
-                  <button
-                    onClick={() => handleUpdateStatus(item.id, "under_review")}
-                    className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm"
-                    title="Review"
-                  >
-                    ∘ Review
-                  </button>
-                  <button
-                    onClick={() => handleUpdateStatus(item.id, "suspended")}
-                    className="rounded-lg bg-amber-50 text-amber-700 px-3 py-1.5 text-sm font-semibold"
-                    title="Suspend"
-                  >
-                    ! Suspend
-                  </button>
-                </div>
-              </div>
-
-              {/* optional: row actions footer */}
-                <div className="mt-3 flex items-center justify-end">
-                  <button className="text-xs text-gray-500 hover:text-gray-700 inline-flex items-center gap-1">
-                    <span className="text-gray-400">👁️</span> View Details
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 

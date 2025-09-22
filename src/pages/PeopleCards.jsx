@@ -58,7 +58,7 @@ export default function PeopleProfileCard({
   name,
   role,
   city,
-  country,
+  countryOfResidence,
   email,
   about,
   lookingFor,
@@ -72,6 +72,7 @@ export default function PeopleProfileCard({
   matchPercentage = 0,  // optional % chip (overlay on image when list; chip near hero in grid)
   type = "grid",         // "grid" | "list"
   accountType = "individual", // "individual" | "company"
+  companyMemberships = [], // company membership data
 }) {
   const { user } = useAuth();
   const data = useData();
@@ -89,11 +90,12 @@ export default function PeopleProfileCard({
   await client.delete(`/connections/${id}`, { data: { note } });
   setConnectionStatus("none");
   toast.success("Connection removed");
-}
+  
+ }
 
 
   const isList = type === "list";
-  const location = [city, country].filter(Boolean).join(", ");
+  const location = [city, countryOfResidence].filter(Boolean).join(", ");
   const heroUrl = avatarSrc({ avatarUrl, email, name });
   const computedTime = useMemo(() => computeTimeAgo(timeAgo, createdAt), [timeAgo, createdAt]);
 
@@ -196,21 +198,52 @@ export default function PeopleProfileCard({
        
       
         <div className="relative translate-x-3 -mt-8 z-10 flex justify-between">
-          {heroUrl ? (
-            <div className={`${isCompany ? 'w-20 h-20 rounded-md' : 'w-16 h-16 rounded-full'}  ${isCompany ? 'bg-blue-50' : 'bg-blue-50'} border-4 ${isCompany ? 'border-blue-50' : 'border-white'} overflow-hidden shadow-md`}>
-              
-              <img
-                src={heroUrl}
-                alt={name}
-                className="w-full h-full object-cover"
-              />
+          <div className="relative">
+            {heroUrl ? (
+              <div className={`${isCompany ? 'w-20 h-20 rounded-md' : 'w-16 h-16 rounded-full'}  ${isCompany ? 'bg-blue-50' : 'bg-blue-50'} border-4 ${isCompany ? 'border-blue-50' : 'border-white'} overflow-hidden shadow-md`}>
 
-            </div>
-          ) : (
-            <div className={`${isCompany ? 'w-20 h-20' : 'w-16 h-16'} rounded-full border-4 ${isCompany ? 'border-blue-50' : 'border-white'} ${isCompany ? 'bg-blue-100' : 'bg-brand-100'} flex items-center justify-center shadow-md`}>
-              <span className={`${isCompany ? 'text-blue-600' : 'text-brand-600'} font-medium text-lg`}>{getInitials(name)}</span>
-            </div>
-          )}
+                <img
+                  src={heroUrl}
+                  alt={name}
+                  className="w-full h-full object-cover"
+                />
+
+              </div>
+            ) : (
+              <div className={`${isCompany ? 'w-20 h-20' : 'w-16 h-16'} rounded-full border-4 ${isCompany ? 'border-blue-50' : 'border-white'} ${isCompany ? 'bg-blue-100' : 'bg-brand-100'} flex items-center justify-center shadow-md`}>
+                <span className={`${isCompany ? 'text-blue-600' : 'text-brand-600'} font-medium text-lg`}>{getInitials(name)}</span>
+              </div>
+            )}
+
+            {/* Company logos for approved staff members */}
+            {companyMemberships && companyMemberships.length > 0 && (
+              <div className="absolute -bottom-2 -right-2 flex -space-x-2">
+                {/* Sort to show main company first */}
+                {[...companyMemberships]
+                  .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
+                  .slice(0, 3)
+                  .map((membership, index) => (
+                  <img
+                    key={membership.companyId}
+                    src={
+                      membership.company.avatarUrl ||
+                      `https://i.pravatar.cc/150?u=${encodeURIComponent(membership.company.name)}`
+                    }
+                    alt={membership.company.name}
+                    className="h-7 w-7 rounded-full border-2 border-white shadow-sm object-cover ${
+                      membership.isMain ? 'ring-2 ring-brand-400' : ''
+                    }"
+                    title={`${membership.company.name} (${membership.role})`}
+                  />
+                ))}
+                {companyMemberships.length > 3 && (
+                  <div className="h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 z-10">
+                    +{companyMemberships.length - 3}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
            {/* View profile */}
           <button

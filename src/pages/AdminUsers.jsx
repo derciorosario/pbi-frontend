@@ -305,9 +305,9 @@ export default function AdminUsers() {
                     <div className="flex items-center">
                       <div className="h-10 w-10 flex-shrink-0">
                         {user.avatarUrl ? (
-                          <img className="h-10 w-10 rounded-full" src={user.avatarUrl} alt={user.name} />
+                          <img className="h-10 w-10 rounded-full flex-shrink-0" src={user.avatarUrl} alt={user.name} />
                         ) : (
-                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                          <div className="h-10 w-10 rounded-full flex-shrink-0 bg-gray-200 flex items-center justify-center text-gray-500">
                             {user.name.charAt(0).toUpperCase()}
                           </div>
                         )}

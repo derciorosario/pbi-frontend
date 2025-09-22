@@ -5,9 +5,10 @@ import Header from "../components/Header";
 import { getSettings, updateSettings } from "../api/settings";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const userAuth = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("notifications");
   const [settings, setSettings] = useState({
     notifications: {
       jobOpportunities: {
@@ -29,7 +30,10 @@ export default function SettingsPage() {
         email: true
       }
     },
-    emailFrequency: "daily" // "daily", "weekly", "monthly", "auto"
+    emailFrequency: "daily", // "daily", "weekly", "monthly", "auto"
+    hideMainFeed: false,
+    connectionsOnly: false,
+    contentType: "all" // "all", "text", "images"
   });
 
   // Fetch user settings
@@ -72,6 +76,10 @@ export default function SettingsPage() {
       };
       await updateSettings(settingsToSave);
       toast.success("Settings saved successfully");
+      // Update the auth context with the new settings
+      userAuth.setSettings(settingsToSave);
+      
+      console.log({settingsToSave})
     } catch (error) {
       console.error("Error saving settings:", error);
       toast.error("Failed to save settings");
@@ -79,6 +87,8 @@ export default function SettingsPage() {
       setSaving(false);
     }
   };
+
+  console.log({set:userAuth.settings})
 
   // Toggle a notification setting
   const toggleNotification = (category, type) => {
@@ -99,6 +109,30 @@ export default function SettingsPage() {
     setSettings(prev => ({
       ...prev,
       emailFrequency: frequency
+    }));
+  };
+
+  // Toggle hide main feed
+  const toggleHideMainFeed = () => {
+    setSettings(prev => ({
+      ...prev,
+      hideMainFeed: !prev.hideMainFeed
+    }));
+  };
+
+  // Toggle connections only
+  const toggleConnectionsOnly = () => {
+    setSettings(prev => ({
+      ...prev,
+      connectionsOnly: !prev.connectionsOnly
+    }));
+  };
+
+  // Set content type
+  const setContentType = (contentType) => {
+    setSettings(prev => ({
+      ...prev,
+      contentType: contentType
     }));
   };
 
@@ -123,6 +157,11 @@ export default function SettingsPage() {
     );
   }
 
+  const tabs = [
+    { id: "notifications", label: "Notifications", icon: "🔔" },
+    { id: "privacy", label: "Privacy & Display", icon: "🔒" }
+  ];
+
   return (
     <div>
       <Header />
@@ -133,187 +172,302 @@ export default function SettingsPage() {
           <p className="text-gray-500">Manage your account settings and preferences</p>
         </div>
 
-        {/* Notification Settings */}
+        {/* Tabs */}
         <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Notification Preferences</h2>
-          <p className="text-gray-500 mb-6">Choose how and when you want to be notified</p>
+          <div className="flex space-x-1 mb-6">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? "bg-brand-100 text-brand-700 border border-brand-200"
+                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+                }`}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-          <div className="space-y-6">
-            {/* Job Opportunities */}
-            <div className="border-b pb-4">
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h3 className="font-medium">Job opportunity recommendations</h3>
-                  <p className="text-sm text-gray-500">Get notified about job opportunities that match your profile</p>
+          {/* Tab Content */}
+          <div>
+            {activeTab === "notifications" && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Notification Preferences</h2>
+                <p className="text-gray-500 mb-6">Choose how and when you want to be notified</p>
+
+                <div className="space-y-6">
+                  {/* Job Opportunities */}
+                  <div className="border-b pb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">Job opportunity recommendations</h3>
+                        <p className="text-sm text-gray-500">Get notified about job opportunities that match your profile</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={settings.notifications.jobOpportunities.email}
+                          onChange={() => toggleNotification("jobOpportunities", "email")}
+                        />
+                        <span className="ml-2 text-sm">Email notifications</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Connection Invitations */}
+                  <div className="border-b pb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">Invitation to connect</h3>
+                        <p className="text-sm text-gray-500">Get notified when someone invites you to connect</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={settings.notifications.connectionInvitations.email}
+                          onChange={() => toggleNotification("connectionInvitations", "email")}
+                        />
+                        <span className="ml-2 text-sm">Email notifications</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Connection Recommendations */}
+                  <div className="border-b pb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">New connection recommendations</h3>
+                        <p className="text-sm text-gray-500">Get notified about people you might want to connect with</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={settings.notifications.connectionRecommendations.email}
+                          onChange={() => toggleNotification("connectionRecommendations", "email")}
+                        />
+                        <span className="ml-2 text-sm">Email notifications</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Connection Updates */}
+                  <div className="border-b pb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">Updates from people and companies you're connected with</h3>
+                        <p className="text-sm text-gray-500">Get notified about updates from your connections</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={settings.notifications.connectionUpdates.email}
+                          onChange={() => toggleNotification("connectionUpdates", "email")}
+                        />
+                        <span className="ml-2 text-sm">Email notifications</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Messages */}
+                  <div className="border-b pb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">New message notifications</h3>
+                        <p className="text-sm text-gray-500">Get notified when you receive new messages</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={settings.notifications.messages.email}
+                          onChange={() => toggleNotification("messages", "email")}
+                        />
+                        <span className="ml-2 text-sm">Email notifications</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Meeting Requests */}
+                  <div className="border-b pb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">Meeting request notifications</h3>
+                        <p className="text-sm text-gray-500">Get notified about meeting requests and updates</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={settings.notifications.meetingRequests.email}
+                          onChange={() => toggleNotification("meetingRequests", "email")}
+                        />
+                        <span className="ml-2 text-sm">Email notifications</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Email Frequency */}
+                  <div>
+                    <div className="mb-2">
+                      <h3 className="font-medium">Choose email frequency</h3>
+                      <p className="text-sm text-gray-500">How often would you like to receive email notifications?</p>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="emailFrequency"
+                          className="h-5 w-5 text-brand-600 focus:ring-brand-500"
+                          checked={settings.emailFrequency === "daily"}
+                          onChange={() => setEmailFrequency("daily")}
+                        />
+                        <span className="ml-2 text-sm">Daily</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="emailFrequency"
+                          className="h-5 w-5 text-brand-600 focus:ring-brand-500"
+                          checked={settings.emailFrequency === "weekly"}
+                          onChange={() => setEmailFrequency("weekly")}
+                        />
+                        <span className="ml-2 text-sm">Weekly</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="emailFrequency"
+                          className="h-5 w-5 text-brand-600 focus:ring-brand-500"
+                          checked={settings.emailFrequency === "monthly"}
+                          onChange={() => setEmailFrequency("monthly")}
+                        />
+                        <span className="ml-2 text-sm">Monthly</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="emailFrequency"
+                          className="h-5 w-5 text-brand-600 focus:ring-brand-500"
+                          checked={settings.emailFrequency === "auto"}
+                          onChange={() => setEmailFrequency("auto")}
+                        />
+                        <span className="ml-2 text-sm">Let the platform decide</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="mt-3">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
-                    checked={settings.notifications.jobOpportunities.email}
-                    onChange={() => toggleNotification("jobOpportunities", "email")}
-                  />
-                  <span className="ml-2 text-sm">Email notifications</span>
-                </label>
-              </div>
-            </div>
+            )}
 
-            {/* Connection Invitations */}
-            <div className="border-b pb-4">
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h3 className="font-medium">Invitation to connect</h3>
-                  <p className="text-sm text-gray-500">Get notified when someone invites you to connect</p>
+            {activeTab === "privacy" && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Privacy & Display</h2>
+                <p className="text-gray-500 mb-6">Control your privacy settings and display preferences</p>
+
+                <div className="space-y-6">
+                  {/* Hide Main Feed */}
+                  <div className="border-b pb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">Hide main feed content</h3>
+                        <p className="text-sm text-gray-500">Hide posts and content from the main feed while keeping access to other features</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={settings.hideMainFeed}
+                          onChange={toggleHideMainFeed}
+                        />
+                        <span className="ml-2 text-sm">Hide main feed</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Connections Only */}
+                  <div className="border-b pb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">Show only posts from my connections</h3>
+                        <p className="text-sm text-gray-500">Only display posts from people and companies you're connected with</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={settings.connectionsOnly}
+                          onChange={toggleConnectionsOnly}
+                        />
+                        <span className="ml-2 text-sm">Connections only</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Content Type */}
+                  <div>
+                    <div className="mb-2">
+                      <h3 className="font-medium">Content type preference</h3>
+                      <p className="text-sm text-gray-500">Choose what type of content you want to see in your feed</p>
+                    </div>
+                    <div className="mt-3 space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="contentType"
+                          className="h-5 w-5 text-brand-600 focus:ring-brand-500"
+                          checked={settings.contentType === "all"}
+                          onChange={() => setContentType("all")}
+                        />
+                        <span className="ml-2 text-sm">All content (text and images)</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="contentType"
+                          className="h-5 w-5 text-brand-600 focus:ring-brand-500"
+                          checked={settings.contentType === "text"}
+                          onChange={() => setContentType("text")}
+                        />
+                        <span className="ml-2 text-sm">Text only</span>
+                      </label>
+                     {/** <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="contentType"
+                          className="h-5 w-5 text-brand-600 focus:ring-brand-500"
+                          checked={settings.contentType === "images"}
+                          onChange={() => setContentType("images")}
+                        />
+                        <span className="ml-2 text-sm">Images only</span>
+                      </label> */}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="mt-3">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
-                    checked={settings.notifications.connectionInvitations.email}
-                    onChange={() => toggleNotification("connectionInvitations", "email")}
-                  />
-                  <span className="ml-2 text-sm">Email notifications</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Connection Recommendations */}
-            <div className="border-b pb-4">
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h3 className="font-medium">New connection recommendations</h3>
-                  <p className="text-sm text-gray-500">Get notified about people you might want to connect with</p>
-                </div>
-              </div>
-              <div className="mt-3">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
-                    checked={settings.notifications.connectionRecommendations.email}
-                    onChange={() => toggleNotification("connectionRecommendations", "email")}
-                  />
-                  <span className="ml-2 text-sm">Email notifications</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Connection Updates */}
-            <div className="border-b pb-4">
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h3 className="font-medium">Updates from people and companies you're connected with</h3>
-                  <p className="text-sm text-gray-500">Get notified about updates from your connections</p>
-                </div>
-              </div>
-              <div className="mt-3">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
-                    checked={settings.notifications.connectionUpdates.email}
-                    onChange={() => toggleNotification("connectionUpdates", "email")}
-                  />
-                  <span className="ml-2 text-sm">Email notifications</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="border-b pb-4">
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h3 className="font-medium">New message notifications</h3>
-                  <p className="text-sm text-gray-500">Get notified when you receive new messages</p>
-                </div>
-              </div>
-              <div className="mt-3">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
-                    checked={settings.notifications.messages.email}
-                    onChange={() => toggleNotification("messages", "email")}
-                  />
-                  <span className="ml-2 text-sm">Email notifications</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Meeting Requests */}
-            <div className="border-b pb-4">
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <h3 className="font-medium">Meeting request notifications</h3>
-                  <p className="text-sm text-gray-500">Get notified about meeting requests and updates</p>
-                </div>
-              </div>
-              <div className="mt-3">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
-                    checked={settings.notifications.meetingRequests.email}
-                    onChange={() => toggleNotification("meetingRequests", "email")}
-                  />
-                  <span className="ml-2 text-sm">Email notifications</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Email Frequency */}
-            <div>
-              <div className="mb-2">
-                <h3 className="font-medium">Choose email frequency</h3>
-                <p className="text-sm text-gray-500">How often would you like to receive email notifications?</p>
-              </div>
-              <div className="mt-3 space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="emailFrequency"
-                    className="h-5 w-5 text-brand-600 focus:ring-brand-500"
-                    checked={settings.emailFrequency === "daily"}
-                    onChange={() => setEmailFrequency("daily")}
-                  />
-                  <span className="ml-2 text-sm">Daily</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="emailFrequency"
-                    className="h-5 w-5 text-brand-600 focus:ring-brand-500"
-                    checked={settings.emailFrequency === "weekly"}
-                    onChange={() => setEmailFrequency("weekly")}
-                  />
-                  <span className="ml-2 text-sm">Weekly</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="emailFrequency"
-                    className="h-5 w-5 text-brand-600 focus:ring-brand-500"
-                    checked={settings.emailFrequency === "monthly"}
-                    onChange={() => setEmailFrequency("monthly")}
-                  />
-                  <span className="ml-2 text-sm">Monthly</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="emailFrequency"
-                    className="h-5 w-5 text-brand-600 focus:ring-brand-500"
-                    checked={settings.emailFrequency === "auto"}
-                    onChange={() => setEmailFrequency("auto")}
-                  />
-                  <span className="ml-2 text-sm">Let the platform decide</span>
-                </label>
-              </div>
-            </div>
+            )}
           </div>
         </div>
 

@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "../lib/toast";
+import { ChevronDown, ChevronUp, Search, Download, Edit, UserCheck, UserX, Trash2, Eye, Filter } from "lucide-react";
+import * as XLSX from 'xlsx';
 import {
   getAllUsers,
   getUserById,
@@ -11,7 +13,7 @@ import {
   downloadUsersData
 } from "../api/admin";
 
-const Badge = ({ children, tone = "green" }) => {
+const Badge = ({ children, color = "green" }) => {
   const map = {
     brand: "bg-brand-50 text-brand-700",
     green: "bg-green-100 text-green-700",
@@ -19,19 +21,30 @@ const Badge = ({ children, tone = "green" }) => {
     gray: "bg-gray-100 text-gray-700",
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${map[tone] || map.gray}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${map[color] || map.gray}`}>
       {children}
     </span>
   );
 };
 
-const Stat = ({ title, value, delta, tone = "emerald" }) => {
+const Stat = ({ title, value, delta, tone = "emerald", loading = false }) => {
   const toneMap = {
     emerald: "text-emerald-600",
     rose: "text-rose-600",
     brand: "text-brand-700",
     gray: "text-gray-600",
   };
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <div className="h-4 bg-gray-200 rounded w-16 mb-2 animate-pulse"></div>
+        <div className="h-8 bg-gray-200 rounded w-12 mb-1 animate-pulse"></div>
+        <div className="h-3 bg-gray-200 rounded w-20 animate-pulse"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <div className="text-sm text-gray-500">{title}</div>
@@ -60,6 +73,10 @@ export default function AdminUsers() {
     sortBy: "createdAt",
     sortOrder: "DESC"
   });
+
+  // State for UI
+  const [expandedUsers, setExpandedUsers] = useState(new Set());
+  const [showFilters, setShowFilters] = useState(false);
 
   // State for selected user (for editing)
   const [selectedUser, setSelectedUser] = useState(null);
@@ -127,6 +144,19 @@ export default function AdminUsers() {
   const handleSearch = (e) => {
     e.preventDefault();
     // The search will be triggered by the useEffect when filters change
+  };
+
+  // Toggle user expansion
+  const toggleUserExpansion = (userId) => {
+    setExpandedUsers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        newSet.delete(userId);
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
   };
 
   // Handle page change
@@ -203,14 +233,20 @@ export default function AdminUsers() {
   // Handle export data
   const handleExport = async (format = 'csv') => {
     try {
-      await downloadUsersData({
-        format,
-        filters: {
-          search: filters.search,
-          accountType: filters.accountType === 'all' ? '' : filters.accountType,
-          isVerified: filters.isVerified === '' ? undefined : filters.isVerified === 'true'
-        }
-      });
+      if (format === 'excel') {
+        // Export Excel directly from frontend using current users data
+        await downloadUsersDataAsExcel(users);
+      } else {
+        // Use backend for CSV and JSON exports
+        await downloadUsersData({
+          format,
+          filters: {
+            search: filters.search,
+            accountType: filters.accountType === 'all' ? '' : filters.accountType,
+            isVerified: filters.isVerified === '' ? undefined : filters.isVerified === 'true'
+          }
+        });
+      }
       toast.success(`Users exported as ${format.toUpperCase()} successfully`);
     } catch (error) {
       console.error("Error exporting users:", error);
@@ -234,6 +270,40 @@ export default function AdminUsers() {
     }
   };
 
+  // Export users data to Excel
+  const downloadUsersDataAsExcel = (users) => {
+    // Prepare data for Excel
+    const excelData = users.map(user => ({
+      ID: user.id,
+      Name: user.name,
+      Email: user.email,
+      Phone: user.phone || '',
+      'Account Type': user.accountType,
+      Status: user.isVerified ? 'Active' : 'Suspended',
+      Country: user.country || '',
+      'Country of Residence': user.countryOfResidence || '',
+      City: user.city || '',
+      Nationality: user.nationality || '',
+      'Joined Date': new Date(user.createdAt).toLocaleDateString(),
+      'Professional Title': user.profile?.professionalTitle || '',
+      'Experience Level': user.profile?.experienceLevel || '',
+      About: user.profile?.about || ''
+    }));
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Users');
+
+    // Generate filename with current date
+    const filename = `users_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    // Write and download file
+    XLSX.writeFile(wb, filename);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -243,203 +313,314 @@ export default function AdminUsers() {
 
       {/* Stats */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat title="Total Users" value={stats.total.toString()} tone="brand" />
-        <Stat title="Active Users" value={stats.active.toString()} />
-        <Stat title="Suspended" value={stats.suspended.toString()} tone="rose" />
-        <Stat title="New Today" value={stats.newToday.toString()} />
+        <Stat title="Total Users" value={stats.total.toString()} tone="brand" loading={loading && stats.total === 0} />
+        <Stat title="Active Users" value={stats.active.toString()} loading={loading && stats.active === 0} />
+        <Stat title="Suspended" value={stats.suspended.toString()} tone="rose" loading={loading && stats.suspended === 0} />
+        <Stat title="New Today" value={stats.newToday.toString()} loading={loading && stats.newToday === 0} />
       </div>
 
       {/* Filters + actions */}
-      <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="text"
-          placeholder="Search name or email"
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          value={filters.search}
-          onChange={(e) => handleFilterChange('search', e.target.value)}
-        />
-        <select 
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          value={filters.accountType}
-          onChange={(e) => handleFilterChange('accountType', e.target.value)}
-        >
-          <option value="all">All Types</option>
-          <option value="individual">Individual</option>
-          <option value="company">Company</option>
-          <option value="admin">Admin</option>
-        </select>
-        <select 
-          className="rounded-lg border border-gray-200 px-3 py-2 text-sm"
-          value={filters.isVerified}
-          onChange={(e) => handleFilterChange('isVerified', e.target.value)}
-        >
-          <option value="">All Status</option>
-          <option value="true">Active</option>
-          <option value="false">Suspended</option>
-        </select>
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search name or email"
+                className="w-full sm:w-64 pl-10 pr-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 text-sm"
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+              />
+            </div>
 
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => handleExport('csv')}
-            className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white"
-          >
-            Export CSV
-          </button>
-          <button
-            onClick={() => handleExport('excel')}
-            className="rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white"
-          >
-            Export Excel
-          </button>
-          <button
-            onClick={() => handleExport('json')}
-            className="rounded-lg bg-purple-600 px-3 py-2 text-sm font-semibold text-white"
-          >
-            Export JSON
-          </button>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <Filter size={16} />
+              Filters
+              {showFilters ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleExport('csv')}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            >
+              <Download size={16} />
+              CSV
+            </button>
+            <button
+              onClick={() => handleExport('excel')}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+            >
+              <Download size={16} />
+              Excel
+            </button>
+            <button
+              onClick={() => handleExport('json')}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors"
+            >
+              <Download size={16} />
+              JSON
+            </button>
+          </div>
         </div>
+
+        {/* Expandable Filters */}
+        {showFilters && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
+                <select
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500"
+                  value={filters.accountType}
+                  onChange={(e) => handleFilterChange('accountType', e.target.value)}
+                >
+                  <option value="all">All Types</option>
+                  <option value="individual">Individual</option>
+                  <option value="company">Company</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500"
+                  value={filters.isVerified}
+                  onChange={(e) => handleFilterChange('isVerified', e.target.value)}
+                >
+                  <option value="">All Status</option>
+                  <option value="true">Active</option>
+                  <option value="false">Suspended</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                <select
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500"
+                  value={filters.sortBy}
+                  onChange={(e) => handleFilterChange('sortBy', e.target.value)}
+                >
+                  <option value="createdAt">Join Date</option>
+                  <option value="name">Name</option>
+                  <option value="email">Email</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-600">
-            <tr>
-              <th className="px-4 py-3 text-left">User</th>
-              <th className="px-4 py-3 text-left">Account Type</th>
-              <th className="px-4 py-3 text-left">Location</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Joined</th>
-              <th className="px-4 py-3 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {loading && users.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="px-4 py-3 text-center">
-                  Loading...
-                </td>
-              </tr>
-            ) : users.length === 0 ? (
-              <tr>
-                <td colSpan="6" className="px-4 py-3 text-center">
-                  No users found
-                </td>
-              </tr>
-            ) : (
-              users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {user.avatarUrl ? (
-                        <img src={user.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="h-9 w-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                          {user.name.charAt(0).toUpperCase()}
+      {/* User Cards */}
+      <div className="space-y-4">
+        {loading && users.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand-500"></div>
+            <p className="mt-2 text-gray-500">Loading users...</p>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-2">
+              <Search size={48} className="mx-auto" />
+            </div>
+            <p className="text-gray-500">No users found matching your criteria.</p>
+          </div>
+        ) : (
+          users.map((user) => {
+            const isExpanded = expandedUsers.has(user.id);
+
+            return (
+              <div key={user.id} className="rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow">
+                {/* Header */}
+                <div className="p-4 border-b border-gray-100">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      {/* Avatar */}
+                      <div className="flex-shrink-0">
+                        {user.avatarUrl ? (
+                          <img
+                            src={user.avatarUrl}
+                            alt=""
+                            className="h-12 w-12 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-semibold">
+                            {user.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* User Info */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <h3 className="font-semibold text-lg text-gray-900">{user.name}</h3>
+                          <Badge color={
+                            user.accountType == 'admin' ? 'gray' :
+                            user.accountType == 'company' ? 'brand' :
+                            'green'
+                          }>
+                            {user.accountType}
+                          </Badge>
+                          {user.isVerified ? (
+                            <Badge color="green">Active</Badge>
+                          ) : (
+                            <Badge color="rose">Suspended</Badge>
+                          )}
                         </div>
-                      )}
-                      <div>
-                        <div className="font-medium">{user.name}</div>
-                        <div className="text-xs text-gray-500">{user.email}</div>
+                        <p className="text-gray-600 text-sm mb-1">{user.email}</p>
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>{user.city ? `${user.city}, ${user.country}` : user.country || 'Location not set'}</span>
+                          <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
+                        </div>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      user.accountType === 'admin' ? 'bg-purple-100 text-purple-800' : 
-                      user.accountType === 'company' ? 'bg-blue-100 text-blue-800' : 
-                      'bg-brand-50 text-brand-700'
-                    }`}>
-                      {user.accountType}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">{user.city ? `${user.city}, ${user.country}` : user.country || 'N/A'}</td>
-                  <td className="px-4 py-3">
-                    {user.isVerified ? <Badge tone="brand">Active</Badge> : <Badge tone="rose">Suspended</Badge>}
-                  </td>
-                  <td className="px-4 py-3">{new Date(user.createdAt).toLocaleDateString()}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <button 
-                        title="Edit" 
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 ml-4">
+                      <button
+                        onClick={() => toggleUserExpansion(user.id)}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        title={isExpanded ? "Show less" : "Show more"}
+                      >
+                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      </button>
+                      <Link
+                        to={`/admin/user-profile/${user.id}`}
+                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="View profile"
+                      >
+                        <Eye size={16} />
+                      </Link>
+                      <button
                         onClick={() => handleEditUser(user.id)}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Edit user"
                       >
-                        ✏️
+                        <Edit size={16} />
                       </button>
-                      <button 
-                        title={user.isVerified ? "Suspend" : "Activate"} 
+                      <button
                         onClick={() => handleToggleSuspension(user.id, user.isVerified)}
-                        className={user.isVerified ? "text-orange-600 hover:text-orange-800" : "text-green-600 hover:text-green-800"}
+                        className={`p-2 rounded-lg transition-colors ${
+                          user.isVerified
+                            ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50'
+                            : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                        }`}
+                        title={user.isVerified ? "Suspend user" : "Activate user"}
                       >
-                        {user.isVerified ? "⏸️" : "▶️"}
-                      </button>
-                      <button 
-                        title="Delete" 
-                        onClick={() => handleDeleteClick(user)}
-                        className="text-rose-600 hover:text-rose-800"
-                      >
-                        🗑️
+                        {user.isVerified ? <UserX size={16} /> : <UserCheck size={16} />}
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  </div>
+                </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-3 text-sm text-gray-600">
-          <div>
-            Showing {users.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} to{' '}
-            {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
-          </div>
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              className={`px-2.5 py-1.5 rounded-md border ${pagination.page === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              Previous
-            </button>
-            {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-              // Show pages around current page
-              let pageNum;
-              if (pagination.totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (pagination.page <= 3) {
-                pageNum = i + 1;
-              } else if (pagination.page >= pagination.totalPages - 2) {
-                pageNum = pagination.totalPages - 4 + i;
-              } else {
-                pageNum = pagination.page - 2 + i;
-              }
-              
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => handlePageChange(pageNum)}
-                  className={`px-2.5 py-1.5 rounded-md ${
-                    pagination.page === pageNum
-                      ? 'bg-brand-500 text-white'
-                      : 'border'
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-            <button 
-              onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page === pagination.totalPages}
-              className={`px-2.5 py-1.5 rounded-md border ${pagination.page === pagination.totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              Next
-            </button>
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="px-4 pb-4">
+                    <div className="pt-4 border-t border-gray-100">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Contact Information</h4>
+                          <div className="space-y-1 text-sm text-gray-600">
+                            <p><span className="font-medium">Email:</span> {user.email}</p>
+                            {user.phone && <p><span className="font-medium">Phone:</span> {user.phone}</p>}
+                          </div>
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-2">Location Details</h4>
+                          <div className="space-y-1 text-sm text-gray-600">
+                            {user.country && <p><span className="font-medium">Country:</span> {user.country}</p>}
+                            {user.countryOfResidence && <p><span className="font-medium">Country of Residence:</span> {user.countryOfResidence}</p>}
+                            {user.city && <p><span className="font-medium">City:</span> {user.city}</p>}
+                            {user.nationality && <p><span className="font-medium">Nationality:</span> {user.nationality}</p>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {user.profile && (
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                          <h4 className="font-medium text-gray-900 mb-2">Profile Information</h4>
+                          <div className="space-y-2 text-sm text-gray-600">
+                            {user.profile.professionalTitle && (
+                              <p><span className="font-medium">Professional Title:</span> {user.profile.professionalTitle}</p>
+                            )}
+                            {user.profile.experienceLevel && (
+                              <p><span className="font-medium">Experience Level:</span> {user.profile.experienceLevel}</p>
+                            )}
+                            {user.profile.about && (
+                              <div>
+                                <span className="font-medium">About:</span>
+                                <p className="mt-1 text-gray-700">{user.profile.about}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+          <div className="flex items-center justify-between text-sm text-gray-600">
+            <div>
+              Showing {users.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0} to{' '}
+              {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                className={`px-2.5 py-1.5 rounded-md border ${pagination.page === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Previous
+              </button>
+              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                // Show pages around current page
+                let pageNum;
+                if (pagination.totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (pagination.page <= 3) {
+                  pageNum = i + 1;
+                } else if (pagination.page >= pagination.totalPages - 2) {
+                  pageNum = pagination.totalPages - 4 + i;
+                } else {
+                  pageNum = pagination.page - 2 + i;
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`px-2.5 py-1.5 rounded-md ${
+                      pagination.page === pageNum
+                        ? 'bg-brand-500 text-white'
+                        : 'border'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.totalPages}
+                className={`px-2.5 py-1.5 rounded-md border ${pagination.page === pagination.totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Edit User Modal */}
       {showEditModal && selectedUser && (
@@ -511,7 +692,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed  inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
@@ -555,19 +736,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
                   onChange={handleChange}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Account Type</label>
-                <select
-                  name="accountType"
-                  className="w-full border rounded-lg px-3 py-2"
-                  value={formData.accountType}
-                  onChange={handleChange}
-                >
-                  <option value="individual">Individual</option>
-                  <option value="company">Company</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+             
               <div>
                 <label className="block text-sm font-medium mb-1">Country</label>
                 <input
@@ -618,16 +787,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
                   onChange={handleChange}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Experience Level</label>
-                <input
-                  type="text"
-                  name="profile.experienceLevel"
-                  className="w-full border rounded-lg px-3 py-2"
-                  value={formData.profile.experienceLevel}
-                  onChange={handleChange}
-                />
-              </div>
+             
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-1">About</label>
                 <textarea

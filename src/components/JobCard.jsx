@@ -39,6 +39,7 @@ import ProfileModal from "./ProfileModal";
 import JobDetails from "./JobDetails";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
+import JobApplicationDialog from "./JobApplicationDialog";
 import LogoGray from '../assets/logo.png'
 
 function computeTimeAgo(explicit, createdAt) {
@@ -60,7 +61,7 @@ export default function JobCard({
   type = "grid", // "grid" | "list"
   matchPercentage = 20, // show % chip
 }) {
-  const { user } = useAuth();
+  const { user,settings } = useAuth();
   const navigate = useNavigate();
   const data = useData();
 
@@ -89,6 +90,9 @@ export default function JobCard({
 
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+
+  // Job application dialog
+  const [applicationDialogOpen, setApplicationDialogOpen] = useState(false);
 
   // Close share menu on outside click / Esc
   useEffect(() => {
@@ -166,7 +170,9 @@ export default function JobCard({
   const containerBase =
     "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
   const containerLayout = isList
-    ? "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch"
+    ? (settings?.contentType === 'text'
+        ? "flex flex-col" // Full width for text mode in list
+        : "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch")
     : "flex flex-col";
 
   /* ----------------------- Like handler ----------------------- */
@@ -310,65 +316,68 @@ export default function JobCard({
       >
         {/* IMAGE SIDE */}
         {isList ? (
-          <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-            {imageUrl ? (
-              <>
-                <img
-                  src={imageUrl}
-                  alt={job?.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                {/* audience on IMAGE when there IS image */}
-                {Array.isArray(job?.audienceCategories) &&
-                  job.audienceCategories.length > 0 && (
-                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                      {job.audienceCategories.map((c) => (
-                        <span
-                          key={c.id || c.name}
-                          className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                        >
-                          {c.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-              </>
-            ) : (
-              <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
-                  <img src={job?.company?.avatarUrl || LogoGray} className="w-[100px]"/>
+          // Only show image side in list view if not text mode
+          settings?.contentType !== 'text' && (
+            <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
+              {imageUrl ? (
+                <>
+                  <img
+                    src={imageUrl}
+                    alt={job?.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {/* audience on IMAGE when there IS image */}
+                  {Array.isArray(job?.audienceCategories) &&
+                    job.audienceCategories.length > 0 && (
+                      <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                        {job.audienceCategories.map((c) => (
+                          <span
+                            key={c.id || c.name}
+                            className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
+                          >
+                            {c.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                </>
+              ) : (
+                <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
+                    <img src={job?.company?.avatarUrl || LogoGray} className="w-[100px]"/>
+                </div>
+              )}
+
+              {/* Quick actions on image */}
+              <div className="absolute top-3 right-3 flex gap-2">
+                <button
+                  onClick={() => {
+                    if (isOwner) navigate(`/job/${job.id}`);
+                    else setJobDetailsOpen(true);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label={isOwner ? "Edit job" : "View job"}
+                >
+                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
+                </button>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label="Share job"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
               </div>
-            )}
-
-            {/* Quick actions on image */}
-            <div className="absolute top-3 right-3 flex gap-2">
-              <button
-                onClick={() => {
-                  if (isOwner) navigate(`/job/${job.id}`);
-                  else setJobDetailsOpen(true);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label={isOwner ? "Edit job" : "View job"}
-              >
-                {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShareOpen((s) => !s);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label="Share job"
-              >
-                <Share2 size={16} className="text-gray-600" />
-              </button>
             </div>
-          </div>
+          )
         ) : (
           // GRID IMAGE
           <div className="relative overflow-hidden">
-            {imageUrl ? (
+            {settings?.contentType === 'text' ? null : imageUrl ? (
               <div className="relative">
                 <img
                   src={imageUrl}
@@ -396,32 +405,34 @@ export default function JobCard({
               </div>
             )}
 
-            {/* View & Share */}
-            <div className="absolute top-4 right-4 flex gap-2">
-              <button
-                onClick={() => {
-                  if (isOwner) navigate(`/job/${job.id}`);
-                  else setJobDetailsOpen(true);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label={isOwner ? "Edit job" : "View job"}
-              >
-                {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShareOpen((s) => !s);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
-                aria-label="Share job"
-              >
-                <Share2
-                  size={16}
-                  className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200"
-                />
-              </button>
-            </div>
+            {/* View & Share - only show when not text mode */}
+            {settings?.contentType !== 'text' && (
+              <div className="absolute top-4 right-4 flex gap-2">
+                <button
+                  onClick={() => {
+                    if (isOwner) navigate(`/job/${job.id}`);
+                    else setJobDetailsOpen(true);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label={isOwner ? "Edit job" : "View job"}
+                >
+                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
+                  aria-label="Share job"
+                >
+                  <Share2
+                    size={16}
+                    className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200"
+                  />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -430,6 +441,47 @@ export default function JobCard({
 
         {/* CONTENT SIDE */}
         <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
+          {/* Text mode: Buttons and audience categories at top */}
+          {settings?.contentType === 'text' && (
+            <div className={`${!isList ? 'flex-col gap-y-2':'items-center justify-between gap-2'} flex  mb-3`}>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (isOwner) navigate(`/job/${job.id}`);
+                    else setJobDetailsOpen(true);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label={isOwner ? "Edit job" : "View job"}
+                >
+                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label="Share job"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
+              </div>
+              {Array.isArray(job?.audienceCategories) &&
+                job.audienceCategories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {job.audienceCategories.map((c) => (
+                      <span
+                        key={c.id || c.name}
+                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      >
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+            </div>
+          )}
+
           {/* Title + company */}
           <div>
             <h3 className="font-semibold text-lg text-gray-900 truncate mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
@@ -582,7 +634,7 @@ export default function JobCard({
           <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600">
             <button
               onClick={toggleLike}
-              className="inline-flex items-center gap-1 hover:text-brand-700"
+              className="inline-flex _login_prompt items-center gap-1 hover:text-brand-700"
               title={liked ? "Unlike" : "Like"}
             >
               <Heart
@@ -592,8 +644,14 @@ export default function JobCard({
               <span>{likeCount}</span>
             </button>
 
+
             <button
-              onClick={() => setCommentsDialogOpen(true)}
+              onClick={() => {
+
+               
+                setCommentsDialogOpen(true)
+
+              }}
               className="inline-flex items-center gap-1 hover:text-brand-700"
               title="Comments"
             >
@@ -602,8 +660,15 @@ export default function JobCard({
             </button>
 
             <button
-              onClick={() => setReportOpen(true)}
-              className="inline-flex items-center gap-1 hover:text-rose-700"
+              onClick={() =>{
+                 if (!user?.id) {
+                  data._showPopUp?.("login_prompt");
+                  return;
+                }else{
+                  setReportOpen(true)
+                }
+              } }
+              className="inline-flex _login_prompt items-center gap-1 hover:text-rose-700"
               title="Report this job"
             >
               <Flag size={16} />
@@ -638,17 +703,13 @@ export default function JobCard({
                   data._showPopUp("login_prompt");
                   return;
                 }
-                navigate(`/messages?userId=${job.postedByUserId}`);
-                toast.success(
-                  "Starting conversation with " +
-                    (job.postedByUserName || "job poster")
-                );
+                setApplicationDialogOpen(true);
               }}
               className={`${
                 type === "grid" ? "flex-1" : ""
               } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
             >
-              <span>Message</span>
+              <span>Apply</span>
             </button>
 
             {!isOwner && renderConnectButton()}
@@ -702,6 +763,13 @@ export default function JobCard({
         entityId={job?.id}
         currentUser={user}
         onCountChange={(n) => setCommentCount(n)}
+      />
+
+      {/* Job Application Dialog */}
+      <JobApplicationDialog
+        open={applicationDialogOpen}
+        onClose={() => setApplicationDialogOpen(false)}
+        job={job}
       />
     </>
   );

@@ -22,6 +22,7 @@ import { useData } from "../contexts/DataContext";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import PageTabs from "../components/PageTabs";
 import TopFilterButtons from "../components/TopFilterButtons";
+import { useAuth } from "../contexts/AuthContext";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -39,6 +40,7 @@ export default function PeopleFeedPage() {
   const navigate=useNavigate()
   const [view,setView]=useState('grid')
   const data=useData()
+  const {user}=useAuth()
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -90,6 +92,7 @@ export default function PeopleFeedPage() {
   const [workSchedule, setWorkSchedule] = useState("");
   const [careerLevel, setCareerLevel] = useState("");
   const [paymentType, setPaymentType] = useState("");
+  const [jobsView, setJobsView] = useState("");
 
   // Tourism
   const [postType, setPostType] = useState("");
@@ -202,6 +205,7 @@ export default function PeopleFeedPage() {
         workSchedule: workSchedule || undefined,
         careerLevel: careerLevel || undefined,
         paymentType: paymentType || undefined,
+        jobsView: jobsView || undefined,
         // tourism
         postType: postType || undefined,
         season: season || undefined,
@@ -250,6 +254,7 @@ export default function PeopleFeedPage() {
     workSchedule,
     careerLevel,
     paymentType,
+    jobsView,
     postType,
     season,
     budgetRange,
@@ -295,6 +300,7 @@ export default function PeopleFeedPage() {
       workSchedule,
       careerLevel,
       paymentType,
+      jobsView,
       postType,
       season,
       budgetRange,
@@ -335,6 +341,7 @@ export default function PeopleFeedPage() {
     workSchedule,
     careerLevel,
     paymentType,
+    jobsView,
     postType,
     season,
     budgetRange,
@@ -345,7 +352,8 @@ export default function PeopleFeedPage() {
     eventType,
     date,
     registrationType,
-    selectedIndustries]);
+    selectedIndustries,
+    jobsView]);
 
   // Update audienceSelections when selectedFilters changes (but don't trigger fetch)
   useEffect(() => {
@@ -441,6 +449,8 @@ export default function PeopleFeedPage() {
     setCareerLevel,
     paymentType,
     setPaymentType,
+    jobsView,
+    setJobsView,
 
     // tourism
     postType,
@@ -584,10 +594,9 @@ export default function PeopleFeedPage() {
           </div>
            <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
-              { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
-              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
-              { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create") },
-              { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create") },
+              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
+              { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
+              { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
             ]} />
           <ProfileCard />
          
@@ -600,10 +609,11 @@ export default function PeopleFeedPage() {
               <TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
                                     buttons={
                                    [
-                                  "Professional",
-                                  "Freelancers",
-                                  "Students",
-               ]}/>
+                                      "Executives",
+                                      "Professionals",
+                                      "Freelancers",
+                                      "Students"
+                                   ]}/>
             <div className="flex items-center justify-between gap-y-2 flex-wrap">
               
               <h3 className="font-semibold text-2xl mt-1 hidden">Find Your Next Opportunity</h3>
@@ -613,9 +623,9 @@ export default function PeopleFeedPage() {
               <TabsAndAdd
                tabs={[]}
                items={[
-                    { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
-                    { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create") },
-                    { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create") },
+                    { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
+                    { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
+                    { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
                 ]}
               activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>

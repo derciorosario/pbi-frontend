@@ -22,6 +22,10 @@ import client from "../api/client";
 import ProfilePhoto from "../components/ProfilePhoto";
 import COUNTRIES from "../constants/countries.js";
 import Header from "../components/Header.jsx";
+import UserSelectionModal from "../components/UserSelectionModal";
+ import StaffInvitationModal from "../components/StaffInvitationModal";
+ import OrganizationSelectionModal from "../components/OrganizationSelectionModal";
+import { useAuth } from "../contexts/AuthContext.jsx";
 
 const Tab = {
   PERSONAL: "personal",
@@ -30,18 +34,37 @@ const Tab = {
   DO: "do",
   INTERESTS: "interests",
   INDUSTRIES: "industries",
+  REPRESENTATIVE: "representative",
+  STAFF: "staff",
+  ORGANIZATIONS: "organizations",
+  JOIN_REQUESTS: "join_requests",
+  APPLICATIONS: "applications",
+  EVENTS: "events",
+  JOB_APPLICATIONS: "job_applications",
+  EVENT_REGISTRATIONS: "event_registrations",
 };
 
 export default function ProfilePage() {
   const { id: userId } = useParams();
   const location = useLocation();
   const isAdminEditing = location.pathname.includes('/admin/user-profile/');
+  const {user} = useAuth() 
   
   const [active, setActive]   = useState(Tab.PERSONAL);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [me, setMe]           = useState(null);
   const [identities, setIdentities] = useState([]);
+
+  useEffect(()=>{
+
+    if(!me || !user) return
+
+    if(user?.id != me?.user?.id && user?.accountType!="admin"){
+      window.location.reload()
+    }
+
+  },[user,me])
   
   // Determine if this is a company account
   const isCompany = me?.user?.accountType === "company";
@@ -50,7 +73,12 @@ export default function ProfilePage() {
   const [personal, setPersonal] = useState({
     name: "", phone: "", nationality: "",
     country: "", countryOfResidence: "", city: "",
-    birthDate: "", professionalTitle: "", about: "", avatarUrl: ""
+    birthDate: "", professionalTitle: "", about: "", avatarUrl: "",
+    // Individual fields
+    gender: "",
+    // Company fields
+    otherCountries: [],
+    webpage: ""
   });
 
   // Professional (no categories here)
@@ -114,6 +142,600 @@ export default function ProfilePage() {
   // UI open/close for industries
   const [openIndustryCats, setOpenIndustryCats] = useState(() => new Set());
   const [openIndustrySubs, setOpenIndustrySubs] = useState(() => new Set());
+
+  // Company management state
+   const [representatives, setRepresentatives] = useState([]);
+   const [staff, setStaff] = useState([]);
+   const [showRepresentativeModal, setShowRepresentativeModal] = useState(false);
+   const [showStaffModal, setShowStaffModal] = useState(false);
+   const [currentRepresentative, setCurrentRepresentative] = useState(null);
+   const [pendingInvitations, setPendingInvitations] = useState([]);
+   const [incomingInvitations, setIncomingInvitations] = useState([]);
+   const [loadingInvitations, setLoadingInvitations] = useState(false);
+   const [sendingRepresentativeInvite, setSendingRepresentativeInvite] = useState(false);
+   const [sendingStaffInvite, setSendingStaffInvite] = useState(false);
+   const [editingStaff, setEditingStaff] = useState(null);
+   const [editingRole, setEditingRole] = useState('');
+
+   // Organization membership state
+   const [showOrganizationModal, setShowOrganizationModal] = useState(false);
+   const [membershipStatus, setMembershipStatus] = useState(null);
+   const [loadingMembership, setLoadingMembership] = useState(false);
+
+   // Organization join requests state (for companies)
+   const [organizationJoinRequests, setOrganizationJoinRequests] = useState([]);
+   const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
+   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+
+   // Profile applications state
+   const [jobApplications, setJobApplications] = useState([]);
+   const [eventRegistrations, setEventRegistrations] = useState([]);
+   const [loadingApplications, setLoadingApplications] = useState(false);
+   const [loadingEvents, setLoadingEvents] = useState(false);
+
+   // Individual applications and events state
+   const [individualJobApplications, setIndividualJobApplications] = useState([]);
+   const [individualEventRegistrations, setIndividualEventRegistrations] = useState([]);
+   const [loadingIndividualApplications, setLoadingIndividualApplications] = useState(false);
+   const [loadingIndividualEvents, setLoadingIndividualEvents] = useState(false);
+
+   // Profile applications state for individuals
+   const [myJobApplications, setMyJobApplications] = useState([]);
+   const [myEventRegistrations, setMyEventRegistrations] = useState([]);
+   const [loadingMyApplications, setLoadingMyApplications] = useState(false);
+   const [loadingMyEvents, setLoadingMyEvents] = useState(false);
+
+  // Load company representatives and staff
+   useEffect(() => {
+     if (isCompany && me?.user?.id) {
+       loadCompanyData();
+     }
+   }, [isCompany, me?.user?.id]);
+
+   // Load organization membership status for individual users
+   useEffect(() => {
+     if (!isCompany && me?.user?.id) {
+       loadMembershipStatus();
+     }
+   }, [isCompany, me?.user?.id]);
+
+   // Load organization join requests for companies
+    useEffect(() => {
+      if (isCompany && me?.user?.id) {
+        loadOrganizationJoinRequests();
+        loadPendingRequestsCount();
+      }
+    }, [isCompany, me?.user?.id]);
+
+    // Load job applications for companies
+    useEffect(() => {
+      if (isCompany && me?.user?.id && active === Tab.JOB_APPLICATIONS) {
+        loadJobApplications();
+      }
+    }, [isCompany, me?.user?.id, active]);
+
+    // Load event registrations for companies
+    useEffect(() => {
+      if (isCompany && me?.user?.id && active === Tab.EVENT_REGISTRATIONS) {
+        loadEventRegistrations();
+      }
+    }, [isCompany, me?.user?.id, active]);
+
+    // Load individual job applications
+    useEffect(() => {
+      if (!isCompany && me?.user?.id && active === Tab.APPLICATIONS) {
+        loadIndividualJobApplications();
+      }
+    }, [isCompany, me?.user?.id, active]);
+
+    // Load individual event registrations
+    useEffect(() => {
+      if (!isCompany && me?.user?.id && active === Tab.EVENTS) {
+        loadIndividualEventRegistrations();
+      }
+    }, [isCompany, me?.user?.id, active]);
+
+    // Load my applications for individuals
+    useEffect(() => {
+      if (!isCompany && me?.user?.id && active === Tab.APPLICATIONS) {
+        loadMyApplications();
+      }
+    }, [!isCompany, me?.user?.id, active]);
+
+    // Load my events for individuals
+    useEffect(() => {
+      if (!isCompany && me?.user?.id && active === Tab.EVENTS) {
+        loadMyEventRegistrations();
+      }
+    }, [!isCompany, me?.user?.id, active]);
+
+  async function loadCompanyData() {
+    try {
+      // Load company representatives
+      const repResponse = await client.get('/company/representatives');
+      if (repResponse.data?.representatives) {
+        setRepresentatives(repResponse.data.representatives);
+        // Set current representative if exists
+        const activeRep = repResponse.data.representatives.find(r => r.status === 'authorized');
+        if (activeRep) {
+          setCurrentRepresentative(activeRep);
+        }
+      }
+
+      // Load company staff
+      const staffResponse = await client.get('/company/staff');
+      if (staffResponse.data?.staff) {
+        setStaff(staffResponse.data.staff);
+      }
+
+      // Load pending invitations (for representatives)
+      try {
+        const invitationsResponse = await client.get('/company/invitations?type=representative&status=sent');
+        if (invitationsResponse.data?.invitations) {
+          setPendingInvitations(invitationsResponse.data.invitations);
+        }
+      } catch (invitationError) {
+        // Invitations endpoint might not exist yet, that's okay
+        console.log('Invitations endpoint not available yet');
+      }
+
+      // Load incoming invitations (invitations sent TO this company)
+      try {
+        const incomingResponse = await client.get('/company/invitations?type=representative&status=pending&direction=incoming');
+        if (incomingResponse.data?.invitations) {
+          setIncomingInvitations(incomingResponse.data.invitations);
+        }
+      } catch (incomingError) {
+        // Incoming invitations endpoint might not exist yet, that's okay
+        console.log('Incoming invitations endpoint not available yet');
+      }
+    } catch (error) {
+      console.error('Failed to load company data:', error);
+    }
+  }
+
+  // Handle representative selection
+   async function handleRepresentativeSelected(user) {
+     try {
+       setShowRepresentativeModal(false);
+       setSendingRepresentativeInvite(true);
+
+       // Show loading toast
+       toast.loading('Sending authorization request...', { id: 'representative-invite' });
+
+       console.log('Sending representative invitation for user:', user.id);
+       const response = await client.post('/company/representative/invite', {
+         companyId: me.user.id,
+         representativeId: user.id
+       });
+
+       console.log('Representative invitation response:', response.data);
+
+       console.log({a:response.data})
+
+       if (response.data.invitation) {
+         toast.success('Authorization request sent to user', { id: 'representative-invite' });
+         console.log('Toast success called');
+         // Reload company data to show pending request
+         loadCompanyData();
+       } else {
+         toast.error('Failed to send authorization request', { id: 'representative-invite' });
+       }
+     } catch (error) {
+       console.error('Failed to send representative request:', error);
+
+       // Show user-friendly error messages based on backend response
+       if (error.response?.data?.message) {
+         const backendMessage = error.response.data.message;
+
+         if (backendMessage.includes('already sent')) {
+           toast.error('An invitation has already been sent to this user. Please wait for their response or try a different user.', { id: 'representative-invite' });
+         } else if (backendMessage.includes('already a representative')) {
+           toast.error('This user is already a representative for your company.', { id: 'representative-invite' });
+         } else if (backendMessage.includes('Only companies can')) {
+           toast.error('Only company accounts can invite representatives.', { id: 'representative-invite' });
+         } else if (backendMessage.includes('Invalid representative')) {
+           toast.error('This user cannot be selected as a representative.', { id: 'representative-invite' });
+         } else {
+           toast.error(`Authorization request failed: ${backendMessage}`, { id: 'representative-invite' });
+         }
+       } else {
+         toast.error('Failed to send authorization request. Please try again.', { id: 'representative-invite' });
+       }
+     } finally {
+       setSendingRepresentativeInvite(false);
+     }
+   }
+
+  // Handle staff invitation
+   async function handleStaffInvited(invitation) {
+     try {
+       setSendingStaffInvite(true);
+
+       // Show loading toast
+       toast.loading('Sending staff invitation...', { id: 'staff-invite' });
+
+       // The invitation is already sent by the modal, just reload data
+       toast.success('Staff invitation sent successfully', { id: 'staff-invite' });
+
+       // Reload company data to show new invitation
+       loadCompanyData();
+     } catch (error) {
+       console.error('Failed to handle staff invitation:', error);
+       toast.error('Failed to process staff invitation', { id: 'staff-invite' });
+     } finally {
+       setSendingStaffInvite(false);
+     }
+   }
+
+  // Handle staff removal
+  async function handleRemoveStaff(staffId) {
+    try {
+      const response = await client.delete(`/company/staff/${staffId}`);
+
+      if (response.data) {
+        toast.success('Staff member removed successfully');
+        // Reload company data
+        loadCompanyData();
+      }
+    } catch (error) {
+      console.error('Failed to remove staff member:', error);
+      toast.error('Failed to remove staff member');
+    }
+  }
+
+  // Handle staff role update
+  async function handleUpdateStaffRole(staffRecordId, newRole) {
+    try {
+      const response = await client.put(`/company/staff/${staffRecordId}`, {
+        role: newRole
+      });
+
+      if (response.data) {
+        toast.success('Staff role updated successfully');
+        // Reload company data
+        loadCompanyData();
+        setEditingStaff(null);
+        setEditingRole('');
+      }
+    } catch (error) {
+      console.error('Failed to update staff role:', error);
+      toast.error('Failed to update staff role');
+    }
+  }
+
+  // Start editing staff role
+  function startEditingStaff(staffMember) {
+    setEditingStaff(staffMember.id);
+    setEditingRole(staffMember.role);
+  }
+
+  // Cancel editing staff role
+  function cancelEditingStaff() {
+    setEditingStaff(null);
+    setEditingRole('');
+  }
+
+  // Handle representative removal/revocation
+  async function handleRemoveRepresentative() {
+    try {
+      const response = await client.delete(`/company/representative/${currentRepresentative.representativeId}`);
+
+      if (response.data) {
+        toast.success('Representative authorization revoked successfully');
+        // Clear current representative and reload data
+        setCurrentRepresentative(null);
+        loadCompanyData();
+      }
+    } catch (error) {
+      console.error('Failed to remove representative:', error);
+      toast.error('Failed to remove representative');
+    }
+  }
+
+  // Handle invitation cancellation
+  async function handleCancelInvitation(invitationId) {
+    try {
+      setLoadingInvitations(true);
+      const response = await client.put(`/company/invitations/${invitationId}/cancel`);
+
+      if (response.data) {
+        toast.success('Invitation cancelled successfully');
+        // Reload invitations data
+        loadCompanyData();
+      }
+    } catch (error) {
+      console.error('Failed to cancel invitation:', error);
+      toast.error('Failed to cancel invitation');
+    } finally {
+      setLoadingInvitations(false);
+    }
+  }
+
+  // Handle invitation resend
+   async function handleResendInvitation(invitationId) {
+     try {
+       setLoadingInvitations(true);
+       const response = await client.put(`/company/invitations/${invitationId}/resend`);
+
+       if (response.data) {
+         toast.success('Invitation resent successfully');
+         // Reload invitations data
+         loadCompanyData();
+       }
+     } catch (error) {
+       console.error('Failed to resend invitation:', error);
+       toast.error('Failed to resend invitation');
+     } finally {
+       setLoadingInvitations(false);
+     }
+   }
+
+   // Handle accepting incoming representative invitation
+   async function handleAcceptIncomingInvitation(invitationId) {
+     try {
+       setLoadingInvitations(true);
+       const response = await client.put(`/company/invitations/${invitationId}/accept`);
+
+       if (response.data) {
+         toast.success('Representative request accepted successfully');
+         // Reload company data to show new representative
+         loadCompanyData();
+       }
+     } catch (error) {
+       console.error('Failed to accept invitation:', error);
+       toast.error('Failed to accept representative request');
+     } finally {
+       setLoadingInvitations(false);
+     }
+   }
+
+   // Handle rejecting incoming representative invitation
+   async function handleRejectIncomingInvitation(invitationId) {
+     try {
+       setLoadingInvitations(true);
+       const response = await client.put(`/company/invitations/${invitationId}/reject`);
+
+       if (response.data) {
+         toast.success('Representative request rejected');
+         // Reload company data to remove rejected invitation
+         loadCompanyData();
+       }
+     } catch (error) {
+       console.error('Failed to reject invitation:', error);
+       toast.error('Failed to reject representative request');
+     } finally {
+       setLoadingInvitations(false);
+     }
+   }
+
+   // Load organization membership status from CompanyStaff
+   async function loadMembershipStatus() {
+     try {
+       setLoadingMembership(true);
+       // Get user's company staff relationships
+       const response = await client.get('/company/staff/my-memberships');
+       setMembershipStatus(response.data.memberships || []);
+     } catch (error) {
+       console.error('Failed to load membership status:', error);
+       // Don't show error toast for membership status
+     } finally {
+       setLoadingMembership(false);
+     }
+   }
+
+   // Handle organization join request success
+   async function handleOrganizationJoinSuccess(request) {
+     toast.success('Organization join request sent successfully!');
+     // Reload membership status to show any updates
+     loadMembershipStatus();
+   }
+
+   // Handle leaving organization
+   async function handleLeaveOrganization(membershipId) {
+     try {
+       const response = await client.delete(`/company/staff/membership/${membershipId}`);
+
+       if (response.data) {
+         toast.success('Successfully left the organization');
+         // Reload membership status to show updates
+         loadMembershipStatus();
+       }
+     } catch (error) {
+       console.error('Failed to leave organization:', error);
+       toast.error('Failed to leave organization');
+     }
+   }
+
+   // Handle setting main company
+   async function handleSetMainCompany(membershipId) {
+     try {
+       const response = await client.put(`/company/staff/membership/${membershipId}/set-main`);
+
+       if (response.data) {
+         toast.success('Main company set successfully');
+         // Reload membership status to show updates
+         loadMembershipStatus();
+       }
+     } catch (error) {
+       console.error('Failed to set main company:', error);
+       toast.error('Failed to set main company');
+     }
+   }
+
+   // Handle unsetting main company
+   async function handleUnsetMainCompany(membershipId) {
+     try {
+       const response = await client.put(`/company/staff/membership/${membershipId}/unset-main`);
+
+       if (response.data) {
+         toast.success('Main company unset successfully');
+         // Reload membership status to show updates
+         loadMembershipStatus();
+       }
+     } catch (error) {
+       console.error('Failed to unset main company:', error);
+       toast.error('Failed to unset main company');
+     }
+   }
+
+   // Load organization join requests for companies
+   async function loadOrganizationJoinRequests() {
+     try {
+       setLoadingJoinRequests(true);
+       const response = await client.get('/organization/join-requests');
+       if (response.data?.requests) {
+         setOrganizationJoinRequests(response.data.requests);
+       }
+     } catch (error) {
+       console.error('Failed to load organization join requests:', error);
+       // Don't show error toast for join requests
+     } finally {
+       setLoadingJoinRequests(false);
+     }
+   }
+
+   // Load pending requests count
+   async function loadPendingRequestsCount() {
+     try {
+       const response = await client.get('/organization/join-requests/pending/count');
+       if (response.data?.count !== undefined) {
+         setPendingRequestsCount(response.data.count);
+       }
+     } catch (error) {
+       console.error('Failed to load pending requests count:', error);
+     }
+   }
+
+   // Handle approving organization join request
+   async function handleApproveJoinRequest(requestId) {
+     try {
+       const response = await client.put(`/organization/join-requests/${requestId}/approve`);
+
+       if (response.data) {
+         toast.success('Join request approved successfully!');
+         // Reload join requests and pending count
+         loadOrganizationJoinRequests();
+         loadPendingRequestsCount();
+         // Also reload staff data to show the new member
+         loadCompanyData();
+       }
+     } catch (error) {
+       console.error('Failed to approve join request:', error);
+       toast.error('Failed to approve join request');
+     }
+   }
+
+   // Handle rejecting organization join request
+   async function handleRejectJoinRequest(requestId) {
+     try {
+       const response = await client.put(`/organization/join-requests/${requestId}/reject`);
+
+       if (response.data) {
+         toast.success('Join request rejected');
+         // Reload join requests and pending count
+         loadOrganizationJoinRequests();
+         loadPendingRequestsCount();
+       }
+     } catch (error) {
+       console.error('Failed to reject join request:', error);
+       toast.error('Failed to reject join request');
+     }
+   }
+
+   // Load job applications for companies
+   async function loadJobApplications() {
+     try {
+       setLoadingApplications(true);
+       const response = await client.get('/profile/job-applications');
+       if (response.data?.applications) {
+         setJobApplications(response.data.applications);
+       }
+     } catch (error) {
+       console.error('Failed to load job applications:', error);
+       // Don't show error toast for applications
+     } finally {
+       setLoadingApplications(false);
+     }
+   }
+
+   // Load event registrations for companies
+   async function loadEventRegistrations() {
+     try {
+       setLoadingEvents(true);
+       const response = await client.get('/profile/event-registrations');
+       if (response.data?.registrations) {
+         setEventRegistrations(response.data.registrations);
+       }
+     } catch (error) {
+       console.error('Failed to load event registrations:', error);
+       // Don't show error toast for registrations
+     } finally {
+       setLoadingEvents(false);
+     }
+   }
+
+   // Load individual job applications
+   async function loadIndividualJobApplications() {
+     try {
+       setLoadingIndividualApplications(true);
+       const response = await client.get('/profile/applications/jobs');
+       if (response.data?.applications) {
+         setIndividualJobApplications(response.data.applications);
+       }
+     } catch (error) {
+       console.error('Failed to load individual job applications:', error);
+       // Don't show error toast for applications
+     } finally {
+       setLoadingIndividualApplications(false);
+     }
+   }
+
+   // Load individual event registrations
+   async function loadIndividualEventRegistrations() {
+     try {
+       setLoadingIndividualEvents(true);
+       const response = await client.get('/profile/applications/events');
+       if (response.data?.registrations) {
+         setIndividualEventRegistrations(response.data.registrations);
+       }
+     } catch (error) {
+       console.error('Failed to load individual event registrations:', error);
+       // Don't show error toast for registrations
+     } finally {
+       setLoadingIndividualEvents(false);
+     }
+   }
+
+   // Load my job applications for individuals
+   async function loadMyApplications() {
+     try {
+       setLoadingMyApplications(true);
+       const response = await client.get('/profile/applications/jobs');
+       if (response.data?.applications) {
+         setMyJobApplications(response.data.applications);
+       }
+     } catch (error) {
+       console.error('Failed to load my applications:', error);
+     } finally {
+       setLoadingMyApplications(false);
+     }
+   }
+
+   // Load my event registrations for individuals
+   async function loadMyEventRegistrations() {
+     try {
+       setLoadingMyEvents(true);
+       const response = await client.get('/profile/applications/events');
+       if (response.data?.registrations) {
+         setMyEventRegistrations(response.data.registrations);
+       }
+     } catch (error) {
+       console.error('Failed to load my event registrations:', error);
+     } finally {
+       setLoadingMyEvents(false);
+     }
+   }
 
   useEffect(() => {
     (async () => {
@@ -182,6 +804,11 @@ export default function ProfilePage() {
           professionalTitle: p.professionalTitle || "",
           about: p.about || "",
           avatarUrl: u.avatarUrl || p.avatarUrl || "",
+          // Individual fields
+          gender: u.gender || "",
+          // Company fields
+          otherCountries: Array.isArray(u.otherCountries) ? u.otherCountries : [],
+          webpage: u.webpage || "",
         });
 
         // hydrate professional
@@ -263,6 +890,11 @@ export default function ProfilePage() {
           country: personal.country,
           countryOfResidence: personal.countryOfResidence,
           city: personal.city,
+          // Individual fields
+          gender: personal.gender,
+          // Company fields
+          otherCountries: personal.otherCountries,
+          webpage: personal.webpage,
           profile: {
             birthDate: personal.birthDate,
             professionalTitle: personal.professionalTitle,
@@ -1432,7 +2064,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Availability Status - Compact design with subtle message */}
-        {!isAdminEditing && (
+        {(!isAdminEditing && user?.accountType=="individual") && (
           <div className="mt-4 bg-white rounded-xl shadow-soft p-4 border border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1490,6 +2122,48 @@ export default function ProfilePage() {
           <button className={`px-4 py-2 rounded-lg border ${active===Tab.INDUSTRIES ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INDUSTRIES)}>
             {isCompany ? "Company Industries" : "Industries"}
           </button>
+          {isCompany && (
+             <>
+               <button className={`px-4 py-2 rounded-lg border ${active===Tab.REPRESENTATIVE ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.REPRESENTATIVE)}>
+                 Representative
+               </button>
+               <button className={`px-4 py-2 rounded-lg border ${active===Tab.STAFF ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.STAFF)}>
+                 Staff
+                 {staff.length > 0 && (
+                   <span className="ml-1 text-xs bg-green-500 text-white rounded-full px-1.5 py-0.5">
+                     {staff.length}
+                   </span>
+                 )}
+               </button>
+               <button className={`px-4 py-2 rounded-lg border ${active===Tab.JOB_APPLICATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.JOB_APPLICATIONS)}>
+                 Job Applications
+               </button>
+               <button className={`px-4 py-2 rounded-lg border ${active===Tab.EVENT_REGISTRATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.EVENT_REGISTRATIONS)}>
+                 Event Registrations
+               </button>
+               <button className={`px-4 py-2 rounded-lg border relative ${active===Tab.JOIN_REQUESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.JOIN_REQUESTS)}>
+                 Join Requests
+                 {pendingRequestsCount > 0 && (
+                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                     {pendingRequestsCount}
+                   </span>
+                 )}
+               </button>
+             </>
+           )}
+           {!isCompany && (
+             <>
+               <button className={`px-4 py-2 rounded-lg border ${active===Tab.APPLICATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.APPLICATIONS)}>
+                 My Applications
+               </button>
+               <button className={`px-4 py-2 rounded-lg border ${active===Tab.EVENTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.EVENTS)}>
+                 My Events
+               </button>
+               <button className={`px-4 py-2 rounded-lg border ${active===Tab.ORGANIZATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.ORGANIZATIONS)}>
+                 Organizations
+               </button>
+             </>
+           )}
         </div>
 
         <div className="mt-4 bg-white rounded-2xl shadow-soft p-5">
@@ -1514,11 +2188,11 @@ export default function ProfilePage() {
                   <input className="w-full border rounded-lg px-3 py-2" value={personal.phone}
                          onChange={e=>setPersonal({...personal, phone:e.target.value})}/>
                 </div>
-                <div>
+               {!isCompany && <div>
                   <label className="block text-sm font-medium mb-1">Birth date</label>
                   <input type="date" className="w-full border rounded-lg px-3 py-2" value={personal.birthDate || ""}
                          onChange={e=>setPersonal({...personal, birthDate:e.target.value})}/>
-                </div>
+                </div>}
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Nationality</label>
@@ -1528,6 +2202,7 @@ export default function ProfilePage() {
                     {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
+                
                 <div>
                   <label className="block text-sm font-medium mb-1">Country of residence</label>
                   <select value={personal.countryOfResidence} onChange={e=>setPersonal({...personal, countryOfResidence:e.target.value})}
@@ -1550,6 +2225,110 @@ export default function ProfilePage() {
                   <input className="w-full border rounded-lg px-3 py-2" value={personal.city}
                          onChange={e=>setPersonal({...personal, city:e.target.value})}/>
                 </div>
+
+                {/* Individual-specific fields */}
+                {isCompany ? (
+                  <>
+                    {/* Company Website */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium mb-1">Company Website</label>
+                      <input
+                        type="url"
+                        className="w-full border rounded-lg px-3 py-2"
+                        value={personal.webpage}
+                        onChange={e=>setPersonal({...personal, webpage:e.target.value})}
+                        placeholder="https://www.yourcompany.com"
+                      />
+                    </div>
+
+                    {/* Other Countries of Operations */}
+                    <div className="md:col-span-2 space-y-3">
+                      <label className="block text-sm font-medium mb-1">
+                        Other Countries of Operations (Branches)
+                      </label>
+
+                      {/* Selected Countries Chips */}
+                      {personal.otherCountries.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {personal.otherCountries.map((country) => (
+                            <div
+                              key={country}
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-brand-100 text-brand-800 rounded-full text-sm"
+                            >
+                              <span>{country}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPersonal(prev => ({
+                                    ...prev,
+                                    otherCountries: prev.otherCountries.filter(c => c !== country)
+                                  }));
+                                }}
+                                className="text-brand-600 hover:text-brand-800"
+                              >
+                                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Country Selector */}
+                      <div className="relative">
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            const selectedCountry = e.target.value;
+                            if (selectedCountry && !personal.otherCountries.includes(selectedCountry)) {
+                              setPersonal(prev => ({
+                                ...prev,
+                                otherCountries: [...prev.otherCountries, selectedCountry]
+                              }));
+                            }
+                            e.target.value = ""; // Reset select
+                          }}
+                          className="w-full border rounded-lg px-3 py-2"
+                        >
+                          <option value="" disabled>Add a country...</option>
+                          {COUNTRIES
+                            .filter(country => !personal.otherCountries.includes(country))
+                            .map((c) => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                        </select>
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                          <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-gray-500">
+                        Select countries where your company has branches or operations
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Gender */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium mb-1">Gender</label>
+                      <select
+                        value={personal.gender}
+                        onChange={e=>setPersonal({...personal, gender:e.target.value})}
+                        className="w-full border rounded-lg px-3 py-2"
+                      >
+                        <option value="" disabled>Select gender</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                        <option value="prefer-not-to-say">Prefer not to say</option>
+                      </select>
+                    </div>
+                  </>
+                )}
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">
@@ -2249,8 +3028,1096 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {/* COMPANY REPRESENTATIVE */}
+          {active === Tab.REPRESENTATIVE && isCompany && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-4">Company Representative</h3>
+                <p className="text-gray-600 mb-4">
+                  Select an individual user to act as the authorized representative for your company.
+                  They will receive an email request to authorize this relationship.
+                </p>
+
+                {/* Incoming Invitations - Requests to be Representative */}
+                {incomingInvitations.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-medium mb-3 text-blue-700">Requests to be Representative</h4>
+                    <div className="space-y-3">
+                      {incomingInvitations.map(incomingInv => (
+                        <div key={incomingInv.id} className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center">
+                                {incomingInv.company?.avatarUrl ? (
+                                  <img
+                                    src={incomingInv.company.avatarUrl}
+                                    alt={incomingInv.company.name}
+                                    className="w-10 h-10 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-blue-700 font-medium">
+                                    {incomingInv.company?.name?.charAt(0).toUpperCase() || '?'}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-medium">{incomingInv.company?.name || 'Unknown Company'}</div>
+                                <div className="text-sm text-gray-600">{incomingInv.company?.email || 'No email'}</div>
+                                <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 inline-block mt-1">
+                                  📧 Request to be Representative
+                                </div>
+                                {incomingInv.createdAt && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    Received {new Date(incomingInv.createdAt).toLocaleDateString()}
+                                  </div>
+                                )}
+                                {incomingInv.message && (
+                                  <div className="text-xs text-gray-600 mt-1 italic">
+                                    "{incomingInv.message}"
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleAcceptIncomingInvitation(incomingInv.id)}
+                                disabled={loadingInvitations}
+                                className="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
+                                title="Accept representative request"
+                              >
+                                {loadingInvitations ? '...' : 'Accept'}
+                              </button>
+                              <button
+                                onClick={() => handleRejectIncomingInvitation(incomingInv.id)}
+                                disabled={loadingInvitations}
+                                className="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 disabled:opacity-50"
+                                title="Reject representative request"
+                              >
+                                {loadingInvitations ? '...' : 'Reject'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Current/Authorized Representative */}
+                {currentRepresentative && (
+                  <div className="mb-6">
+                    <h4 className="font-medium mb-3 text-green-700">Current Representative</h4>
+                    <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
+                            {currentRepresentative.representative.avatarUrl ? (
+                              <img
+                                src={currentRepresentative.representative.avatarUrl}
+                                alt={currentRepresentative.representative.name}
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-green-700 font-medium">
+                                {currentRepresentative.representative.name.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium">{currentRepresentative.representative.name}</div>
+                            <div className="text-sm text-gray-600">{currentRepresentative.representative.email}</div>
+                            {currentRepresentative.representative.professionalTitle && (
+                              <div className="text-xs text-gray-500">{currentRepresentative.representative.professionalTitle}</div>
+                            )}
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
+                                ✓ Authorized
+                              </div>
+                              {currentRepresentative.authorizedAt && (
+                                <div className="text-xs text-gray-500">
+                                  Authorized {new Date(currentRepresentative.authorizedAt).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setShowRepresentativeModal(true)}
+                            disabled={sendingRepresentativeInvite}
+                            className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {sendingRepresentativeInvite ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-3 w-3 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                                </svg>
+                                Sending...
+                              </>
+                            ) : (
+                              'Replace'
+                            )}
+                          </button>
+                          <button
+                            onClick={handleRemoveRepresentative}
+                            className="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pending Invitations */}
+                {pendingInvitations.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-medium mb-3 text-yellow-700">Pending Requests</h4>
+                    <div className="space-y-3">
+                      {pendingInvitations.map(pendingRep => {
+                        const user = pendingRep.representative || pendingRep.invitedUser;
+                        return (
+                          <div key={pendingRep.id} className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-yellow-200 rounded-full flex items-center justify-center">
+                                  {user?.avatarUrl ? (
+                                    <img
+                                      src={user.avatarUrl}
+                                      alt={user.name}
+                                      className="w-10 h-10 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-yellow-700 font-medium">
+                                      {user?.name?.charAt(0).toUpperCase() || '?'}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-medium">{user?.name || 'Unknown User'}</div>
+                                  <div className="text-sm text-gray-600">{user?.email || 'No email'}</div>
+                                  <div className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 inline-block mt-1">
+                                    ⏳ Awaiting Authorization
+                                  </div>
+                                  {pendingRep.createdAt && (
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Sent {new Date(pendingRep.createdAt).toLocaleDateString()}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleResendInvitation(pendingRep.id)}
+                                  disabled={loadingInvitations}
+                                  className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50 disabled:opacity-50"
+                                  title="Resend invitation"
+                                >
+                                  {loadingInvitations ? '...' : 'Resend'}
+                                </button>
+                                <button
+                                  onClick={() => handleCancelInvitation(pendingRep.id)}
+                                  disabled={loadingInvitations}
+                                  className="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 disabled:opacity-50"
+                                  title="Cancel invitation"
+                                >
+                                  {loadingInvitations ? '...' : 'Cancel'}
+                                </button>
+                                <button
+                                  onClick={() => setShowRepresentativeModal(true)}
+                                  disabled={sendingRepresentativeInvite}
+                                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {sendingRepresentativeInvite ? (
+                                    <>
+                                      <svg className="animate-spin -ml-1 mr-2 h-3 w-3 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                                      </svg>
+                                      Sending...
+                                    </>
+                                  ) : (
+                                    'Change'
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Select Representative Button */}
+                {!currentRepresentative && pendingInvitations.length === 0 && (
+                  <div className="text-center py-8">
+                    <div className="mb-4">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Representative Selected</h3>
+                    <p className="text-gray-500 mb-4">
+                      Select an individual user to act as your company's authorized representative.
+                    </p>
+                    <button
+                      onClick={() => setShowRepresentativeModal(true)}
+                      disabled={sendingRepresentativeInvite}
+                      className="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {sendingRepresentativeInvite ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                          </svg>
+                          Sending...
+                        </>
+                      ) : (
+                        'Select Representative'
+                      )}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* COMPANY STAFF */}
+          {active === Tab.STAFF && isCompany && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold">Company Staff</h3>
+                  <p className="text-gray-600 text-sm">
+                    Manage team members who have access to company features
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowStaffModal(true)}
+                  disabled={sendingStaffInvite}
+                  className="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendingStaffInvite ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                      </svg>
+                      Sending...
+                    </>
+                  ) : (
+                    'Invite Staff Member'
+                  )}
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {staff.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No staff members yet</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Invite team members to join your company.
+                    </p>
+                  </div>
+                ) : (
+                  staff.map(member => (
+                    <div key={member.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                            {member.staff.avatarUrl ? (
+                              <img
+                                src={member.staff.avatarUrl}
+                                alt={member.staff.name}
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-gray-600 font-medium">
+                                {member.staff.name.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium">{member.staff.name}</div>
+                            <div className="text-sm text-gray-500">{member.staff.email}</div>
+                            <div className="text-xs text-gray-400">
+                              Role: {editingStaff === member.id ? (
+                                <input
+                                  type="text"
+                                  value={editingRole}
+                                  onChange={(e) => setEditingRole(e.target.value)}
+                                  className="ml-1 px-2 py-1 border rounded text-sm"
+                                  placeholder="Enter role"
+                                />
+                              ) : (
+                                member.role
+                              )}
+                            </div>
+                            <div className="text-xs text-green-600 mt-1">
+                              Status: {member.status}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {editingStaff === member.id ? (
+                            <>
+                              <button
+                                onClick={() => handleUpdateStaffRole(member.staffId, editingRole)}
+                                className="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={cancelEditingStaff}
+                                className="px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => startEditingStaff(member)}
+                                className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleRemoveStaff(member.staffId)}
+                                className="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50"
+                              >
+                                Remove
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* JOB APPLICATIONS */}
+          {active === Tab.JOB_APPLICATIONS && isCompany && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-4">Job Applications</h3>
+                <p className="text-gray-600 mb-4">
+                  View and manage applications for your job postings, ranked by similarity to your requirements.
+                </p>
+
+                {loadingApplications ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
+                    <p className="text-gray-500 mt-2">Loading applications...</p>
+                  </div>
+                ) : jobApplications.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No applications yet</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      When candidates apply to your jobs, their applications will appear here ranked by match quality.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {jobApplications.map((application, index) => (
+                      <div key={application.id} className="border rounded-lg p-4 bg-white">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                              {application.applicant?.avatarUrl ? (
+                                <img
+                                  src={application.applicant.avatarUrl}
+                                  alt={application.applicant.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-gray-600 font-medium">
+                                  {application.applicant?.name?.charAt(0).toUpperCase() || '?'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">{application.applicant?.name || 'Unknown Applicant'}</div>
+                              <div className="text-sm text-gray-600">{application.applicant?.email || 'No email'}</div>
+                              <div className="text-xs text-gray-500">
+                                Applied to: {application.job?.title || 'Unknown Job'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              application.similarityScore >= 80 ? 'bg-green-100 text-green-800' :
+                              application.similarityScore >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {application.similarityScore}% match
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              #{index + 1}
+                            </div>
+                          </div>
+                        </div>
+                        {application.coverLetter && (
+                          <div className="mb-3">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">Cover Letter</h4>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                              {application.coverLetter}
+                            </p>
+                          </div>
+                        )}
+                        {application.similarity && application.similarity.matches && (
+                          <div className="mb-3 hidden">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">Matching Categories</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {application.similarity.matches.categories.map(cat => (
+                                <span key={cat.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                                  {cat.name}
+                                </span>
+                              ))}
+                              {application.similarity.matches.subcategories.map(sub => (
+                                <span key={sub.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                  {sub.name}
+                                </span>
+                              ))}
+                              {application.similarity.matches.subsubcategories.map(subsub => (
+                                <span key={subsub.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                  {subsub.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {application.job?.coverImageBase64 && (
+                          <div className="mb-3 hidden">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">Job Cover Image</h4>
+                            <div className="w-full max-w-xs">
+                              <img
+                                src={application.job.coverImageBase64}
+                                alt="Job cover"
+                                className="w-full h-32 object-cover rounded-lg border"
+                              />
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-gray-500">
+                            Applied {new Date(application.createdAt).toLocaleDateString()}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => window.open(`/profile/${application.applicant.id}`, '_blank')}
+                              className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
+                            >
+                              View Profile
+                            </button>
+                            <button
+                              onClick={() => window.open(`/messages?userId=${application.applicant.id}`, '_blank')}
+                              className="px-3 py-1 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700"
+                            >
+                              Message
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* EVENT REGISTRATIONS */}
+          {active === Tab.EVENT_REGISTRATIONS && isCompany && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-4">Event Registrations</h3>
+                <p className="text-gray-600 mb-4">
+                  View and manage registrations for your events, ranked by similarity to your target audience.
+                </p>
+
+                {loadingEvents ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
+                    <p className="text-gray-500 mt-2">Loading registrations...</p>
+                  </div>
+                ) : eventRegistrations.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No registrations yet</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      When attendees register for your events, they will appear here ranked by audience match.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {eventRegistrations.map((registration, index) => (
+                      <div key={registration.id} className="border rounded-lg p-4 bg-white">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                              {registration.registrant?.avatarUrl ? (
+                                <img
+                                  src={registration.registrant.avatarUrl}
+                                  alt={registration.registrant.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-gray-600 font-medium">
+                                  {registration.registrant?.name?.charAt(0).toUpperCase() || '?'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">{registration.registrant?.name || 'Unknown Attendee'}</div>
+                              <div className="text-sm text-gray-600">{registration.registrant?.email || 'No email'}</div>
+                              <div className="text-xs text-gray-500">
+                                Event: {registration.event?.title || 'Unknown Event'}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              registration.similarityScore >= 80 ? 'bg-green-100 text-green-800' :
+                              registration.similarityScore >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {registration.similarityScore}% match
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              #{index + 1}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-gray-500">
+                            Registered {new Date(registration.createdAt).toLocaleDateString()}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => window.open(`/profile/${registration.attendee.id}`, '_blank')}
+                              className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
+                            >
+                              View Profile
+                            </button>
+                            <button
+                              onClick={() => window.open(`/messages?userId=${registration.attendee.id}`, '_blank')}
+                              className="px-3 py-1 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700"
+                            >
+                              Message
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ORGANIZATION JOIN REQUESTS */}
+          {active === Tab.JOIN_REQUESTS && isCompany && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-4">Organization Join Requests</h3>
+                <p className="text-gray-600 mb-4">
+                  Review and manage requests from individuals who want to join your organization.
+                </p>
+
+                {loadingJoinRequests ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
+                    <p className="text-gray-500 mt-2">Loading join requests...</p>
+                  </div>
+                ) : organizationJoinRequests.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No join requests yet</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      When individuals request to join your organization, they will appear here for review.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {organizationJoinRequests.map(request => (
+                      <div key={request.id} className="border rounded-lg p-4 bg-white">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                              {request.user?.avatarUrl ? (
+                                <img
+                                  src={request.user.avatarUrl}
+                                  alt={request.user.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-gray-600 font-medium">
+                                  {request.user?.name?.charAt(0).toUpperCase() || '?'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">{request.user?.name || 'Unknown User'}</div>
+                              <div className="text-sm text-gray-600">{request.user?.email || 'No email'}</div>
+                              {request.message && (
+                                <div className="text-xs text-gray-600 mt-1 italic">
+                                  "{request.message}"
+                                </div>
+                              )}
+                              <div className="flex items-center gap-2 mt-2">
+                                <div className={`text-xs px-2 py-1 rounded-full ${
+                                  request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {request.status === 'pending' ? '⏳ Pending Review' :
+                                   request.status === 'approved' ? '✓ Approved' : '✗ Rejected'}
+                                </div>
+                                {request.createdAt && (
+                                  <div className="text-xs text-gray-500">
+                                    Requested {new Date(request.createdAt).toLocaleDateString()}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            {request.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleApproveJoinRequest(request.id)}
+                                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleRejectJoinRequest(request.id)}
+                                  className="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 transition-colors"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            {request.status === 'approved' && (
+                              <div className="text-sm text-green-600 font-medium">
+                                Member Added
+                              </div>
+                            )}
+                            {request.status === 'rejected' && (
+                              <div className="text-sm text-red-600 font-medium">
+                                Request Rejected
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* MY APPLICATIONS */}
+          {active === Tab.APPLICATIONS && !isCompany && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-4">My Job Applications</h3>
+                <p className="text-gray-600 mb-4">
+                  View your job applications, ranked by similarity to the job requirements.
+                </p>
+
+                {loadingMyApplications ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
+                    <p className="text-gray-500 mt-2">Loading applications...</p>
+                  </div>
+                ) : myJobApplications.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No applications yet</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      When you apply to jobs, your applications will appear here ranked by match quality.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {myJobApplications.map((application, index) => (
+                      <div key={application.id} className="border rounded-lg p-4 bg-white">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                              {application.job?.postedBy?.avatarUrl ? (
+                                <img
+                                  src={application.job.postedBy.avatarUrl}
+                                  alt={application.job.postedBy.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-gray-600 font-medium">
+                                  {application.job?.postedBy?.name?.charAt(0).toUpperCase() || '?'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">{application.job?.postedBy?.name || 'Unknown Company'}</div>
+                              <div className="text-sm text-gray-600">{application.job?.title || 'Unknown Job'}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              application.similarity.percentage >= 80 ? 'bg-green-100 text-green-800' :
+                              application.similarity.percentage >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {application.similarity.percentage}% match
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              #{index + 1}
+                            </div>
+                          </div>
+                        </div>
+                        {application.coverLetter && (
+                          <div className="mb-3">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">Cover Letter</h4>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                              {application.coverLetter}
+                            </p>
+                          </div>
+                        )}
+                        {application.similarity && application.similarity.matches && (
+                          <div className="mb-3 hidden">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">Matching Categories</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {application.similarity.matches.categories.map(cat => (
+                                <span key={cat.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                                  {cat.name}
+                                </span>
+                              ))}
+                              {application.similarity.matches.subcategories.map(sub => (
+                                <span key={sub.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                  {sub.name}
+                                </span>
+                              ))}
+                              {application.similarity.matches.subsubcategories.map(subsub => (
+                                <span key={subsub.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                  {subsub.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {application.job?.coverImageBase64 && (
+                          <div className="mb-3 hidden">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">Job Cover Image</h4>
+                            <div className="w-full max-w-xs">
+                              <img
+                                src={application.job.coverImageBase64}
+                                alt="Job cover"
+                                className="w-full h-32 object-cover rounded-lg border"
+                              />
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-gray-500">
+                            Applied {new Date(application.createdAt).toLocaleDateString()}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => window.open(`/profile/${application.job.postedBy.id}`, '_blank')}
+                              className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
+                            >
+                              View Company
+                            </button>
+                            <button
+                              onClick={() => window.open(`/messages?userId=${application.job.postedBy.id}`, '_blank')}
+                              className="px-3 py-1 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700"
+                            >
+                              Message
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* MY EVENTS */}
+          {active === Tab.EVENTS && !isCompany && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-4">My Event Registrations</h3>
+                <p className="text-gray-600 mb-4">
+                  View your event registrations, ranked by similarity to the event audience.
+                </p>
+
+                {loadingMyEvents ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
+                    <p className="text-gray-500 mt-2">Loading registrations...</p>
+                  </div>
+                ) : myEventRegistrations.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No registrations yet</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      When you register for events, they will appear here ranked by audience match.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {myEventRegistrations.map((registration, index) => (
+                      <div key={registration.id} className="border rounded-lg p-4 bg-white">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                              {registration.event?.organizer?.avatarUrl ? (
+                                <img
+                                  src={registration.event.organizer.avatarUrl}
+                                  alt={registration.event.organizer.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-gray-600 font-medium">
+                                  {registration.event?.organizer?.name?.charAt(0).toUpperCase() || '?'}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-medium">{registration.event?.organizer?.name || 'Unknown Organizer'}</div>
+                              <div className="text-sm text-gray-600">{registration.event?.title || 'Unknown Event'}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                              registration.similarity.percentage >= 80 ? 'bg-green-100 text-green-800' :
+                              registration.similarity.percentage >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {registration.similarity.percentage}% match
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              #{index + 1}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-gray-500">
+                            Registered {new Date(registration.createdAt).toLocaleDateString()}
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => window.open(`/profile/${registration.event.organizer.id}`, '_blank')}
+                              className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
+                            >
+                              View Organizer
+                            </button>
+                            <button
+                              onClick={() => window.open(`/messages?userId=${registration.event.organizer.id}`, '_blank')}
+                              className="px-3 py-1 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700"
+                            >
+                              Message
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ORGANIZATION MEMBERSHIP */}
+          {active === Tab.ORGANIZATIONS && !isCompany && (
+            <div className="space-y-6">
+              <div>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold">Organization Membership</h3>
+                  <button
+                    onClick={() => setShowOrganizationModal(true)}
+                    className="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800 text-sm"
+                  >
+                    {membershipStatus && membershipStatus.length > 0 ? "+ Join Another" : "Join Organization"}
+                  </button>
+                </div>
+
+                {/* Current Membership Status */}
+                {loadingMembership ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
+                    <p className="text-gray-500 mt-2">Loading membership status...</p>
+                  </div>
+                ) : membershipStatus && membershipStatus.length > 0 ? (
+                   <div>
+                     <h4 className="font-medium mb-3 text-green-700">Current Organizations</h4>
+                     <div className="space-y-3">
+                       {membershipStatus.map((membership) => (
+                         <div key={membership.id} className="border border-green-200 rounded-lg p-4 bg-green-50">
+                           <div className="flex items-center justify-between">
+                             <div className="flex items-center space-x-3">
+                               <div className="w-12 h-12 bg-green-200 rounded-lg flex items-center justify-center relative">
+                                 {membership.company.avatarUrl ? (
+                                   <img
+                                     src={membership.company.avatarUrl}
+                                     alt={membership.company.name}
+                                     className="w-12 h-12 rounded-lg object-cover"
+                                   />
+                                 ) : (
+                                   <span className="text-green-700 font-medium">
+                                     {membership.company.name.charAt(0).toUpperCase()}
+                                   </span>
+                                 )}
+                                 {membership.isMain && (
+                                   <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                                     <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                       <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                                     </svg>
+                                   </div>
+                                 )}
+                               </div>
+                               <div className="flex-1">
+                                 <div className="flex items-center gap-2">
+                                   <div className="font-medium">{membership.company.name}</div>
+                                   {membership.isMain && (
+                                     <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">
+                                       ⭐ Main Company
+                                     </span>
+                                   )}
+                                 </div>
+                                 {membership.company.webpage && (
+                                   <div className="text-sm text-gray-600">
+                                     <a
+                                       href={membership.company.webpage}
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       className="text-brand-600 hover:text-brand-800"
+                                     >
+                                       {membership.company.webpage}
+                                     </a>
+                                   </div>
+                                 )}
+                                 {membership.role && (
+                                   <div className="text-xs text-gray-500">Role: {membership.role}</div>
+                                 )}
+                                 <div className="flex items-center gap-2 mt-1">
+                                   <div className={`text-xs px-2 py-1 rounded-full ${
+                                     membership.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                     membership.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                     'bg-gray-100 text-gray-800'
+                                   }`}>
+                                     {membership.status === 'confirmed' ? '✓ Confirmed Member' :
+                                      membership.status === 'pending' ? '⏳ Pending Confirmation' :
+                                      membership.status}
+                                   </div>
+                                   {membership.joinedAt && (
+                                     <div className="text-xs text-gray-500">
+                                       Joined {new Date(membership.joinedAt).toLocaleDateString()}
+                                     </div>
+                                   )}
+                                 </div>
+                               </div>
+                             </div>
+                             <div className="flex gap-2">
+                               {!membership.isMain ? (
+                                 <button
+                                   onClick={() => handleSetMainCompany(membership.id)}
+                                   className="px-3 py-1 border border-yellow-300 text-yellow-600 rounded-lg text-sm hover:bg-yellow-50"
+                                   title="Set as main company"
+                                 >
+                                   Set as Main
+                                 </button>
+                               ) : (
+                                 <button
+                                   onClick={() => handleUnsetMainCompany(membership.id)}
+                                   className="px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
+                                   title="Unset as main company"
+                                 >
+                                   Unset Main
+                                 </button>
+                               )}
+                               <button
+                                 onClick={() => handleLeaveOrganization(membership.id)}
+                                 className="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50"
+                               >
+                                 Leave Organization
+                               </button>
+                             </div>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>Join an organization to showcase your professional affiliation.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
+
+      {/* User Selection Modal for Representative */}
+      {showRepresentativeModal && (
+        <UserSelectionModal
+          isOpen={showRepresentativeModal}
+          onClose={() => setShowRepresentativeModal(false)}
+          onSelect={handleRepresentativeSelected}
+          title="Select Company Representative"
+          description="Choose an individual user to act as the authorized representative for your company. They will receive an email request to authorize this relationship."
+          accountType="individual"
+        />
+      )}
+
+      {/* Staff Invitation Modal */}
+       {showStaffModal && (
+         <StaffInvitationModal
+           isOpen={showStaffModal}
+           onClose={() => setShowStaffModal(false)}
+           onSuccess={handleStaffInvited}
+           companyId={me.user.id}
+           companyName={me.user.name}
+         />
+       )}
+
+       {/* Organization Selection Modal */}
+       {showOrganizationModal && (
+         <OrganizationSelectionModal
+           isOpen={showOrganizationModal}
+           onClose={() => setShowOrganizationModal(false)}
+           onSuccess={handleOrganizationJoinSuccess}
+           title="Join Organization"
+           description="Select an organization you'd like to join and send a request for approval."
+         />
+       )}
     </div>
   );
 }

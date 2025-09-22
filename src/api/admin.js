@@ -71,6 +71,70 @@ export const exportUsers = (params = {}) => {
 };
 
 /**
+ * Download users data as Excel directly from frontend
+ * @param {Array} users - Array of user objects to export
+ * @returns {Promise} - Promise that resolves when download starts
+ */
+export const downloadUsersDataAsExcel = async (users) => {
+  try {
+    // Format the data for Excel export
+    const formattedData = users.map(user => ({
+      'ID': user.id,
+      'Name': user.name,
+      'Email': user.email,
+      'Phone': user.phone || '',
+      'Account Type': user.accountType,
+      'Status': user.isVerified ? 'Active' : 'Suspended',
+      'Provider': user.provider,
+      'Country': user.country || '',
+      'City': user.city || '',
+      'Professional Title': user.professionalTitle || user.profile?.professionalTitle || '',
+      'Experience Level': user.experienceLevel || user.profile?.experienceLevel || '',
+      'Created At': new Date(user.createdAt).toLocaleString(),
+      'Updated At': new Date(user.updatedAt).toLocaleString()
+    }));
+
+    // Create a worksheet
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+    // Autosize columns
+    const cols = Object.keys(formattedData[0] || {}).map((k) => ({
+      wch: Math.max(k.length, ...formattedData.map(r => String(r[k] ?? '').length)) + 2
+    }));
+    worksheet['!cols'] = cols;
+
+    // Create a workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Users');
+
+    // Generate XLSX file
+    const xlsxData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+    // Create a blob from the XLSX data
+    const blob = new Blob([xlsxData], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    // Create a link element and trigger download
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `users-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+
+    // Clean up
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+
+    return true;
+  } catch (error) {
+    console.error('Error creating Excel file:', error);
+    throw error;
+  }
+};
+
+/**
  * Download exported users data as a file
  * @param {Object} params - Query parameters
  * @param {string} params.format - Export format (json or csv)
@@ -88,26 +152,55 @@ export const downloadUsersData = async (params = {}) => {
     if (format === 'excel') {
       // Convert CSV to XLSX using the xlsx library
       const csvData = response.data;
-      
-      // Parse CSV data
-      const lines = csvData.split('\n');
-      const headers = lines[0].split(',').map(header =>
-        header.replace(/^"(.*)"$/, '$1') // Remove quotes if present
-      );
-      
+
+      // Parse CSV data properly handling quoted fields
+      const parseCSVLine = (line) => {
+        const result = [];
+        let current = '';
+        let inQuotes = false;
+        let i = 0;
+
+        while (i < line.length) {
+          const char = line[i];
+
+          if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+              // Escaped quote
+              current += '"';
+              i += 2;
+            } else {
+              // Toggle quote state
+              inQuotes = !inQuotes;
+              i++;
+            }
+          } else if (char === ',' && !inQuotes) {
+            // Field separator
+            result.push(current);
+            current = '';
+            i++;
+          } else {
+            current += char;
+            i++;
+          }
+        }
+
+        // Add the last field
+        result.push(current);
+        return result;
+      };
+
+      const lines = csvData.split('\n').filter(line => line.trim());
+      const headers = parseCSVLine(lines[0]);
+
       const data = [];
       for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue; // Skip empty lines
-        
-        const values = lines[i].split(',').map(value =>
-          value.replace(/^"(.*)"$/, '$1') // Remove quotes if present
-        );
-        
+        const values = parseCSVLine(lines[i]);
         const row = {};
+
         headers.forEach((header, index) => {
           row[header] = values[index] || '';
         });
-        
+
         data.push(row);
       }
       
@@ -199,4 +292,30 @@ export const updateModerationStatus = (id, contentType, moderationStatus) => {
  */
 export const getModerationStats = () => {
   return client.get("/admin/moderation/stats");
+};
+
+/**
+ * Get comprehensive dashboard statistics
+ * @returns {Promise} - Promise with dashboard stats
+ */
+export const getDashboardStats = () => {
+  return client.get("/admin/dashboard/stats");
+};
+
+/**
+ * Get recent activity for dashboard
+ * @param {number} limit - Number of activities to fetch
+ * @returns {Promise} - Promise with recent activities
+ */
+export const getRecentActivity = (limit = 10) => {
+  return client.get("/admin/dashboard/activity", { params: { limit } });
+};
+
+/**
+ * Get user growth data for charts
+ * @param {number} days - Number of days to look back
+ * @returns {Promise} - Promise with growth data
+ */
+export const getUserGrowthData = (days = 30) => {
+  return client.get("/admin/dashboard/growth", { params: { days } });
 };

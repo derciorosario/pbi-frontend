@@ -1,4 +1,4 @@
-// src/components/ProductCard.jsx
+// src/components/ProductCard-1.jsx
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import {
   MapPin,
@@ -11,6 +11,7 @@ import {
   Eye,
   Share2,
   Copy as CopyIcon,
+  Flag,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -32,9 +33,12 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
+import * as socialApi from "../api/social";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ProfileModal from "./ProfileModal";
 import ProductDetails from "./ProductDetails";
+import ConfirmDialog from "./ConfirmDialog";
+import CommentsDialog from "./CommentsDialog";
 
 export default function ProductCard({
   item,
@@ -47,7 +51,7 @@ export default function ProductCard({
 }) {
   const navigate = useNavigate();
   const data = useData();
-  const { user } = useAuth();
+  const { user, settings } = useAuth();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -57,10 +61,23 @@ export default function ProductCard({
   // Track connection status locally (for immediate UI updates)
   const [connectionStatus, setConnectionStatus] = useState(item?.connectionStatus || "none");
   
+  // Social state
+  const [liked, setLiked] = useState(!!item?.liked);
+  const [likeCount, setLikeCount] = useState(Number(item?.likes || 0));
+  const [commentCount, setCommentCount] = useState(
+    Array.isArray(item?.comments) ? item.comments.length : Number(item?.commentsCount || 0)
+  );
+
+  // Report dialog
+  const [reportOpen, setReportOpen] = useState(false);
+
   // Share popover
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
   const cardRef = useRef(null);
+
+  // Comments dialog
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   
   // Close share menu on outside click / Esc
   useEffect(() => {
@@ -83,6 +100,25 @@ export default function ProductCard({
       document.removeEventListener("keydown", onEsc);
     };
   }, []);
+
+  // Initial fetch for like & comments count (optional)
+  useEffect(() => {
+    if (!item?.id) return;
+    socialApi
+      .getLikeStatus("product", item.id)
+      .then(({ data }) => {
+        setLiked(data.liked);
+        setLikeCount(data.count);
+      })
+      .catch(() => {});
+    socialApi
+      .getComments("product", item.id)
+      .then(({ data }) => {
+        const len = Array.isArray(data) ? data.length : 0;
+        setCommentCount(len);
+      })
+      .catch(() => {});
+  }, [item?.id]);
 
   function onSent() {
     toast.success("Connection request sent");
@@ -117,8 +153,38 @@ export default function ProductCard({
     "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
   // grid for list (image left column), flex-col for grid
   const containerLayout = isList
-    ? "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch"
+    ? (settings?.contentType === 'text'
+        ? "flex flex-col" // Full width for text mode in list
+        : "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch")
     : "flex flex-col";
+
+  /* ----------------------- Like handler ----------------------- */
+  const toggleLike = async () => {
+    if (!user?.id) {
+      data._showPopUp?.("login_prompt");
+      return;
+    }
+    setLiked((p) => !p);
+    setLikeCount((n) => (liked ? Math.max(0, n - 1) : n + 1));
+    try {
+      const { data } = await socialApi.toggleLike("product", item.id);
+      setLiked(data.liked);
+      setLikeCount(data.count);
+    } catch (error) {
+      setLiked((p) => !p);
+      setLikeCount((n) => (liked ? n + 1 : Math.max(0, n - 1)));
+    }
+  };
+
+  /* ----------------------- Report handler ----------------------- */
+  const reportProduct = async (description) => {
+    try {
+      await socialApi.reportContent("product", item.id, "other", description);
+      toast.success("Report submitted. Thank you.");
+    } catch (e) {
+      toast.success("Report submitted. Thank you.");
+    }
+  };
 
 
     const CopyLinkButton = () => (
@@ -230,7 +296,9 @@ export default function ProductCard({
       >
         {/* IMAGE SIDE */}
         {isList ? (
-          <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
+          // Only show image side in list view if not text mode
+          settings?.contentType !== 'text' ? (
+            <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
             {imageUrl ? (
               <>
                 {/* Fill the entire left column */}
@@ -316,40 +384,41 @@ export default function ProductCard({
               </button>
             </div>
           </div>
-        ) : (
-          // GRID IMAGE
-          <div className="relative overflow-hidden">
-            {imageUrl ? (
-              <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt={item?.title}
-                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-            ) : (
-              <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-400">
-                <div className="text-center">
-                  <div className="w-12 h-12 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-sm font-medium">No Image</p>
+        ) : null
+      ) : (
+        // GRID IMAGE
+        <div className="relative overflow-hidden">
+          {settings?.contentType === 'text' ? null : imageUrl ? (
+            <div className="relative">
+              <img
+                src={imageUrl}
+                alt={item?.title}
+                className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
+          ) : (
+            <div className="w-full h-48 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-400">
+              <div className="text-center">
+                <div className="w-12 h-12 mx-auto mb-2 bg-gray-200 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-6 h-6 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
                 </div>
+                <p className="text-sm font-medium">No Image</p>
               </div>
-            )}
+            </div>
+          )}
 
             {/* Featured badge */}
           
@@ -361,8 +430,9 @@ export default function ProductCard({
                    ))}
               </div>
            
-            {/* View & Save */}
-            <div className="absolute top-4 right-4 flex gap-2">
+            {/* View & Save - only show when not text mode */}
+            {settings?.contentType !== 'text' && (
+              <div className="absolute top-4 right-4 flex gap-2">
             
 
             <button
@@ -399,11 +469,56 @@ export default function ProductCard({
                 />
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      )}
 
         {/* CONTENT SIDE */}
         <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
+          {/* Text mode: Buttons and audience categories at top */}
+          {settings?.contentType === 'text' && (
+            <div className={`${!isList ? 'flex-col gap-y-2':'items-center justify-between gap-2'} flex  mb-3`}>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if(user?.id==item.sellerUserId){
+                        navigate(`/product/${item.id}/view`)
+                    }else{
+                        setProductDetailsOpen(true);
+                    }
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label="View product"
+                >
+                  {user?.id==item.sellerUserId ? <Edit size={16} /> : <Eye size={16} />}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label="Share product"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
+              </div>
+              {Array.isArray(item?.audienceCategories) &&
+                item.audienceCategories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {item.audienceCategories.map((c) => (
+                      <span
+                        key={c.id || c.name}
+                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      >
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+            </div>
+          )}
+
           {/* Title and description */}
           <div className={`${isList ? "mb-2" : "mb-3"}`}>
             <h3 className="font-semibold text-lg text-gray-900 truncate mb-1 group-hover:text-brand-600 transition-colors duration-200">
@@ -535,6 +650,46 @@ export default function ProductCard({
             </div>
           )}
 
+          {/* NEW: social row (like / comment / report) hidden for now */}
+          <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600">
+            <button
+              onClick={toggleLike}
+              className="inline-flex items-center gap-1 hover:text-brand-700"
+              title={liked ? "Unlike" : "Like"}
+            >
+              <Heart
+                size={16}
+                className={liked ? "fill-brand-500 text-brand-500" : ""}
+              />
+              <span>{likeCount}</span>
+            </button>
+
+            <button
+              onClick={() => setCommentsDialogOpen(true)}
+              className="inline-flex items-center gap-1 hover:text-brand-700"
+              title="Comments"
+            >
+              <MessageCircle size={16} />
+              <span>{commentCount}</span>
+            </button>
+
+            <button
+              onClick={() =>{
+                 if (!user?.id) {
+                  data._showPopUp?.("login_prompt");
+                  return;
+                }else{
+                  setReportOpen(true)
+                }
+              } }
+              className="inline-flex _login_prompt items-center gap-1 hover:text-rose-700"
+              title="Report this product"
+            >
+              <Flag size={16} />
+              <span>Report</span>
+            </button>
+          </div>
+
           {/* Actions */}
           <div
             className={`flex items-center gap-2 mt-auto pt-2 ${
@@ -631,6 +786,32 @@ export default function ProductCard({
         isOpen={productDetailsOpen}
         onClose={() => setProductDetailsOpen(false)}
         onSave={onSave}
+      />
+
+      {/* Report dialog */}
+      <ConfirmDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Report this product?"
+        text="Tell us what's happening. Our team will review."
+        confirmText="Submit report"
+        cancelText="Cancel"
+        withInput
+        inputType="textarea"
+        inputLabel="Report details"
+        inputPlaceholder="Describe the issue (spam, scam, offensive, etc.)"
+        requireValue
+        onConfirm={reportProduct}
+      />
+
+      {/* Comments Dialog */}
+      <CommentsDialog
+        open={commentsDialogOpen}
+        onClose={() => setCommentsDialogOpen(false)}
+        entityType="product"
+        entityId={item?.id}
+        currentUser={user}
+        onCountChange={(n) => setCommentCount(n)}
       />
     </>
   );

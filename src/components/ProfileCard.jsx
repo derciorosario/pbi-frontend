@@ -5,21 +5,52 @@ import EasyAccess from "./EasyAccess";
 
 
 function ProfileCard() {
-    const {user,profile} = useAuth()
-  return (
-   <>
-    <div className={`rounded-2xl bg-white hidden border p-4 shadow-sm ${!Boolean(user) ? 'hidden':''}`}>
-      <div className="flex items-center gap-3">
-        <img
-          src={profile?.avatarUrl || user?.avatarUrl || 'https://www.gravatar.com/avatar/?d=mp&s=200'}
-          alt=""
-          className="h-12 w-12 rounded-full"
-        />
-        <div>
-          <div className="font-semibold">{user?.name}</div>
-          <div className="text-xs text-gray-500">{profile?.primaryIdentity}<br/>{user?.city} {user?.city && (user?.country || user?.countryOfResidence) ? `,`:''} {(user?.country || user?.countryOfResidence)}</div>
-        </div>
-      </div>
+     const {user,profile} = useAuth()
+
+     // Check if user has organization membership
+     const hasOrganization = user?.organizationId && user?.organization;
+
+   return (
+    <>
+     <div className={`rounded-2xl bg-white hidden border p-4 shadow-sm ${!Boolean(user) ? 'hidden':''}`}>
+       <div className="flex items-center gap-3">
+         <img
+           src={profile?.avatarUrl || user?.avatarUrl || 'https://www.gravatar.com/avatar/?d=mp&s=200'}
+           alt=""
+           className="h-12 w-12 rounded-full"
+         />
+         <div className="flex-1">
+           <div className="font-semibold">{user?.name}</div>
+           <div className="text-xs text-gray-500">{profile?.primaryIdentity}<br/>{user?.city} {user?.city && (user?.country || user?.countryOfResidence) ? `,`:''} {(user?.country || user?.countryOfResidence)}</div>
+
+           {/* Organization Badge */}
+           {hasOrganization && (
+             <div className="flex items-center gap-2 mt-1">
+               <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-full">
+                 {user.organization.avatarUrl ? (
+                   <img
+                     src={user.organization.avatarUrl}
+                     alt={user.organization.name}
+                     className="w-4 h-4 rounded-full object-cover"
+                   />
+                 ) : (
+                   <div className="w-4 h-4 bg-blue-200 rounded-full flex items-center justify-center">
+                     <span className="text-xs text-blue-700 font-medium">
+                       {user.organization.name.charAt(0).toUpperCase()}
+                     </span>
+                   </div>
+                 )}
+                 <span className="text-xs text-blue-700 font-medium truncate max-w-24">
+                   {user.organization.name}
+                 </span>
+               </div>
+               {user?.organizationRole && (
+                 <span className="text-xs text-gray-500">• {user.organizationRole}</span>
+               )}
+             </div>
+           )}
+         </div>
+       </div>
       <div className="mt-4 grid grid-cols-2 bg-gray-50 rounded-xl text-center text-sm">
        
         <div className="p-3 border-r">

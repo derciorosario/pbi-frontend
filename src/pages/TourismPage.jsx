@@ -23,6 +23,7 @@ import ExperienceCard from "../components/ExperienceCard";
 import PageTabs from "../components/PageTabs";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import TopFilterButtons from "../components/TopFilterButtons";
+import { useAuth } from "../contexts/AuthContext";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -37,6 +38,7 @@ export default function TourismPage() {
   const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
   const navigate=useNavigate()
   const data=useData()
+  const {user}=useAuth()
   const [view,setView]=useState('grid')
   let view_types=['grid','list']
   const from = "tourism"; // Define the 'from' variable
@@ -504,9 +506,9 @@ export default function TourismPage() {
             />
           </div>
           <QuickActions title="Quick Actions" items={[
-              { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-              { label: "Share Tourism Experience", Icon: PlusCircle, onClick: () => navigate('/experiences/create') },
-              { label: "Ask About Tourism", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create") },
+              { label: "Edit Profile", Icon: Pencil, path: "/profile",hide:user?.accountType=="individual" },
+              { label: "Share Tourism Experience", Icon: PlusCircle, onClick: () => navigate('/experiences/create'),hide:user?.accountType=="company" },
+              { label: "Ask About Tourism", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create"),hide:user?.accountType=="company" },
            ]} />
 
           <ProfileCard />
@@ -531,8 +533,8 @@ export default function TourismPage() {
             <TabsAndAdd 
             tabs={[]}  
             items={[
-              { label: "Share Tourism Experience", Icon: PlusCircle, onClick: () => navigate('/experiences/create') },
-              { label: "Ask About Tourism", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create") },
+              { label: "Share Tourism Experience", Icon: PlusCircle, onClick: () => navigate('/experiences/create'),hide:user?.accountType=="company" },
+              { label: "Ask About Tourism", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create"),hide:user?.accountType=="company" },
             ]}
             activeTab={activeTab} 
             setActiveTab={setActiveTab}  

@@ -110,10 +110,12 @@ const countryOptions = COUNTRIES.map(country => ({
 }));
 
 // Create city options for SearchableSelect (limit to reasonable number)
-const cityOptions = CITIES.slice(0, 1000).map(city => ({
+const allCityOptions = CITIES.slice(0, 10000).map(city => ({
   value: city.city,
-  label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+  label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
+  country: city.country
 }));
+
 
 /* ---------- helpers for read-only view ---------- */
 const styles = {
@@ -140,7 +142,7 @@ function SearchableSelect({
   const selected = useMemo(() => options.find((o) => String(o.value) === String(value)) || null, [options, value]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return options.slice(0, 100);
+    if (!q) return options; // Show all options when no query for city dropdown
     return options
       .map((o) => ({ o, score: (o.label || "").toLowerCase().indexOf(q) }))
       .filter((x) => x.score !== -1)
@@ -718,6 +720,22 @@ export default function CreateJobOpportunity() {
   const { user } = useAuth();
   const [coverImageBase64, setCoverImageBase64] = useState(null);
 
+  // Form validation errors
+  const [errors, setErrors] = useState({
+    title: "",
+    companyId: "",
+    country: "",
+    city: "",
+    description: "",
+    requiredSkills: "",
+    minSalary: "",
+    maxSalary: "",
+    currency: "",
+    applicationDeadline: "",
+    positions: "",
+    contactEmail: "",
+  });
+
   const [generalTree, setGeneralTree] = useState([]);
   const [selectedGeneral, setSelectedGeneral] = useState({
     categoryId: "",
@@ -776,6 +794,22 @@ export default function CreateJobOpportunity() {
     workMode: "", description: "", requiredSkills: "",
     country:"", city: "",
   });
+
+  // Support single or multi-country (comma-separated) selection
+  const selectedCountries = useMemo(() => {
+    if (!form.country) return [];
+    return String(form.country)
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  }, [form.country]);
+
+  // Filtered cities for dropdown based on selected countries
+  const cityOptions = useMemo(() => {
+    if (selectedCountries.length === 0) return allCityOptions;
+    const setLC = new Set(selectedCountries);
+    return allCityOptions.filter((c) => setLC.has(c.country.toLowerCase()));
+  }, [selectedCountries, allCityOptions]);
 
   useEffect(() => {
     (async () => {
@@ -943,26 +977,116 @@ export default function CreateJobOpportunity() {
       if (name === "categoryId") next.subcategoryId = "";
       return next;
     });
+    // Clear error for this field while typing
+    setErrors((prev) => ({ ...prev, [name]: "" }));
   };
+
+  // Form validation function
+  function validate() {
+    const next = {
+      title: "",
+      companyId: "",
+      country: "",
+      city: "",
+      description: "",
+      requiredSkills: "",
+      minSalary: "",
+      maxSalary: "",
+      currency: "",
+      applicationDeadline: "",
+      positions: "",
+      contactEmail: "",
+    };
+
+    // Required field validations
+    if (!form.title.trim()) {
+      next.title = "Job title is required.";
+    } else if (form.title.trim().length < 3) {
+      next.title = "Job title must be at least 3 characters long.";
+    }
+
+    if (!form.companyId) {
+      next.companyId = "Please select a company.";
+    }
+
+    if (!form.country) {
+      next.country = "Country is required.";
+    }
+
+    if (!form.city) {
+      next.city = "City is required.";
+    }
+
+    if (!form.description.trim()) {
+      next.description = "Job description is required.";
+    } else if (form.description.trim().length < 10) {
+      next.description = "Job description must be at least 10 characters long.";
+    }
+
+    // Salary validations
+    if (form.minSalary && isNaN(Number(form.minSalary))) {
+      next.minSalary = "Minimum salary must be a valid number.";
+    } else if (form.minSalary && Number(form.minSalary) < 0) {
+      next.minSalary = "Minimum salary cannot be negative.";
+    }
+
+    if (form.maxSalary && isNaN(Number(form.maxSalary))) {
+      next.maxSalary = "Maximum salary must be a valid number.";
+    } else if (form.maxSalary && Number(form.maxSalary) < 0) {
+      next.maxSalary = "Maximum salary cannot be negative.";
+    }
+
+    if (form.minSalary && form.maxSalary && Number(form.minSalary) > Number(form.maxSalary)) {
+      next.maxSalary = "Maximum salary must be greater than minimum salary.";
+    }
+
+    // Positions validation
+    if (form.positions && (isNaN(Number(form.positions)) || Number(form.positions) < 1)) {
+      next.positions = "Number of positions must be at least 1.";
+    }
+
+    // Email validation
+    if (form.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail)) {
+      next.contactEmail = "Please enter a valid email address.";
+    }
+
+    // Application deadline validation
+    if (form.applicationDeadline) {
+      const deadline = new Date(form.applicationDeadline);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (deadline < today) {
+        next.applicationDeadline = "Application deadline cannot be in the past.";
+      }
+    }
+
+    setErrors(next);
+    return Object.values(next).every((v) => !v);
+  }
 
   const onSubmit = async (e) => {
     e.preventDefault();
     if (readOnly) return;
+
+    // Validate form
+    if (!validate()) {
+      toast.error("Please fix the highlighted fields.");
+      return;
+    }
+
+    // Additional validation for industry selection
+    const identityIds = Array.from(audSel.identityIds);
+    const categoryIds = Array.from(audSel.categoryIds);
+
+    if (!form.categoryId && categoryIds.length === 0) {
+      toast.error("Please select at least one industry category.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // Convert Set → Array
-      const identityIds = Array.from(audSel.identityIds);
-      const categoryIds = Array.from(audSel.categoryIds);
-      const subcategoryIds = Array.from(audSel.subcategoryIds);
-      const subsubCategoryIds = Array.from(audSel.subsubCategoryIds);
-
-      if (!form.categoryId && categoryIds.length === 0) {
-        alert("Please pick at least one Industry (primary or in the Share With section).");
-        setIsLoading(false);
-        return;
-      }
-
       const payload = {
         ...form,
         positions: Number(form.positions || 1),
@@ -971,35 +1095,44 @@ export default function CreateJobOpportunity() {
         maxSalary: form.maxSalary === "" ? null : Number(form.maxSalary),
         subcategoryId: form.subcategoryId || null,
 
-        // NEW (arrays)
+        // Audience selection arrays
         identityIds,
         categoryIds,
-        subcategoryIds,
-        subsubCategoryIds,
+        subcategoryIds: Array.from(audSel.subcategoryIds),
+        subsubCategoryIds: Array.from(audSel.subsubCategoryIds),
 
         coverImageBase64,
 
-        companyId: form.companyId || null, // << ensure id is sent
-        companyName: form.companyName || "", // keep legacy field populated
+        companyId: form.companyId || null,
+        companyName: form.companyName || "",
 
         // Industry taxonomy
         industryCategoryId: selectedIndustry.categoryId || null,
         industrySubcategoryId: selectedIndustry.subcategoryId || null,
       };
 
-      if (isEditMode) {
-        await client.put(`/jobs/${id}`, payload);
-        toast.success("Job updated successfully!");
-      } else {
-        await client.post("/jobs", payload);
-        toast.success("Job created successfully!");
+      const promise = isEditMode
+        ? client.put(`/jobs/${id}`, payload)
+        : client.post("/jobs", payload);
+
+      await toast.promise(
+        promise,
+        {
+          loading: isEditMode ? "Updating job…" : "Creating job…",
+          success: isEditMode ? "Job updated successfully!" : "Job created successfully!",
+          error: (err) => err?.response?.data?.message || (isEditMode ? "Failed to update job" : "Failed to create job")
+        },
+        { id: "job-submit" }
+      );
+
+      if (!isEditMode) {
         navigate("/jobs");
       }
 
-      setIsLoading(false);
     } catch (error) {
+      // Error already handled by toast.promise
       console.error("Error saving job:", error);
-      toast.error(isEditMode ? "Failed to update job" : "Failed to create job");
+    } finally {
       setIsLoading(false);
     }
   };
@@ -1125,7 +1258,7 @@ export default function CreateJobOpportunity() {
 
   <div>
     <Label>Work Location</Label>
-    <Select name="workLocation" value={form.workLocation} onChange={onChange}>
+    <Select name="workLocation" value={form.workLocation} onChange={onChange} required>
       <option value="">Select location</option>
       <option>On-Site</option><option>Remote</option>
       <option>Hybrid</option><option>Field-Based</option>
@@ -1134,7 +1267,7 @@ export default function CreateJobOpportunity() {
 
   <div>
     <Label>Work Schedule</Label>
-    <Select name="workSchedule" value={form.workSchedule} onChange={onChange}>
+    <Select name="workSchedule" value={form.workSchedule} onChange={onChange} required>
       <option value="">Select schedule</option>
       <option>Day Shift</option><option>Night Shift</option>
       <option>Rotational Shifts</option><option>Flexible Hours</option>
@@ -1144,7 +1277,7 @@ export default function CreateJobOpportunity() {
 
   <div>
     <Label>Career Level</Label>
-    <Select name="careerLevel" value={form.careerLevel} onChange={onChange}>
+    <Select name="careerLevel" value={form.careerLevel} onChange={onChange} required>
       <option value="">Select level</option>
       <option>Entry-Level</option><option>Mid-Level</option>
       <option>Senior-Level</option><option>Executive / C-Suite</option>
@@ -1154,7 +1287,7 @@ export default function CreateJobOpportunity() {
 
   <div>
     <Label>Payment Type</Label>
-    <Select name="paymentType" value={form.paymentType} onChange={onChange}>
+    <Select name="paymentType" value={form.paymentType} onChange={onChange} required>
       <option value="">Select payment type</option>
       <option>Salaried Jobs</option><option>Hourly Jobs</option>
       <option>Commission-Based</option><option>Stipend-Based</option>
@@ -1251,7 +1384,7 @@ export default function CreateJobOpportunity() {
                 <Label required>Country</Label>
                 <SearchableSelect
                   value={form.country}
-                  onChange={(value) => setForm({ ...form, country: value })}
+                  onChange={(value) => setForm({ ...form, country: value, city: "" })}
                   options={countryOptions}
                   placeholder="Search and select country..."
                   required
@@ -1260,6 +1393,7 @@ export default function CreateJobOpportunity() {
               <div>
                 <Label>City</Label>
                 <SearchableSelect
+                  key={form.country} // Force remount when country changes to reset internal state
                   value={form.city}
                   onChange={(value) => setForm({ ...form, city: value })}
                   options={cityOptions}

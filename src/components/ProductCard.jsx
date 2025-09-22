@@ -16,7 +16,7 @@ export default function ProductCard({
 }) {
   const navigate = useNavigate();
   const data = useData();
-  const { user } = useAuth();
+  const { user, settings } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
   
   function onSent() {
@@ -47,31 +47,64 @@ export default function ProductCard({
   return (
     <>
       <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col">
-        {/* Product image */}
-        <div className="relative">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={item?.title}
-              className="w-full h-44 object-cover"
-            />
-          ) : (
-            <div className="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">
-              No Image
-            </div>
-          )}
+        {/* Product image - hide in text mode */}
+        {settings?.contentType !== 'text' && (
+          <div className="relative">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={item?.title}
+                className="w-full h-44 object-cover"
+              />
+            ) : (
+              <div className="w-full h-44 bg-gray-100 flex items-center justify-center text-gray-400">
+                No Image
+              </div>
+            )}
 
-        
-          {/* Featured badge */}
-          {featured && (
-            <span className="absolute top-3 left-3 bg-brand-600 text-white text-xs font-medium px-2 py-1 rounded-full">
-              Featured
-            </span>
-          )}
-        </div>
+
+            {/* Featured badge */}
+            {featured && (
+              <span className="absolute top-3 left-3 bg-brand-600 text-white text-xs font-medium px-2 py-1 rounded-full">
+                Featured
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Content */}
         <div className="p-4 flex flex-col flex-1">
+          {/* Text mode: Buttons and audience categories at top */}
+          {settings?.contentType === 'text' && (
+            <div className="flex flex-col gap-y-2 mb-3">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (item.sellerUserId == user?.id) navigate('/product/' + item.id);
+                    else navigate('/product/' + item.id); // View product
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label={item.sellerUserId == user?.id ? "Edit product" : "View product"}
+                >
+                  {item.sellerUserId == user?.id ? <Edit size={16} /> : <MessageCircle size={16} />}
+                </button>
+              </div>
+              {Array.isArray(item?.audienceCategories) &&
+                item.audienceCategories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {item.audienceCategories.map((c) => (
+                      <span
+                        key={c.id || c.name}
+                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      >
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+            </div>
+          )}
+
           <h3 className="font-semibold text-gray-900 truncate">{item?.title}</h3>
           <p className="mt-1 text-sm text-gray-600 line-clamp-2">
             {item?.description}

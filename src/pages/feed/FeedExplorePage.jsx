@@ -28,6 +28,7 @@ import ExperienceCard from "../../components/ExperienceCard.jsx";
 import CrowdfundCard from "../../components/CrowdfundCard.jsx";
 import PageTabs from "../../components/PageTabs.jsx";
 import CardSkeletonLoader from "../../components/ui/SkeletonLoader.jsx";
+import CompanyAssociationPanel from "../../components/DefaultCompanyAssociationPanel.jsx";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -85,7 +86,7 @@ export default function FeedPage() {
   let view_types = ["grid", "list"];
 
   const data = useData();
-  const { user } = useAuth();
+  const { user,settings } = useAuth();
 
   useEffect(() => {
     (async () => {
@@ -274,18 +275,27 @@ export default function FeedPage() {
         <div className="grid lg:grid-cols-12 gap-6">
           {user && (
             <aside className="lg:col-span-3 hidden lg:block sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+               <CompanyAssociationPanel/>
+             
               <div className="_sticky top-0 mb-2">
                 <FiltersCard {...filtersProps} />
               </div>
+             
               <QuickActions
                 title="Quick Actions"
                 items={[
                   { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
-                  { hide: true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
-                  { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+                  { label: "Settings and Privacy", Icon: Pencil, onClick: () => navigate("/settings") },
+                  { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
+                  { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
+                  { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company"},
+                  { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+                  { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
+                  { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
                 ]}
               />
               <ProfileCard />
+
             </aside>
           )}
 
@@ -297,12 +307,12 @@ export default function FeedPage() {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 items={[
-                  { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
-                  { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
-                  { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
-                  { label: "Post a Product", Icon: PlusCircle, onClick: () => navigate("/products/create") },
-                  { label: "Post a Service", Icon: PlusCircle, onClick: () => navigate("/services/create") },
-                  { label: "Post a Funding Project or Opportunity", Icon: PlusCircle, onClick: () => navigate("/funding/create") },
+                  { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
+                  { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
+                  { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company"},
+                  { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+                  { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
+                  { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
                 ]}
               />
             </section>

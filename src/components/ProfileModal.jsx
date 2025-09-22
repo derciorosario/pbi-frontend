@@ -642,16 +642,46 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
             <>
               {/* Header */}
               <div className={`flex items-start gap-4 ${profile.accountType === "company" ? "bg-brand-50 p-4 rounded-lg border" : ""}`}>
-                <img
-                  src={
-                    profile.avatarUrl ||
-                    (profile.email
-                      ? `https://i.pravatar.cc/150?u=${encodeURIComponent(profile.email)}`
-                      : "https://i.pravatar.cc/150")
-                  }
-                  alt={profile.name}
-                  className={`${profile.accountType === "company" ? "h-24 w-24  rounded-md" : "h-20 w-20  rounded-full"} border-4 border-white shadow-md object-cover`}
-                />
+                <div className="relative">
+                  <img
+                    src={
+                      profile.avatarUrl ||
+                      (profile.email
+                        ? `https://i.pravatar.cc/150?u=${encodeURIComponent(profile.email)}`
+                        : "https://i.pravatar.cc/150")
+                    }
+                    alt={profile.name}
+                    className={`${profile.accountType === "company" ? "h-24 w-24  rounded-md" : "h-20 w-20  rounded-full"} border-4 border-white shadow-md object-cover`}
+                  />
+                  {/* Company logos for approved staff members */}
+                  {profile.companyMemberships && profile.companyMemberships.length > 0 && (
+                    <div className="absolute -bottom-2 -right-2 flex -space-x-2">
+                      {/* Sort to show main company first */}
+                      {[...profile.companyMemberships]
+                        .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
+                        .slice(0, 3)
+                        .map((membership, index) => (
+                        <img
+                          key={membership.companyId}
+                          src={
+                            membership.company.avatarUrl ||
+                            `https://i.pravatar.cc/150?u=${encodeURIComponent(membership.company.name)}`
+                          }
+                          alt={membership.company.name}
+                          className={`h-7 w-7 rounded-full border-2 border-white shadow-sm object-cover ${
+                            membership.isMain ? 'ring-2 ring-brand-400' : ''
+                          }`}
+                          title={`${membership.company.name} (${membership.role})`}
+                        />
+                      ))}
+                      {profile.companyMemberships.length > 3 && (
+                        <div className="h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 z-10">
+                          +{profile.companyMemberships.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className={`${profile.accountType === "company" ? "text-xl" : "text-lg"} font-semibold`}>{profile.name}</h2>
@@ -1049,7 +1079,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
 
               {/* Meetings */}
               {/* Meetings Section - Using profile.meetings from API if available */}
-              <Section title="Meetings" icon={CalendarDays}>
+              {profile?.connectionStatus=="connected" && <Section title="Meetings" icon={CalendarDays}>
                 {profile.meetings && profile.meetings.length > 0 ? (
                   <div className="space-y-3">
                     {profile.meetings.map((m) => {
@@ -1254,7 +1284,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                     })}
                   </div>
                 )}
-              </Section>
+              </Section>}
 
               {/* Meta */}
               <div className="mt-6 text-xs text-gray-500">
@@ -1294,13 +1324,13 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
               {/* Actions */}
               <div className={`flex gap-3 mt-6 ${isUnblock ? 'hidden':''}`}>
               {renderConnectButton()}
-              <button
+             {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) &&  <button
                   onClick={openMR}
                   className="flex-1 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium border border-brand-200 bg-white text-brand-700 hover:border-brand-500 hover:text-brand-700 transition-colors"
                 >
                   <CalendarDays size={18} className="mr-2" />
                   Request Meeting
-              </button>
+              </button>}
               
 
                 <button

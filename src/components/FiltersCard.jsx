@@ -86,6 +86,8 @@ export default function FiltersCard({
   setCareerLevel,
   paymentType,
   setPaymentType,
+  jobsView,
+  setJobsView,
 
   /* Events */
   eventType,
@@ -418,7 +420,7 @@ export default function FiltersCard({
           price !== "" &&
           price !== null) ||
         // jobs
-        (from === "jobs" && (experienceLevel || jobType || workMode || workLocation || workSchedule || careerLevel || paymentType)) ||
+        (from === "jobs" && (experienceLevel || jobType || workMode || workLocation || workSchedule || careerLevel || paymentType || jobsView)) ||
         // services
         (isService &&
           (serviceType ||
@@ -461,6 +463,7 @@ export default function FiltersCard({
       workSchedule,
       careerLevel,
       paymentType,
+      jobsView,
       // shared
       experienceLevel,
       locationType,
@@ -532,6 +535,7 @@ export default function FiltersCard({
     setWorkSchedule?.("");
     setCareerLevel?.("");
     setPaymentType?.("");
+    setJobsView?.("");
 
     // Tourism
     setPostType?.("");
@@ -1732,6 +1736,15 @@ export default function FiltersCard({
          {/* Jobs */}
       {from === "jobs" && (
         <>
+          <MultiSelect
+            hide={from !== "jobs"}
+            value={jobsView || ""}
+            onChange={setJobsView}
+            options={["Job Seekers", "Job Offers"]}
+            label="View"
+            placeholder="Select"
+          />
+
           {/** <MultiSelect
             value={experienceLevel || ""}
             onChange={setExperienceLevel}

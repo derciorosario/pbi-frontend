@@ -8,6 +8,8 @@ import {
   Clock,
   Eye,
   Edit,
+  Heart,
+  Flag,
   MessageCircle,
   Share2,
   Copy as CopyIcon,
@@ -34,6 +36,9 @@ import ProfileModal from "./ProfileModal";
 import { useData } from "../contexts/DataContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { toast } from "../lib/toast";
+import * as socialApi from "../api/social";
+import ConfirmDialog from "./ConfirmDialog";
+import CommentsDialog from "./CommentsDialog";
 
 export default function ServiceCard({
   item,
@@ -49,7 +54,7 @@ export default function ServiceCard({
 }) {
   const navigate = useNavigate();
   const data = useData();
-  const { user } = useAuth();
+  const { user, settings } = useAuth();
 
   const isOwner =
     (currentUserId && item?.providerUserId && currentUserId === item.providerUserId) ||
@@ -59,6 +64,19 @@ export default function ServiceCard({
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(item?.connectionStatus || "none");
   const [openId, setOpenId] = useState(null);               // Profile modal
+
+  // Social state
+  const [liked, setLiked] = useState(!!item?.liked);
+  const [likeCount, setLikeCount] = useState(Number(item?.likes || 0));
+  const [commentCount, setCommentCount] = useState(
+    Array.isArray(item?.comments) ? item.comments.length : Number(item?.commentsCount || 0)
+  );
+
+  // Report dialog
+  const [reportOpen, setReportOpen] = useState(false);
+
+  // Comments dialog
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
   
   // Share popover
   const [shareOpen, setShareOpen] = useState(false);
@@ -86,7 +104,26 @@ export default function ServiceCard({
       document.removeEventListener("keydown", onEsc);
     };
   }, []);
-  
+
+  // Initial fetch for like & comments count (optional)
+  useEffect(() => {
+    if (!item?.id) return;
+    socialApi
+      .getLikeStatus("service", item.id)
+      .then(({ data }) => {
+        setLiked(data.liked);
+        setLikeCount(data.count);
+      })
+      .catch(() => {});
+    socialApi
+      .getComments("service", item.id)
+      .then(({ data }) => {
+        const len = Array.isArray(data) ? data.length : 0;
+        setCommentCount(len);
+      })
+      .catch(() => {});
+  }, [item?.id]);
+
   // First image (supports base64url or string URL)
   const imageUrl =
     item?.images?.[0]?.base64url ||
@@ -167,78 +204,111 @@ export default function ServiceCard({
   // Container classes based on layout type
   const containerBase = "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out h-full";
   const containerLayout = isList
-    ? "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch"
+    ? (settings?.contentType === 'text'
+        ? "flex flex-col" // Full width for text mode in list
+        : "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch")
     : "flex flex-col";
+
+  /* ----------------------- Like handler ----------------------- */
+  const toggleLike = async () => {
+    if (!user?.id) {
+      data._showPopUp?.("login_prompt");
+      return;
+    }
+    setLiked((p) => !p);
+    setLikeCount((n) => (liked ? Math.max(0, n - 1) : n + 1));
+    try {
+      const { data } = await socialApi.toggleLike("service", item.id);
+      setLiked(data.liked);
+      setLikeCount(data.count);
+    } catch (error) {
+      setLiked((p) => !p);
+      setLikeCount((n) => (liked ? n + 1 : Math.max(0, n - 1)));
+    }
+  };
+
+  /* ----------------------- Report handler ----------------------- */
+  const reportService = async (description) => {
+    try {
+      await socialApi.reportContent("service", item.id, "other", description);
+      toast.success("Report submitted. Thank you.");
+    } catch (e) {
+      toast.success("Report submitted. Thank you.");
+    }
+  };
 
   return (
     <>
       <div ref={cardRef} className={`${containerBase} ${containerLayout}`}>
         {/* IMAGE */}
         {isList ? (
-          <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-            {imageUrl ? (
-              <>
-                <img src={imageUrl} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                {/* audienceCategories overlay when image exists */}
-                {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    {item.audienceCategories.map((c) => (
-                      <span
-                        key={c.id || c.name}
-                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                      >
-                        {c.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              // clean placeholder (no text)
-              <div className="absolute inset-0 w-full h-full bg-gray-100" />
-            )}
-
-            {/* Quick actions on image */}
-            <div className="absolute top-3 right-3 flex gap-2">
-
-                  <button
-              onClick={() => {
-                if (isOwner) {
-                  if (onEdit) onEdit(item);
-                  else navigate(`/service/${item.id}`);
-                } else {
-                  setDetailsModalOpen(true);
-                  onDetails?.(item);
-                }
-              }}
-               className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-               aria-label={isOwner ? "Edit service" : "View service"}
-            >
-              {isOwner ? (
-                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+          // Only show image side in list view if not text mode
+          settings?.contentType !== 'text' && (
+            <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
+              {imageUrl ? (
+                <>
+                  <img src={imageUrl} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {/* audienceCategories overlay when image exists */}
+                  {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
+                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                      {item.audienceCategories.map((c) => (
+                        <span
+                          key={c.id || c.name}
+                          className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
+                        >
+                          {c.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
               ) : (
-                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+                // clean placeholder (no text)
+                <div className="absolute inset-0 w-full h-full bg-gray-100" />
               )}
-            </button>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShareOpen((s) => !s);
+              {/* Quick actions on image */}
+              <div className="absolute top-3 right-3 flex gap-2">
+
+                    <button
+                onClick={() => {
+                  if (isOwner) {
+                    if (onEdit) onEdit(item);
+                    else navigate(`/service/${item.id}`);
+                  } else {
+                    setDetailsModalOpen(true);
+                    onDetails?.(item);
+                  }
                 }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label="Share"
+                 className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                 aria-label={isOwner ? "Edit service" : "View service"}
               >
-                <Share2 size={16} className="text-gray-600" />
+                {isOwner ? (
+                  <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+                ) : (
+                  <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+                )}
               </button>
 
-              
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label="Share"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
+
+
+              </div>
             </div>
-          </div>
+          )
         ) : (
           <div className="relative overflow-hidden">
-            {imageUrl ? (
+            {settings?.contentType === 'text' ? null : imageUrl ? (
               <div className="relative">
                 <img
                   src={imageUrl}
@@ -265,46 +335,94 @@ export default function ServiceCard({
               <div className="w-full h-48 bg-gray-100" />
             )}
 
-            {/* Quick actions on image */}
-            <div className="absolute top-4 right-4 flex gap-2">
+            {/* Quick actions on image - only show when not text mode */}
+            {settings?.contentType !== 'text' && (
+              <div className="absolute top-4 right-4 flex gap-2">
 
-              
-                  <button
-              onClick={() => {
-                if (isOwner) {
-                  if (onEdit) onEdit(item);
-                  else navigate(`/service/${item.id}`);
-                } else {
-                  setDetailsModalOpen(true);
-                  onDetails?.(item);
-                }
+
+                 <button
+            onClick={() => {
+              if (isOwner) {
+                if (onEdit) onEdit(item);
+                else navigate(`/service/${item.id}`);
+              } else {
+                setDetailsModalOpen(true);
+                onDetails?.(item);
+              }
+            }}
+             className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+             aria-label={isOwner ? "Edit service" : "View service"}
+          >
+            {isOwner ? (
+              <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+            ) : (
+              <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+            )}
+          </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShareOpen((s) => !s);
               }}
-               className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-               aria-label={isOwner ? "Edit service" : "View service"}
+              className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+              aria-label="Share"
             >
-              {isOwner ? (
-                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-              ) : (
-                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-              )}
+              <Share2 size={16} className="text-gray-600" />
             </button>
-            
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShareOpen((s) => !s);
-                }}
-                className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                aria-label="Share"
-              >
-                <Share2 size={16} className="text-gray-600" />
-              </button>
-            </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* CONTENT */}
         <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
+          {/* Text mode: Buttons and audience categories at top */}
+          {settings?.contentType === 'text' && (
+            <div className={`${!isList ? 'flex-col gap-y-2':'items-center justify-between gap-2'} flex  mb-3`}>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (isOwner) {
+                      if (onEdit) onEdit(item);
+                      else navigate(`/service/${item.id}`);
+                    } else {
+                      setDetailsModalOpen(true);
+                      onDetails?.(item);
+                    }
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label={isOwner ? "Edit service" : "View service"}
+                >
+                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label="Share service"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
+              </div>
+              {Array.isArray(item?.audienceCategories) &&
+                item.audienceCategories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {item.audienceCategories.map((c) => (
+                      <span
+                        key={c.id || c.name}
+                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
+                      >
+                        {c.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+            </div>
+          )}
+
           {/* Title */}
           <h3 className="font-semibold text-lg text-gray-900 truncate mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
             {item?.title}
@@ -440,6 +558,46 @@ export default function ServiceCard({
             </div>
           )}
 
+          {/* NEW: social row (like / comment / report) hidden for now */}
+          <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600">
+            <button
+              onClick={toggleLike}
+              className="inline-flex items-center gap-1 hover:text-brand-700"
+              title={liked ? "Unlike" : "Like"}
+            >
+              <Heart
+                size={16}
+                className={liked ? "fill-brand-500 text-brand-500" : ""}
+              />
+              <span>{likeCount}</span>
+            </button>
+
+            <button
+              onClick={() => setCommentsDialogOpen(true)}
+              className="inline-flex items-center gap-1 hover:text-brand-700"
+              title="Comments"
+            >
+              <MessageCircle size={16} />
+              <span>{commentCount}</span>
+            </button>
+
+            <button
+               onClick={() =>{
+                 if (!user?.id) {
+                  data._showPopUp?.("login_prompt");
+                  return;
+                }else{
+                  setReportOpen(true)
+                }
+              } }
+              className="inline-flex _login_prompt items-center gap-1 hover:text-rose-700"
+              title="Report this service"
+            >
+              <Flag size={16} />
+              <span>Report</span>
+            </button>
+          </div>
+
           {/* Actions (View + Message + Connect / or Edit if owner) */}
           <div className={`flex items-center gap-2 mt-auto pt-2 ${isList ? "justify-end md:justify-start" : ""}`}>
             {/* View (Edit if owner) */}
@@ -504,6 +662,32 @@ export default function ServiceCard({
         serviceId={item?.id}
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
+      />
+
+      {/* Report dialog */}
+      <ConfirmDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Report this service?"
+        text="Tell us what's happening. Our team will review."
+        confirmText="Submit report"
+        cancelText="Cancel"
+        withInput
+        inputType="textarea"
+        inputLabel="Report details"
+        inputPlaceholder="Describe the issue (spam, scam, offensive, etc.)"
+        requireValue
+        onConfirm={reportService}
+      />
+
+      {/* Comments Dialog */}
+      <CommentsDialog
+        open={commentsDialogOpen}
+        onClose={() => setCommentsDialogOpen(false)}
+        entityType="service"
+        entityId={item?.id}
+        currentUser={user}
+        onCountChange={(n) => setCommentCount(n)}
       />
     </>
   );

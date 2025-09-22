@@ -44,6 +44,14 @@ export default defineConfig({
   build: {
     target: ["es2015"], // Ensure compatibility with older browsers
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
 })
 
 

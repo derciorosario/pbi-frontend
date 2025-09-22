@@ -530,23 +530,24 @@ export default function PeopleFeedPage() {
                 buttons={
                 currentPage == "people"
                   ? [
-                      "Entrepreneur (Startups)",
-                      "Established Entrepreneurs / Businesses",
+                      "Entrepreneurs",
+                      "Business Owners / Businesses",
                       "Social Entrepreneurs",
-                      "Professional",
+                      "Professionals",
                       "Freelancers",
                       "Students",
                       "Government Officials",
-                      "Investor",
+                      "Investors",
+                      "Executives"
                     ]
                   : [
-                    "Business",
-                    "Non-Profit Organizations (NPOs/NGOs)",
-                    "Government / Public Sector Organizations",
-                    "Educational & Research Organizations",
-                    "Healthcare Organizations",
-                    "International / Intergovernmental Organizations",
-                    "Hybrid / Special Organizations"
+                    "Companies",
+                    "NGOs/NPOs",
+                    "Government / Public Sector",
+                    "Educational & Research",
+                    "Healthcare",
+                    "International / Intergovernmental",
+                    "Hybrid / Special"
                   ]
 
               }/>

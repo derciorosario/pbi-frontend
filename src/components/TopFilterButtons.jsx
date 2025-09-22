@@ -8,6 +8,7 @@ export default function TopFilterButtons({buttons=[], selected=[], setSelected, 
   const [moreOpen, setMoreOpen] = useState(false)
   const moreMenuRef = useRef(null)
   const dropdownRef = useRef(null)
+  const [dropdownStyle, setDropdownStyle] = useState({})
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -20,6 +21,21 @@ export default function TopFilterButtons({buttons=[], selected=[], setSelected, 
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
+
+  // Position dropdown relative to the More button
+  useEffect(() => {
+    if (moreOpen && moreMenuRef.current) {
+      const buttonRect = moreMenuRef.current.getBoundingClientRect()
+      const outerRect = moreMenuRef.current.parentElement.parentElement.getBoundingClientRect()
+      const buttonLeftRelative = buttonRect.left - outerRect.left
+      const dropdownWidth = 224 // w-56
+      if (buttonLeftRelative + dropdownWidth > outerRect.width) {
+        setDropdownStyle({ right: 0 })
+      } else {
+        setDropdownStyle({ left: buttonLeftRelative })
+      }
+    }
+  }, [moreOpen])
 
   // Maximum number of buttons to show before "More"
   const maxVisibleButtons = 3
@@ -95,9 +111,7 @@ export default function TopFilterButtons({buttons=[], selected=[], setSelected, 
         <div
           ref={dropdownRef}
           className="absolute top-full mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg p-2 z-30"
-          style={{
-            right: 0
-          }}
+          style={dropdownStyle}
         >
           <div className="max-h-[300px] gap-y-1 flex flex-col overflow-y-auto">
             {moreButtons.map((buttonValue) => (

@@ -497,10 +497,27 @@ export default function CreateServicePage() {
   }));
   
   // Create city options for SearchableSelect (limit to reasonable number)
-  const cityOptions = CITIES.slice(0, 1000).map(city => ({
+  const allCityOptions = CITIES.slice(0, 10000).map(city => ({
     value: city.city,
-    label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+    label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
+    country: city.country
   }));
+
+  // Support single or multi-country (comma-separated) selection
+  const selectedCountries = useMemo(() => {
+    if (!form.country) return [];
+    return String(form.country)
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  }, [form.country]);
+
+  // Filtered cities for dropdown based on selected countries
+  const cityOptions = useMemo(() => {
+    if (selectedCountries.length === 0) return allCityOptions;
+    const setLC = new Set(selectedCountries);
+    return allCityOptions.filter((c) => setLC.has(c.country.toLowerCase()));
+  }, [selectedCountries, allCityOptions]);
 
   // Industry taxonomy
   const [industryTree, setIndustryTree] = useState([]);
@@ -977,11 +994,13 @@ export default function CreateServicePage() {
                     options={countryOptions}
                     placeholder="Search and select country..."
                     required
+                    key={form.country} // Force remount when country changes to reset internal state
                   />
                 </div>
                 <div>
                   <Label>City</Label>
                   <SearchableSelect
+                    key={form.country} // Force remount when country changes to reset internal state
                     value={form.city}
                     onChange={(value) => setField("city", value)}
                     options={cityOptions}

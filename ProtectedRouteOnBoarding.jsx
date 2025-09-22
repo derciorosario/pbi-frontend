@@ -10,7 +10,7 @@ const ProtectedRouteOnboarding = () => {
 
   useEffect(() => {
     // Check if user is logged in and has missing profile information
-    if (user && !loading) {
+    if (user && !loading && user?.accountType!="admin") {
       const missingBiography = !profile.about;
       const missingProfessionalTitle = !profile?.professionalTitle;
       
@@ -19,7 +19,6 @@ const ProtectedRouteOnboarding = () => {
       }
     }
 
-    console.log({profile,user})
   }, [user, profile, loading]);
 
   if (loading) {

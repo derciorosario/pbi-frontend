@@ -23,6 +23,7 @@ import CrowdfundCard from "../components/CrowdfundCard";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import PageTabs from "../components/PageTabs";
 import TopFilterButtons from "../components/TopFilterButtons";
+import { useAuth } from "../contexts/AuthContext";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -39,6 +40,7 @@ export default function CrowdfundingPage() {
   const navigate=useNavigate()
   const data=useData()
   const from = "funding"; // Define the 'from' variable
+  const {user}=useAuth()
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -502,9 +504,9 @@ export default function CrowdfundingPage() {
           </div>
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-           { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
-            { label: "Share Opportunity Experience", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create") },
-            { label: "Ask About an Opportunity", Icon: PlusCircle, onClick: () => navigate("/need/funding/create") },
+            { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/fundings/create"),hide:user?.accountType=="individual" },
+            { label: "Share Opportunity Experience", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create"),hide:user?.accountType=="company" },
+            { label: "Ask About an Opportunity", Icon: PlusCircle, onClick: () => navigate("/need/funding/create"),hide:user?.accountType=="company" },
           ]} />
           <ProfileCard />
           
@@ -527,10 +529,10 @@ export default function CrowdfundingPage() {
            <TabsAndAdd 
           tabs={[]}  
           items={[
-            { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
-            { label: "Share Opportunity Experience", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create") },
-            { label: "Ask About an Opportunity", Icon: PlusCircle, onClick: () => navigate("/need/funding/create") },
-          ]}
+            { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/experiences/create"),hide:user?.accountType=="individual" },
+            { label: "Share Opportunity Experience", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create"),hide:user?.accountType=="company" },
+            { label: "Ask About an Opportunity", Icon: PlusCircle, onClick: () => navigate("/need/funding/create"),hide:user?.accountType=="company" },
+         ]}
           activeTab={activeTab} 
           setActiveTab={setActiveTab}  
         />

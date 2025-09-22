@@ -90,7 +90,7 @@ const AccountTypeModal = ({ isOpen, onClose, userInfo, accessToken, onSuccess })
                 <path d="M3 21V3h8v6h10v12H3Z" />
               </svg>
               <div className="text-left">
-                <p className="font-semibold">Company</p>
+                <p className="font-semibold">Corporate</p>
                 <p className="text-sm opacity-75">Business networking and opportunities</p>
               </div>
             </div>

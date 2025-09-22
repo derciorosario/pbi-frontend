@@ -23,6 +23,7 @@ import ProductCard from "../components/ProductCard-1";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import PageTabs from "../components/PageTabs";
 import TopFilterButtons from "../components/TopFilterButtons";
+import { useAuth } from "../contexts/AuthContext";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -43,6 +44,7 @@ export default function ProductsPage() {
   const [view,setView]=useState('grid')
   let view_types=['grid','list']
   const from = "products"; // Define the 'from' variable
+  const {user}=useAuth()
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
@@ -520,9 +522,9 @@ export default function ProductsPage() {
           </div>
            <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { label: "Post a Product", Icon: PlusCircle, onClick: () => navigate("/products/create") },
-            { label: "Share Your Experience", Icon: PlusCircle, onClick: () => navigate("/moment/product/create") },
-            { label: "Ask About a Product", Icon: PlusCircle, onClick: () => navigate("/need/product/create") },
+            { label: "Post a Product", Icon: PlusCircle, onClick: () => navigate("/products/create"),hide:user?.accountType=="individual" },
+            { label: "Share Your Experience", Icon: PlusCircle, onClick: () => navigate("/moment/product/create"),hide:user?.accountType=="company" },
+            { label: "Ask About a Product", Icon: PlusCircle, onClick: () => navigate("/need/product/create"),hide:user?.accountType=="company" },
           
         ]} />
           <ProfileCard />
@@ -548,9 +550,9 @@ export default function ProductsPage() {
             <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
 
              <TabsAndAdd tabs={[]}  items={[
-                           { label: "Post a Product", Icon: PlusCircle, onClick: () => navigate("/products/create") },
-                           { label: "Share Your Experience", Icon: PlusCircle, onClick: () => navigate("/moment/product/create") },
-                           { label: "Ask About a Product", Icon: PlusCircle, onClick: () => navigate("/need/product/create") },
+                           { label: "Post a Product", Icon: PlusCircle, onClick: () => navigate("/products/create"),hide:user?.accountType=="individual" },
+                           { label: "Share Your Experience", Icon: PlusCircle, onClick: () => navigate("/moment/product/create"),hide:user?.accountType=="company" },
+                           { label: "Ask About a Product", Icon: PlusCircle, onClick: () => navigate("/need/product/create"),hide:user?.accountType=="company" },
             ]} activeTab={activeTab} setActiveTab={setActiveTab}  />
              </div>
                {renderMiddle()}

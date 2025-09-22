@@ -28,7 +28,16 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
     country: "",
     password: "",
     confirmPassword: "",
-    tos: false
+    tos: false,
+    // Individual fields
+    avatarUrl: null,
+    avatarPreview: null,
+    birthDate: "",
+    gender: "",
+    nationality: "",
+    // Company fields
+    otherCountries: [],
+    webpage: ""
   });
   const [signupErrors, setSignupErrors] = useState({
     name: "",
@@ -37,7 +46,13 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
     country: "",
     password: "",
     confirmPassword: "",
-    tos: ""
+    tos: "",
+    avatarUrl: "",
+    birthDate: "",
+    gender: "",
+    nationality: "",
+    otherCountries: "",
+    webpage: ""
   });
   const [showPwd1, setShowPwd1] = useState(false);
   const [showPwd2, setShowPwd2] = useState(false);
@@ -59,10 +74,53 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
     setSignupErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
+  const onFileChange = (name, file) => {
+    if (file) {
+      // Validate file size (5MB limit)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        setSignupErrors((prev) => ({
+          ...prev,
+          [name]: "File size must be less than 5MB"
+        }));
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        setSignupErrors((prev) => ({
+          ...prev,
+          [name]: "Please select a valid image file (JPG, PNG, GIF)"
+        }));
+        return;
+      }
+
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target.result;
+        setSignupForm((f) => ({
+          ...f,
+          avatarUrl: base64, // Store base64 data in avatarUrl
+          avatarPreview: base64  // Store preview
+        }));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setSignupForm((f) => ({
+        ...f,
+        avatarUrl: null,
+        avatarPreview: null
+      }));
+    }
+    setSignupErrors((prev) => ({ ...prev, avatarUrl: "" }));
+  };
+
   // Labels change with account type, but variable names DO NOT change
-  const labelName = acct === "company" ? "Company name" : "Name";
-  const labelEmail = acct === "company" ? "Company email" : "Email Address";
-  const labelPhone = acct === "company" ? "Company phone" : "Phone Number";
+  const labelName = acct === "company" ? "Organization name" : "Name";
+  const labelEmail = acct === "company" ? "Organization email" : "Email Address";
+  const labelPhone = acct === "company" ? "Organization phone" : "Phone Number";
 
   function validateLogin() {
     const next = { email: "", password: "" };
@@ -81,23 +139,78 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
       country: "",
       password: "",
       confirmPassword: "",
-      tos: ""
+      tos: "",
+      birthDate: "",
+      gender: "",
+      nationality: "",
+      otherCountries: "",
+      webpage: ""
     };
 
-    if (!signupForm.name) next.name = `${labelName} is required.`;
+    if (!signupForm.name) {
+      next.name = `${labelName} is required.`;
+    } else if (signupForm.name.trim().length < 2) {
+      next.name = `${labelName} must be at least 2 characters long.`;
+    } else if (!/^[a-zA-Z\s\-'\.]+$/.test(signupForm.name.trim())) {
+      next.name = `${labelName} can only contain letters, spaces, hyphens, apostrophes, and periods.`;
+    }
     if (!signupForm.email) next.email = `${labelEmail} is required.`;
     else if (!emailOK(signupForm.email)) next.email = "Please enter a valid email.";
     if (!signupForm.phone) next.phone = `${labelPhone} is required.`;
-    else if (String(signupForm.phone).replace(/\D/g, "").length < 6)
-      next.phone = "Please enter a valid phone number.";
+    else {
+      const phoneDigits = String(signupForm.phone).replace(/\D/g, "");
+      if (phoneDigits.length < 6) {
+        next.phone = "Please enter a valid phone number.";
+      } else if (phoneDigits.length > 15) {
+        next.phone = "Phone number is too long.";
+      } else if (!/^\+?[\d\s\-\(\)]+$/.test(signupForm.phone)) {
+        next.phone = "Please enter a valid phone number format.";
+      }
+    }
     if (!signupForm.country) next.country = "Country is required.";
     if (!signupForm.password) next.password = "Password is required.";
-    else if (signupForm.password.length < 6)
-      next.password = "Use at least 6 characters.";
+    else if (signupForm.password.length < 8) {
+      next.password = "Password must be at least 8 characters long.";
+    }
     if (!signupForm.confirmPassword) next.confirmPassword = "Please confirm password.";
     else if (signupForm.password !== signupForm.confirmPassword)
       next.confirmPassword = "Passwords do not match.";
     if (!signupForm.tos) next.tos = "You must agree to the Terms and Privacy Policy.";
+
+    // Individual-specific validation
+    if (acct === "individual") {
+      if (!signupForm.birthDate) {
+        next.birthDate = "Birth date is required.";
+      } else {
+        const birthDate = new Date(signupForm.birthDate);
+        const today = new Date();
+        const minAge = 13; // Minimum age requirement
+        const maxAge = 120; // Maximum reasonable age
+
+        if (birthDate > today) {
+          next.birthDate = "Birth date cannot be in the future.";
+        } else {
+          const age = today.getFullYear() - birthDate.getFullYear();
+          if (age < minAge) {
+            next.birthDate = "You must be at least 13 years old.";
+          } else if (age > maxAge) {
+            next.birthDate = "Please enter a valid birth date.";
+          }
+        }
+      }
+
+      if (!signupForm.gender) next.gender = "Gender is required.";
+      if (!signupForm.nationality) next.nationality = "Nationality is required.";
+    }
+
+    // Company-specific validation
+    if (acct === "company") {
+      // Company website is optional, but if provided, must be valid URL
+      if (signupForm.webpage && !signupForm.webpage.match(/^https?:\/\/.+/)) {
+        next.webpage = "Please enter a valid URL starting with http:// or https://";
+      }
+      // Other countries is optional - no validation needed
+    }
 
     setSignupErrors(next);
     return Object.values(next).every((v) => !v);
@@ -152,14 +265,22 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
 
     setLoading(true);
     try {
-      // Build payload with same variable names; include account type
+      // Build payload with correct field names that match backend expectations
       const payload = {
         name: signupForm.name,
         email: signupForm.email,
         phone: signupForm.phone,
-        country: signupForm.country,
+        countryOfResidence: signupForm.country, // Backend expects countryOfResidence
         password: signupForm.password,
-        account_type: acct // "individual" | "company"
+        accountType: acct, // "individual" | "company"
+        // Individual fields
+        avatarUrl: signupForm.avatarUrl, // Send base64 data
+        birthDate: signupForm.birthDate,
+        gender: signupForm.gender,
+        nationality: signupForm.nationality,
+        // Company fields
+        otherCountries: signupForm.otherCountries,
+        webpage: signupForm.webpage
       };
 
       const promise = client.post("/auth/signup", payload);
@@ -189,7 +310,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className={`relative w-full ${activeTab!="signup" ? 'max-w-md':'max-w-lg'} bg-white rounded-xl shadow-xl p-6 md:p-8 max-h-[80vh] overflow-y-auto`}>
+      <div className={`relative w-full ${activeTab!="signup" ? 'max-w-md':'max-w-2xl'} bg-white rounded-xl translate-y-5 shadow-xl p-6 md:p-8 max-h-[85vh] overflow-y-auto`}>
         {/* Close button */}
         <button 
           onClick={onClose}
@@ -372,7 +493,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M3 21V3h8v6h10v12H3Z" />
                 </svg>
-                Company
+                Organization
               </button>
             </div>
 
@@ -416,7 +537,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
 
               {/* Country */}
               <div className="md:col-span-2 space-y-1">
-                <label className="text-sm font-medium text-gray-700">Country</label>
+                <label className="text-sm font-medium text-gray-700">Country of residence</label>
                 <select
                   name="country"
                   value={signupForm.country}
@@ -433,12 +554,291 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                 {signupErrors.country && <p className="text-xs text-red-600">{signupErrors.country}</p>}
               </div>
 
+              {/* Individual-specific fields */}
+              {acct === "individual" && (
+                <>
+                  {/* Avatar (optional) */}
+                  <div className="md:col-span-2 space-y-3">
+                    <label className="text-sm font-medium text-gray-700">Profile Picture (Optional)</label>
+                    <div className="flex items-center gap-6">
+                      {/* Image Preview */}
+                      <div className="relative">
+                        <div className="w-20 h-20 rounded-full border-2 border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+                          {signupForm.avatarPreview ? (
+                            <img
+                              src={signupForm.avatarPreview}
+                              alt="Profile preview"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <svg className="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                              <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                          )}
+                        </div>
+                        {signupForm.avatarPreview && (
+                          <button
+                            type="button"
+                            onClick={() => onFileChange('avatar', null)}
+                            className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                          >
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <path d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Upload Button */}
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          name="avatar"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            onFileChange('avatar', file);
+                          }}
+                          className="hidden"
+                          id="avatar-upload"
+                        />
+                        <label
+                          htmlFor="avatar-upload"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-50 text-brand-700 border border-brand-200 rounded-lg cursor-pointer hover:bg-brand-100 transition-colors"
+                        >
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h1.586a1 1 0 0 1 .707.293l.707.707A1 1 0 0 0 13.414 11H15m-3-3v3m0 0v3m0-3h3m-3 0H9" />
+                          </svg>
+                          {signupForm.avatarUrl ? "Change Picture" : "Upload Picture"}
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {signupForm.avatarPreview ? "Image selected" : "JPG, PNG up to 5MB"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Birth Date */}
+                  <div className="md:col-span-1 space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Birth Date</label>
+                    <input
+                      type="date"
+                      name="birthDate"
+                      value={signupForm.birthDate}
+                      onChange={onSignupChange}
+                      className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-brand-500 focus:ring-2 bg-white ${
+                        signupErrors.birthDate ? "border-red-400 focus:ring-red-400" : "border-gray-200"
+                      }`}
+                    />
+                    {signupErrors.birthDate && <p className="text-xs text-red-600">{signupErrors.birthDate}</p>}
+                  </div>
+
+                  {/* Gender */}
+                  <div className="md:col-span-1 space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Gender</label>
+                    <select
+                      name="gender"
+                      value={signupForm.gender}
+                      onChange={onSignupChange}
+                      className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-brand-500 focus:ring-2 bg-white ${
+                        signupErrors.gender ? "border-red-400 focus:ring-red-400" : "border-gray-200"
+                      }`}
+                    >
+                      <option value="" disabled>Select gender</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                      <option value="prefer-not-to-say">Prefer not to say</option>
+                    </select>
+                    {signupErrors.gender && <p className="text-xs text-red-600">{signupErrors.gender}</p>}
+                  </div>
+
+                  {/* Nationality */}
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="text-sm font-medium text-gray-700">Nationality</label>
+                    <select
+                      name="nationality"
+                      value={signupForm.nationality}
+                      onChange={onSignupChange}
+                      className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-brand-500 focus:ring-2 bg-white ${
+                        signupErrors.nationality ? "border-red-400 focus:ring-red-400" : "border-gray-200"
+                      }`}
+                    >
+                      <option value="" disabled>Select your nationality</option>
+                      {COUNTRIES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                    {signupErrors.nationality && <p className="text-xs text-red-600">{signupErrors.nationality}</p>}
+                  </div>
+                </>
+              )}
+
+              {/* Company-specific fields */}
+              {acct === "company" && (
+                <>
+                  {/* Logo (optional) */}
+                  <div className="md:col-span-2 space-y-3">
+                    <label className="text-sm font-medium text-gray-700">Company Logo (Optional)</label>
+                    <div className="flex items-center gap-6">
+                      {/* Logo Preview */}
+                      <div className="relative">
+                        <div className="w-20 h-20 rounded-lg border-2 border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+                          {signupForm.avatarPreview ? (
+                            <img
+                              src={signupForm.avatarPreview}
+                              alt="Logo preview"
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            <svg className="w-8 h-8 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                              <circle cx="9" cy="9" r="2"/>
+                              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                            </svg>
+                          )}
+                        </div>
+                        {signupForm.avatarPreview && (
+                          <button
+                            type="button"
+                            onClick={() => onFileChange('avatar', null)}
+                            className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                          >
+                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                              <path d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Upload Button */}
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          name="avatar"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            onFileChange('avatar', file);
+                          }}
+                          className="hidden"
+                          id="avatar-upload"
+                        />
+                        <label
+                          htmlFor="avatar-upload"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-50 text-brand-700 border border-brand-200 rounded-lg cursor-pointer hover:bg-brand-100 transition-colors"
+                        >
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14.828 14.828a4 4 0 0 1-5.656 0M9 10h1.586a1 1 0 0 1 .707.293l.707.707A1 1 0 0 0 13.414 11H15m-3-3v3m0 0v3m0-3h3m-3 0H9" />
+                          </svg>
+                          {signupForm.avatarUrl ? "Change Logo" : "Upload Logo"}
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {signupForm.avatarPreview ? "Logo selected" : "JPG, PNG up to 5MB"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Other Countries of Operations */}
+                  <div className="md:col-span-2 space-y-3">
+                    <label className="text-sm font-medium text-gray-700">
+                      Other Countries of Operations (Branches) <span className="text-gray-400 font-normal">(Optional)</span>
+                    </label>
+
+                    {/* Selected Countries Chips */}
+                    {signupForm.otherCountries.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {signupForm.otherCountries.map((country) => (
+                          <div
+                            key={country}
+                            className="inline-flex items-center gap-1 px-3 py-1 bg-brand-100 text-brand-800 rounded-full text-sm"
+                          >
+                            <span>{country}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSignupForm(prev => ({
+                                  ...prev,
+                                  otherCountries: prev.otherCountries.filter(c => c !== country)
+                                }));
+                              }}
+                              className="text-brand-600 hover:text-brand-800"
+                            >
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Country Selector */}
+                    <div className="relative">
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const selectedCountry = e.target.value;
+                          if (selectedCountry && !signupForm.otherCountries.includes(selectedCountry)) {
+                            setSignupForm(prev => ({
+                              ...prev,
+                              otherCountries: [...prev.otherCountries, selectedCountry]
+                            }));
+                          }
+                          e.target.value = ""; // Reset select
+                        }}
+                        className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-brand-500 focus:ring-2 bg-white ${
+                          signupErrors.otherCountries ? "border-red-400 focus:ring-red-400" : "border-gray-200"
+                        }`}
+                      >
+                        <option value="" disabled>Add a country...</option>
+                        {COUNTRIES
+                          .filter(country => !signupForm.otherCountries.includes(country))
+                          .map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                      </select>
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-gray-500">
+                      Select countries where your company has branches or operations (optional)
+                    </p>
+                    {signupErrors.otherCountries && <p className="text-xs text-red-600">{signupErrors.otherCountries}</p>}
+                  </div>
+
+                  {/* Webpage */}
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="text-sm font-medium text-gray-700">
+                      Company Website <span className="text-gray-400 font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      type="url"
+                      name="webpage"
+                      placeholder="https://www.yourcompany.com"
+                      value={signupForm.webpage}
+                      onChange={onSignupChange}
+                      className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-brand-500 focus:ring-2 bg-white ${
+                        signupErrors.webpage ? "border-red-400 focus:ring-red-400" : "border-gray-200"
+                      }`}
+                    />
+                    {signupErrors.webpage && <p className="text-xs text-red-600">{signupErrors.webpage}</p>}
+                  </div>
+                </>
+              )}
+
               {/* Passwords with show/hide */}
               <Input
                 label="Password"
                 name="password"
                 type={showPwd1 ? "text" : "password"}
-                placeholder="Create a strong password"
+                placeholder="At least 8 characters"
                 value={signupForm.password}
                 onChange={onSignupChange}
                 error={signupErrors.password}
