@@ -13,9 +13,11 @@ import {
   Share2,
   MapPin,
   Clock,
+  Heart,
+  MessageCircle,
+  Flag,
   User as UserIcon,
   Copy as CopyIcon,
-  Flag,
 } from "lucide-react";
 import {
   FacebookShareButton,
