@@ -174,7 +174,7 @@ export default function NeedDetails({ needId, isOpen, onClose, item }) {
   if (!isOpen) return null;
 
   // Format user initials
-  const initials = (need?.userName || item?.userName || "?")
+  const initials = (need?.user.name || item?.userName || "?")
     .split(" ")
     .map((s) => s[0])
     .join("")
@@ -288,8 +288,9 @@ export default function NeedDetails({ needId, isOpen, onClose, item }) {
               {/* User */}
               <Section title="Posted by" icon={User2}>
                 <div
-                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200 cursor-pointer"
+                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200"
                   onClick={() => {
+                    return
                     if (need?.userId) {
                       data._showPopUp("profile");
                       data._setProfileUserId?.(need.userId);
@@ -298,8 +299,8 @@ export default function NeedDetails({ needId, isOpen, onClose, item }) {
                 >
                   {need.userAvatarUrl ? (
                     <img
-                      src={need.userAvatarUrl}
-                      alt={need.userName}
+                      src={need?.user.avatarUrl}
+                      alt={need?.user.name}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
@@ -308,7 +309,7 @@ export default function NeedDetails({ needId, isOpen, onClose, item }) {
                     </div>
                   )}
                   <div>
-                    <div className="font-medium">{need.userName || "User"}</div>
+                    <div className="font-medium">{need?.user.name || "User"}</div>
                   </div>
                 </div>
               </Section>

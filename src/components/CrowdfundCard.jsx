@@ -504,10 +504,10 @@ export default function CrowdfundCard({
               {/* Creator quick profile (opens ProfileModal) */}
               <div
                 className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (item?.creatorUserId) {
                     setOpenId(item.creatorUserId);
-                    data._showPopUp?.("profile");
                   }
                 }}
               >
@@ -705,13 +705,15 @@ export default function CrowdfundCard({
               }}
               className={`${
                 type === "grid" ? "flex-1" : ""
-              } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 transition-all duration-200 shadow-sm hover:shadow-md`}
+              } rounded-xl px-4 py-2.5 text-sm _login_prompt font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 transition-all duration-200 shadow-sm hover:shadow-md`}
             >
               Message
             </button>
 
             {/* Connect like the others */}
-            {renderConnectButton()}
+             <div className="_login_prompt">
+              {renderConnectButton()}
+             </div>
           </div>
         {/* SHARE MENU */}
         {shareOpen && <ShareMenu />}

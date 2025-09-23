@@ -1464,14 +1464,33 @@ export default function ProfilePage() {
   });
 
   /* ---------- WANTS (with limits) ---------- */
-  const toggleIdentityWant = (identityKey) => {
-    setWantIdentityIds(prev => {
-      const has = prev.includes(identityKey);
-      if (has) return prev.filter(x => x !== identityKey);
-      if (prev.length >= MAX_WANT_IDENTITIES) return prev; // limit
-      return [...prev, identityKey];
-    });
-  };
+  
+  // Replace the existing toggleIdentityWant with this:
+const toggleIdentityWant = (identityKey) => {
+  setWantIdentityIds((prev) => {
+    const removing = prev.includes(identityKey);
+    const adding   = !removing;
+
+    // Enforce identity limit on add
+    if (adding && prev.length >= MAX_WANT_IDENTITIES) return prev;
+
+    const picked = removing ? prev.filter((x) => x !== identityKey) : [...prev, identityKey];
+
+    // Helper: keep an id only if at least one picked identity owns it
+    const stillCovered = (map, id) => {
+      const owners = map[id];
+      return owners ? picked.some((ik) => owners.has(ik)) : false;
+    };
+
+    // Prune categories/subcategories/subsubcategories that are no longer covered
+    setWantSubsubCategoryIds((prevX) => prevX.filter((xid) => stillCovered(subsubToIdentityKeys, xid)));
+    setWantSubcategoryIds((prevS) => prevS.filter((sid) => stillCovered(subToIdentityKeys, sid)));
+    setWantCategoryIds((prevC) => prevC.filter((cid) => stillCovered(catToIdentityKeys, cid)));
+
+    return picked;
+  });
+};
+
 
   const toggleCategoryWant = (catId) => {
     setWantCategoryIds(prev => {

@@ -188,8 +188,11 @@ export default function Signup() {
     // Company-specific validation
     if (acct === "company") {
       // Company website is optional, but if provided, must be valid URL
-      if (form.webpage && !form.webpage.match(/^https?:\/\/.+/)) {
-        next.webpage = "Please enter a valid URL starting with http:// or https://";
+      if (form.webpage) {
+        const domainPattern = /^(https?:\/\/)?([\w-]+\.)+[a-zA-Z]{2,}(\/\S*)?$/;
+        if (!domainPattern.test(form.webpage.trim())) {
+          next.webpage = "Please enter a valid website address (e.g. google.com)";
+        }
       }
       // Other countries is optional - no validation needed
     }
@@ -638,7 +641,6 @@ export default function Signup() {
                     Company Website <span className="text-gray-400 font-normal">(Optional)</span>
                   </label>
                   <input
-                    type="url"
                     name="webpage"
                     placeholder="https://www.yourcompany.com"
                     value={form.webpage}
@@ -729,8 +731,10 @@ export default function Signup() {
               />
               <p className="text-gray-600">
                 I agree to the{" "}
-                <a href="/terms"  target="_blank" className="text-brand-600 underline">Terms of Service</a> and{" "}
-                <a href="/privacy"  target="_blank" className="text-brand-600 underline">Privacy Policy</a>
+                <a href="/terms" target="_blank"
+                   rel="noopener noreferrer"  className="text-brand-600 underline">Terms of Service</a> and{" "}
+                <a href="/privacy" target="_blank"
+                   rel="noopener noreferrer"   className="text-brand-600 underline">Privacy Policy</a>
               </p>
             </div>
             {errors.tos && (

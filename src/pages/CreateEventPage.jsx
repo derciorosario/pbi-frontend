@@ -263,6 +263,41 @@ const allCityOptions = CITIES.slice(0, 10000).map(city => ({
   country: city.country
 }));
 
+
+
+/* ---------- Timezone label with UTC offset ---------- */
+function tzOffsetLabel(tz, when = new Date()) {
+  try {
+    // Pega "GMT+2" ou similar de forma robusta
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      timeZoneName: "shortOffset",
+    }).formatToParts(when);
+    const raw = parts.find(p => p.type === "timeZoneName")?.value || "";
+
+    // Normaliza para "UTC+02:00"
+    // Aceita "GMT+2", "UTC+2", "GMT+02:00", etc.
+    const m = raw.match(/(GMT|UTC)\s*([+-]\d{1,2})(?::?(\d{2}))?/i);
+    if (m) {
+      const sign = m[2].startsWith("-") ? "-" : "+";
+      const h = Math.abs(parseInt(m[2], 10));
+      const mm = m[3] ? parseInt(m[3], 10) : 0;
+      const hh = String(h).padStart(2, "0");
+      const mmm = String(mm).padStart(2, "0");
+      return `UTC${sign}${hh}:${mmm}`;
+    }
+    // fallback: sem parsing confiável
+    return raw || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
+
+function tzWithOffset(tz) {
+  return `${tz} (${tzOffsetLabel(tz)})`;
+}
+
+
 /* ---------- Read-only view for non-owners ---------- */
 function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
   const tz = form.timezone || "Africa/Lagos";
@@ -798,10 +833,14 @@ export default function CreateEventPage() {
               </div>
             </section>
 
-            {/* Date & Time */}
-            <section>
-              <h2 className="font-semibold text-brand-600">Date & Time</h2>
-              <div className="mt-3 grid gap-4 sm:grid-cols-3">
+           
+           {/* Date & Time */}
+          <section>
+            <h2 className="font-semibold text-brand-600">Date & Time</h2>
+
+            <div className="mt-3 grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-1">
+                <label className="text-[12px] font-medium text-gray-700">Date</label>
                 <input
                   type="date"
                   value={form.date}
@@ -809,37 +848,56 @@ export default function CreateEventPage() {
                   className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
                   required
                 />
+              </div>
+
+              <div className="grid gap-1">
+                <label className="text-[12px] font-medium text-gray-700">Start time</label>
                 <input
                   type="time"
                   value={form.startTime}
                   onChange={(e) => setField("startTime", e.target.value)}
+                  placeholder="HH:MM"
+                  title="Formato 24h (HH:MM), ex.: 14:30"
                   className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
                   required
                 />
+              </div>
+
+              <div className="grid gap-1">
+                <label className="text-[12px] font-medium text-gray-700">End time (optional)</label>
                 <input
                   type="time"
                   value={form.endTime}
                   onChange={(e) => setField("endTime", e.target.value)}
+                  placeholder="HH:MM"
+                  title="Formato 24h (HH:MM), ex.: 16:00"
                   className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
                 />
-              </div>
-              <div className="relative mt-3">
-                <select
-                  value={form.timezone}
-                  onChange={(e) => setField("timezone", e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                >
-                  {meta.timezones.map((tz) => (
-                    <option key={tz} value={tz}>
-                      {tz}
-                    </option>
-                  ))}
-                </select>
-                <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-                  <I.chevron />
-                </span>
-              </div>
-            </section>
+            </div>
+            </div>
+
+            <div className="relative mt-3">
+              <label className="sr-only">Timezone</label>
+              <select
+                value={form.timezone}
+                onChange={(e) => setField("timezone", e.target.value)}
+                className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              >
+                {meta.timezones.map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tzWithOffset(tz)}
+                  </option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+                <I.chevron />
+              </span>
+              <p className="mt-1 text-[11px] text-gray-500">
+                O fuso é mostrado com o offset atual. Ex.: Africa/Maputo (UTC+02:00)
+              </p>
+            </div>
+          </section>
+
 
             {/* Location */}
             <section>
@@ -903,71 +961,102 @@ export default function CreateEventPage() {
               )}
             </section>
 
-            {/* Registration */}
-            <section>
-              <h2 className="font-semibold text-brand-600">Registration</h2>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                <div className="relative">
-                  <select
-                    value={form.registrationType}
-                    onChange={(e) => setField("registrationType", e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  >
-                    <option>Free</option>
-                    <option>Paid</option>
-                  </select>
-                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-                    <I.chevron />
-                  </span>
-                </div>
+           
+           
+           {/* Registration */}
+          <section>
+            <h2 className="font-semibold text-brand-600">Registration</h2>
 
+            {/* Registration Type & Capacity */}
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <div className="relative">
+                <label className="block text-[0.8rem] font-medium text-gray-700 mb-1">
+                  Registration Type
+                </label>
+                <select
+                  value={form.registrationType}
+                  onChange={(e) => setField("registrationType", e.target.value)}
+                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                >
+                  <option>Free</option>
+                  <option>Paid</option>
+                </select>
+                <span className="pointer-events-none absolute right-2 top-[2.3rem] -translate-y-1/2">
+                  <I.chevron />
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[0.8rem] font-medium text-gray-700 mb-1">
+                  Seats / Capacity (optional)
+                </label>
                 <input
                   type="number"
                   min="1"
                   value={form.capacity}
                   onChange={(e) => setField("capacity", e.target.value)}
-                  placeholder="Seats / capacity (optional)"
-                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  placeholder="e.g. 200"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
                 />
               </div>
+            </div>
 
-              {form.registrationType === "Paid" && (
-                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            {/* Price & Currency (only if Paid) */}
+            {form.registrationType === "Paid" && (
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Price
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     value={form.price}
                     onChange={(e) => setField("price", e.target.value)}
-                    placeholder="Price"
-                    className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+                    placeholder="e.g. 50.00"
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
                     required
                   />
-                  <div className="relative">
-                    <select
-                      value={form.currency}
-                      onChange={(e) => setField("currency", e.target.value)}
-                      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
-                    >
-                      {meta.currencies.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
-                      <I.chevron />
-                    </span>
-                  </div>
                 </div>
-              )}
 
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Currency
+                  </label>
+                  <select
+                    value={form.currency}
+                    onChange={(e) => setField("currency", e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  >
+                    {meta.currencies.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute right-2 top-[2.3rem] -translate-y-1/2">
+                    <I.chevron />
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Registration Deadline */}
+            <div className="mt-3">
+              <label className="block text-[0.8rem]  font-medium text-gray-700 mb-1">
+                Registration Deadline (last day to register)
+              </label>
               <input
                 type="date"
                 value={form.registrationDeadline}
                 onChange={(e) => setField("registrationDeadline", e.target.value)}
-                className="mt-3 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
               />
-            </section>
+            </div>
+          </section>
+
+
+
 
             {/* General Classification (SEARCHABLE) */}
             <section>

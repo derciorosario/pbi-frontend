@@ -50,11 +50,445 @@ function timeAgo(iso) {
   return `${y} year${y > 1 ? "s" : ""} ago`;
 }
 
-const timezones = [
-  "Africa/Abidjan","Africa/Accra","Africa/Addis_Ababa","Africa/Algiers","Africa/Cairo","Africa/Casablanca",
-  "Africa/Dakar","Africa/Dar_es_Salaam","Africa/Johannesburg","Africa/Kampala","Africa/Kigali",
-  "Africa/Lagos","Africa/Nairobi","Africa/Maputo"
+
+
+const timezones = [ 
+  "Africa/Abidjan",
+  "Africa/Accra",
+  "Africa/Addis_Ababa",
+  "Africa/Algiers",
+  "Africa/Asmara",
+  "Africa/Bamako",
+  "Africa/Bangui",
+  "Africa/Banjul",
+  "Africa/Bissau",
+  "Africa/Blantyre",
+  "Africa/Brazzaville",
+  "Africa/Bujumbura",
+  "Africa/Cairo",
+  "Africa/Casablanca",
+  "Africa/Ceuta",
+  "Africa/Conakry",
+  "Africa/Dakar",
+  "Africa/Dar_es_Salaam",
+  "Africa/Djibouti",
+  "Africa/Douala",
+  "Africa/El_Aaiun",
+  "Africa/Freetown",
+  "Africa/Gaborone",
+  "Africa/Harare",
+  "Africa/Johannesburg",
+  "Africa/Juba",
+  "Africa/Kampala",
+  "Africa/Khartoum",
+  "Africa/Kigali",
+  "Africa/Kinshasa",
+  "Africa/Lagos",
+  "Africa/Libreville",
+  "Africa/Lome",
+  "Africa/Luanda",
+  "Africa/Lubumbashi",
+  "Africa/Lusaka",
+  "Africa/Malabo",
+  "Africa/Maputo",
+  "Africa/Maseru",
+  "Africa/Mbabane",
+  "Africa/Mogadishu",
+  "Africa/Monrovia",
+  "Africa/Nairobi",
+  "Africa/Ndjamena",
+  "Africa/Niamey",
+  "Africa/Nouakchott",
+  "Africa/Ouagadougou",
+  "Africa/Porto-Novo",
+  "Africa/Sao_Tome",
+  "Africa/Tripoli",
+  "Africa/Tunis",
+  "Africa/Windhoek",
+
+  "America/Adak",
+  "America/Anchorage",
+  "America/Anguilla",
+  "America/Antigua",
+  "America/Araguaina",
+  "America/Argentina/Buenos_Aires",
+  "America/Argentina/Catamarca",
+  "America/Argentina/Cordoba",
+  "America/Argentina/Jujuy",
+  "America/Argentina/La_Rioja",
+  "America/Argentina/Mendoza",
+  "America/Argentina/Rio_Gallegos",
+  "America/Argentina/Salta",
+  "America/Argentina/San_Juan",
+  "America/Argentina/San_Luis",
+  "America/Argentina/Tucuman",
+  "America/Argentina/Ushuaia",
+  "America/Aruba",
+  "America/Asuncion",
+  "America/Atikokan",
+  "America/Bahia",
+  "America/Bahia_Banderas",
+  "America/Barbados",
+  "America/Belem",
+  "America/Belize",
+  "America/Blanc-Sablon",
+  "America/Boa_Vista",
+  "America/Bogota",
+  "America/Boise",
+  "America/Cambridge_Bay",
+  "America/Campo_Grande",
+  "America/Cancun",
+  "America/Caracas",
+  "America/Cayenne",
+  "America/Cayman",
+  "America/Chicago",
+  "America/Chihuahua",
+  "America/Costa_Rica",
+  "America/Creston",
+  "America/Cuiaba",
+  "America/Curacao",
+  "America/Danmarkshavn",
+  "America/Dawson",
+  "America/Dawson_Creek",
+  "America/Denver",
+  "America/Detroit",
+  "America/Dominica",
+  "America/Edmonton",
+  "America/Eirunepe",
+  "America/El_Salvador",
+  "America/Fortaleza",
+  "America/Fort_Nelson",
+  "America/Glace_Bay",
+  "America/Godthab",
+  "America/Goose_Bay",
+  "America/Grand_Turk",
+  "America/Grenada",
+  "America/Guadeloupe",
+  "America/Guatemala",
+  "America/Guayaquil",
+  "America/Guyana",
+  "America/Halifax",
+  "America/Havana",
+  "America/Hermosillo",
+  "America/Indiana/Indianapolis",
+  "America/Indiana/Knox",
+  "America/Indiana/Marengo",
+  "America/Indiana/Petersburg",
+  "America/Indiana/Tell_City",
+  "America/Indiana/Vevay",
+  "America/Indiana/Vincennes",
+  "America/Indiana/Winamac",
+  "America/Inuvik",
+  "America/Iqaluit",
+  "America/Jamaica",
+  "America/Juneau",
+  "America/Kentucky/Louisville",
+  "America/Kentucky/Monticello",
+  "America/Kralendijk",
+  "America/La_Paz",
+  "America/Lima",
+  "America/Los_Angeles",
+  "America/Lower_Princes",
+  "America/Maceio",
+  "America/Managua",
+  "America/Manaus",
+  "America/Marigot",
+  "America/Martinique",
+  "America/Matamoros",
+  "America/Mazatlan",
+  "America/Menominee",
+  "America/Merida",
+  "America/Metlakatla",
+  "America/Mexico_City",
+  "America/Miquelon",
+  "America/Moncton",
+  "America/Monterrey",
+  "America/Montevideo",
+  "America/Montserrat",
+  "America/Nassau",
+  "America/New_York",
+  "America/Nipigon",
+  "America/Nome",
+  "America/Noronha",
+  "America/North_Dakota/Beulah",
+  "America/North_Dakota/Center",
+  "America/North_Dakota/New_Salem",
+  "America/Nuuk",
+  "America/Ojinaga",
+  "America/Panama",
+  "America/Pangnirtung",
+  "America/Paramaribo",
+  "America/Phoenix",
+  "America/Port-au-Prince",
+  "America/Port_of_Spain",
+  "America/Porto_Velho",
+  "America/Puerto_Rico",
+  "America/Punta_Arenas",
+  "America/Rainy_River",
+  "America/Rankin_Inlet",
+  "America/Recife",
+  "America/Regina",
+  "America/Resolute",
+  "America/Rio_Branco",
+  "America/Santarem",
+  "America/Santiago",
+  "America/Santo_Domingo",
+  "America/Sao_Paulo",
+  "America/Scoresbysund",
+  "America/Sitka",
+  "America/St_Barthelemy",
+  "America/St_Johns",
+  "America/St_Kitts",
+  "America/St_Lucia",
+  "America/St_Thomas",
+  "America/St_Vincent",
+  "America/Swift_Current",
+  "America/Tegucigalpa",
+  "America/Thule",
+  "America/Thunder_Bay",
+  "America/Tijuana",
+  "America/Toronto",
+  "America/Tortola",
+  "America/Vancouver",
+  "America/Whitehorse",
+  "America/Winnipeg",
+  "America/Yakutat",
+  "America/Yellowknife",
+
+  "Antarctica/Casey",
+  "Antarctica/Davis",
+  "Antarctica/DumontDUrville",
+  "Antarctica/Macquarie",
+  "Antarctica/Mawson",
+  "Antarctica/Palmer",
+  "Antarctica/Rothera",
+  "Antarctica/Syowa",
+  "Antarctica/Troll",
+  "Antarctica/Vostok",
+
+  "Arctic/Longyearbyen",
+
+  "Asia/Aden",
+  "Asia/Almaty",
+  "Asia/Amman",
+  "Asia/Anadyr",
+  "Asia/Aqtau",
+  "Asia/Aqtobe",
+  "Asia/Ashgabat",
+  "Asia/Atyrau",
+  "Asia/Baghdad",
+  "Asia/Bahrain",
+  "Asia/Baku",
+  "Asia/Bangkok",
+  "Asia/Barnaul",
+  "Asia/Beirut",
+  "Asia/Bishkek",
+  "Asia/Brunei",
+  "Asia/Chita",
+  "Asia/Choibalsan",
+  "Asia/Colombo",
+  "Asia/Damascus",
+  "Asia/Dhaka",
+  "Asia/Dili",
+  "Asia/Dubai",
+  "Asia/Dushanbe",
+  "Asia/Famagusta",
+  "Asia/Gaza",
+  "Asia/Hebron",
+  "Asia/Ho_Chi_Minh",
+  "Asia/Hong_Kong",
+  "Asia/Hovd",
+  "Asia/Irkutsk",
+  "Asia/Jakarta",
+  "Asia/Jayapura",
+  "Asia/Jerusalem",
+  "Asia/Kabul",
+  "Asia/Kamchatka",
+  "Asia/Karachi",
+  "Asia/Kathmandu",
+  "Asia/Khandyga",
+  "Asia/Kolkata",
+  "Asia/Krasnoyarsk",
+  "Asia/Kuala_Lumpur",
+  "Asia/Kuching",
+  "Asia/Kuwait",
+  "Asia/Macau",
+  "Asia/Magadan",
+  "Asia/Makassar",
+  "Asia/Manila",
+  "Asia/Muscat",
+  "Asia/Nicosia",
+  "Asia/Novokuznetsk",
+  "Asia/Novosibirsk",
+  "Asia/Omsk",
+  "Asia/Oral",
+  "Asia/Phnom_Penh",
+  "Asia/Pontianak",
+  "Asia/Pyongyang",
+  "Asia/Qatar",
+  "Asia/Qostanay",
+  "Asia/Qyzylorda",
+  "Asia/Riyadh",
+  "Asia/Sakhalin",
+  "Asia/Samarkand",
+  "Asia/Seoul",
+  "Asia/Shanghai",
+  "Asia/Singapore",
+  "Asia/Srednekolymsk",
+  "Asia/Taipei",
+  "Asia/Tashkent",
+  "Asia/Tbilisi",
+  "Asia/Tehran",
+  "Asia/Thimphu",
+  "Asia/Tokyo",
+  "Asia/Tomsk",
+  "Asia/Ulaanbaatar",
+  "Asia/Urumqi",
+  "Asia/Ust-Nera",
+  "Asia/Vientiane",
+  "Asia/Vladivostok",
+  "Asia/Yakutsk",
+  "Asia/Yangon",
+  "Asia/Yekaterinburg",
+  "Asia/Yerevan",
+
+  "Atlantic/Azores",
+  "Atlantic/Bermuda",
+  "Atlantic/Canary",
+  "Atlantic/Cape_Verde",
+  "Atlantic/Faroe",
+  "Atlantic/Madeira",
+  "Atlantic/Reykjavik",
+  "Atlantic/South_Georgia",
+  "Atlantic/St_Helena",
+  "Atlantic/Stanley",
+
+  "Australia/Adelaide",
+  "Australia/Brisbane",
+  "Australia/Broken_Hill",
+  "Australia/Darwin",
+  "Australia/Eucla",
+  "Australia/Hobart",
+  "Australia/Lindeman",
+  "Australia/Lord_Howe",
+  "Australia/Melbourne",
+  "Australia/Perth",
+  "Australia/Sydney",
+
+  "Europe/Amsterdam",
+  "Europe/Andorra",
+  "Europe/Astrakhan",
+  "Europe/Athens",
+  "Europe/Belgrade",
+  "Europe/Berlin",
+  "Europe/Bratislava",
+  "Europe/Brussels",
+  "Europe/Bucharest",
+  "Europe/Budapest",
+  "Europe/Busingen",
+  "Europe/Chisinau",
+  "Europe/Copenhagen",
+  "Europe/Dublin",
+  "Europe/Gibraltar",
+  "Europe/Guernsey",
+  "Europe/Helsinki",
+  "Europe/Isle_of_Man",
+  "Europe/Istanbul",
+  "Europe/Jersey",
+  "Europe/Kaliningrad",
+  "Europe/Kiev",
+  "Europe/Kirov",
+  "Europe/Lisbon",
+  "Europe/Ljubljana",
+  "Europe/London",
+  "Europe/Luxembourg",
+  "Europe/Madrid",
+  "Europe/Malta",
+  "Europe/Mariehamn",
+  "Europe/Minsk",
+  "Europe/Monaco",
+  "Europe/Moscow",
+  "Europe/Oslo",
+  "Europe/Paris",
+  "Europe/Podgorica",
+  "Europe/Prague",
+  "Europe/Riga",
+  "Europe/Rome",
+  "Europe/Samara",
+  "Europe/San_Marino",
+  "Europe/Sarajevo",
+  "Europe/Saratov",
+  "Europe/Simferopol",
+  "Europe/Skopje",
+  "Europe/Sofia",
+  "Europe/Stockholm",
+  "Europe/Tallinn",
+  "Europe/Tirane",
+  "Europe/Ulyanovsk",
+  "Europe/Uzhgorod",
+  "Europe/Vaduz",
+  "Europe/Vatican",
+  "Europe/Vienna",
+  "Europe/Vilnius",
+  "Europe/Volgograd",
+  "Europe/Warsaw",
+  "Europe/Zagreb",
+  "Europe/Zaporozhye",
+  "Europe/Zurich",
+
+  "Indian/Antananarivo",
+  "Indian/Chagos",
+  "Indian/Christmas",
+  "Indian/Cocos",
+  "Indian/Comoro",
+  "Indian/Kerguelen",
+  "Indian/Mahe",
+  "Indian/Maldives",
+  "Indian/Mauritius",
+  "Indian/Mayotte",
+  "Indian/Reunion",
+
+  "Pacific/Apia",
+  "Pacific/Auckland",
+  "Pacific/Bougainville",
+  "Pacific/Chatham",
+  "Pacific/Chuuk",
+  "Pacific/Easter",
+  "Pacific/Efate",
+  "Pacific/Enderbury",
+  "Pacific/Fakaofo",
+  "Pacific/Fiji",
+  "Pacific/Funafuti",
+  "Pacific/Galapagos",
+  "Pacific/Gambier",
+  "Pacific/Guadalcanal",
+  "Pacific/Guam",
+  "Pacific/Honolulu",
+  "Pacific/Kanton",
+  "Pacific/Kiritimati",
+  "Pacific/Kosrae",
+  "Pacific/Kwajalein",
+  "Pacific/Majuro",
+  "Pacific/Marquesas",
+  "Pacific/Midway",
+  "Pacific/Nauru",
+  "Pacific/Niue",
+  "Pacific/Norfolk",
+  "Pacific/Noumea",
+  "Pacific/Pago_Pago",
+  "Pacific/Palau",
+  "Pacific/Pitcairn",
+  "Pacific/Pohnpei",
+  "Pacific/Port_Moresby",
+  "Pacific/Rarotonga",
+  "Pacific/Saipan",
+  "Pacific/Tahiti",
+  "Pacific/Tarawa",
+  "Pacific/Tongatapu",
+  "Pacific/Wake",
+  "Pacific/Wallis"
 ];
+
 
 function fmtLoc(city, country) {
   if (city && country) return `${city}, ${country}`;
@@ -442,6 +876,18 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
   const data = useData();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Handle body scroll lock for ConnectionRequestModal
+  useEffect(() => {
+    if (crOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [crOpen]);
 
   function openCR() {
     if (!user) return data._showPopUp("login_prompt");
@@ -911,42 +1357,154 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                 </Section>
               )}
 
-              {/* Overview / Stats (new, but matches existing style) */}
-              {(profile.stats ||
-                profile.counts ||
-                profile.connections?.count ||
-                profile.requests?.incoming?.length ||
-                profile.requests?.outgoing?.length) && (
-                <Section title="Overview" icon={Star}>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-                    {/* Prefer backend-provided counts; otherwise soft-fallback to recent lengths */}
-                    {(() => {
-                      const parts = [];
-                      const counts = profile.counts || {};
-                      const add = (label, value) => {
-                        if (typeof value === "number") {
-                          parts.push(
-                            <div key={label}>
-                              <p className="font-semibold text-brand-600">{value}</p>
-                              <p className="text-gray-500 text-xs">{label}</p>
+
+              
+              {/* Work Samples */}
+            {Array.isArray(profile.workSamples) && profile.workSamples.length > 0 && (
+              <Section title="Work Samples" icon={Briefcase}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {profile.workSamples.map(ws => (
+                    <div key={ws.id} className="rounded-lg border p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="font-medium text-sm truncate">{ws.title}</div>
+
+                          {ws.category && (
+                            <div className="mt-1">
+                              <Chip tone="brand">{ws.category}</Chip>
                             </div>
-                          );
-                        }
-                      };
-                      add("Jobs", counts.jobs ?? profile.recent?.jobs?.length);
-                      add("Events", counts.events ?? profile.recent?.events?.length);
-                      add("Funding", counts.funding ?? profile.recent?.funding?.length);
-                      add("Services", counts.services ?? profile.recent?.services?.length);
-                      add("Products", counts.products ?? profile.recent?.products?.length);
-                      add("Tourism posts", counts.tourism ?? profile.recent?.tourism?.length);
-                      add("Connections", profile.connections?.count);
-                      add("Incoming requests", profile.requests?.incoming?.length);
-                      add("Outgoing requests", profile.requests?.outgoing?.length);
-                      return parts;
-                    })()}
-                  </div>
-                </Section>
-              )}
+                          )}
+
+                          {Array.isArray(ws.technologies) && ws.technologies.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {ws.technologies.slice(0, 6).map((t, i) => (
+                                <Chip key={`${ws.id}-tech-${i}`} tone="gray">{t}</Chip>
+                              ))}
+                              {ws.technologies.length > 6 && (
+                                <span className="text-[11px] text-gray-500">+{ws.technologies.length - 6} more</span>
+                              )}
+                            </div>
+                          )}
+
+                          {ws.description && (
+                            <p className="mt-2 text-xs text-gray-600 line-clamp-3">{ws.description}</p>
+                          )}
+
+                          <div className="mt-2 text-[11px] text-gray-500">
+                            {ws.completionDate ? new Date(ws.completionDate).toLocaleDateString() : null}
+                            {ws.createdAt ? ` • added ${timeAgo(ws.createdAt)}` : null}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Attachments */}
+                      {Array.isArray(ws.attachments) && ws.attachments.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          {/* Image attachments grid */}
+                          <div className="grid grid-cols-3 gap-2">
+                            {ws.attachments
+                              .filter(a => a?.isImage)
+                              .map((a, idx) => {
+                                const src = a.base64url || a.url;
+                                if (!src) return null;
+                                return (
+                                  <a
+                                    key={`${ws.id}-img-${idx}`}
+                                    href={src}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    title={a.name || "Image"}
+                                    className="block"
+                                  >
+                                    <img
+                                      src={src}
+                                      alt={a.name || ws.title}
+                                      className="w-full h-24 object-cover rounded-md border"
+                                      loading="lazy"
+                                    />
+                                  </a>
+                                );
+                              })}
+                          </div>
+
+                          {/* Document attachments list */}
+                          <div className="flex flex-col gap-1">
+                            {ws.attachments
+                              .filter(a => !a?.isImage)
+                              .map((a, idx) => {
+                                const href = a.base64url || a.url || "#";
+                                const filename = a.name || "document";
+                                return (
+                                  <a
+                                    key={`${ws.id}-doc-${idx}`}
+                                    href={href}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    download={filename}
+                                    className="inline-flex items-center gap-2 text-xs font-medium text-brand-700 underline"
+                                    title={filename}
+                                  >
+                                    <ExternalLink size={14} />
+                                    <span className="truncate max-w-[14rem]">{filename}</span>
+                                  </a>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Optional project link */}
+                      {ws.projectUrl && (
+                        <div className="mt-3">
+                          <a
+                            href={ws.projectUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 underline"
+                          >
+                            <ExternalLink size={14} /> View project
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+
+       
+       {/* Overview / Stats */}
+      {(() => {
+        const counts = profile.counts || {};
+        const stats  = profile.stats  || {};
+
+        const metrics = [
+          ["Jobs",       counts.jobs       ?? stats.jobs       ?? profile.recent?.jobs?.length       ?? 0],
+          ["Events",     counts.events     ?? stats.events     ?? profile.recent?.events?.length     ?? 0],
+          ["Funding",    counts.funding    ?? stats.funding    ?? profile.recent?.funding?.length    ?? 0],
+          ["Services",   counts.services   ?? stats.services   ?? profile.recent?.services?.length   ?? 0],
+          ["Products",   counts.products   ?? stats.products   ?? profile.recent?.products?.length   ?? 0],
+          ["Tourism",    counts.tourism    ?? stats.tourism    ?? profile.recent?.tourism?.length    ?? 0],
+          ];
+
+        const visible = metrics.filter(([, v]) => Number(v) >= 1);
+        if (visible.length === 0) return null;
+
+        return (
+          <Section title="Overview" icon={Star}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+              {visible.map(([label, value]) => (
+                <div key={label}>
+                  <p className="font-semibold text-brand-600">{value}</p>
+                  <p className="text-gray-500 text-xs">{label}</p>
+                </div>
+              ))}
+            </div>
+          </Section>
+        );
+      })()}
+
 
               {/* Recent Activity (Jobs & Events — original) */}
               {(profile.recent?.jobs?.length || profile.recent?.events?.length) ? (
@@ -1244,7 +1802,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                                 </span>
                               </div>
                               <div className="text-xs text-gray-600 mt-0.5">
-                                {humanWhen(m.isoStart, m.timezone, m.duration)} •{" "}
+                                {humanWhen(m.isoStart || m.scheduledAt, m.timezone, m.duration)} •{" "}
                                 {m.mode === "video" ? "Online" : "In person"}
                               </div>
                               {m.mode === "in_person" && m.location ? (

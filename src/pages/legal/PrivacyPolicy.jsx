@@ -7,9 +7,9 @@ import { useData } from "../../contexts/DataContext";
  * --------------------------- */
 const ORG = {
   name: "54Links",
-  email: "privacy@54Links.example", // update if you have a real address
+  email: "support@54links.com", // update if you have a real address
   address: "Maputo, Mozambique",
-  dpoEmail: "dpo@54Links.example",  // optional; remove if unused
+  dpoEmail: "support@54links.com",  // optional; remove if unused
 };
 const BRAND = "#034ea2";
 
@@ -281,18 +281,7 @@ export default function PrivacyPolicyPage() {
               <a className="text-[#0a66c2] hover:underline" href={`mailto:${ORG.email}`}>
                 {ORG.email}
               </a>
-              {ORG.dpoEmail ? (
-                <>
-                  {" "}
-                  or our Data Protection Officer at{" "}
-                  <a className="text-[#0a66c2] hover:underline" href={`mailto:${ORG.dpoEmail}`}>
-                    {ORG.dpoEmail}
-                  </a>
-                  .
-                </>
-              ) : (
-                "."
-              )}{" "}
+              {" "}
               You can also write to {ORG.address}.
             </p>
           </Section>

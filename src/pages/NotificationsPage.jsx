@@ -58,6 +58,86 @@ export default function NotificationsPage() {
     }
   }, [connected, socket]);
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // Live badge counts (prefer socket; fallback to local arrays)
+const [badgeCounts, setBadgeCounts] = useState({
+  connectionsPending: 0,
+  meetingsPending: 0,
+});
+
+// keep live via socket + 4s polling (same contract as Header)
+useEffect(() => {
+  if (!connected || !socket || !user?.id) return;
+
+  const applyCounts = (c = {}) => {
+    setBadgeCounts((prev) => ({
+      ...prev,
+      connectionsPending: Number.isFinite(c.connectionsPending) ? c.connectionsPending : prev.connectionsPending,
+      meetingsPending: Number.isFinite(c.meetingsPending) ? c.meetingsPending : prev.meetingsPending,
+    }));
+  };
+
+  const fetchCounts = () =>
+    socket.emit("get_header_badge_counts", (res) => applyCounts(res || {}));
+
+  fetchCounts(); // immediately
+  socket.on("header_badge_counts", applyCounts);
+
+  const id = setInterval(() => {
+    if (document.visibilityState !== "hidden") fetchCounts();
+  }, 4000);
+
+  return () => {
+    socket.off("header_badge_counts", applyCounts);
+    clearInterval(id);
+  };
+}, [connected, socket, user?.id]);
+
+  // keep reasonable fallbacks based on the lists you load on this page
+  const localConnPending = useMemo(() => (incoming?.length || 0), [incoming]);
+  const localMeetPending = useMemo(
+    () =>
+      (meetingRequests || []).filter(
+        (m) => m.status === "pending" && m.requester?.id !== user?.id
+      ).length,
+    [meetingRequests, user?.id]
+  );
+
+  // choose what to show: prefer socket numbers, else local
+  const connBadge = badgeCounts.connectionsPending ?? localConnPending;
+  const meetBadge = badgeCounts.meetingsPending ?? localMeetPending;
+
+
+
+
+
   async function loadConnections() {
     setLoadingConn(true);
     setErrorConn("");
@@ -314,34 +394,51 @@ export default function NotificationsPage() {
        
        
 
+        
         <div className="mt-6 flex items-center justify-between">
-          <div className="flex gap-2 flex-wrap">
-            {["All", "Connections", "Meetings", "Posts", "Messages", "System"].map(
-              (t) => (
-                <button
-                  key={t}
-                  onClick={() => setFilter(t)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-                    filter === t
-                      ? "bg-brand-600 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  }`}
-                >
-                  {t}
-                </button>
-              )
-            )}
-          </div>
-          <div className="flex gap-2 hidden">
-          
-            <button
-              onClick={markAllAsRead}
-              className={styles.primary}
-            >
-              Mark All Read
-            </button>
-          </div>
+        <div className="flex gap-2 flex-wrap">
+          {["All", "Connections", "Meetings", "System"].map((t) => {
+            const isActive = filter === t;
+            const showConn = t === "Connections" && (connBadge || 0) > 0;
+            const showMeet = t === "Meetings" && (meetBadge || 0) > 0;
+            const badgeVal =
+              t === "Connections" ? Math.min(99, connBadge || 0)
+              : t === "Meetings" ? Math.min(99, meetBadge || 0)
+              : 0;
+
+            return (
+              <button
+                key={t}
+                onClick={() => setFilter(t)}
+                className={`relative px-4 py-1.5 rounded-full text-sm font-medium ${
+                  isActive ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                <span>{t}</span>
+                {(showConn || showMeet) && (
+                  <span
+                    className={`ml-2 inline-grid place-items-center rounded-full text-[10px] font-semibold
+                      ${isActive ? "bg-white text-brand-600" : "bg-red-500 text-white"}
+                      px-1.5 h-4 min-w-4`}
+                    style={{ lineHeight: "1" }}
+                    aria-label={`${t} pending count`}
+                  >
+                    {badgeVal > 9 ? "9+" : badgeVal}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
+
+        <div className="flex gap-2 hidden">
+          <button onClick={markAllAsRead} className={styles.primary}>
+            Mark All Read
+          </button>
+        </div>
+      </div>
+
+
 
         <div className="mt-6 space-y-6">
           {(filter === "All" || filter === "Connections" || filter === "Meetings") && (

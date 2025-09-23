@@ -211,12 +211,12 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
     // Company-specific validation
     if (acct === "company") {
       // Company website is optional, but if provided, must be valid URL
-      if (signupForm.webpage && !signupForm.webpage.match(/^https?:\/\/.+/)) {
-        next.webpage = "Please enter a valid URL starting with http:// or https://";
-      }
+        const domainPattern = /^(https?:\/\/)?([\w-]+\.)+[a-zA-Z]{2,}(\/\S*)?$/;
+        if (!domainPattern.test(signupForm.webpage.trim())) {
+          next.webpage = "Please enter a valid website address (e.g. google.com)";
+        }
       // Other countries is optional - no validation needed
     }
-
     setSignupErrors(next);
     return Object.values(next).every((v) => !v);
   }
@@ -453,7 +453,12 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
             </div>
 
             {/* Google custom button with required style */}
-            <GoogleCustomBtn page="signin" />
+            <GoogleCustomBtn page="signin" showAccountTypeModalChange={(value)=>{
+                     setShowAccountTypeModal(value)
+                      if (value && containerRef.current) {
+                         containerRef.current.scrollTo({ top: 0, behavior: "instant" });
+                      }
+                }} />
             
             {/* Sign up link */}
             <div className="mt-4 text-center text-sm">
@@ -824,7 +829,6 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                       Company Website <span className="text-gray-400 font-normal">(Optional)</span>
                     </label>
                     <input
-                      type="url"
                       name="webpage"
                       placeholder="https://www.yourcompany.com"
                       value={signupForm.webpage}
@@ -914,9 +918,11 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                   }`}
                 />
                 <p className="text-gray-600">
-                  I agree to the{" "}
-                  <a href="/terms" className="text-brand-600 underline">Terms of Service</a> and{" "}
-                  <a href="/privacy" className="text-brand-600 underline">Privacy Policy</a>
+                   I agree to the{" "}
+                  <a href="/terms" target="_blank"
+                   rel="noopener noreferrer" className="text-brand-600 underline">Terms of Service</a> and{" "}
+                  <a href="/privacy" target="_blank"
+                    rel="noopener noreferrer" className="text-brand-600 underline">Privacy Policy</a>
                 </p>
               </div>
               {signupErrors.tos && (

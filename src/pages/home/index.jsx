@@ -1084,8 +1084,10 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                          />
                          <p className="text-gray-600">
                            I agree to the{" "}
-                           <a href="/terms" className="text-brand-600 underline">Terms of Service</a> and{" "}
-                           <a href="/privacy" className="text-brand-600 underline">Privacy Policy</a>
+                           <a href="/terms" target="_blank"
+                   rel="noopener noreferrer" className="text-brand-600 underline">Terms of Service</a> and{" "}
+                           <a href="/privacy" target="_blank"
+                   rel="noopener noreferrer" className="text-brand-600 underline">Privacy Policy</a>
                          </p>
                        </div>
                        {signupErrors.tos && (

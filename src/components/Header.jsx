@@ -193,28 +193,41 @@ function Header({ page }) {
     }
   }, [totalUnreadCount]);
 
-  // ⬇️ Connection + Meeting badge counts via socket
+ 
+  
+  // ⬇️ Connection + Meeting badge counts via socket + 4s polling
   useEffect(() => {
     if (!connected || !socket || !user?.id) return;
 
-    const applyCounts = (counts) => {
-      const c = counts || {};
+    const applyCounts = (counts = {}) => {
       setConnectionRequestCount(
-        typeof c.connectionsPending === "number" ? c.connectionsPending : 0
+        Number.isFinite(counts.connectionsPending) ? counts.connectionsPending : 0
       );
       setMeetingRequestCount(
-        typeof c.meetingsPending === "number" ? c.meetingsPending : 0
+        Number.isFinite(counts.meetingsPending) ? counts.meetingsPending : 0
       );
     };
 
-    // ask current counts (ack) + listen to pushes
-    socket.emit("get_header_badge_counts", (res) => applyCounts(res));
-    socket.on("header_badge_counts", applyCounts);
+    const handlePush = (payload) => applyCounts(payload);
+
+    // ask once immediately
+    const fetchCounts = () =>
+      socket.emit("get_header_badge_counts", (res) => applyCounts(res || {}));
+
+    fetchCounts();
+    socket.on("header_badge_counts", handlePush);
+
+    // poll every 4s (pause when tab hidden to save work)
+    const intervalId = setInterval(() => {
+      if (document.visibilityState !== "hidden") fetchCounts();
+    }, 4000);
 
     return () => {
-      socket.off("header_badge_counts", applyCounts);
+      socket.off("header_badge_counts", handlePush);
+      clearInterval(intervalId);
     };
   }, [connected, socket, user?.id]);
+
 
   const allNavItems = React.useMemo(() => [
     ...(settings?.hideMainFeed ? [] : [{ name: "feed", label: "Feed", path: "/", icon: <I.feed /> }]),
@@ -289,11 +302,14 @@ function Header({ page }) {
 
   // Click handlers that also RESET the two counts via socket
   const goNotifications = () => {
+    /*
     if (connected && socket) {
       socket.emit("mark_header_badge_seen", { type: "all" }, () => {});
     }
     setConnectionRequestCount(0);
     setMeetingRequestCount(0);
+
+    */
     navigate("/notifications");
   };
 
@@ -383,7 +399,9 @@ function Header({ page }) {
                 {/* Notifications */}
                 <button
                   style={user?.accountType=="admin" ? {display:'none'}:{}}
-                  onClick={goNotifications}
+                  onClick={()=>{
+                    goNotifications()
+                  }}
                   className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
                   aria-label="Notifications"
                 >

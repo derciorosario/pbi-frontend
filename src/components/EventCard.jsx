@@ -231,6 +231,14 @@ export default function EventCard({
     toast.success("Connection request sent");
     setModalOpen(false);
     setConnectionStatus("pending_outgoing");
+    // Restore body scroll when modal closes
+    document.body.style.overflow = '';
+  }
+
+  function onModalClose() {
+    setModalOpen(false);
+    // Restore body scroll when modal closes
+    document.body.style.overflow = '';
   }
 
   const containerBase =
@@ -490,10 +498,10 @@ export default function EventCard({
               {e?.organizerUserName ? (
                 <div
                   className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                  onClick={() => {
+                  onClick={(ev) => {
+                    ev.stopPropagation();
                     if (e?.organizerUserId) {
                       setOpenId(e.organizerUserId);
-                      data._showPopUp?.("profile");
                     }
                   }}
                 >
@@ -663,7 +671,7 @@ export default function EventCard({
                 }}
                 className={`${
                   type === "grid" ? "flex-1" : ""
-                } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
+                } rounded-xl px-4 py-2.5 text-sm _login_prompt font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
               >
                 Register
               </button>
@@ -689,7 +697,10 @@ export default function EventCard({
             )}
 
             {/* Connect */}
-            {!isOwner && renderConnectButton()}
+            {!isOwner && 
+          <div className="_login_prompt">
+              {renderConnectButton()}
+          </div>}
           </div>
         </div>
 
@@ -705,7 +716,7 @@ export default function EventCard({
       {/* Connection Request Modal */}
       <ConnectionRequestModal
         open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={onModalClose}
         toUserId={e?.organizerUserId}
         toName={e?.organizerUserName || "Event Organizer"}
         onSent={onSent}
@@ -802,7 +813,11 @@ export default function EventCard({
     }
     return (
       <button
-        onClick={() => setModalOpen(true)}
+        onClick={() => {
+          setModalOpen(true);
+          // Prevent body scroll when modal opens
+          document.body.style.overflow = 'hidden';
+        }}
         className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
       >
         Connect

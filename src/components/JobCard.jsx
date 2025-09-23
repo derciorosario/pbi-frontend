@@ -533,7 +533,8 @@ export default function JobCard({
             <div className="flex items-center justify-between">
               <div
                 className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   if (job?.postedByUserId) {
                     setOpenId(job.postedByUserId);
                     data._showPopUp?.("profile");
