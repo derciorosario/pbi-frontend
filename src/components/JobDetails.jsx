@@ -104,6 +104,7 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
   // Share menu state
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
+  const shareButtonRef = useRef(null);
   const modalRef = useRef(null);
 
   const data = useData();
@@ -114,9 +115,8 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
   useEffect(() => {
     function onDown(e) {
       if (
-        shareMenuRef.current &&
-        !shareMenuRef.current.contains(e.target) &&
-        !modalRef.current?.contains(e.target)
+        shareButtonRef.current &&
+        !shareButtonRef.current.contains(e.target)
       ) {
         setShareOpen(false);
       }
@@ -182,7 +182,7 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
 
   return (
     <div className="fixed z-[99] inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div ref={modalRef} className="bg-white z-[99] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[85vh] overflow-hidden">
+      <div ref={modalRef} className="bg-white z-[99] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[85vh] overflow-hidden relative">
         {/* Header */}
         <div className="bg-brand-500 p-4 flex justify-between items-center">
           <div className="text-white font-medium">Job Details</div>
@@ -388,9 +388,14 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
               )}
 
               {/* Actions */}
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-3 mt-6 relative">
+
+                   {/* Share Menu */}
+                {shareOpen && <ShareMenu job={job} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
+            
                 {/* Share */}
                 <button
+                  ref={shareButtonRef}
                   onClick={(e) => {
                     e.stopPropagation();
                     setShareOpen((s) => !s);
@@ -435,7 +440,8 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
                 >
                   Message
                 </button>
-              </div>
+
+               </div>
             </>
           )}
         </div>
@@ -449,16 +455,13 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
         toName={job?.postedBy?.name || "Job Poster"}
         onSent={onSent}
       />
-
-      {/* Share Menu */}
-      {shareOpen && <ShareMenu job={job} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
     </div>
   );
 }
 
 // Share data and components
 const ShareMenu = ({ job, shareMenuRef, setShareOpen }) => {
-  const shareUrl = `${window.location.origin}/jobs?view=${job?.id}`;
+  const shareUrl = `${window.location.origin}/job/${job?.id}`;
   const shareTitle = job?.title || "Job Opportunity on 54Links";
   const shareQuote = (job?.description || "").slice(0, 160) + ((job?.description || "").length > 160 ? "…" : "");
   const shareHashtags = ["54Links", "Jobs", "Career", "Hiring"].filter(Boolean);
@@ -467,7 +470,7 @@ const ShareMenu = ({ job, shareMenuRef, setShareOpen }) => {
   return (
     <div
       ref={shareMenuRef}
-      className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      className="absolute bottom-14 left-0 mt-2 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
       role="dialog"
       aria-label="Share options"
     >

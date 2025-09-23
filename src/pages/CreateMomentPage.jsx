@@ -715,7 +715,11 @@ export default function CreateMomentPage() {
       } else {
         await client.post("/moments", payload);
         toast.success("Experience published!");
-        navigate("/");
+        if (window.history.state && window.history.state.idx > 0) {
+                navigate(-1);   // go back if possible
+              } else {
+                navigate("/");  // fallback if no history
+        }
       }
     } catch (error) {
       console.error(error);
@@ -738,12 +742,19 @@ export default function CreateMomentPage() {
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
         <div>
           <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-sm text-gray-600 hover:underline"
+            onClick={() => {
+              if (window.history.state && window.history.state.idx > 0) {
+                navigate(-1);   // go back if possible
+              } else {
+                navigate("/");  // fallback if no history
+              }
+            }}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
             type="button"
           >
-            ← Feed
+            ←  {window.history.state && window.history.state.idx > 0 ? 'Back':'Feed'}
           </button>
+
   
           {!isEditMode && (
             <div>

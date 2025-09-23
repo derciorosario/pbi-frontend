@@ -734,7 +734,11 @@ export default function CreateNeedPage() {
       } else {
         await client.post("/needs", payload);
         toast.success("Need posted successfully!");
-        navigate("/");
+        if (window.history.state && window.history.state.idx > 0) {
+                navigate(-1);   // go back if possible
+              } else {
+                navigate("/");  // fallback if no history
+        }
       }
     } catch (error) {
       console.error(error);
@@ -751,13 +755,21 @@ export default function CreateNeedPage() {
       <Header page={"needs"} />
       <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
         <div>
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
-            type="button"
-          >
-            ← Feed
-          </button>
+        
+        <button
+          onClick={() => {
+            if (window.history.state && window.history.state.idx > 0) {
+              navigate(-1);   // go back if possible
+            } else {
+              navigate("/");  // fallback if no history
+            }
+          }}
+          className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
+          type="button"
+        >
+          ← Back
+        </button>
+
 
           {!isEditMode && (
             <div>

@@ -289,7 +289,7 @@ export default function FeedPage() {
                   { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
                   { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
                   { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company"},
-                  { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+                  { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
                   { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
                   { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
                 ]}
@@ -310,7 +310,7 @@ export default function FeedPage() {
                   { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
                   { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
                   { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company"},
-                  { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+                  { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
                   { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
                   { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
                 ]}

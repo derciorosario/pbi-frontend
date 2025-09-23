@@ -596,7 +596,7 @@ export default function PeopleFeedPage() {
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
               { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
               { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
-              { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+              { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
             ]} />
           <ProfileCard />
          
@@ -625,7 +625,7 @@ export default function PeopleFeedPage() {
                items={[
                     { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
                     { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
-                    { label: "Share Job Need / Offer", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+                    { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
                 ]}
               activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
