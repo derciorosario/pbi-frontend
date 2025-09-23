@@ -72,7 +72,7 @@ const Label = ({ children, required }) => (
 const Input = (props) => (
   <input
     {...props}
-    className={`w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 ${props.className || ""}`}
+    className={` ${props.className || ""} w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 ${props.className || ""}`}
   />
 );
 
@@ -492,6 +492,7 @@ function InlineCompanyPicker({ companies = [], value, onChange, required }) {
               aria-controls="company-results"
               role="combobox"
               autoComplete="off"
+              className={selected ? "text-gray-400 placeholder-black" : "text-gray-700 placeholder-gray-400"}
             />
            
             {selected && (
@@ -583,7 +584,7 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImageBase64 }) {
   const subcategories = Array.from(audSel.subcategoryIds || []).map((k) => maps.subs.get(String(k))).filter(Boolean);
   const subsubs = Array.from(audSel.subsubCategoryIds || []).map((k) => maps.subsubs.get(String(k))).filter(Boolean);
 
-  const skills = (form.requiredSkills || "")
+  const skills = (form.requiredSkills || [])
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -727,7 +728,8 @@ export default function CreateJobOpportunity() {
     country: "",
     city: "",
     description: "",
-    requiredSkills: "",
+    requiredSkills: [],
+    skills:[],
     minSalary: "",
     maxSalary: "",
     currency: "",
@@ -735,6 +737,7 @@ export default function CreateJobOpportunity() {
     positions: "",
     contactEmail: "",
   });
+  const [skillInput, setSkillInput] = useState("")
 
   const [generalTree, setGeneralTree] = useState([]);
   const [selectedGeneral, setSelectedGeneral] = useState({
@@ -876,7 +879,13 @@ export default function CreateJobOpportunity() {
           jobType: job.jobType || "",
           workMode: job.workMode || "",
           description: job.description || "",
-          requiredSkills: Array.isArray(job.requiredSkills) ? job.requiredSkills.join(", ") : job.requiredSkills || "",
+          //requiredSkills: Array.isArray(job.requiredSkills) ? job.requiredSkills.join(", ") : job.requiredSkills || "",
+          requiredSkills: Array.isArray(job.requiredSkills)
+          ? job.requiredSkills
+          : (typeof job.requiredSkills === "string"
+              ? job.requiredSkills.split(",").map((s) => s.trim()).filter(Boolean)
+              : []),
+
           country: job.country || COUNTRIES[0] || "",
           city: job.city || "",
           minSalary: job.minSalary?.toString() || "",
@@ -942,6 +951,28 @@ export default function CreateJobOpportunity() {
     })();
   }, []);
 
+
+    function addSkill() {
+    if (readOnly) return;
+    const v = (skillInput || "").trim();
+    if (!v) return;
+    setForm((f) =>
+      f.requiredSkills.includes(v)
+        ? f
+        : { ...f, requiredSkills: [...f.requiredSkills, v] }
+    );
+    setSkillInput("");
+  }
+
+  function removeSkill(idx) {
+    if (readOnly) return;
+    setForm((f) => ({
+      ...f,
+      requiredSkills: f.requiredSkills.filter((_, i) => i !== idx),
+    }));
+  }
+
+
   // Load full identities tree (who to share with)
   useEffect(() => {
     (async () => {
@@ -989,7 +1020,7 @@ export default function CreateJobOpportunity() {
       country: "",
       city: "",
       description: "",
-      requiredSkills: "",
+      requiredSkills: [],
       minSalary: "",
       maxSalary: "",
       currency: "",
@@ -1305,10 +1336,54 @@ export default function CreateJobOpportunity() {
                 <Label required>Job Description</Label>
                 <Textarea name="description" value={form.description} onChange={onChange} rows={4} placeholder="Describe the role, responsibilities, and what you're looking for…" required/>
               </div>
+              
               <div className="md:col-span-3">
                 <Label>Required Skills & Qualifications</Label>
-                <Textarea name="requiredSkills" value={form.requiredSkills} onChange={onChange} rows={3} placeholder="Comma separated: React, Node.js, Leadership"/>
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={skillInput}
+                    onChange={(e) => setSkillInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addSkill();
+                      }
+                    }}
+                    placeholder="Add skills (e.g., React, Node.js, Leadership)"
+                    className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={addSkill}
+                    className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700"
+                  >
+                    + Add
+                  </button>
+                </div>
+
+                {form.requiredSkills.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {form.requiredSkills.map((s, idx) => (
+                      <span
+                        key={`${s}-${idx}`}
+                        className="inline-flex items-center gap-2 rounded-full bg-brand-50 text-brand-700 px-3 py-1 text-xs border border-brand-100"
+                      >
+                        {s}
+                        <button
+                          type="button"
+                          className="text-gray-500 hover:text-gray-700"
+                          onClick={() => removeSkill(idx)}
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
+
             </div>
 
 

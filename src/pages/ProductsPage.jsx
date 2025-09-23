@@ -188,7 +188,7 @@ export default function ProductsPage() {
 
         // include ALL filters so backend can leverage them when needed:
         // products
-        price: price || undefined,
+       // price: price || undefined,
         // services
         serviceType: serviceType || undefined,
         priceType: priceType || undefined,
@@ -249,7 +249,7 @@ export default function ProductsPage() {
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
 
        audienceSelections,
-   price,
+  // price,
    serviceType,
    priceType,
    deliveryTime,

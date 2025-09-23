@@ -1714,23 +1714,23 @@ export default function FiltersCard({
       )}
 
          {/* Products */}
-   {from === "products" && (
-  <div className="mt-3">
-    <label className="text-xs text-gray-500">Price</label>
-    <input
-      type="range"
-      min="0"
-      max="1000"
-      step="0.01"
-      value={price ?? 0}
-      onChange={(e) => setPrice?.(e.target.value)}
-      className="mt-1 w-full cursor-pointer"
-    />
-    <div className="text-sm text-gray-700 mt-1">
-      {price ?? "0.00"}
-    </div>
-  </div>
-)}
+      {from === "products" && (
+      <div className="mt-3 hidden">
+        <label className="text-xs text-gray-500">Price</label>
+        <input
+          type="range"
+          min="0"
+          max="1000"
+          step="0.01"
+          value={price ?? 0}
+          onChange={(e) => setPrice?.(e.target.value)}
+          className="mt-1 w-full cursor-pointer"
+        />
+        <div className="text-sm text-gray-700 mt-1">
+          {price ?? "0.00"}
+        </div>
+      </div>
+    )}
 
 
          {/* Jobs */}

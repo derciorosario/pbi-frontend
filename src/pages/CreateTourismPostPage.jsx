@@ -79,12 +79,13 @@ function ReadOnlyTourismPost({ postType, form, images, audSel, audTree }) {
   const hero = images?.[0]?.base64url || null;
   const gallery = (images || []).slice(1);
 
-  console.log({form,gallery,hero,images})
 
-  const tags = (form.tagsInput || "")
-    .split(",")
-    .map(t => t.trim())
-    .filter(Boolean);
+  const tags = Array.isArray(form.tags)
+  ? form.tags
+  : (typeof form.tags === "string"
+      ? form.tags.split(",").map((t) => t.trim()).filter(Boolean)
+      : []);
+
 
   return (
     <div className="mt-6 rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
@@ -215,7 +216,11 @@ export default function CreateTourismPostPage() {
     season: "",
     budgetRange: "",
     tagsInput: "",
+    tags: [],  
   });
+
+  const [tagInput, setTagInput] = useState("");
+
 
   // Images ONLY: [{ title, base64url }]
   const [images, setImages] = useState([]);
@@ -234,6 +239,27 @@ export default function CreateTourismPostPage() {
       }
     })();
   }, []);
+
+
+
+    function addTag() {
+      if (readOnly) return;
+      const v = (tagInput || "").trim();
+      if (!v) return;
+      setForm((f) =>
+        f.tags.includes(v) ? f : { ...f, tags: [...f.tags, v] }
+      );
+      setTagInput("");
+    }
+
+    function removeTag(idx) {
+      if (readOnly) return;
+      setForm((f) => ({
+        ...f,
+        tags: f.tags.filter((_, i) => i !== idx),
+      }));
+    }
+
 
   /* -------- Edit mode: load post -------- */
   useEffect(() => {
@@ -264,7 +290,14 @@ export default function CreateTourismPostPage() {
           description: data.description || "",
           season: data.season || "",
           budgetRange: data.budgetRange || "",
-          tagsInput: Array.isArray(data.tags) ? data.tags.join(", ") : (data.tagsInput || ""),
+          //tagsInput: Array.isArray(data.tags) ? data.tags.join(", ") : (data.tagsInput || ""),
+
+          tags: Array.isArray(data.tags)
+          ? data.tags
+          : (typeof data.tags === "string"
+              ? data.tags.split(",").map((t) => t.trim()).filter(Boolean)
+              : []),
+
         }));
 
         if (Array.isArray(data.images)) {
@@ -630,7 +663,7 @@ export default function CreateTourismPostPage() {
         description: form.description,
         season: form.season || undefined,
         budgetRange: form.budgetRange || undefined,
-        tags: parsedTags(),
+        tags: form.tags,
         images, // [{ title, base64url }]
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
@@ -878,19 +911,58 @@ export default function CreateTourismPostPage() {
             </section>
 
             {/* Tags */}
-            <section>
-              <h2 className="font-semibold">Tags</h2>
+           
+           <section>
+            <h2 className="font-semibold">Tags</h2>
+            <div className="mt-2 flex items-center gap-2">
               <input
                 type="text"
-                value={form.tagsInput}
-                onChange={(e) => setField("tagsInput", e.target.value)}
-                placeholder="Add relevant tags (e.g., wildlife, beaches, culture, adventure)"
-                className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTag();
+                  }
+                }}
+                placeholder="Add a tag (e.g., wildlife, beaches, culture)"
+                className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Separate tags with commas to help others discover your post
-              </p>
-            </section>
+              <button
+                type="button"
+                onClick={addTag}
+                className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700"
+              >
+                + Add
+              </button>
+            </div>
+
+            {form.tags.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {form.tags.map((t, idx) => (
+                  <span
+                    key={`${t}-${idx}`}
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-50 text-brand-700 px-3 py-1 text-xs border border-brand-100"
+                  >
+                    {t}
+                    <button
+                      type="button"
+                      className="text-gray-500 hover:text-gray-700"
+                      onClick={() => removeTag(idx)}
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <p className="mt-1 text-xs text-gray-500">
+              Tags help others discover your tourism post
+            </p>
+          </section>
+
 
             {/* ===== General Classification (SEARCHABLE) ===== */}
             <section>

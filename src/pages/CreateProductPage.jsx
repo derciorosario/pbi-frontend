@@ -76,6 +76,11 @@ function LoaderCard({ message = "Loading..." }) {
   );
 }
 
+const CURRENCY_OPTIONS = [
+  "USD","EUR","GBP","NGN","GHS","ZAR","KES","UGX","TZS","XOF","XAF","MAD","DZD","TND","EGP","ETB",
+  "NAD","BWP","MZN","ZMW","RWF","BIF","SOS","SDG","CDF"
+];
+
 /* ---------- Read-only summary for non-owners ---------- */
 function ReadOnlyProductView({ form, images, audSel, audTree }) {
   const maps = useMemo(() => buildAudienceMaps(audTree), [audTree]);
@@ -84,10 +89,12 @@ function ReadOnlyProductView({ form, images, audSel, audTree }) {
   const subcategories = Array.from(audSel.subcategoryIds || []).map((k) => maps.subs.get(String(k))).filter(Boolean);
   const subsubs = Array.from(audSel.subsubCategoryIds || []).map((k) => maps.subsubs.get(String(k))).filter(Boolean);
 
-  const tags = (form.tagsInput || "")
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
+  const tags = Array.isArray(form.tags)
+  ? form.tags
+  : (typeof form.tags === "string"
+      ? form.tags.split(",").map((t) => t.trim()).filter(Boolean)
+      : []);
+
 
   return (
     <div className="mt-6 rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
@@ -118,7 +125,7 @@ function ReadOnlyProductView({ form, images, audSel, audTree }) {
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border p-4 text-sm text-gray-700">
             <div className="text-gray-800 font-medium">Pricing</div>
-            <div className="mt-2">Price: {form.price !== "" ? form.price : "—"}</div>
+            <div className="mt-2">Price: {form.price !== "" ? form.price : "—"} {form.currency ? `(${form.form.currency})`:''}</div>
             <div>Quantity: {form.quantity !== "" ? form.quantity : "—"}</div>
           </div>
           <div className="rounded-xl border p-4 text-sm text-gray-700">
@@ -199,12 +206,6 @@ export default function CreateProductPage() {
     value: country,
     label: country
   }));
-  
-  // Create city options for SearchableSelect (limit to reasonable number)
-  const cityOptions = CITIES.slice(0, 1000).map(city => ({
-    value: city.city,
-    label: `${city.city}${city.country ? `, ${city.country}` : ''}`
-  }));
 
   // Industry taxonomy
   const [industryTree, setIndustryTree] = useState([]);
@@ -235,38 +236,6 @@ export default function CreateProductPage() {
       }
     })();
   }, []);
-
-const generalCategoryOptions = useMemo(
-  () => generalTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
-  [generalTree]
-);
-
-const generalSubcategoryOptions = useMemo(() => {
-  const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
-  return (c?.subcategories || []).map((sc) => ({
-    value: sc.id,
-    label: sc.name || `Subcategory ${sc.id}`,
-  }));
-}, [generalTree, selectedGeneral.categoryId]);
-
-const generalSubsubCategoryOptions = useMemo(() => {
-  const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
-  const sc = c?.subcategories?.find((s) => s.id === selectedGeneral.subcategoryId);
-  return (sc?.subsubcategories || []).map((ssc) => ({
-    value: ssc.id,
-    label: ssc.name || `Sub-sub ${ssc.id}`,
-  }));
-}, [generalTree, selectedGeneral.categoryId, selectedGeneral.subcategoryId]);
-
-// Build options for industry pickers
-const industryCategoryOptions = useMemo(
-  () => industryTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
-  [industryTree]
-);
-const industrySubcategoryOptions = useMemo(() => {
-  const c = industryTree.find((x) => x.id === selectedIndustry.categoryId);
-  return (c?.subcategories || []).map((sc) => ({ value: sc.id, label: sc.name || `Subcategory ${sc.id}` }));
-}, [industryTree, selectedIndustry.categoryId]);
 
 
 
@@ -440,18 +409,96 @@ function SearchableSelect({
     categoryId: "",
     subcategoryId: "",
     price: "",
+    currency: "USD",
     quantity: "",
     description: "",
     country: "",
     city: "",
-    tagsInput: "",
+    tags: [],
   });
+
+  // Create city options for SearchableSelect (limit to reasonable number)
+  const allCityOptions = CITIES.slice(0, 10000).map(city => ({
+    value: city.city,
+    label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
+    country: city.country
+  }));
+
+  // Support single or multi-country (comma-separated) selection
+  const selectedCountries = useMemo(() => {
+    if (!form.country) return [];
+    return String(form.country)
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  }, [form.country]);
+
+  // Filtered cities for dropdown based on selected countries
+  const cityOptions = useMemo(() => {
+    if (selectedCountries.length === 0) return allCityOptions;
+    const setLC = new Set(selectedCountries);
+    return allCityOptions.filter((c) => setLC.has(c.country.toLowerCase()));
+  }, [selectedCountries, allCityOptions]);
+
+const generalCategoryOptions = useMemo(
+  () => generalTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
+  [generalTree]
+);
+
+const generalSubcategoryOptions = useMemo(() => {
+  const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
+  return (c?.subcategories || []).map((sc) => ({
+    value: sc.id,
+    label: sc.name || `Subcategory ${sc.id}`,
+  }));
+}, [generalTree, selectedGeneral.categoryId]);
+
+const generalSubsubCategoryOptions = useMemo(() => {
+  const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
+  const sc = c?.subcategories?.find((s) => s.id === selectedGeneral.subcategoryId);
+  return (sc?.subsubcategories || []).map((ssc) => ({
+    value: ssc.id,
+    label: ssc.name || `Sub-sub ${ssc.id}`,
+  }));
+}, [generalTree, selectedGeneral.categoryId, selectedGeneral.subcategoryId]);
+
+// Build options for industry pickers
+const industryCategoryOptions = useMemo(
+  () => industryTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
+  [industryTree]
+);
+const industrySubcategoryOptions = useMemo(() => {
+  const c = industryTree.find((x) => x.id === selectedIndustry.categoryId);
+  return (c?.subcategories || []).map((sc) => ({ value: sc.id, label: sc.name || `Subcategory ${sc.id}` }));
+}, [industryTree, selectedIndustry.categoryId]);
+
+  const [tagInput, setTagInput] = useState("");
 
   // Images: [{ title, base64url }]
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
 
   const readOnly = isEditMode  && ownerUserId && user?.id !== ownerUserId;
+
+
+      function addTag() {
+      if (readOnly) return;
+      const v = (tagInput || "").trim();
+      if (!v) return;
+      setForm((f) =>
+        f.tags.includes(v) ? f : { ...f, tags: [...f.tags, v] }
+      );
+      setTagInput("");
+    }
+
+    function removeTag(idx) {
+      if (readOnly) return;
+      setForm((f) => ({
+        ...f,
+        tags: f.tags.filter((_, i) => i !== idx),
+      }));
+    }
+
 
   // Load identities for AudienceTree
   useEffect(() => {
@@ -485,11 +532,18 @@ function SearchableSelect({
           categoryId: data.categoryId || "",
           subcategoryId: data.subcategoryId || "",
           price: data.price?.toString?.() || "",
+          currency: data.currency || "USD",
           quantity: data.quantity?.toString?.() || "",
           description: data.description || "",
           country: data.country || "",
           city: data.city || "",
-          tagsInput: Array.isArray(data.tags) ? data.tags.join(", ") : "",
+          //tagsInput: Array.isArray(data.tags) ? data.tags.join(", ") : "",
+          tags: Array.isArray(data.tags)
+          ? data.tags
+          : (typeof data.tags === "string"
+              ? data.tags.split(",").map((t) => t.trim()).filter(Boolean)
+              : []),
+
         }));
 
         if (Array.isArray(data.images)) {
@@ -512,7 +566,7 @@ function SearchableSelect({
       } catch (err) {
         console.error(err);
         toast.error("Failed to load product");
-        navigate("/business");
+        navigate("/products");
       } finally {
         setIsLoading(false);
       }
@@ -611,8 +665,9 @@ function SearchableSelect({
         description: form.description,
         country: form.country || undefined,
         city: form.city || undefined,
-        tags: parsedTags(),
+        tags: form.tags,
         images,
+        currency:form.currency,
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
         subcategoryIds: Array.from(audSel.subcategoryIds),
@@ -635,7 +690,7 @@ function SearchableSelect({
         toast.success("Product published!");
       }
 
-      navigate("/business");
+      navigate("/products");
     } catch (error) {
       console.error(error);
       toast.error(error?.response?.data?.message || "Could not save product");
@@ -685,7 +740,7 @@ function SearchableSelect({
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => navigate("/business")}
+                    onClick={() => navigate("/products")}
                     className={styles.ghost}
                   >
                     Cancel
@@ -777,6 +832,15 @@ function SearchableSelect({
                   />
                 </div>
                 <div>
+                  <h2 className="font-semibold">Currency</h2>
+                  <select 
+                    className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                
+                   name="currency" onChange={(e) => setField("currency", e.target.value)} value={form.currency}>
+                    {CURRENCY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
                   <h2 className="font-semibold">Quantity Available</h2>
                   <input
                     type="number"
@@ -813,11 +877,13 @@ function SearchableSelect({
                       onChange={(value) => setField("country", value)}
                       options={countryOptions}
                       placeholder="Search and select country..."
+                      key={form.country} // Force remount when country changes to reset internal state
                     />
                   </div>
                   <div>
                     <label className="text-[12px] font-medium text-gray-700">City</label>
                     <SearchableSelect
+                      key={form.country} // Force remount when country changes to reset internal state
                       value={form.city}
                       onChange={(value) => setField("city", value)}
                       options={cityOptions}
@@ -828,19 +894,58 @@ function SearchableSelect({
               </div>
 
               {/* Tags */}
-              <div>
-                <h2 className="font-semibold">Tags</h2>
-                <input
-                  type="text"
-                  value={form.tagsInput}
-                  onChange={(e) => setField("tagsInput", e.target.value)}
-                  placeholder="Add tags separated by commas..."
-                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Tags help others find your product
-                </p>
-              </div>
+            
+            <div>
+  <h2 className="font-semibold">Tags</h2>
+  <div className="mt-2 flex items-center gap-2">
+    <input
+      type="text"
+      value={tagInput}
+      onChange={(e) => setTagInput(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addTag();
+        }
+      }}
+      placeholder="Add a tag (e.g., organic, handmade)"
+      className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+    />
+    <button
+      type="button"
+      onClick={addTag}
+      className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700"
+    >
+      + Add
+    </button>
+  </div>
+
+  {form.tags.length > 0 && (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {form.tags.map((t, idx) => (
+        <span
+          key={`${t}-${idx}`}
+          className="inline-flex items-center gap-2 rounded-full bg-brand-50 text-brand-700 px-3 py-1 text-xs border border-brand-100"
+        >
+          {t}
+          <button
+            type="button"
+            className="text-gray-500 hover:text-gray-700"
+            onClick={() => removeTag(idx)}
+            title="Remove"
+          >
+            ×
+          </button>
+        </span>
+      ))}
+    </div>
+  )}
+
+  <p className="mt-1 text-xs text-gray-500">
+    Tags help others find your product
+  </p>
+</div>
+
 
 
 
@@ -934,7 +1039,7 @@ function SearchableSelect({
 
               {/* Buttons */}
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => navigate("/business")} className={styles.ghost}>
+                <button type="button" onClick={() => navigate("/products")} className={styles.ghost}>
                   Cancel
                 </button>
                 <button type="submit" className={styles.primaryWide} disabled={saving}>

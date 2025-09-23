@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../../api/client";
 import { useAuth } from "../../contexts/AuthContext";
+import Logo from '../../assets/logo.png'
 
 import {
   Users,           // step 1: identities (you/company)
@@ -696,9 +697,14 @@ export default function FourStepOnboarding() {
 
   const Header = ({ icon, title, subtitle, extra }) => (
     <header className="max-w-3xl mx-auto text-center">
-      <div className="mx-auto h-12 w-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center">
+     {/**  <div className="mx-auto h-12 w-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center">
+        
         {icon}
-      </div>
+       
+      </div>**/}
+       <div className="flex justify-center mb-7 mt-4">
+        <img className="w-[100px]" src={Logo}/>
+       </div>
       <h1 className="mt-4 text-3xl font-bold">{title}</h1>
       <p className="text-gray-500">{subtitle}</p>
       {extra}

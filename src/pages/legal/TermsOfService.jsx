@@ -46,7 +46,7 @@ export default function TermsOfServicePage() {
               style={{ backgroundColor: BRAND }}
               aria-hidden
             >
-              P
+              54
             </div>
             <div>
               <div className="font-semibold text-gray-900">Terms of Service</div>
@@ -54,13 +54,7 @@ export default function TermsOfServicePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => nav(-1)}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100"
-            >
-              Back
-            </button>
+           
             <button
               type="button"
               onClick={() => window.print()}

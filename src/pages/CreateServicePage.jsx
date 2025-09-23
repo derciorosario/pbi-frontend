@@ -79,6 +79,11 @@ function fileToDataURL(file) {
   });
 }
 
+const CURRENCY_OPTIONS = [
+  "USD","EUR","GBP","NGN","GHS","ZAR","KES","UGX","TZS","XOF","XAF","MAD","DZD","TND","EGP","ETB",
+  "NAD","BWP","MZN","ZMW","RWF","BIF","SOS","SDG","CDF"
+];
+
 function isImage(base64url) {
   return typeof base64url === "string" && base64url.startsWith("data:image");
 }
@@ -308,6 +313,7 @@ export default function CreateServicePage() {
     serviceType: "Consulting",
     description: "",
     priceAmount: "",
+    currency:"USD",
     priceType: "Fixed Price", // Fixed Price | Hourly
     deliveryTime: "1 Week",
     locationType: "Remote", // Remote | On-site
@@ -364,6 +370,7 @@ export default function CreateServicePage() {
           serviceType: data.serviceType || "Consulting",
           description: data.description || "",
           priceAmount: data.priceAmount?.toString() || "",
+          currency:data.currency || 'USD',
           priceType: data.priceType || "Fixed Price",
           deliveryTime: data.deliveryTime || "1 Week",
           locationType: data.locationType || "Remote",
@@ -770,6 +777,7 @@ export default function CreateServicePage() {
           form.priceAmount !== "" && !Number.isNaN(Number(form.priceAmount))
             ? Number(form.priceAmount)
             : undefined,
+        currency:form.currency || 'USD',
         attachments,
         identityIds,
         categoryIds,
@@ -914,6 +922,18 @@ export default function CreateServicePage() {
                     className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                   />
                 </div>
+
+                  <div>
+                  <Label>Currency</Label>
+                  <select 
+                    className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                 
+                   name="currency" onChange={(e) => setField("currency", e.target.value)} value={form.currency}>
+                    {CURRENCY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+
+
                 <div className="relative">
                   <Label>Price Type</Label>
                   <select
