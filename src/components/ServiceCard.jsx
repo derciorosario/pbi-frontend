@@ -189,7 +189,6 @@ export default function ServiceCard({
   }
 
   function handleMessage() {
-    if (onContact) return onContact(item);
     if (!user?.id) {
       data._showPopUp("login_prompt");
       return;
@@ -424,7 +423,7 @@ export default function ServiceCard({
           )}
 
           {/* Title */}
-          <h3 className="font-semibold text-lg text-gray-900 truncate mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
+          <h3 className="font-semibold text-lg text-gray-900  mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
             {item?.title}
           </h3>
 

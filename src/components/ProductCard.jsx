@@ -105,7 +105,7 @@ export default function ProductCard({
             </div>
           )}
 
-          <h3 className="font-semibold text-gray-900 truncate">{item?.title}</h3>
+          <h3 className="font-semibold text-gray-900">{item?.title}</h3>
           <p className="mt-1 text-sm text-gray-600 line-clamp-2">
             {item?.description}
           </p>

@@ -804,37 +804,43 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                   </div>
                 </Section>
               )}
-              {/* Identity Interests - Using the new interests structure */}
+             
+             
+
+
+
+
+             {/* Identity Interests */}
               {profile.interests && (
                 <Section title={profile.accountType === "company" ? "Company Interests" : "Identity Interests"} icon={Target}>
                   <div className="flex flex-wrap gap-2">
-                    {/* Use interests.identities if available, otherwise fall back to identityInterests */}
+                    {/* Deduped identity interests */}
                     {profile.interests.identities && profile.interests.identities.length > 0 ? (
-                      profile.interests.identities.map((idn, i) => (
+                      [...new Set(profile.interests.identities)].map((idn, i) => (
                         <Chip key={`ident-int-${i}`} tone="green">
                           {idn}
                         </Chip>
                       ))
                     ) : Array.isArray(profile.identityInterests) && profile.identityInterests.length > 0 ? (
-                      profile.identityInterests.map((idn, i) => (
+                      [...new Set(profile.identityInterests)].map((idn, i) => (
                         <Chip key={`old-ident-int-${i}`} tone="green">
                           {idn}
                         </Chip>
                       ))
                     ) : null}
-                    
-                    {/* Show category interests if available */}
+
+                    {/* Deduped category interests */}
                     {profile.interests.categories && profile.interests.categories.length > 0 && (
-                      profile.interests.categories.map((cat, i) => (
+                      [...new Set(profile.interests.categories)].map((cat, i) => (
                         <Chip key={`cat-int-${i}`} tone="brand">
                           {cat}
                         </Chip>
                       ))
                     )}
-                    
-                    {/* Show subcategory interests if available */}
+
+                    {/* Deduped subcategory interests */}
                     {profile.interests.subcategories && profile.interests.subcategories.length > 0 && (
-                      profile.interests.subcategories.map((sub, i) => (
+                      [...new Set(profile.interests.subcategories)].map((sub, i) => (
                         <Chip key={`sub-int-${i}`} tone="gray">
                           {sub}
                         </Chip>
@@ -843,6 +849,8 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                   </div>
                 </Section>
               )}
+
+
 
               {/* Categories & Interests */}
               {(profile.cats?.length || profile.subs?.length) ? (
@@ -862,11 +870,11 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                 </Section>
               ) : null}
 
-              {/* Sub-Subcategories / Specialties */}
+             {/* Sub-Subcategories / Specialties */}
               {Array.isArray(profile.subsubs) && profile.subsubs.length > 0 && (
                 <Section title="Specialties" icon={Layers}>
                   <div className="flex flex-wrap gap-2">
-                    {profile.subsubs.map((s3, i) => (
+                    {[...new Set(profile.subsubs)].map((s3, i) => (
                       <Chip key={`s3-${i}`} tone="gray">
                         {s3}
                       </Chip>
@@ -874,6 +882,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                   </div>
                 </Section>
               )}
+
 
               {/* Skills */}
               {Array.isArray(profile.skills) && profile.skills.length > 0 && (

@@ -108,7 +108,7 @@ export default function PeopleFeedPage() {
   // Events
   const [eventType, setEventType] = useState("");
   const [date, setDate] = useState("");
-  const [registrationType, setRegistrationType] = useState("Free");
+  const [registrationType, setRegistrationType] = useState("");
 
   // Industries
   const [selectedIndustries, setSelectedIndustries] = useState([]);

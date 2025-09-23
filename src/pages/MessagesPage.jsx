@@ -328,7 +328,8 @@ export default function MessagesPage() {
   }
 
   function formatMessageTime(dateString) {
-    const date = new Date(dateString);
+    
+    const date = !dateString ? new Date() : new Date(dateString);
     const now = new Date();
     const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
     if (diffDays === 0) return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });

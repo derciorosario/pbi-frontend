@@ -191,6 +191,8 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       const idKey = `id-${identityId}`;
       allOpen[idKey] = true;
     });
+
+    console.log({allOpen})
     setOpen(allOpen);
 
     // fresh selection
@@ -229,9 +231,11 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
         return (
           <div
             key={idKey}
+           
             className={`border-b last:border-b-0 ${
-              shown.length && !shown.some(s => s.toLowerCase().includes(identity.name.toLowerCase()) || identity.name.toLowerCase().includes(s.toLowerCase())) ? "hidden" : ""
+              shown.length && !shown.some(s => s.toLowerCase() === identity.name.toLowerCase() || identity.name.toLowerCase() === s.toLowerCase()) ? "hidden" : ""
             }`}
+
           >
             <div
               role={hasCategories ? "button" : undefined}

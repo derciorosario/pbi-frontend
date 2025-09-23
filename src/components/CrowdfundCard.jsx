@@ -1,5 +1,5 @@
 // src/components/CrowdfundCard.jsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useData } from "../contexts/DataContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useNavigate } from "react-router-dom";
@@ -81,9 +81,33 @@ export default function CrowdfundCard({
 
   // Share popover
   const [shareOpen, setShareOpen] = useState(false);
+  const shareMenuRef = useRef(null);
+  const cardRef = useRef(null);
   const { user, settings } = useAuth();
   const data = useData();
   const navigate = useNavigate();
+
+  // Close share menu on outside click / Esc
+  useEffect(() => {
+    function onDown(e) {
+      if (
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(e.target) &&
+        !cardRef.current?.contains(e.target)
+      ) {
+        setShareOpen(false);
+      }
+    }
+    function onEsc(e) {
+      if (e.key === "Escape") setShareOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
 
   // First image (supports base64url or string URL)
   const imageUrl =
@@ -169,6 +193,7 @@ export default function CrowdfundCard({
 
   const ShareMenu = () => (
     <div
+      ref={shareMenuRef}
       className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
       role="dialog"
       aria-label="Share options"
@@ -283,7 +308,7 @@ export default function CrowdfundCard({
 
   return (
     <>
-      <div className={`${containerBase} ${containerLayout}`}>
+      <div ref={cardRef} className={`${containerBase} ${containerLayout}`}>
         {/* IMAGE */}
         {isList ? (
           // Only show image side in list view if not text mode
@@ -688,11 +713,11 @@ export default function CrowdfundCard({
             {/* Connect like the others */}
             {renderConnectButton()}
           </div>
+        {/* SHARE MENU */}
+        {shareOpen && <ShareMenu />}
+
         </div>
       </div>
-
-      {/* SHARE MENU */}
-      {shareOpen && <ShareMenu />}
 
       {/* Connection Request Modal */}
       <ConnectionRequestModal

@@ -1,5 +1,5 @@
 // src/components/JobDetails.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   MapPin,
   X,
@@ -13,6 +13,7 @@ import {
   Briefcase,
   Building,
   Calendar,
+  Copy as CopyIcon,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
@@ -20,6 +21,22 @@ import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import client from "../api/client";
+import {
+  FacebookShareButton,
+  FacebookIcon,
+  LinkedinShareButton,
+  LinkedinIcon,
+  TwitterShareButton,
+  TwitterIcon,
+  WhatsappShareButton,
+  WhatsappIcon,
+  TelegramShareButton,
+  TelegramIcon,
+  EmailShareButton,
+  EmailIcon,
+  FacebookMessengerShareButton,
+  FacebookMessengerIcon,
+} from "react-share";
 
 /* -------------------------------- utils --------------------------------- */
 function timeAgo(iso) {
@@ -83,10 +100,37 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [job, setJob] = useState(null);
   const [error, setError] = useState("");
-  
+
+  // Share menu state
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareMenuRef = useRef(null);
+  const modalRef = useRef(null);
+
   const data = useData();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Close share menu on outside click / Esc
+  useEffect(() => {
+    function onDown(e) {
+      if (
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(e.target) &&
+        !modalRef.current?.contains(e.target)
+      ) {
+        setShareOpen(false);
+      }
+    }
+    function onEsc(e) {
+      if (e.key === "Escape") setShareOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
 
   // Fetch job details from API
   useEffect(() => {
@@ -138,7 +182,7 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
 
   return (
     <div className="fixed z-[99] inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white z-[99] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[85vh] overflow-hidden">
+      <div ref={modalRef} className="bg-white z-[99] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[85vh] overflow-hidden">
         {/* Header */}
         <div className="bg-brand-500 p-4 flex justify-between items-center">
           <div className="text-white font-medium">Job Details</div>
@@ -347,20 +391,9 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
               <div className="flex gap-3 mt-6">
                 {/* Share */}
                 <button
-                  onClick={() => {
-                    // Share functionality
-                    const shareUrl = `${window.location.origin}/jobs?view=${job.id}`;
-                    if (navigator.share) {
-                      navigator.share({
-                        title: job.title,
-                        text: job.description,
-                        url: shareUrl,
-                      }).catch(err => console.error('Error sharing:', err));
-                    } else {
-                      // Fallback
-                      navigator.clipboard.writeText(shareUrl);
-                      toast.success("Link copied to clipboard");
-                    }
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
                   }}
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
                 >
@@ -416,6 +449,108 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
         toName={job?.postedBy?.name || "Job Poster"}
         onSent={onSent}
       />
+
+      {/* Share Menu */}
+      {shareOpen && <ShareMenu job={job} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
     </div>
   );
 }
+
+// Share data and components
+const ShareMenu = ({ job, shareMenuRef, setShareOpen }) => {
+  const shareUrl = `${window.location.origin}/jobs?view=${job?.id}`;
+  const shareTitle = job?.title || "Job Opportunity on 54Links";
+  const shareQuote = (job?.description || "").slice(0, 160) + ((job?.description || "").length > 160 ? "…" : "");
+  const shareHashtags = ["54Links", "Jobs", "Career", "Hiring"].filter(Boolean);
+  const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
+
+  return (
+    <div
+      ref={shareMenuRef}
+      className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      role="dialog"
+      aria-label="Share options"
+    >
+      <div className="text-xs font-medium text-gray-500 px-1 pb-2">
+        Share this job
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <WhatsappIcon size={40} round />
+            <span className="text-xs text-gray-700">WhatsApp</span>
+          </div>
+        </WhatsappShareButton>
+
+        <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <FacebookIcon size={40} round />
+            <span className="text-xs text-gray-700">Facebook</span>
+          </div>
+        </FacebookShareButton>
+
+        <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <LinkedinIcon size={40} round />
+            <span className="text-xs text-gray-700">LinkedIn</span>
+          </div>
+        </LinkedinShareButton>
+
+        <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <TwitterIcon size={40} round />
+            <span className="text-xs text-gray-700">X / Twitter</span>
+          </div>
+        </TwitterShareButton>
+
+        <TelegramShareButton url={shareUrl} title={shareTitle}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <TelegramIcon size={40} round />
+            <span className="text-xs text-gray-700">Telegram</span>
+          </div>
+        </TelegramShareButton>
+
+        <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <EmailIcon size={40} round />
+            <span className="text-xs text-gray-700">Email</span>
+          </div>
+        </EmailShareButton>
+
+        {messengerAppId && (
+          <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <FacebookMessengerIcon size={40} round />
+              <span className="text-xs text-gray-700">Messenger</span>
+            </div>
+          </FacebookMessengerShareButton>
+        )}
+      </div>
+
+      <div className="mt-2">
+        <CopyLinkButton shareUrl={shareUrl} setShareOpen={setShareOpen} />
+      </div>
+    </div>
+  );
+};
+
+const CopyLinkButton = ({ shareUrl, setShareOpen }) => {
+  return (
+    <button
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Link copied");
+          setShareOpen(false);
+        } catch {
+          toast.error("Failed to copy link");
+        }
+      }}
+      className="flex items-center gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+    >
+      <CopyIcon size={16} />
+      Copy link
+    </button>
+  );
+};

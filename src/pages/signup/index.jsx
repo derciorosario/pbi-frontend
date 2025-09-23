@@ -250,13 +250,12 @@ export default function Signup() {
   return (
     <div className="min-h-screen grid md:grid-cols-2">
       {/* Left panel */}
-      <div className="hidden md:block">
+      <div className="hidden md:block sticky top-0 h-[100vh]">
         <LeftPanel />
       </div>
 
-      <div className="flex items-center justify-center p-6 md:p-10">
-        <div className="w-full max-w-2xl">
-
+       <div className="flex items-center justify-center p-6 md:p-10 overflow-y-auto">
+      <div className="w-full max-w-2xl">
 
            <div
         className="md:hidden  mb-7 top-6 left-6 flex items-center gap-2 cursor-pointer z-10"
@@ -277,7 +276,7 @@ export default function Signup() {
       </div>
 
 
-          <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-x-2">Join <img src={Logo} width={110}/></h2>
+          <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-x-2">Join <span className="text-brand-500 font-semibold">54Links</span></h2>
           <p className="mt-1 text-gray-500">Join the global networking community</p>
 
           <div className="max-w-xs">

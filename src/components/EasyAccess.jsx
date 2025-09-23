@@ -197,7 +197,7 @@ export default function QuickActionsPanel() {
   if (!user) return null;
 
   return (
-    <aside className={`w-full ${!user ? "hidden" : ""} max-w-sm rounded-2xl border border-gray-200 bg-white shadow-sm my-2`}>
+    <aside className={`w-full hidden ${!user ? "hidden" : ""} max-w-sm rounded-2xl border border-gray-200 bg-white shadow-sm my-2`}>
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-gray-100">
         <div className="flex items-center justify-between">

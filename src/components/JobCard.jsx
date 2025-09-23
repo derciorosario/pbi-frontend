@@ -59,7 +59,7 @@ export default function JobCard({
   onEdit,
   onDelete,
   type = "grid", // "grid" | "list"
-  matchPercentage = 20, // show % chip
+  matchPercentage = 0, // show % chip
 }) {
   const { user,settings } = useAuth();
   const navigate = useNavigate();
@@ -484,7 +484,7 @@ export default function JobCard({
 
           {/* Title + company */}
           <div>
-            <h3 className="font-semibold text-lg text-gray-900 truncate mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
+            <h3 className="font-semibold text-lg text-gray-900  mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
               {job?.title}
             </h3>
 

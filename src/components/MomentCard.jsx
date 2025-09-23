@@ -515,7 +515,7 @@ export default function MomentCard({
           )}
 
           {/* Title */}
-          <h3 className="font-semibold text-lg text-gray-900 truncate mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
+          <h3 className="font-semibold text-lg text-gray-900 mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
             {moment?.title}
           </h3>
 

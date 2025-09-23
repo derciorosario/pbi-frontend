@@ -6,18 +6,23 @@ import { toast } from "../lib/toast";
 import GoogleCustomBtn from "./GoogleBtn.jsx";
 import { X } from "lucide-react";
 import COUNTRIES from "../constants/countries.js";
+import { useRef } from "react";
 
 const emailOK = (v) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").toLowerCase());
 
 export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) {
   const navigate = useNavigate();
+  const containerRef = useRef(null);
   const [activeTab, setActiveTab] = useState(initialTab); // Use the initialTab prop
   const [loginForm, setLoginForm] = useState({ email: "", password: "", remember: false });
   const [loginErrors, setLoginErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [hasToken, setHasToken] = useState(false);
+  const [showAccountTypeModal, setShowAccountTypeModal] = useState(false);
+
+
   
   // Signup form state
   const [acct, setAcct] = useState("individual");
@@ -310,7 +315,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className={`relative w-full ${activeTab!="signup" ? 'max-w-md':'max-w-2xl'} bg-white rounded-xl translate-y-5 shadow-xl p-6 md:p-8 max-h-[85vh] overflow-y-auto`}>
+      <div  ref={containerRef} className={`relative w-full ${activeTab!="signup" ? 'max-w-md':'max-w-2xl'} bg-white rounded-xl translate-y-5 shadow-xl p-6 md:p-8 max-h-[85vh]  ${showAccountTypeModal ? 'overflow-hidden':'overflow-y-auto'}`}>
         {/* Close button */}
         <button 
           onClick={onClose}
@@ -464,7 +469,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
           </form>
         ) : (
           /* Signup Form */
-          <form onSubmit={onSignupSubmit} className="mt-6">
+          <form onSubmit={onSignupSubmit} className={`mt-6`}>
             {/* Account type */}
             <div className="flex gap-3 mb-4">
               <button
@@ -937,7 +942,12 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                 </button>
 
                 {/* Optional Google button */}
-                <GoogleCustomBtn page="signup" /> 
+                <GoogleCustomBtn page="signup" showAccountTypeModalChange={(value)=>{
+                     setShowAccountTypeModal(value)
+                      if (value && containerRef.current) {
+                         containerRef.current.scrollTo({ top: 0, behavior: "instant" });
+                      }
+                }} /> 
               </div>
               
               {/* Login link */}

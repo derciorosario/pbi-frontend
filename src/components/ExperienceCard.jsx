@@ -565,6 +565,9 @@ export default function ExperienceCard({
           </div>
 
          
+        {/* SHARE MENU - inside the card for proper positioning */}
+        {shareOpen && <ShareMenu item={item} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
+
         </div>
 
         {/* Subtle bottom gradient for depth (grid only) */}
@@ -572,8 +575,6 @@ export default function ExperienceCard({
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-50" />
         )}
 
-        {/* SHARE MENU - inside the card for proper positioning */}
-        {shareOpen && <ShareMenu item={item} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
       </article>
 
       {/* Connection Request Modal */}

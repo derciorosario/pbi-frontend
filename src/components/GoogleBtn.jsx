@@ -5,13 +5,14 @@ import axios from "axios";
 import client from "../api/client";
 import { toast } from "../lib/toast";
 import AccountTypeModal from "./AccountTypeModal";
+import { useEffect } from "react";
 
 /**
  * Props:
  *   page: "signup" | "signin" (controls button text)
  *   showProfile?: boolean
  */
-export default function GoogleCustomBtn({ page = "signin", showProfile = false }) {
+export default function GoogleCustomBtn({ page = "signin", showProfile = false,showAccountTypeModalChange}) {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [me, setMe] = useState(null);
@@ -19,6 +20,10 @@ export default function GoogleCustomBtn({ page = "signin", showProfile = false }
   const [showAccountTypeModal, setShowAccountTypeModal] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const [accessToken, setAccessToken] = useState(null);
+
+  useEffect(()=>{
+      if(showAccountTypeModalChange)   showAccountTypeModalChange(showAccountTypeModal)
+  },[showAccountTypeModal])
 
   const label =
     page === "signup" ? "Sign up with Google" : "Sign in with Google";
