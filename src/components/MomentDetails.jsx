@@ -115,7 +115,9 @@ export default function MomentDetails({ momentId, isOpen, onClose, item }) {
     function onDown(e) {
       if (
         shareButtonRef.current &&
-        !shareButtonRef.current.contains(e.target)
+        shareMenuRef.current &&
+        !shareButtonRef.current.contains(e.target) &&
+        !shareMenuRef.current.contains(e.target)
       ) {
         setShareOpen(false);
       }

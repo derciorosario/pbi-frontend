@@ -139,7 +139,9 @@ export default function CrowdfundDetails({ crowdfundId, isOpen, onClose }) {
     function onDown(e) {
       if (
         shareButtonRef.current &&
-        !shareButtonRef.current.contains(e.target)
+        shareMenuRef.current &&
+        !shareButtonRef.current.contains(e.target) &&
+        !shareMenuRef.current.contains(e.target)
       ) {
         setShareOpen(false);
       }
