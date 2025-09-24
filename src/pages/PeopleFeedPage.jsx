@@ -118,6 +118,7 @@ export default function PeopleFeedPage() {
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [totalCount, setTotalCount] = useState(0); // <-- add this
   const [showTotalCount,setShowTotalCount] = useState(0)
+  const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
 
   // Sugestões
   const [matches, setMatches] = useState([]);
@@ -341,6 +342,7 @@ export default function PeopleFeedPage() {
           ? data.total
           : Array.isArray(data.items) ? data.items.length : 0
       );
+      setHasFetchedOnce(true);
     } catch (e) {
       console.error("Failed to load feed:", e);
       setItems([]);
@@ -480,7 +482,7 @@ export default function PeopleFeedPage() {
           )}
 
           
-          {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
+          {!loadingFeed && hasFetchedOnce && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
 
           <div

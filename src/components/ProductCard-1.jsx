@@ -521,7 +521,7 @@ export default function ProductCard({
 
           {/* Title and description */}
           <div className={`${isList ? "mb-2" : "mb-3"}`}>
-            <h3 className="font-semibold text-lg text-gray-900 truncate mb-1 group-hover:text-brand-600 transition-colors duration-200">
+            <h3 className="font-semibold text-lg text-gray-900  mb-1 group-hover:text-brand-600 transition-colors duration-200">
               {item?.title}
             </h3>
             <p
@@ -718,7 +718,7 @@ export default function ProductCard({
             </button>
 
             {/* Message */}
-            <button
+           {item?.sellerUserId!=user?.id && <button
               onClick={() => {
                 if (!user?.id) {
                   data._showPopUp("login_prompt");
@@ -732,10 +732,10 @@ export default function ProductCard({
               className={`${type=="grid" ? "flex-1":''} _login_prompt rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
             >
               Message
-            </button>
+            </button>}
 
             {/* Connect or Edit */}
-            {item.sellerUserId !== user?.id ? (
+            {(item.sellerUserId !== user?.id && connectionStatus!="connected") ? (
                        <div className="_login_prompt">
                           {renderConnectButton()}
                       </div>

@@ -20,6 +20,7 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
+import PostDetailsSkeleton from "./ui/PostDetailsSkeleton";
 import client from "../api/client";
 import {
   FacebookShareButton,
@@ -169,16 +170,23 @@ export default function EventDetails({ eventId, isOpen, onClose, item }) {
     };
   }, []);
 
-  // Fetch event details from API
+  // Clear event data when modal closes or eventId changes
   useEffect(() => {
-    if (!isOpen || !eventId) return;
-    
+    if (!isOpen) {
+      setEvent(null);
+      setError("");
+      return;
+    }
+
+    if (!eventId) return;
+
     let mounted = true;
-    
+
     async function fetchEventDetails() {
       setLoading(true);
       setError("");
-      
+      setEvent(null); // Clear previous event data immediately
+
       try {
         const { data } = await client.get(`/events/${eventId}`);
         if (mounted) setEvent(data);
@@ -189,9 +197,9 @@ export default function EventDetails({ eventId, isOpen, onClose, item }) {
         if (mounted) setLoading(false);
       }
     }
-    
+
     fetchEventDetails();
-    
+
     return () => {
       mounted = false;
     };
@@ -237,7 +245,7 @@ export default function EventDetails({ eventId, isOpen, onClose, item }) {
         {/* Body */}
         <div className="p-6 overflow-y-auto">
           {loading ? (
-            <div className="text-sm text-gray-600">Loading event details...</div>
+            <PostDetailsSkeleton />
           ) : error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : !event ? (

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { toast } from "../lib/toast";
 import * as socialApi from "../api/social";
+import client from "../api/client";
 import {
   Edit,
   Eye,
@@ -17,6 +18,8 @@ import {
   Flag,
   Send,
   Copy as CopyIcon,
+  MoreVertical,
+  Trash2,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -61,6 +64,10 @@ export default function JobCard({
   type = "grid", // "grid" | "list"
   matchPercentage = 0, // show % chip
 }) {
+
+
+  if(job?.id=="45d43faa-f907-4361-b25b-c43222a1a636") return
+  
   const { user,settings } = useAuth();
   const navigate = useNavigate();
   const data = useData();
@@ -94,19 +101,35 @@ export default function JobCard({
   // Job application dialog
   const [applicationDialogOpen, setApplicationDialogOpen] = useState(false);
 
-  // Close share menu on outside click / Esc
+  // Options menu
+  const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
+  const optionsMenuRef = useRef(null);
+
+  // Close menus on outside click / Esc
   useEffect(() => {
     function onDown(e) {
       if (
         shareMenuRef.current &&
-        !shareMenuRef.current.contains(e.target) &&
-        !cardRef.current?.contains(e.target)
+        !shareMenuRef.current.contains(e.target)
       ) {
         setShareOpen(false);
       }
+      if (
+        optionsMenuRef.current &&
+        !optionsMenuRef.current.contains(e.target)
+      ) {
+        setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
+      }
     }
     function onEsc(e) {
-      if (e.key === "Escape") setShareOpen(false);
+      if (e.key === "Escape") {
+        setShareOpen(false);
+        setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
+      }
     }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onEsc);
@@ -234,7 +257,7 @@ export default function JobCard({
   const ShareMenu = () => (
     <div
       ref={shareMenuRef}
-      className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      className="absolute z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl top-12 right-3"
       role="dialog"
       aria-label="Share options"
     >
@@ -302,6 +325,60 @@ export default function JobCard({
     </div>
   );
 
+  const OptionsMenu = () => (
+    <div
+      ref={optionsMenuRef}
+      className="absolute z-30 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-xl top-12 right-3"
+      role="dialog"
+      aria-label="Options menu"
+    >
+      {showDeleteConfirm ? (
+        // Confirmation mode
+        <>
+          <div className="px-3 py-2 text-sm font-medium text-gray-900 border-b border-gray-200 mb-2">
+            Delete this job?
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                await client.delete(`/jobs/${job.id}`);
+                toast.success("Job deleted successfully");
+                setIsDeleted(true); // Hide the card
+                if (onDelete) {
+                  onDelete(job);
+                }
+              } catch (error) {
+                console.error("Failed to delete job:", error);
+                toast.error(error?.response?.data?.message || "Failed to delete job");
+              }
+              setOptionsMenuOpen(false);
+              setShowDeleteConfirm(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mb-1"
+          >
+            <Trash2 size={16} />
+            Confirm Delete
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(false)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        // Initial menu
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+        >
+          <Trash2 size={16} />
+          Delete
+        </button>
+      )}
+    </div>
+  );
+
   /* -------------------------------------------------------------- */
 
   return (
@@ -310,7 +387,7 @@ export default function JobCard({
         ref={cardRef}
         className={`${containerBase} ${containerLayout} ${
           !isList && isHovered ? "transform -translate-y-1" : ""
-        }`}
+        } ${isDeleted ? "hidden" : ""}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -350,6 +427,7 @@ export default function JobCard({
 
               {/* Quick actions on image */}
               <div className="absolute top-3 right-3 flex gap-2">
+               
                 <button
                   onClick={() => {
                     if (isOwner) navigate(`/job/${job.id}`);
@@ -371,6 +449,19 @@ export default function JobCard({
                 >
                   <Share2 size={16} className="text-gray-600" />
                 </button>
+
+                 {isOwner && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOptionsMenuOpen((s) => !s);
+                    }}
+                    className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                    aria-label="More options"
+                  >
+                    <MoreVertical size={16} className="text-gray-600" />
+                  </button>
+                )}
               </div>
             </div>
           )
@@ -408,6 +499,7 @@ export default function JobCard({
             {/* View & Share - only show when not text mode */}
             {settings?.contentType !== 'text' && (
               <div className="absolute top-4 right-4 flex gap-2">
+              
                 <button
                   onClick={() => {
                     if (isOwner) navigate(`/job/${job.id}`);
@@ -431,6 +523,19 @@ export default function JobCard({
                     className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200"
                   />
                 </button>
+
+                  {isOwner && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOptionsMenuOpen((s) => !s);
+                    }}
+                    className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                    aria-label="More options"
+                  >
+                    <MoreVertical size={16} className="text-gray-600" />
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -439,12 +544,16 @@ export default function JobCard({
         {/* SHARE MENU (common absolute anchor on the card) */}
         {shareOpen && <ShareMenu />}
 
+        {/* OPTIONS MENU */}
+        {optionsMenuOpen && <OptionsMenu />}
+
         {/* CONTENT SIDE */}
         <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
           {/* Text mode: Buttons and audience categories at top */}
           {settings?.contentType === 'text' && (
             <div className={`${!isList ? 'flex-col gap-y-2':'items-center justify-between gap-2'} flex  mb-3`}>
               <div className="flex gap-2">
+               
                 <button
                   onClick={() => {
                     if (isOwner) navigate(`/job/${job.id}`);
@@ -465,6 +574,20 @@ export default function JobCard({
                 >
                   <Share2 size={16} className="text-gray-600" />
                 </button>
+
+                 {isOwner && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOptionsMenuOpen((s) => !s);
+                    }}
+                    className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                    aria-label="More options"
+                  >
+                    <MoreVertical size={16} className="text-gray-600" />
+                  </button>
+                )}
+
               </div>
               {Array.isArray(job?.audienceCategories) &&
                 job.audienceCategories.length > 0 && (
@@ -698,7 +821,7 @@ export default function JobCard({
               )}
             </button>
 
-            <button
+           {!isOwner && <button
               onClick={() => {
                 if (!user?.id) {
                   data._showPopUp("login_prompt");
@@ -711,9 +834,9 @@ export default function JobCard({
               } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
             >
               <span>Apply</span>
-            </button>
+            </button>}
 
-            {!isOwner && renderConnectButton()}
+            {(!isOwner && connectionStatus!="connected") && renderConnectButton()}
           </div>
         </div>
 

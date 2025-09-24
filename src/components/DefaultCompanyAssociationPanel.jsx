@@ -140,7 +140,7 @@ export default function CompanyAssociationPanel() {
 
   useEffect(() => {
     fetchCompanyTotals();
-    const interval = setInterval(fetchCompanyTotals, 5000);
+    const interval = setInterval(fetchCompanyTotals, 15000);
     return () => clearInterval(interval);
   }, []);
 

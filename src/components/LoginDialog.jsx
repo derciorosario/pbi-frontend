@@ -538,6 +538,8 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                 <Input
                   label={labelPhone}
                   name="phone"
+                  type="number"
+                  onWheel={e => e.currentTarget.blur()}
                   placeholder={acct === "company" ? "Phone" : "Phone"}
                   value={signupForm.phone}
                   onChange={onSignupChange}
@@ -658,8 +660,6 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                       <option value="" disabled>Select gender</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
-                      <option value="other">Other</option>
-                      <option value="prefer-not-to-say">Prefer not to say</option>
                     </select>
                     {signupErrors.gender && <p className="text-xs text-red-600">{signupErrors.gender}</p>}
                   </div>

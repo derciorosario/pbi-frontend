@@ -45,9 +45,12 @@ export function AuthProvider({ children }) {
       }
     } catch (e) {
       // If unauthorized, clear token
-      setToken(null);
-      setUser(null);
-      setProfile(null);
+      if(e?.response?.status==401){
+           setToken(null);
+           setUser(null);
+           setProfile(null);
+      }
+     
     } finally {
       setLoading(false);
       setReady(true);

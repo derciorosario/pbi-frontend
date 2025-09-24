@@ -21,6 +21,7 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
+import PostDetailsSkeleton from "./ui/PostDetailsSkeleton";
 import client from "../api/client";
 import {
   FacebookShareButton,
@@ -130,16 +131,23 @@ export default function ExperienceDetails({ experienceId, isOpen, onClose }) {
     };
   }, []);
 
-  // Fetch experience details from API
+  // Clear experience data when modal closes or experienceId changes
   useEffect(() => {
-    if (!isOpen || !experienceId) return;
-    
+    if (!isOpen) {
+      setExperience(null);
+      setError("");
+      return;
+    }
+
+    if (!experienceId) return;
+
     let mounted = true;
-    
+
     async function fetchExperienceDetails() {
       setLoading(true);
       setError("");
-      
+      setExperience(null); // Clear previous experience data immediately
+
       try {
         const { data } = await client.get(`/tourism/${experienceId}`);
         if (mounted) setExperience(data);
@@ -150,9 +158,9 @@ export default function ExperienceDetails({ experienceId, isOpen, onClose }) {
         if (mounted) setLoading(false);
       }
     }
-    
+
     fetchExperienceDetails();
-    
+
     return () => {
       mounted = false;
     };
@@ -212,7 +220,7 @@ export default function ExperienceDetails({ experienceId, isOpen, onClose }) {
         {/* Body */}
         <div className="p-6 overflow-y-auto">
           {loading ? (
-            <div className="text-sm text-gray-600">Loading experience details...</div>
+            <PostDetailsSkeleton />
           ) : error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : !experience ? (
@@ -279,9 +287,9 @@ export default function ExperienceDetails({ experienceId, isOpen, onClose }) {
               </div>
 
               {/* Author */}
-              <Section title="Author" icon={User2}>
+              <Section title="Posted By" icon={User2}>
                 <div 
-                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200 cursor-pointer"
+                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200"
                   onClick={() => {
                     if (experience?.authorUserId) {
                       data._showPopUp("profile");
@@ -302,8 +310,7 @@ export default function ExperienceDetails({ experienceId, isOpen, onClose }) {
                   )}
                   <div>
                     <div className="font-medium">{experience.author?.name || "Experience Author"}</div>
-                    <div className="text-xs text-gray-500">View profile</div>
-                  </div>
+                   </div>
                 </div>
               </Section>
 

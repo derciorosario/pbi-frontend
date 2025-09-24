@@ -18,6 +18,7 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
+import PostDetailsSkeleton from "./ui/PostDetailsSkeleton";
 import client from "../api/client";
 import {
   FacebookShareButton,
@@ -127,16 +128,23 @@ export default function ProductDetails({ productId, isOpen, onClose, onSave }) {
     };
   }, []);
 
-  // Fetch product details from API
+  // Clear product data when modal closes or productId changes
   useEffect(() => {
-    if (!isOpen || !productId) return;
-    
+    if (!isOpen) {
+      setProduct(null);
+      setError("");
+      return;
+    }
+
+    if (!productId) return;
+
     let mounted = true;
-    
+
     async function fetchProductDetails() {
       setLoading(true);
       setError("");
-      
+      setProduct(null); // Clear previous product data immediately
+
       try {
         const { data } = await client.get(`/products/${productId}`);
         if (mounted) setProduct(data);
@@ -147,9 +155,9 @@ export default function ProductDetails({ productId, isOpen, onClose, onSave }) {
         if (mounted) setLoading(false);
       }
     }
-    
+
     fetchProductDetails();
-    
+
     return () => {
       mounted = false;
     };
@@ -211,7 +219,7 @@ export default function ProductDetails({ productId, isOpen, onClose, onSave }) {
         {/* Body */}
         <div className="p-6 overflow-y-auto">
           {loading ? (
-            <div className="text-sm text-gray-600">Loading product details...</div>
+            <PostDetailsSkeleton />
           ) : error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : !product ? (
@@ -295,7 +303,7 @@ export default function ProductDetails({ productId, isOpen, onClose, onSave }) {
               </div>
 
               {/* Seller Info */}
-              <Section title="Seller" icon={User2}>
+              <Section title="Posted By" icon={User2}>
                 <div 
                   className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200"
                  

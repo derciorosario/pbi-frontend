@@ -25,11 +25,18 @@ export default function ForgotPassword() {
     setLoading(true);
     try {
       const p = client.post("/auth/forgot-password", { email });
-      await toast.promise(
+      
+      
+       await toast.promise(
         p,
-        { loading: "Sending reset link…", success: "Reset link sent! Check your inbox.", error: "Failed to send reset email." },
+        {
+          loading: "Sending reset link…",
+          success: "Reset link sent! Check your inbox.",
+          error: (err) => err?.response?.data?.message || "Failed to send reset email."
+        },
         { id: "forgot" }
       );
+
       navigate("/reset-email-sent", { state: { email } });
     } finally {
       setLoading(false);

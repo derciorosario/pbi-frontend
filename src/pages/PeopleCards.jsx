@@ -363,7 +363,7 @@ export default function PeopleProfileCard({
         
 
           {/* Message */}
-          <button
+          {user?.id!=id && <button
             onClick={() => {
               if (!user) {
                 data._showPopUp("login_prompt");
@@ -377,12 +377,12 @@ export default function PeopleProfileCard({
             }`}
           >
             Message
-          </button>
+          </button>}
 
           {/* Connect */}
-          <div className="_login_prompt">
+          {connectionStatus!="connected" && <div className="_login_prompt">
               {renderConnectButton()}
-          </div>
+          </div>}
           
         </div>
       </div>
@@ -420,6 +420,7 @@ export default function PeopleProfileCard({
     const status = (connectionStatus || "none").toLowerCase();
 
     if (status === "connected") {
+
       return (
         <button
           onClick={() => setOpenConfirmRemove(true)}

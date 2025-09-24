@@ -23,6 +23,7 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
+import PostDetailsSkeleton from "./ui/PostDetailsSkeleton";
 import client from "../api/client";
 import LogoGray from '../assets/logo.png';
 import {
@@ -133,15 +134,22 @@ export default function MomentDetails({ momentId, isOpen, onClose, item }) {
     };
   }, []);
 
-  // Fetch moment details from API
+  // Clear moment data when modal closes or momentId changes
   useEffect(() => {
-    if (!isOpen || !momentId) return;
+    if (!isOpen) {
+      setMoment(null);
+      setError("");
+      return;
+    }
+
+    if (!momentId) return;
 
     let mounted = true;
 
     async function fetchMomentDetails() {
       setLoading(true);
       setError("");
+      setMoment(null); // Clear previous moment data immediately
 
       try {
         const { data } = await client.get(`/moments/${momentId}`);
@@ -174,7 +182,7 @@ export default function MomentDetails({ momentId, isOpen, onClose, item }) {
   if (!isOpen) return null;
 
   // Format user initials
-  const initials = (moment?.userName || item?.userName || "?")
+  const initials = (moment?.user.name || item?.userName || "?")
     .split(" ")
     .map((s) => s[0])
     .join("")
@@ -236,7 +244,7 @@ export default function MomentDetails({ momentId, isOpen, onClose, item }) {
         {/* Body */}
         <div className="p-6 overflow-y-auto">
           {loading ? (
-            <div className="text-sm text-gray-600">Loading moment details...</div>
+            <PostDetailsSkeleton />
           ) : error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : !moment ? (
@@ -292,9 +300,9 @@ export default function MomentDetails({ momentId, isOpen, onClose, item }) {
               </div>
 
               {/* User */}
-              <Section title="Posted by" icon={User2}>
+              <Section title="Posted By" icon={User2}>
                 <div
-                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200 cursor-pointer"
+                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200 "
                   onClick={() => {
                     if (moment?.userId) {
                       data._showPopUp("profile");
@@ -305,7 +313,7 @@ export default function MomentDetails({ momentId, isOpen, onClose, item }) {
                   {moment.userAvatarUrl ? (
                     <img
                       src={moment.userAvatarUrl}
-                      alt={moment.userName}
+                      alt={moment?.user?.name}
                       className="w-10 h-10 rounded-full object-cover"
                     />
                   ) : (
@@ -314,7 +322,7 @@ export default function MomentDetails({ momentId, isOpen, onClose, item }) {
                     </div>
                   )}
                   <div>
-                    <div className="font-medium">{moment.userName || "User"}</div>
+                    <div className="font-medium">{moment?.user.name || "User"}</div>
                   </div>
                 </div>
               </Section>

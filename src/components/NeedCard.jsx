@@ -713,7 +713,7 @@ export default function NeedCard({
               <span>Message</span>
             </button>
 
-            {!isOwner && renderConnectButton()}
+            {(!isOwner && connectionStatus!="connected") && renderConnectButton()}
           </div>
         </div>
 

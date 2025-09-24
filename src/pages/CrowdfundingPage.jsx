@@ -504,9 +504,9 @@ export default function CrowdfundingPage() {
           </div>
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/fundings/create"),hide:user?.accountType=="individual" },
-            { label: "Share Opportunity Experience", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create"),hide:user?.accountType=="company" },
-            { label: "Ask About an Opportunity", Icon: PlusCircle, onClick: () => navigate("/need/funding/create"),hide:user?.accountType=="company" },
+            { label: "Post Funding Project", Icon: PlusCircle, onClick: () => navigate("/fundings/create"),hide:user?.accountType=="individual" },
+            { label: "Share Funding Project", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create"),hide:user?.accountType=="company" },
+            { label: "Ask About Funding", Icon: PlusCircle, onClick: () => navigate("/need/funding/create"),hide:user?.accountType=="company" },
           ]} />
           <ProfileCard />
           
@@ -529,9 +529,9 @@ export default function CrowdfundingPage() {
            <TabsAndAdd 
           tabs={[]}  
           items={[
-            { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/fundings/create"),hide:user?.accountType=="individual" },
-            { label: "Share Opportunity Experience", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create"),hide:user?.accountType=="company" },
-            { label: "Ask About an Opportunity", Icon: PlusCircle, onClick: () => navigate("/need/funding/create"),hide:user?.accountType=="company" },
+            { label: "Post Funding Project", Icon: PlusCircle, onClick: () => navigate("/fundings/create"),hide:user?.accountType=="individual" },
+            { label: "Share Funding Project", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create"),hide:user?.accountType=="company" },
+            { label: "Ask About Funding", Icon: PlusCircle, onClick: () => navigate("/need/funding/create"),hide:user?.accountType=="company" },
          ]}
           activeTab={activeTab} 
           setActiveTab={setActiveTab}  

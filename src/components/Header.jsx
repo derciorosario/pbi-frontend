@@ -745,7 +745,7 @@ function Header({ page }) {
                   </button>
                 </>
               ) : (
-                <div className="space-y-2">
+                <div className="flex gap-2">
                   <button
                     onClick={() => setLoginDialogOpen(true)}
                     className="border border-brand-600 text-brand-600 px-4 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap hover:bg-brand-50 transition-colors"

@@ -20,6 +20,7 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
+import PostDetailsSkeleton from "./ui/PostDetailsSkeleton";
 import client from "../api/client";
 import {
   FacebookShareButton,
@@ -143,16 +144,23 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
     };
   }, []);
 
-  // Fetch service details from API
+  // Clear service data when modal closes or serviceId changes
   useEffect(() => {
-    if (!isOpen || !serviceId) return;
-    
+    if (!isOpen) {
+      setService(null);
+      setError("");
+      return;
+    }
+
+    if (!serviceId) return;
+
     let mounted = true;
-    
+
     async function fetchServiceDetails() {
       setLoading(true);
       setError("");
-      
+      setService(null); // Clear previous service data immediately
+
       try {
         const { data } = await client.get(`/services/${serviceId}`);
         if (mounted) setService(data);
@@ -163,9 +171,9 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
         if (mounted) setLoading(false);
       }
     }
-    
+
     fetchServiceDetails();
-    
+
     return () => {
       mounted = false;
     };
@@ -225,7 +233,7 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
         {/* Body */}
         <div className="p-6 overflow-y-auto">
           {loading ? (
-            <div className="text-sm text-gray-600">Loading service details...</div>
+            <PostDetailsSkeleton />
           ) : error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : !service ? (
@@ -306,9 +314,9 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
               </div>
 
               {/* Provider */}
-              <Section title="Provider" icon={User2}>
+              <Section title="Posted By" icon={User2}>
                 <div 
-                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200 cursor-pointer"
+                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200"
                   onClick={() => {
                     if (service?.providerUserId) {
                       data._showPopUp("profile");
@@ -329,8 +337,7 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
                   )}
                   <div>
                     <div className="font-medium">{service.provider?.name || "Service Provider"}</div>
-                    <div className="text-xs text-gray-500">View profile</div>
-                  </div>
+                   </div>
                 </div>
               </Section>
 

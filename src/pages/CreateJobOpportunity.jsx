@@ -72,7 +72,7 @@ const Label = ({ children, required }) => (
 const Input = (props) => (
   <input
     {...props}
-    className={` ${props.className || ""} w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 ${props.className || ""}`}
+    className={` ${props.className || ""} w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 ${props.className || ""}`}
   />
 );
 
@@ -80,7 +80,7 @@ const Select = ({ children, ...rest }) => (
   <div className="relative">
     <select
       {...rest}
-      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-purple-200"
+      className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-100"
     >
       {children}
     </select>
@@ -94,7 +94,7 @@ const Textarea = (props) => (
   <textarea
     rows={props.rows || 4}
     {...props}
-    className={`w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-200 ${props.className || ""}`}
+    className={`w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 ${props.className || ""}`}
   />
 );
 
@@ -1123,7 +1123,7 @@ export default function CreateJobOpportunity() {
     const categoryIds = Array.from(audSel.categoryIds);
 
     if (!form.categoryId && categoryIds.length === 0) {
-      toast.error("Please select at least one industry category.");
+      toast.error("Please select at least one category in target audience");
       return;
     }
 

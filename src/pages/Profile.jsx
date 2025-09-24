@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { toast } from "../lib/toast";
+
 import {
   getMe,
   updatePersonal,
@@ -17,6 +18,7 @@ import {
   updateInterestSelections,
   updateIndustrySelections,
 } from "../api/profile";
+
 import { getUserById, updateUser } from "../api/admin";
 import client from "../api/client";
 import ProfilePhoto from "../components/ProfilePhoto";
@@ -1054,7 +1056,7 @@ export default function ProfilePage() {
       } else {
         // User editing their own profile
         const { data } = await updateAvailability({
-          isOpenToWork: isOpenToWork
+          isOpenToWork: !isOpenToWork
         });
         setMe(data);
         toast.success("Availability updated!");
@@ -2204,12 +2206,12 @@ const toggleIdentityWant = (identityKey) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Phone</label>
-                  <input className="w-full border rounded-lg px-3 py-2" value={personal.phone}
+                  <input onWheel={e => e.currentTarget.blur()} type="number" className="w-full border rounded-lg px-3 py-2" value={personal.phone}
                          onChange={e=>setPersonal({...personal, phone:e.target.value})}/>
                 </div>
                {!isCompany && <div>
                   <label className="block text-sm font-medium mb-1">Birth date</label>
-                  <input type="date" className="w-full border rounded-lg px-3 py-2" value={personal.birthDate || ""}
+                  <input  type="date" className="w-full border rounded-lg px-3 py-2" value={personal.birthDate || ""}
                          onChange={e=>setPersonal({...personal, birthDate:e.target.value})}/>
                 </div>}
 
@@ -2342,8 +2344,6 @@ const toggleIdentityWant = (identityKey) => {
                         <option value="" disabled>Select gender</option>
                         <option value="male">Male</option>
                         <option value="female">Female</option>
-                        <option value="other">Other</option>
-                        <option value="prefer-not-to-say">Prefer not to say</option>
                       </select>
                     </div>
                   </>

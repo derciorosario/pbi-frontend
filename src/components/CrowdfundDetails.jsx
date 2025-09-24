@@ -24,6 +24,7 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
+import PostDetailsSkeleton from "./ui/PostDetailsSkeleton";
 import client from "../api/client";
 import {
   FacebookShareButton,
@@ -157,16 +158,23 @@ export default function CrowdfundDetails({ crowdfundId, isOpen, onClose }) {
     };
   }, []);
 
-  // Fetch crowdfund details from API
+  // Clear crowdfund data when modal closes or crowdfundId changes
   useEffect(() => {
-    if (!isOpen || !crowdfundId) return;
-    
+    if (!isOpen) {
+      setCrowdfund(null);
+      setError("");
+      return;
+    }
+
+    if (!crowdfundId) return;
+
     let mounted = true;
-    
+
     async function fetchCrowdfundDetails() {
       setLoading(true);
       setError("");
-      
+      setCrowdfund(null); // Clear previous crowdfund data immediately
+
       try {
         const { data } = await client.get(`/funding/projects/${crowdfundId}`);
         if (mounted) setCrowdfund(data);
@@ -177,9 +185,9 @@ export default function CrowdfundDetails({ crowdfundId, isOpen, onClose }) {
         if (mounted) setLoading(false);
       }
     }
-    
+
     fetchCrowdfundDetails();
-    
+
     return () => {
       mounted = false;
     };
@@ -203,8 +211,11 @@ export default function CrowdfundDetails({ crowdfundId, isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  // Get the current image URL
-  const imageUrl = crowdfund?.images?.[currentImageIndex] || null;
+  // Get the current image URL (handle both string URLs and object formats)
+  const currentImage = crowdfund?.images?.[currentImageIndex];
+  const imageUrl = currentImage
+    ? (typeof currentImage === 'string' ? currentImage : currentImage.base64url || currentImage)
+    : null;
 
   // Calculate progress percentage
   const raised = parseFloat(crowdfund?.raised || 0);
@@ -242,7 +253,7 @@ export default function CrowdfundDetails({ crowdfundId, isOpen, onClose }) {
         {/* Body */}
         <div className="p-6 overflow-y-auto">
           {loading ? (
-            <div className="text-sm text-gray-600">Loading project details...</div>
+            <PostDetailsSkeleton />
           ) : error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : !crowdfund ? (
@@ -337,7 +348,7 @@ export default function CrowdfundDetails({ crowdfundId, isOpen, onClose }) {
               {/* Creator */}
               <Section title="Creator" icon={User2}>
                 <div 
-                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200 cursor-pointer"
+                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200"
                   onClick={() => {
                     if (crowdfund?.creatorUserId) {
                       data._showPopUp("profile");
@@ -350,8 +361,7 @@ export default function CrowdfundDetails({ crowdfundId, isOpen, onClose }) {
                   </div>
                   <div>
                     <div className="font-medium">{crowdfund.creator?.name || "Project Creator"}</div>
-                    <div className="text-xs text-gray-500">View profile</div>
-                  </div>
+                   </div>
                 </div>
               </Section>
 

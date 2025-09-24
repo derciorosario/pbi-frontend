@@ -350,6 +350,8 @@ export default function Signup() {
               <Input
                 label={labelPhone}
                 name="phone"
+                type="number"
+                onWheel={e => e.currentTarget.blur()}
                 placeholder={acct === "company" ? "Phone" : "Phone"}
                 value={form.phone}
                 onChange={onChange}
@@ -468,8 +470,6 @@ export default function Signup() {
                     <option value="" disabled>Select gender</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
-                    <option value="other">Other</option>
-                    <option value="prefer-not-to-say">Prefer not to say</option>
                   </select>
                   {errors.gender && <p className="text-xs text-red-600">{errors.gender}</p>}
                 </div>

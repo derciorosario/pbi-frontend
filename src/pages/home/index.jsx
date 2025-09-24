@@ -981,6 +981,8 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                          <Input
                            label={labelPhone}
                            name="phone"
+                           type="number"
+                           onWheel={e => e.currentTarget.blur()}
                            placeholder={acct === "company" ? "Phone" : "Phone"}
                            value={signupForm.phone}
                            onChange={onAuthSignupChange}

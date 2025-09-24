@@ -694,7 +694,7 @@ export default function CrowdfundCard({
             </button>
 
             {/* Message */}
-            <button
+           {!isOwner && <button
               onClick={() => {
                 if (!user?.id) {
                   data._showPopUp("login_prompt");
@@ -708,11 +708,11 @@ export default function CrowdfundCard({
               } rounded-xl px-4 py-2.5 text-sm _login_prompt font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 transition-all duration-200 shadow-sm hover:shadow-md`}
             >
               Message
-            </button>
+            </button>}
 
             {/* Connect like the others */}
              <div className="_login_prompt">
-              {renderConnectButton()}
+               {(!isOwner && connectionStatus!="connected") && renderConnectButton()}
              </div>
           </div>
         {/* SHARE MENU */}

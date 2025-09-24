@@ -15,6 +15,7 @@ import {
   Calendar,
   Copy as CopyIcon,
 } from "lucide-react";
+import PostDetailsSkeleton from "./ui/PostDetailsSkeleton";
 import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -134,16 +135,23 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
     };
   }, []);
 
-  // Fetch job details from API
+  // Clear job data when modal closes or jobId changes
   useEffect(() => {
-    if (!isOpen || !jobId) return;
-    
+    if (!isOpen) {
+      setJob(null);
+      setError("");
+      return;
+    }
+
+    if (!jobId) return;
+
     let mounted = true;
-    
+
     async function fetchJobDetails() {
       setLoading(true);
       setError("");
-      
+      setJob(null); // Clear previous job data immediately
+
       try {
         const { data } = await client.get(`/jobs/${jobId}`);
         if (mounted) setJob(data.job);
@@ -154,9 +162,9 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
         if (mounted) setLoading(false);
       }
     }
-    
+
     fetchJobDetails();
-    
+
     return () => {
       mounted = false;
     };
@@ -202,7 +210,7 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
         {/* Body */}
         <div className="p-6 overflow-y-auto">
           {loading ? (
-            <div className="text-sm text-gray-600">Loading job details...</div>
+            <PostDetailsSkeleton />
           ) : error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : !job ? (
@@ -262,7 +270,7 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
               {/* Posted By */}
               <Section title="Posted By" icon={User2}>
                 <div 
-                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200 cursor-pointer"
+                  className="flex items-center gap-2 p-3 rounded-lg border border-gray-100 hover:border-brand-200"
                   onClick={() => {
                     if (job?.postedByUserId) {
                       data._showPopUp("profile");
@@ -283,7 +291,6 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
                   )}
                   <div>
                     <div className="font-medium">{job.postedBy?.name}</div>
-                    <div className="text-xs text-gray-500">View profile</div>
                   </div>
                 </div>
               </Section>

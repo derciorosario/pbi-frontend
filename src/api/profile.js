@@ -27,3 +27,6 @@ export const deleteWorkSample   = (id) => client.delete(`/profile/work-samples/$
 
 // AVAILABILITY
 export const updateAvailability = (payload) => client.put("/profile/availability", payload);
+
+// AVATAR
+export const updateAvatarUrl = (payload) => client.put("/profile/avatar", payload);

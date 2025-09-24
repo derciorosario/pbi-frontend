@@ -546,7 +546,7 @@ export default function ExperienceCard({
             </button>
 
             {/* Message */}
-            <button
+          {!isOwner &&  <button
               onClick={() => {
                 if (!user?.id) {
                   data._showPopUp("login_prompt");
@@ -558,10 +558,10 @@ export default function ExperienceCard({
               className="rounded-xl px-4 flex-1 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md"
             >
               Message
-            </button>
+            </button>}
 
             {/* Connect button with status */}
-            {!isOwner && renderConnectButton()}
+            {(!isOwner && connectionStatus!="connected") && renderConnectButton()}
           </div>
 
          

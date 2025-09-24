@@ -23,6 +23,7 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
+import PostDetailsSkeleton from "./ui/PostDetailsSkeleton";
 import client from "../api/client";
 import LogoGray from '../assets/logo.png';
 import {
@@ -133,15 +134,22 @@ export default function NeedDetails({ needId, isOpen, onClose, item }) {
     };
   }, []);
 
-  // Fetch need details from API
+  // Clear need data when modal closes or needId changes
   useEffect(() => {
-    if (!isOpen || !needId) return;
+    if (!isOpen) {
+      setNeed(null);
+      setError("");
+      return;
+    }
+
+    if (!needId) return;
 
     let mounted = true;
 
     async function fetchNeedDetails() {
       setLoading(true);
       setError("");
+      setNeed(null); // Clear previous need data immediately
 
       try {
         const { data } = await client.get(`/needs/${needId}`);
@@ -223,7 +231,7 @@ export default function NeedDetails({ needId, isOpen, onClose, item }) {
         {/* Body */}
         <div className="p-6 overflow-y-auto">
           {loading ? (
-            <div className="text-sm text-gray-600">Loading need details...</div>
+            <PostDetailsSkeleton />
           ) : error ? (
             <div className="text-sm text-red-600">{error}</div>
           ) : !need ? (

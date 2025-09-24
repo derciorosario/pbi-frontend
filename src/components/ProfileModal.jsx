@@ -31,6 +31,255 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "../lib/toast";
 import ConfirmDialog from "./ConfirmDialog";
 
+// Profile Modal Skeleton Component
+const ProfileModalSkeleton = () => (
+  <div className="animate-pulse">
+    {/* Header Section */}
+    <div className="flex items-start gap-4 mb-6">
+      <div className="relative">
+        <div className="w-20 h-20 bg-gray-200 rounded-full"></div>
+        <div className="absolute -bottom-2 -right-2 flex -space-x-2">
+          <div className="w-7 h-7 bg-gray-200 rounded-full border-2 border-white"></div>
+        </div>
+      </div>
+      <div className="flex-1">
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <div className="h-6 bg-gray-200 rounded w-32"></div>
+          <div className="h-5 bg-gray-200 rounded w-16"></div>
+          <div className="h-5 bg-gray-200 rounded w-12"></div>
+        </div>
+        <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
+        <div className="h-3 bg-gray-200 rounded w-24 mb-3"></div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="text-center">
+            <div className="h-4 bg-gray-200 rounded w-8 mx-auto mb-1"></div>
+            <div className="h-3 bg-gray-200 rounded w-12 mx-auto"></div>
+          </div>
+          <div className="text-center">
+            <div className="h-4 bg-gray-200 rounded w-8 mx-auto mb-1"></div>
+            <div className="h-3 bg-gray-200 rounded w-12 mx-auto"></div>
+          </div>
+          <div className="text-center">
+            <div className="h-4 bg-gray-200 rounded w-8 mx-auto mb-1"></div>
+            <div className="h-3 bg-gray-200 rounded w-12 mx-auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* About Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-12"></div>
+      </div>
+      <div className="h-16 bg-gray-200 rounded"></div>
+    </div>
+
+    {/* Contact Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-16"></div>
+      </div>
+      <div className="space-y-2">
+        <div className="h-4 bg-gray-200 rounded w-32"></div>
+        <div className="h-4 bg-gray-200 rounded w-40"></div>
+      </div>
+    </div>
+
+    {/* Looking For Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-20"></div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-18"></div>
+      </div>
+    </div>
+
+    {/* Identities Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-16"></div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <div className="h-6 bg-gray-200 rounded-full w-14"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+      </div>
+    </div>
+
+    {/* Identity Interests Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-24"></div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <div className="h-6 bg-gray-200 rounded-full w-18"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-22"></div>
+      </div>
+    </div>
+
+    {/* Expertise & Interests Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-32"></div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-18"></div>
+      </div>
+    </div>
+
+    {/* Skills Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-12"></div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <div className="h-6 bg-gray-200 rounded-full w-14"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-18"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+      </div>
+    </div>
+
+    {/* Languages Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-16"></div>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <div className="h-6 bg-gray-200 rounded-full w-20"></div>
+        <div className="h-6 bg-gray-200 rounded-full w-24"></div>
+      </div>
+    </div>
+
+    {/* Work Samples Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-20"></div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="rounded-lg border p-3">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="min-w-0">
+              <div className="h-4 bg-gray-200 rounded w-24 mb-1"></div>
+              <div className="h-3 bg-gray-200 rounded w-16 mb-2"></div>
+              <div className="flex flex-wrap gap-1 mb-2">
+                <div className="h-5 bg-gray-200 rounded-full w-12"></div>
+                <div className="h-5 bg-gray-200 rounded-full w-14"></div>
+              </div>
+              <div className="h-3 bg-gray-200 rounded w-32"></div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="w-full h-16 bg-gray-200 rounded"></div>
+            <div className="w-full h-16 bg-gray-200 rounded"></div>
+            <div className="w-full h-16 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+        <div className="rounded-lg border p-3">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="min-w-0">
+              <div className="h-4 bg-gray-200 rounded w-28 mb-1"></div>
+              <div className="h-3 bg-gray-200 rounded w-20 mb-2"></div>
+              <div className="flex flex-wrap gap-1 mb-2">
+                <div className="h-5 bg-gray-200 rounded-full w-16"></div>
+                <div className="h-5 bg-gray-200 rounded-full w-18"></div>
+              </div>
+              <div className="h-3 bg-gray-200 rounded w-36"></div>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="w-full h-16 bg-gray-200 rounded"></div>
+            <div className="w-full h-16 bg-gray-200 rounded"></div>
+            <div className="w-full h-16 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Overview Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-16"></div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="text-center">
+          <div className="h-5 bg-gray-200 rounded w-6 mx-auto mb-1"></div>
+          <div className="h-3 bg-gray-200 rounded w-12 mx-auto"></div>
+        </div>
+        <div className="text-center">
+          <div className="h-5 bg-gray-200 rounded w-8 mx-auto mb-1"></div>
+          <div className="h-3 bg-gray-200 rounded w-14 mx-auto"></div>
+        </div>
+        <div className="text-center">
+          <div className="h-5 bg-gray-200 rounded w-6 mx-auto mb-1"></div>
+          <div className="h-3 bg-gray-200 rounded w-10 mx-auto"></div>
+        </div>
+      </div>
+    </div>
+
+    {/* Recent Activity Section */}
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-4 h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-24"></div>
+      </div>
+      <div className="space-y-3">
+        <div className="rounded-lg border p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-4 bg-gray-200 rounded w-32"></div>
+            <div className="h-3 bg-gray-200 rounded w-16"></div>
+          </div>
+          <div className="h-3 bg-gray-200 rounded w-24 mb-1"></div>
+          <div className="flex gap-1">
+            <div className="h-5 bg-gray-200 rounded-full w-12"></div>
+            <div className="h-5 bg-gray-200 rounded-full w-16"></div>
+          </div>
+        </div>
+        <div className="rounded-lg border p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-4 bg-gray-200 rounded w-36"></div>
+            <div className="h-3 bg-gray-200 rounded w-16"></div>
+          </div>
+          <div className="h-3 bg-gray-200 rounded w-28 mb-1"></div>
+          <div className="flex gap-1">
+            <div className="h-5 bg-gray-200 rounded-full w-14"></div>
+            <div className="h-5 bg-gray-200 rounded-full w-18"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Meta Section */}
+    <div className="mb-4">
+      <div className="h-3 bg-gray-200 rounded w-48"></div>
+    </div>
+
+    {/* Action Buttons */}
+    <div className="flex gap-3">
+      <div className="flex-1 h-10 bg-gray-200 rounded-lg"></div>
+      <div className="flex-1 h-10 bg-gray-200 rounded-lg"></div>
+      <div className="flex-1 h-10 bg-gray-200 rounded-lg"></div>
+    </div>
+  </div>
+);
+
 /* -------------------------------- utils --------------------------------- */
 function timeAgo(iso) {
   if (!iso) return "";
@@ -1081,7 +1330,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
 
         {/* Body */}
         <div className="p-6 overflow-y-auto">
-          {loading && <div className="text-sm text-gray-600">Loading profile…</div>}
+          {loading && <ProfileModalSkeleton />}
           {error && <div className="text-sm text-red-600">{error}</div>}
 
           {!loading && !error && profile && (

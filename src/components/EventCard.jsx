@@ -697,10 +697,11 @@ export default function EventCard({
             )}
 
             {/* Connect */}
-            {!isOwner && 
-          <div className="_login_prompt">
+            {(!isOwner && connectionStatus!="connected") && 
+            <div className="_login_prompt">
               {renderConnectButton()}
-          </div>}
+            </div>}
+            
           </div>
         </div>
 

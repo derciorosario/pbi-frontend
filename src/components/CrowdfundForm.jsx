@@ -1060,7 +1060,7 @@ function removeTag(idx) {
               </div>
             </div>
 
-           <div className="mt-4">
+           <div className="mt-4 mb-6">
             <Label>Tags</Label>
             <div className="flex items-center gap-2">
            <div className="flex-1"> 
@@ -1167,7 +1167,7 @@ function removeTag(idx) {
             </div>
             
             {/* ===== Industry Classification ===== */}
-            <div>
+            <div className="mt-6">
               <h2 className="font-semibold text-brand-600">Industry Classification</h2>
               <p className="text-xs text-gray-600 mb-3">
                 Select the industry category and subcategory that best describes your crowdfunding project.

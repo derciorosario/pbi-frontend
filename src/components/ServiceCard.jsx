@@ -621,17 +621,17 @@ export default function ServiceCard({
             </button>
 
             {/* Message */}
-            <button
+           {!isOwner && <button
               onClick={handleMessage}
               className={`${
                 type === "grid" ? "flex-1" : ""
               } rounded-xl px-4 py-2.5 _login_prompt text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
             >
               Message
-            </button>
+            </button>}
 
             {/* Connect button like the others */}
-            {!isOwner &&  <div className="_login_prompt">
+            {(!isOwner && connectionStatus!="connected") &&  <div className="_login_prompt">
               {renderConnectButton()}
           </div>}
           </div>
