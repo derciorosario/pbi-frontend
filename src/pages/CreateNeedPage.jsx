@@ -472,7 +472,7 @@ export default function CreateNeedPage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await client.get("/public/identities");
+        const { data } = await client.get("/public/identities?type=all");
         setAudTree(data.identities || []);
       } catch (err) {
         console.error(err);
@@ -767,7 +767,7 @@ export default function CreateNeedPage() {
           className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
           type="button"
         >
-          ← Back
+          ← {window.history.state && window.history.state.idx > 0 ? 'Back':'Feed'} 
         </button>
 
 

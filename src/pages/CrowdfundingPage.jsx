@@ -529,7 +529,7 @@ export default function CrowdfundingPage() {
            <TabsAndAdd 
           tabs={[]}  
           items={[
-            { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/experiences/create"),hide:user?.accountType=="individual" },
+            { label: "Post an Opportunity", Icon: PlusCircle, onClick: () => navigate("/fundings/create"),hide:user?.accountType=="individual" },
             { label: "Share Opportunity Experience", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create"),hide:user?.accountType=="company" },
             { label: "Ask About an Opportunity", Icon: PlusCircle, onClick: () => navigate("/need/funding/create"),hide:user?.accountType=="company" },
          ]}

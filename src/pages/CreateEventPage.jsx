@@ -592,7 +592,7 @@ export default function CreateEventPage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await client.get("/public/identities");
+        const { data } = await client.get("/public/identities?type=all");
         setAudTree(data.identities || []);
       } catch (error) {
         console.error("Error loading identities:", error);

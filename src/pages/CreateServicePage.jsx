@@ -341,7 +341,7 @@ export default function CreateServicePage() {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await client.get("/public/identities");
+        const { data } = await client.get("/public/identities?type=all");
         setAudTree(data.identities || []);
       } catch (err) {
         console.error(err);

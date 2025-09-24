@@ -9,6 +9,7 @@ import DefaultLayout from "../layout/DefaultLayout";
 import Header from "./Header";
 import { useAuth } from "../contexts/AuthContext";
 import FullPageLoader from "../components/ui/FullPageLoader";
+import { toast } from "../lib/toast";
 
 /* --- Minimal inline icons --- */
 const I = {
@@ -301,11 +302,14 @@ export default function CrowdfundForm() {
     team: "",
     links: "", // comma/newline separated
     tags: "", // comma separated
+    tags: [],
     email: "",
     phone: "",
     visibility: "public",
     status: "draft",
   });
+
+  const [tagInput, setTagInput] = useState("");
 
   const change = (e) => {
     if (readOnly) return;
@@ -325,7 +329,7 @@ export default function CrowdfundForm() {
     })();
     (async () => {
       try {
-        const { data } = await client.get("/public/identities");
+        const { data } = await client.get("/public/identities?type=all");
         setAudTree(data.identities || []);
       } catch (err) {
         console.error("Error loading identities:", err);
@@ -367,7 +371,13 @@ export default function CrowdfundForm() {
           rewards: data.rewards || "",
           team: data.team || "",
           links: Array.isArray(data.links) ? data.links.join(", ") : data.links || "",
-          tags: Array.isArray(data.tags) ? data.tags.join(", ") : data.tags || "",
+         // tags: Array.isArray(data.tags) ? data.tags.join(", ") : data.tags || "",
+         tags: Array.isArray(data.tags)
+          ? data.tags
+          : (typeof data.tags === "string"
+              ? data.tags.split(/[,\n]/g).map((t) => t.trim()).filter(Boolean)
+              : []),
+
           email: data.email || "",
           phone: data.phone || "",
           visibility: data.visibility || "public",
@@ -398,11 +408,32 @@ export default function CrowdfundForm() {
       } catch (err) {
         console.error(err);
         console.log({err})
-        alert("Could not load the project.");
+        toast.error("Could not load the project.");
         navigate("/funding");
       }
     })();
   }, [isEditMode, id, navigate]);
+
+
+  function addTag() {
+  if (readOnly) return;
+  const v = (tagInput || "").trim();
+  if (!v) return;
+  setForm((f) =>
+    f.tags.includes(v) ? f : { ...f, tags: [...f.tags, v] }
+  );
+  setTagInput("");
+}
+
+function removeTag(idx) {
+  if (readOnly) return;
+  setForm((f) => ({
+    ...f,
+    tags: f.tags.filter((_, i) => i !== idx),
+  }));
+}
+
+
 
   const readOnly = isEditMode  && ownerUserId && user?.id !== ownerUserId;
 
@@ -414,12 +445,12 @@ export default function CrowdfundForm() {
 
     const onlyImages = arr.filter((f) => f.type.startsWith("image/"));
     if (onlyImages.length !== arr.length) {
-      alert("Only image files are allowed.");
+      toast.error("Only image files are allowed.");
     }
 
     const oversize = onlyImages.filter((f) => f.size > 5 * 1024 * 1024);
     if (oversize.length) {
-      alert("Each image must be at most 5MB.");
+      toast.error("Each image must be at most 5MB.");
     }
     const accepted = onlyImages.filter((f) => f.size <= 5 * 1024 * 1024);
 
@@ -437,7 +468,7 @@ export default function CrowdfundForm() {
       setImages((prev) => [...prev, ...mapped]);
     } catch (err) {
       console.error(err);
-      alert("Some images could not be read.");
+      toast.error("Some images could not be read.");
     }
   }
 
@@ -729,7 +760,7 @@ export default function CrowdfundForm() {
   async function handleSubmit(status) {
     if (readOnly) return;
     const err = validate();
-    if (err) return alert(err);
+    if (err) return toast.error(err);
 
     setSaving(true);
     try {
@@ -746,7 +777,8 @@ export default function CrowdfundForm() {
         rewards: form.rewards || undefined,
         team: form.team || undefined,
         links: parsedLinks(),
-        tags: parsedTags(),
+        tags: form.tags,
+
         email: form.email || undefined,
         phone: form.phone || undefined,
         visibility: form.visibility || "public",
@@ -768,15 +800,15 @@ export default function CrowdfundForm() {
 
       if (isEditMode) {
         await client.put(`/funding/projects/${id}`, payload);
-        alert("Project updated successfully!");
+        toast.success("Project updated successfully!");
       } else {
         await client.post("/funding/projects", payload);
-        alert(status === "draft" ? "Draft saved!" : "Project published!");
+        toast.success(status === "draft" ? "Draft saved!" : "Project published!");
       }
       navigate("/funding");
     } catch (e) {
       console.error(e);
-      alert(e?.response?.data?.message || "Could not save the project.");
+      toast.error(e?.response?.data?.message || "Could not save the project.");
     } finally {
       setSaving(false);
     }
@@ -1028,16 +1060,59 @@ export default function CrowdfundForm() {
               </div>
             </div>
 
-            <div className="mt-4">
-              <Label>Tags</Label>
-              <Input
-                name="tags"
-                value={form.tags}
-                onChange={change}
-                placeholder="fintech, payments, SME"
+           <div className="mt-4">
+            <Label>Tags</Label>
+            <div className="flex items-center gap-2">
+           <div className="flex-1"> 
+               <Input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTag();
+                  }
+                }}
+                
+                placeholder="Add a tag (e.g., fintech, payments, SME)"
               />
-              <p className="mt-1 text-[11px] text-gray-400">Use commas to help discovery.</p>
             </div>
+            <div>
+                <button
+                type="button"
+                onClick={addTag}
+                className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700"
+              >
+                + Add
+              </button>
+            </div>
+            </div>
+
+            {form.tags.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {form.tags.map((t, idx) => (
+                  <span
+                    key={`${t}-${idx}`}
+                    className="inline-flex items-center gap-2 rounded-full bg-brand-50 text-brand-700 px-3 py-1 text-xs border border-brand-100"
+                  >
+                    {t}
+                    <button
+                      type="button"
+                      className="text-gray-500 hover:text-gray-700"
+                      onClick={() => removeTag(idx)}
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="mt-1 text-[11px] text-gray-400">
+              Tags help others discover your crowdfunding project
+            </p>
+          </div>
+
 
 
 

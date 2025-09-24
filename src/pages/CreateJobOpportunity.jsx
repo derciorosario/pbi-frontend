@@ -977,7 +977,7 @@ export default function CreateJobOpportunity() {
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await client.get("/public/identities");
+        const { data } = await client.get("/public/identities?type=all");
         setAudTree(data.identities || []);
       } catch (error) {
         console.error("Error loading identities:", error);
@@ -1092,8 +1092,11 @@ export default function CreateJobOpportunity() {
       }
     }
 
+    console.log({next})
+
     setErrors(next);
-    return Object.values(next).every((v) => !v);
+   // return Object.values(next).every((v) => !v);
+    return next
   }
 
   const onSubmit = async (e) => {
@@ -1101,10 +1104,19 @@ export default function CreateJobOpportunity() {
     if (readOnly) return;
 
     // Validate form
-    if (!validate()) {
+   /* if (!validate()) {
       toast.error("Please fix the highlighted fields.");
       return;
-    }
+    }*/
+
+    const validationResult = validate();
+    const firstError = Object.values(validationResult).find((v) =>
+     Array.isArray(v) ? v.length > 0 : v
+   );
+   if (firstError) {
+     toast.error(firstError);
+     return;
+   }
 
     // Additional validation for industry selection
     const identityIds = Array.from(audSel.identityIds);

@@ -489,55 +489,59 @@ function Header({ page }) {
                       </div>
 
                       {/* ---------- Switch Accounts (companies & representatives) ---------- */}
-                      {accounts.length > 1 && (
-                        <div className="border-t border-gray-100 mt-2 pt-2">
-                          <div className="px-3 py-1 text-xs font-medium text-gray-400">
-                            Switch account
-                          </div>
-                          {accounts.map((acc) => (
-                            <button
-                              key={`${acc.type}:${acc.id}`}
-                              onClick={() => handleSwitchAccount(acc)}
-                              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm ${
-                                activeAccountId === acc.id
-                                  ? "bg-brand-50 text-brand-700 font-semibold"
-                                  : "hover:bg-gray-50 text-gray-700"
-                              }`}
-                              title={
-                                acc.type === "company"
-                                  ? "Switch to company"
-                                  : acc.type === "representative"
-                                  ? "Switch to representative"
-                                  : "Switch to personal"
-                              }
-                            >
-                              <div className="h-7 w-7 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                                {acc.avatarUrl ? (
-                                  <img
-                                    src={acc.avatarUrl}
-                                    alt={acc.name}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <span className="text-xs font-bold text-brand-600">
-                                    {(acc.name || "A")?.charAt(0)}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="min-w-0 flex flex-col" style={{alignItems:'start',justifyContent:'start'}}>
-                                <div className="truncate">{acc.name}</div>
-                                <div className="text-[10px] text-gray-400">
-                                  {acc.type === "company"
-                                    ? "Company"
-                                    : acc.type === "representative"
-                                    ? "Representative"
-                                    : "Personal"}
-                                </div>
-                              </div>
-                            </button>
-                          ))}
+                   
+                   {accounts.length > 1 && (
+                  <div className="border-t border-gray-100 mt-2 pt-2 max-h-60 overflow-y-auto">
+                    <div className="px-3 py-1 text-xs font-medium text-gray-400">
+                      Switch account
+                    </div>
+                    {accounts.map((acc) => (
+                      <button
+                        key={`${acc.type}:${acc.id}`}
+                        onClick={() => handleSwitchAccount(acc)}
+                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm ${
+                          activeAccountId === acc.id
+                            ? "bg-brand-50 text-brand-700 font-semibold"
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                        title={
+                          acc.type === "company"
+                            ? "Switch to company"
+                            : acc.type === "representative"
+                            ? "Switch to representative"
+                            : "Switch to personal"
+                        }
+                      >
+                        <div className="h-7 w-7 rounded-full flex-shrink-0 overflow-hidden bg-gray-100 flex items-center justify-center">
+                          {acc.avatarUrl ? (
+                            <img
+                              src={acc.avatarUrl}
+                              alt={acc.name}
+                              className="h-full w-full object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <span className="text-xs font-bold text-brand-600">
+                              {(acc.name || "A")?.charAt(0)}
+                            </span>
+                          )}
                         </div>
-                      )}
+
+                        {/* ✅ Fix: add min-w-0, overflow-hidden, truncate */}
+                        <div className="min-w-0 flex flex-col items-start justify-start">
+                          <div className="truncate w-full">{acc.name}</div>
+                          <div className="text-[10px] text-gray-400 truncate w-full text-left self-start">
+                            {acc.type === "company"
+                              ? "Company"
+                              : acc.type === "representative"
+                              ? "Representative"
+                              : "Personal"}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                       {/* ------------------------------------------------------------------- */}
 
                       <button
