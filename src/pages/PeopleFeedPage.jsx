@@ -33,17 +33,17 @@ function useDebounce(v, ms = 400) {
 }
 
 export default function PeopleFeedPage() {
-  const {user}=useAuth()
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("People");
-  const data=useData()
-  
+  const data = useData();
+
   const tabs = useMemo(() => {
     const base = ["Posts", "People", "News & Articles"];
     if (user) base.splice(2, 0, "My Connections"); // insert before News
     return base;
   }, [user]);
 
-  const navigate=useNavigate()
+  const navigate = useNavigate();
   const [showPendingRequests, setShowPendingRequests] = useState(false);
 
   // Filtros compatíveis com a Home
@@ -57,14 +57,13 @@ export default function PeopleFeedPage() {
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
   const [goals, setGoals] = useState([]);
-  const [view,setView]=useState('grid')
-  let view_types=['grid','list']
-  const {pathname}=useLocation()
+  const [view, setView] = useState("grid");
+  let view_types = ["grid", "list"];
+  const { pathname } = useLocation();
 
+  const currentPage = pathname.includes("/people") ? "people" : "companies";
 
-  const currentPage=pathname.includes('/people')  ? 'people': 'companies'
-
-    // ---- NEW: all filter states ----
+  // ---- NEW: all filter states ----
   // Products
   const [price, setPrice] = useState("");
 
@@ -117,7 +116,7 @@ export default function PeopleFeedPage() {
   const [items, setItems] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [totalCount, setTotalCount] = useState(0); // <-- add this
-  const [showTotalCount,setShowTotalCount] = useState(0)
+  const [showTotalCount, setShowTotalCount] = useState(0);
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
 
   // Sugestões
@@ -129,18 +128,24 @@ export default function PeopleFeedPage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // Selected filters for TopFilterButtons
-  const [selectedFilters,setSelectedFilters]=useState([])
+  const [selectedFilters, setSelectedFilters] = useState([]);
 
   // Map button labels to identity IDs
-  const getIdentityIdFromLabel = useCallback((label) => {
-    if (!audienceTree.length) return null;
-    for (const identity of audienceTree) {
-      if (identity.name === label || identity.name.toLowerCase() === label.toLowerCase()) {
-        return identity.id;
+  const getIdentityIdFromLabel = useCallback(
+    (label) => {
+      if (!audienceTree.length) return null;
+      for (const identity of audienceTree) {
+        if (
+          identity.name === label ||
+          identity.name.toLowerCase() === label.toLowerCase()
+        ) {
+          return identity.id;
+        }
       }
-    }
-    return null;
-  }, [audienceTree]);
+      return null;
+    },
+    [audienceTree]
+  );
 
   // Fetch meta
   useEffect(() => {
@@ -150,10 +155,7 @@ export default function PeopleFeedPage() {
         setCategories(data.categories || []);
         setCountries(data.countries || []);
         setGoals(data.goals || []);
-        
-        // Set audience tree data for AudienceTree component
-        // This assumes the API returns identities with categories and subcategories
-       
+        // (audience tree comes from /public/identities below)
       } catch (e) {
         console.error("Failed to load meta:", e);
       }
@@ -162,10 +164,10 @@ export default function PeopleFeedPage() {
 
   useEffect(() => {
     (async () => {
-      let type=currentPage=="people" ? 'individual' :'company'
+      let type = currentPage == "people" ? "individual" : "company";
       try {
         const { data } = await client.get("/public/identities", {
-        params: { type }
+          params: { type },
         });
         // Expecting data.identities: same structure you shared
         setAudienceTree(data.identities);
@@ -180,6 +182,127 @@ export default function PeopleFeedPage() {
   const lastParamsRef = useRef({});
   const fetchTimeoutRef = useRef(null);
 
+  const fetchFeed = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    setLoadingFeed(true);
+    try {
+      // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre "all"
+      const params = {
+        accountType: currentPage == "people" ? "individual" : "company",
+        q: debouncedQ || undefined,
+        country: country || undefined,
+        city: city || undefined,
+        categoryId: categoryId || undefined,
+        subcategoryId: subcategoryId || undefined,
+        goalId: goalId || undefined,
+        role: role || undefined,
+
+        // Add audience selections to the API request
+        identityIds:
+          Array.from(audienceSelections.identityIds).join(",") || undefined,
+        audienceCategoryIds:
+          Array.from(audienceSelections.categoryIds).join(",") || undefined,
+        audienceSubcategoryIds:
+          Array.from(audienceSelections.subcategoryIds).join(",") || undefined,
+        audienceSubsubCategoryIds:
+          Array.from(audienceSelections.subsubCategoryIds).join(",") ||
+          undefined,
+        industryIds:
+          selectedIndustries.length > 0
+            ? selectedIndustries.join(",")
+            : undefined,
+        connectionStatus:
+          activeTab == "My Connections" && showPendingRequests
+            ? "outgoing_pending,incoming_pending"
+            : activeTab == "My Connections" && !showPendingRequests
+            ? "connected"
+            : null,
+
+        // include ALL filters so backend can leverage them when needed:
+        // products
+        price: price || undefined,
+        // services
+        serviceType: serviceType || undefined,
+        priceType: priceType || undefined,
+        deliveryTime: deliveryTime || undefined,
+        // shared
+        experienceLevel: experienceLevel || undefined,
+        locationType: locationType || undefined,
+        // jobs
+        jobType: jobType || undefined,
+        workMode: workMode || undefined,
+        // tourism
+        postType: postType || undefined,
+        season: season || undefined,
+        budgetRange: budgetRange || undefined,
+        // funding
+        fundingGoal: fundingGoal || undefined,
+        amountRaised: amountRaised || undefined,
+        currency: currency || undefined,
+        deadline: deadline || undefined,
+        // events
+        eventType: eventType || undefined,
+        date: date || undefined,
+        registrationType: registrationType || undefined,
+
+        limit: 20,
+        offset: 0,
+      };
+      const { data } = await client.get("/people", { params });
+      const incomingItems = Array.isArray(data.items) ? data.items : [];
+      setItems(incomingItems);
+      setTotalCount(
+        typeof data.total === "number"
+          ? data.total
+          : Array.isArray(data.items)
+          ? data.items.length
+          : 0
+      );
+      setHasFetchedOnce(true);
+    } catch (e) {
+      console.error("Failed to load feed:", e);
+      setItems([]);
+    } finally {
+      isFetchingRef.current = false;
+      setLoadingFeed(false);
+    }
+    data._scrollToSection("top", true);
+  }, [
+    activeTab,
+    debouncedQ,
+    country,
+    city,
+    categoryId,
+    subcategoryId,
+    goalId,
+    role,
+    showPendingRequests,
+    audienceSelections,
+    price,
+    serviceType,
+    priceType,
+    deliveryTime,
+    experienceLevel,
+    locationType,
+    jobType,
+    workMode,
+    postType,
+    season,
+    budgetRange,
+    fundingGoal,
+    amountRaised,
+    currency,
+    deadline,
+    eventType,
+    date,
+    registrationType,
+    selectedIndustries,
+    currentPage,
+    data,
+  ]);
+
+  // Trigger fetches (initial + debounced updates)
   useEffect(() => {
     const currentParams = {
       activeTab,
@@ -218,24 +341,38 @@ export default function PeopleFeedPage() {
       selectedIndustries,
     };
 
-    if (JSON.stringify(currentParams) === JSON.stringify(lastParamsRef.current)) return;
+    if (JSON.stringify(currentParams) === JSON.stringify(lastParamsRef.current))
+      return;
     lastParamsRef.current = currentParams;
 
     if (!hasLoadedOnce.current) {
       hasLoadedOnce.current = true;
-      fetchFeed(); // Immediate fetch for initial load
+      // Immediate fetch for initial load
+      fetchFeed();
     } else {
-      setLoadingFeed(true);
+      // Debounced re-fetch
       clearTimeout(fetchTimeoutRef.current);
+      setLoadingFeed(true);
       fetchTimeoutRef.current = setTimeout(() => {
         fetchFeed();
       }, 100);
-      return () => {
-        clearTimeout(fetchTimeoutRef.current);
-        setLoadingFeed(false);
-      };
     }
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role, showPendingRequests,
+
+    // Cleanup: ONLY clear the timeout.
+    // DO NOT flip loadingFeed to false here (that caused the blank gap).
+    return () => {
+      clearTimeout(fetchTimeoutRef.current);
+    };
+  }, [
+    activeTab,
+    debouncedQ,
+    country,
+    city,
+    categoryId,
+    subcategoryId,
+    goalId,
+    role,
+    showPendingRequests,
     audienceSelections,
     price,
     serviceType,
@@ -255,128 +392,31 @@ export default function PeopleFeedPage() {
     eventType,
     date,
     registrationType,
-    selectedIndustries]);
+    selectedIndustries,
+    fetchFeed,
+  ]);
 
   // Update audienceSelections when selectedFilters changes (but don't trigger fetch)
   useEffect(() => {
     if (selectedFilters.length > 0 && audienceTree.length > 0) {
       const identityIds = selectedFilters
-        .map(filter => {
+        .map((filter) => {
           const id = getIdentityIdFromLabel(filter);
           return id;
         })
-        .filter(id => id !== null);
+        .filter((id) => id !== null);
 
-      setAudienceSelections(prev => ({
+      setAudienceSelections((prev) => ({
         ...prev,
-        identityIds: new Set(identityIds)
+        identityIds: new Set(identityIds),
       }));
     } else {
-      setAudienceSelections(prev => ({
+      setAudienceSelections((prev) => ({
         ...prev,
-        identityIds: new Set()
+        identityIds: new Set(),
       }));
     }
   }, [selectedFilters, audienceTree, getIdentityIdFromLabel]);
-
-
-  // Fetch feed (somente na aba Posts)
-  const fetchFeed = useCallback(async () => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-    setLoadingFeed(true);
-    try {
-      // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre "all"
-      const params = {
-        accountType: currentPage=="people" ? 'individual' :'company',
-        q: debouncedQ || undefined,
-        country: country || undefined,
-        city: city || undefined,
-        categoryId: categoryId || undefined,
-        subcategoryId: subcategoryId || undefined,
-        goalId:goalId || undefined,
-        role:role || undefined,
-
-        // Add audience selections to the API request
-        identityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
-        audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
-        audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
-        audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
-        industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
-        connectionStatus:activeTab=="My Connections" && showPendingRequests ? 'outgoing_pending,incoming_pending' :  activeTab=="My Connections" && !showPendingRequests ? 'connected' : null,
-
-        // include ALL filters so backend can leverage them when needed:
-        // products
-        price: price || undefined,
-        // services
-        serviceType: serviceType || undefined,
-        priceType: priceType || undefined,
-        deliveryTime: deliveryTime || undefined,
-        // shared
-        experienceLevel: experienceLevel || undefined,
-        locationType: locationType || undefined,
-        // jobs
-        jobType: jobType || undefined,
-        workMode: workMode || undefined,
-        // tourism
-        postType: postType || undefined,
-        season: season || undefined,
-        budgetRange: budgetRange || undefined,
-        // funding
-        fundingGoal: fundingGoal || undefined,
-        amountRaised: amountRaised || undefined,
-        currency: currency || undefined,
-        deadline: deadline || undefined,
-        // events
-        eventType: eventType || undefined,
-        date: date || undefined,
-        registrationType: registrationType || undefined,
-
-        limit: 20,
-        offset: 0,
-      };
-      const { data } = await client.get('/people', { params });
-      setItems(Array.isArray(data.items) ? data.items : []);
-      setTotalCount(
-        typeof data.total === "number"
-          ? data.total
-          : Array.isArray(data.items) ? data.items.length : 0
-      );
-      setHasFetchedOnce(true);
-    } catch (e) {
-      console.error("Failed to load feed:", e);
-      setItems([]);
-    } finally {
-      isFetchingRef.current = false;
-      setLoadingFeed(false);
-    }
-    data._scrollToSection('top',true);
-  }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role, showPendingRequests,
-    // Audience selections
-    audienceSelections,
-    // NEW deps:
-    price,
-    serviceType,
-    priceType,
-    deliveryTime,
-    experienceLevel,
-    locationType,
-    jobType,
-    workMode,
-    postType,
-    season,
-    budgetRange,
-    fundingGoal,
-    amountRaised,
-    currency,
-    deadline,
-    eventType,
-    date,
-    registrationType,
-    selectedIndustries]);
-
-
-  // Fetch suggestions (sempre mostramos na direita)
 
   const filtersProps = {
     setShowTotalCount,
@@ -395,7 +435,6 @@ export default function PeopleFeedPage() {
     goals,
     role,
     setRole,
-
 
     // products
     price,
@@ -446,7 +485,7 @@ export default function PeopleFeedPage() {
     setDate,
     registrationType,
     setRegistrationType,
-    
+
     // Audience Tree props
     audienceTree,
     audienceSelections,
@@ -461,61 +500,67 @@ export default function PeopleFeedPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
-
   const renderMiddle = () => {
-   
+    const showSkeleton = loadingFeed || (!hasFetchedOnce && items.length === 0);
+
     return (
       <>
-        {loadingFeed && (
-         <div className="min-h-[160px] grid text-gray-600">
-          <CardSkeletonLoader/>
-        </div>
-
-        )}
-        
-
-
-          {(!loadingFeed && showTotalCount) && (
-            <div className="text-sm text-gray-600">
-              {totalCount} result{totalCount === 1 ? "" : "s"}
-            </div>
-          )}
-
-          
-          {!loadingFeed && hasFetchedOnce && items.length === 0 && <EmptyFeedState activeTab="All" />}
-
-
-          <div
-                           className={`grid grid-cols-1 mt-3 ${
-                             view == "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
-                           } gap-6`}
-                         >
-                           {!loadingFeed && items.map((item) => (
-                              <PeopleProfileCard tyle={view} {...item}  matchPercentage={item.matchPercentage}/>
-                            ))
-                          }
-
+        {showSkeleton && (
+          <div className="min-h-[160px] grid text-gray-600">
+            <CardSkeletonLoader />
           </div>
+        )}
 
-      
+        {!showSkeleton && showTotalCount ? (
+          <div className="text-sm text-gray-600">
+            {totalCount} result{totalCount === 1 ? "" : "s"}
+          </div>
+        ) : null}
+
+        {!showSkeleton && hasFetchedOnce && items.length === 0 && (
+          <EmptyFeedState activeTab="All" />
+        )}
+
+        <div
+          className={`grid grid-cols-1 mt-3 ${
+            view == "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
+          } gap-6`}
+        >
+          {!showSkeleton &&
+            items.map((item) => (
+              <PeopleProfileCard
+                key={item.id || item.userId || item.profileId || Math.random()}
+                tyle={view} /* preserving your prop name as-is */
+                {...item}
+                matchPercentage={item.matchPercentage}
+              />
+            ))}
+        </div>
       </>
     );
   };
 
   return (
     <DefaultLayout>
-      
       <Header />
 
-      <main className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
+      <main
+        className={`mx-auto ${
+          data._openPopUps.profile ? "relative z-50" : ""
+        } max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}
+      >
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
-        <aside  className="scrollable-container lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+        <aside className="scrollable-container lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
           <div className="_sticky top-0 z-10 _bg-white">
-            <FiltersCard selectedFilters={selectedFilters} {...filtersProps} from={"people"}/>
+            <FiltersCard
+              selectedFilters={selectedFilters}
+              {...filtersProps}
+              from={"people"}
+            />
           </div>
-       
-       {/**   <QuickActions title="Quick Actions" items={[
+
+          {/**   <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
               { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
               { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
@@ -523,13 +568,16 @@ export default function PeopleFeedPage() {
               { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
              ]} />
           <ProfileCard /> */}
-         
         </aside>
-    <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
+
+        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
           <section className="lg:col-span-4 space-y-4 mt-4 w-full overflow-hidden">
-         
-             <TopFilterButtons from={"people"} loading={loadingFeed} selected={selectedFilters} setSelected={setSelectedFilters}
-                buttons={
+            <TopFilterButtons
+              from={"people"}
+              loading={loadingFeed}
+              selected={selectedFilters}
+              setSelected={setSelectedFilters}
+              buttons={
                 currentPage == "people"
                   ? [
                       "Entrepreneurs",
@@ -540,50 +588,53 @@ export default function PeopleFeedPage() {
                       "Students",
                       "Government Officials",
                       "Investors",
-                      "Executives"
+                      "Executives",
                     ]
                   : [
-                    "Companies",
-                    "NGOs/NPOs",
-                    "Government / Public Sector",
-                    "Educational & Research",
-                    "Healthcare",
-                    "International / Intergovernmental",
-                    "Hybrid / Special"
-                  ]
+                      "Companies",
+                      "NGOs/NPOs",
+                      "Government / Public Sector",
+                      "Educational & Research",
+                      "Healthcare",
+                      "International / Intergovernmental",
+                      "Hybrid / Special",
+                    ]
+              }
+            />
 
-              }/>
-              <div className="flex items-center justify-end gap-x-2 flex-wrap ">
+            <div className="flex items-center justify-end gap-x-2 flex-wrap ">
               {/**  <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                     { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                     { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                     { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
                   ]} /> */}
-           </div>
-
-          {activeTab === "My Connections" && (
-          <div className="mb-3">
-            <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-3 flex items-center justify-between">
-              <div>
-                <h4 className="font-semibold text-gray-800">Connection Requests</h4>
-                <p className="text-xs text-gray-500">
-                  View pending requests you sent or received
-                </p>
-              </div>
-
-              <button
-  onClick={() => setShowPendingRequests(!showPendingRequests)}
-  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm border ${
-    showPendingRequests
-      ? "bg-purple-600 text-white border-purple-600 hover:bg-purple-700"
-      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-  }`}
->
-  {showPendingRequests ? "Showing Pending" : "Show Pending"}
-</button>
             </div>
-          </div>
-        )}
+
+            {activeTab === "My Connections" && (
+              <div className="mb-3">
+                <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-3 flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-gray-800">
+                      Connection Requests
+                    </h4>
+                    <p className="text-xs text-gray-500">
+                      View pending requests you sent or received
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setShowPendingRequests(!showPendingRequests)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm border ${
+                      showPendingRequests
+                        ? "bg-purple-600 text-white border-purple-600 hover:bg-purple-700"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {showPendingRequests ? "Showing Pending" : "Show Pending"}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {renderMiddle()}
           </section>
@@ -605,7 +656,6 @@ export default function PeopleFeedPage() {
         onClose={() => setMobileFiltersOpen(false)}
         filtersProps={filtersProps}
       />
-  
     </DefaultLayout>
   );
 }
