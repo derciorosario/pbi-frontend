@@ -4,20 +4,16 @@ import Header from "../components/Header";
 import client from "../api/client";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
-import { useSocket } from "../contexts/SocketContext"; // ⬅️ add
+import { useSocket } from "../contexts/SocketContext";
 
 const styles = {
-  primary:
-    "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/30",
-  outline:
-    "rounded-lg px-3 py-1.5 text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+  primary: "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/30",
+  outline: "rounded-lg px-3 py-1.5 text-sm font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+  danger: "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700"
 };
 
 function timeAgo(d) {
-  const ts =
-    typeof d === "string"
-      ? new Date(d).getTime()
-      : d?.getTime?.() ?? Date.now();
+  const ts = typeof d === "string" ? new Date(d).getTime() : d?.getTime?.() ?? Date.now();
   const diff = Math.max(0, Date.now() - ts);
   const sec = Math.floor(diff / 1000);
   if (sec < 5) return "Just now";
@@ -33,641 +29,563 @@ function timeAgo(d) {
 export default function NotificationsPage() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("All");
-  const { socket, connected } = useSocket(); // ⬅️ add
+  const { socket, connected } = useSocket();
 
+  // State for different data types
   const [loadingConn, setLoadingConn] = useState(false);
   const [incoming, setIncoming] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
   const [errorConn, setErrorConn] = useState("");
 
-  // Notifications state
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [errorNotifications, setErrorNotifications] = useState("");
   
-  // Meeting requests state
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [meetingRequests, setMeetingRequests] = useState([]);
   const [errorMeetings, setErrorMeetings] = useState("");
 
+  // Live badge counts
+  const [badgeCounts, setBadgeCounts] = useState({
+    connectionsPending: 0,
+    meetingsPending: 0,
+    notificationsUnread: 0
+  });
 
-   useEffect(() => {
-    // When notifications page mounts, reset header badges via socket
+  // Socket event handlers for real-time updates
+  useEffect(() => {
+    if (!connected || !socket || !user?.id) return;
+
+    // Handle new notifications in real-time
+    const handleNewNotification = (data) => {
+      setNotifications(prev => [data.notification, ...prev]);
+      
+      // Update badge counts
+      setBadgeCounts(prev => ({
+        ...prev,
+        notificationsUnread: prev.notificationsUnread + 1
+      }));
+    };
+
+    // Handle badge count updates
+    const handleBadgeCounts = (counts) => {
+      setBadgeCounts(prev => ({
+        ...prev,
+        ...counts
+      }));
+    };
+
+    socket.on("new_notification", handleNewNotification);
+    socket.on("header_badge_counts", handleBadgeCounts);
+
+    // Subscribe to notifications
+    socket.emit("subscribe_to_notifications");
+
+    // Fetch initial counts
+    socket.emit("get_header_badge_counts", (counts) => {
+      if (counts) setBadgeCounts(prev => ({ ...prev, ...counts }));
+    });
+
+    return () => {
+      socket.off("new_notification", handleNewNotification);
+      socket.off("header_badge_counts", handleBadgeCounts);
+    };
+  }, [connected, socket, user?.id]);
+
+  // Mark header badges as seen when page loads
+  useEffect(() => {
     if (connected && socket) {
-      socket.emit("mark_header_badge_seen", { type: "all" }, () => {});
+      socket.emit("mark_header_badge_seen", { type: "all" });
     }
   }, [connected, socket]);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // Live badge counts (prefer socket; fallback to local arrays)
-const [badgeCounts, setBadgeCounts] = useState({
-  connectionsPending: 0,
-  meetingsPending: 0,
-});
-
-// keep live via socket + 4s polling (same contract as Header)
-useEffect(() => {
-  if (!connected || !socket || !user?.id) return;
-
-  const applyCounts = (c = {}) => {
-    setBadgeCounts((prev) => ({
-      ...prev,
-      connectionsPending: Number.isFinite(c.connectionsPending) ? c.connectionsPending : prev.connectionsPending,
-      meetingsPending: Number.isFinite(c.meetingsPending) ? c.meetingsPending : prev.meetingsPending,
-    }));
-  };
-
-  const fetchCounts = () =>
-    socket.emit("get_header_badge_counts", (res) => applyCounts(res || {}));
-
-  fetchCounts(); // immediately
-  socket.on("header_badge_counts", applyCounts);
-
-  const id = setInterval(() => {
-    if (document.visibilityState !== "hidden") fetchCounts();
-  }, 4000);
-
-  return () => {
-    socket.off("header_badge_counts", applyCounts);
-    clearInterval(id);
-  };
-}, [connected, socket, user?.id]);
-
-  // keep reasonable fallbacks based on the lists you load on this page
-  const localConnPending = useMemo(() => (incoming?.length || 0), [incoming]);
-  const localMeetPending = useMemo(
-    () =>
-      (meetingRequests || []).filter(
-        (m) => m.status === "pending" && m.requester?.id !== user?.id
-      ).length,
-    [meetingRequests, user?.id]
-  );
-
-  // choose what to show: prefer socket numbers, else local
-  const connBadge = badgeCounts.connectionsPending ?? localConnPending;
-  const meetBadge = badgeCounts.meetingsPending ?? localMeetPending;
-
-
-
-
-
-  async function loadConnections() {
+  // Load data functions
+  const loadConnections = async () => {
     setLoadingConn(true);
     setErrorConn("");
     try {
-      const { data } = await client.get("/connections/requests");
-      setIncoming(data.incoming || []);
-      setOutgoing(data.outgoing || []);
+      if (connected && socket) {
+        // Use socket for real-time data
+        socket.emit("qa_fetch_connection_requests", (response) => {
+          if (response?.ok) {
+            setIncoming(response.data.incoming || []);
+            setOutgoing(response.data.outgoing || []);
+          } else {
+            setErrorConn(response?.error || "Failed to load connection requests");
+          }
+          setLoadingConn(false);
+        });
+      } else {
+        // Fallback to HTTP API
+        const { data } = await client.get("/connections/requests");
+        setIncoming(data.incoming || []);
+        setOutgoing(data.outgoing || []);
+        setLoadingConn(false);
+      }
     } catch (e) {
-      setErrorConn(
-        e?.response?.data?.message || "Failed to load connection requests"
-      );
-    } finally {
+      setErrorConn(e?.response?.data?.message || "Failed to load connection requests");
       setLoadingConn(false);
     }
-  }
+  };
 
-  async function loadNotifications() {
+  const loadNotifications = async () => {
     setLoadingNotifications(true);
     setErrorNotifications("");
     try {
-      const { data } = await client.get("/notifications");
-      setNotifications(data || []);
+      if (connected && socket) {
+        // Use socket for real-time data
+
+        let t=filter.toLowerCase()
+
+      
+        socket.emit("qa_fetch_notifications", { type: filter === "All" ? "all" : t=="meetings" ? 'meeting' : t=="connections" ? 'connection' : filter.toLowerCase() }, (response) => {
+          if (response?.ok) {
+            setNotifications(response.data.notifications || []);
+          } else {
+            setErrorNotifications(response?.error || "Failed to load notifications");
+          }
+          setLoadingNotifications(false);
+        });
+      } else {
+        // Fallback to HTTP API
+        const { data } = await client.get("/notifications");
+        setNotifications(data || []);
+        setLoadingNotifications(false);
+      }
     } catch (e) {
-      setErrorNotifications(
-        e?.response?.data?.message || "Failed to load notifications"
-      );
-    } finally {
+      setErrorNotifications(e?.response?.data?.message || "Failed to load notifications");
       setLoadingNotifications(false);
     }
-  }
-  
-  async function loadMeetingRequests() {
+  };
+
+  const loadMeetingRequests = async () => {
     setLoadingMeetings(true);
     setErrorMeetings("");
     try {
-      const { data } = await client.get("/meeting-requests");
-      setMeetingRequests([...(data.received || []), ...(data.sent || [])]);
+      if (connected && socket && 0==1) {
+        // Use socket for real-time data
+        socket.emit("qa_fetch_upcoming_meetings", (response) => {
+          if (response?.ok) {
+            // Filter to get pending meeting requests
+            const pendingMeetings = response.data.filter(m => m.status === "pending");
+            setMeetingRequests(pendingMeetings);
+          } else {
+            setErrorMeetings(response?.error || "Failed to load meeting requests");
+          }
+          setLoadingMeetings(false);
+        });
+      } else {
+        // Fallback to HTTP API
+        const { data } = await client.get("/meeting-requests");
+        setMeetingRequests([...(data.received || []), ...(data.sent || [])]);
+        setLoadingMeetings(false);
+      }
     } catch (e) {
-      setErrorMeetings(
-        e?.response?.data?.message || "Failed to load meeting requests"
-      );
-    } finally {
+      setErrorMeetings(e?.response?.data?.message || "Failed to load meeting requests");
       setLoadingMeetings(false);
     }
-  }
+  };
 
+  // Load data on component mount and filter change
   useEffect(() => {
     loadConnections();
-    loadNotifications();
     loadMeetingRequests();
-  }, []);
+    loadNotifications(); // Load notifications for all tabs since they're now categorized by type
+  }, [filter]);
 
-  async function handleRespond(id, action) {
+  // Socket-based action handlers
+  const handleRespond = async (id, action) => {
     try {
-      // Show loading toast
       const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : 'Declining'} connection request...`);
       
-      // Send the request to the server
-      await client.post(`/connections/requests/${id}/respond`, { action });
-      
-      // Update the toast with success message
-      toast.success(
-        `Connection request ${action === 'accept' ? 'accepted' : 'declined'} successfully`,
-        { id: toastId }
-      );
-      
-      // Reload connections
-      await loadConnections();
-      
-      // Force an immediate refresh of the connection requests count in the header
-      // This will update the notification counter in the header
-      await client.get("/connections/requests");
+      if (connected && socket && 0==1) {
+        socket.emit("qa_respond_connection_request", { requestId: id, action }, (response) => {
+          if (response?.ok) {
+            toast.success(`Connection request ${action === 'accept' ? 'accepted' : 'declined'} successfully`, { id: toastId });
+            loadConnections();
+          } else {
+            toast.error(response?.error || "Failed to update connection request", { id: toastId });
+          }
+        });
+      } else {
+        await client.post(`/connections/requests/${id}/respond`, { action });
+        toast.success(`Connection request ${action === 'accept' ? 'accepted' : 'declined'} successfully`, { id: toastId });
+        loadConnections();
+      }
     } catch (e) {
-      // Show error toast
       toast.error(e?.response?.data?.message || "Failed to update connection request");
-      console.error("Error responding to connection request:", e);
     }
-  }
+  };
 
-  async function handleMeetingRespond(id, action, rejectionReason = "") {
+  const handleMeetingRespond = async (id, action, rejectionReason = "") => {
     try {
-      // Show loading toast
       const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : 'Declining'} meeting request...`);
       
-      // Send the request to the server
-      await client.post(`/meeting-requests/${id}/respond`, { action, rejectionReason });
+      if (connected && socket) {
+        // Socket implementation would need to be added to your backend
+        // For now, fallback to HTTP
+        await client.post(`/meeting-requests/${id}/respond`, { action, rejectionReason });
+      } else {
+        await client.post(`/meeting-requests/${id}/respond`, { action, rejectionReason });
+      }
       
-      // Update the toast with success message
-      toast.success(
-        `Meeting request ${action === 'accept' ? 'accepted' : 'declined'} successfully`,
-        { id: toastId }
-      );
+      toast.success(`Meeting request ${action === 'accept' ? 'accepted' : 'declined'} successfully`, { id: toastId });
       
-      // Remove the notification from the list
-      setNotifications(prev => prev.filter(n =>
-        !(n.type === "meeting_request" && n.data?.meetingRequestId === id)
-      ));
-      
-      // Reload all data
+      // Reload data
       await Promise.all([
-        loadNotifications(),
-        loadMeetingRequests()
+        loadMeetingRequests(),
+        loadNotifications()
       ]);
-      
-      // Force an immediate refresh of the meeting requests count in the header
-      // This will update the notification counter in the header
-      await client.get("/meeting-requests/upcoming");
     } catch (e) {
-      // Show error toast
       toast.error(e?.response?.data?.message || "Failed to update meeting request");
-      console.error("Error responding to meeting request:", e);
     }
-  }
+  };
 
-  async function markAllAsRead() {
+  const markNotificationAsRead = async (notificationId) => {
     try {
-      // Show loading toast
+      if (connected && socket) {
+        socket.emit("qa_mark_notification_read", { notificationId }, (response) => {
+          if (response?.ok) {
+            // Update local state
+            setNotifications(prev => prev.map(n =>
+              n.id === notificationId ? { ...n, readAt: new Date() } : n
+            ));
+          }
+        });
+      } else {
+        let r=await client.post(`/notifications/${notificationId}/read`);
+        console.log(r)
+        setNotifications(prev => prev.map(n =>
+          n.id === notificationId ? { ...n, readAt: new Date() } : n
+        ));
+      }
+    } catch (e) {
+      console.error("Error marking notification as read:", e);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
       const toastId = toast.loading("Marking all notifications as read...");
       
-      // Send the request to the server
-      await client.post("/notifications/mark-all-read");
-      
-      // Update the toast with success message
-      toast.success("All notifications marked as read", { id: toastId });
-      
-      // Reload notifications
-      await loadNotifications();
+      if (connected && socket) {
+        socket.emit("qa_mark_all_notifications_read", (response) => {
+          if (response?.ok) {
+            toast.success("All notifications marked as read", { id: toastId });
+            setNotifications(prev => prev.map(n => ({ ...n, readAt: new Date() })));
+          } else {
+            toast.error(response?.error || "Failed to mark notifications as read", { id: toastId });
+          }
+        });
+      } else {
+        await client.post("/notifications/mark-all-read");
+        toast.success("All notifications marked as read", { id: toastId });
+        setNotifications(prev => prev.map(n => ({ ...n, readAt: new Date() })));
+      }
     } catch (e) {
-      // Show error toast
       toast.error(e?.response?.data?.message || "Failed to mark notifications as read");
-      console.error("Error marking notifications as read:", e);
     }
-  }
+  };
 
+  const deleteNotification = async (notificationId) => {
+    try {
+      if (connected && socket) {
+        socket.emit("qa_delete_notification", { notificationId }, (response) => {
+          if (response?.ok) {
+            setNotifications(prev => prev.filter(n => n.id !== notificationId));
+            toast.success("Notification deleted");
+          }
+        });
+      } else {
+        await client.delete(`/notifications/${notificationId}`);
+        setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        toast.success("Notification deleted");
+      }
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to delete notification");
+    }
+  };
+
+  // Badge calculations
+  const connBadge = badgeCounts.connectionsPending ?? incoming.length;
+  const meetBadge = badgeCounts.meetingsPending ?? meetingRequests.filter(m => 
+    m.status === "pending" && m.requester?.id !== user?.id
+  ).length;
+  const systemBadge = badgeCounts.notificationsUnread ?? notifications.filter(n => !n.readAt && n.type === "system").length;
+
+
+  console.log({meetingRequests})
+ 
+
+  // Combined items for "All" tab
   const allItems = useMemo(() => {
     const connectionItems = [
       ...incoming.map((r) => ({
-        key: `in-${r.id}`,
+        key: `conn-in-${r.id}`,
+        type: "connection",
+        tab:"Connections",
+        hasApproval:true,
         title: "New Connection Request",
-        desc:
-          `${r.fromName || "Someone"} wants to connect with you.` +
-          (r.reason ? ` Reason: ${r.reason}.` : "") +
-          (r.message ? ` Message: "${r.message}"` : ""),
+        desc: `${r.fromName || "Someone"} wants to connect with you.${r.reason ? ` Reason: ${r.reason}.` : ""}${r.message ? ` Message: "${r.message}"` : ""}`,
         time: timeAgo(r.createdAt),
         actions: (
           <div className="mt-2 flex gap-2 text-sm">
-            <button
-              onClick={() => handleRespond(r.id, "accept")}
-              className={styles.primary}
-            >
+            <button onClick={() => handleRespond(r.id, "accept")} className={styles.primary}>
               Accept
             </button>
-            <button
-              onClick={() => handleRespond(r.id, "reject")}
-              className={styles.outline}
-            >
+            <button onClick={() => handleRespond(r.id, "reject")} className={styles.outline}>
               Decline
             </button>
           </div>
         ),
       })),
       ...outgoing.map((r) => ({
-        key: `out-${r.id}`,
+        key: `conn-out-${r.id}`,
+        type: "connection",
+        tab:"Connections",
         title: "Connection Request Sent",
-        desc:
-          `Waiting for approval from ${r.toName || "user"}.` +
-          (r.reason ? ` Reason: ${r.reason}.` : "") +
-          (r.message ? ` Message: "${r.message}"` : ""),
+        desc: `Waiting for approval from ${r.toName || "user"}.${r.reason ? ` Reason: ${r.reason}.` : ""}${r.message ? ` Message: "${r.message}"` : ""}`,
         time: timeAgo(r.createdAt),
         actions: <div className="mt-2 text-xs text-gray-500">Pending</div>,
       })),
     ];
 
+    const meetingItems = meetingRequests
+      .filter(m => m.status === "pending" && m.requester?.id !== user?.id)
+      .map((m) => ({
+        key: `meeting-${m.id}`,
+        type: "meeting",
+        title: "New Meeting Request",
+        tab:"Meetings",
+        hasApproval:true,
+        desc: `${m.requester?.name || "Someone"} wants to schedule a meeting: "${m.title}"`,
+        time: timeAgo(m.createdAt),
+        meta: `📅 ${new Date(m.scheduledAt).toLocaleDateString()} • ${m.duration} min • ${m.mode}`,
+        actions: (
+          <div className="mt-2 flex gap-2 text-sm">
+            <button onClick={() => handleMeetingRespond(m.id, "accept")} className={styles.primary}>
+              Accept
+            </button>
+            <button onClick={() => handleMeetingRespond(m.id, "reject")} className={styles.outline}>
+              Decline
+            </button>
+          </div>
+        ),
+      }));
+
+   
     const notificationItems = notifications.map((n) => {
-      let actions = null;
-      let customDesc = n.message;
-      
-      // Handle meeting request notifications
-      if (n.type === "meeting_request" && n.data?.meetingRequestId) {
-        // Check if this is a meeting request sent by the current user
-        const isSentByCurrentUser = n.data.fromUserId === user?.id;
-        
-        if (isSentByCurrentUser) {
-          // Custom message for meeting requests sent by the current user
-          customDesc = `You requested a meeting with ${n.data.toName || "someone"}: "${n.data.title}"`;
-          // No actions for sent requests
-        } else {
-          // This is a meeting request received by the current user
-          customDesc = `${n.data.fromName || "Someone"} wants to schedule a meeting with you: "${n.data.title}"`;
-          // Show accept/decline actions
-          actions = (
-            <div className="mt-2 flex gap-2 text-sm">
-              <button
-                onClick={() => handleMeetingRespond(n.data.meetingRequestId, "accept")}
-                className={styles.primary}
-              >
-                Accept
-              </button>
-              <button
-                onClick={() => handleMeetingRespond(n.data.meetingRequestId, "reject")}
-                className={styles.outline}
-              >
-                Decline
-              </button>
-            </div>
-          );
-        }
+  // Generate title and message based on notification type and related user
+  let title = "";
+  let message = "";
+  
+  switch (n.type) {
+    case "connection.request":
+      title = "New Connection Request";
+      message = `${n.user?.name || "Someone"} wants to connect with you`;
+      if (n.payload?.reason) {
+        message += `. Reason: ${n.payload.reason}`;
       }
+      break;
 
-      return {
-        key: `notification-${n.id}`,
-        title: n.title,
-        desc: customDesc,
-        time: timeAgo(n.createdAt),
-        actions,
-      };
-    });
+    case "connection.accepted":
+      title = "Connection Accepted";
+      message = `${n.user?.name || "Someone"} accepted your connection request`;
+      break;
 
-    return [...connectionItems, ...notificationItems];
-  }, [incoming, outgoing, notifications]);
+    case "connection.rejected":
+      title = "Connection Declined";
+      message = `${n.user?.name || "Someone"} declined your connection request`;
+      break;
+
+    case "connection.removed":
+      title = "Connection Removed";
+      message = `${n.user?.name || "Someone"} removed the connection`;
+      if (n.payload?.note) {
+        message += `. Note: ${n.payload.note}`;
+      }
+      break;
+
+    case "meeting_request":
+      title = "New Meeting Request";
+      message = `${n.user?.name || "Someone"} requested a meeting ${n.payload?.title  ? `:${n.payload?.title}`:''}`;
+      if (n.payload?.agenda) {
+        message += `. Agenda: ${n.payload.agenda}`;
+      }
+      break;
+
+    case "meeting_response":
+      title = n.payload?.accepted ? "Meeting Accepted" : "Meeting Declined";
+      message = `${n.user?.name || "Someone"} ${n.payload?.accepted ? "accepted" : "declined"} your meeting request`;
+      if (n.payload?.rejectionReason) {
+        message += `. Reason: ${n.payload.rejectionReason}`;
+      }
+      break;
+
+    case "meeting_cancelled":
+      title = "Meeting Cancelled";
+      message = `${n.user?.name || "Someone"} cancelled the meeting: "${n.payload?.title || "Untitled"}"`;
+      break;
+
+    default:
+      // Fallback to stored title/message if available
+      title = n.title || "Notification";
+      message = n.message || "You have a new notification";
+      break;
+  }
+
+
+  // Determine notification type for proper tab categorization
+  let notificationType = "system";
+  if (n.type.startsWith("connection.")) {
+    notificationType = "connection";
+  } else if (n.type.startsWith("meeting_")) {
+    notificationType = "meeting";
+  }
+
+  // Check if this notification has actionable buttons (accept/reject)
+  const hasActions = n.type === "connection.request" || n.type === "meeting_request";
+
+  return {
+    key: `notif-${n.id}`,
+    type: notificationType,
+    title: title,
+    tab:notificationType=="connection" ? "Connections":"Meetings",
+    desc: message,
+    isNotification:true,
+    time: timeAgo(n.createdAt),
+    read: !!n.readAt,
+    readAt: n.readAt,
+    hasActions: hasActions,
+    actions: (
+      <div className="mt-2 flex gap-2 text-sm">
+        {!n.readAt && (
+          <button onClick={() => markNotificationAsRead(n.id)} className={styles.outline}>
+            Mark Read
+          </button>
+        )}
+        <button onClick={() => deleteNotification(n.id)} className={styles.danger}>
+          Delete
+        </button>
+      </div>
+    ),
+  };
+});
+
+    // Sort all items so actionable notifications (with accept/reject buttons) come first
+    const allItemsUnsorted = [...connectionItems, ...meetingItems, ...notificationItems];
+    return allItemsUnsorted;
+  }, [incoming, outgoing, meetingRequests, notifications, user?.id]);
+
+
+  const filteredItems = useMemo(() => {
+  if (filter === "All") return allItems;
+  
+  const typeMap = {
+    "Connections": "connection",
+    "Meetings": "meeting", 
+    "System": "system"
+  };
+  
+  return allItems.filter(item => item.type === typeMap[filter]);
+}, [allItems, filter]);
+
+
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <Header />
       <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
-       <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <div>
-          <h1 className="text-2xl font-bold">Notifications</h1>
-          <p className="text-sm text-gray-500">
-            Stay updated with your network activities
-          </p>  
-        </div>
+            <h1 className="text-2xl font-bold">Notifications</h1>
+            <p className="text-sm text-gray-500">Stay updated with your network activities</p>  
+          </div>
 
-         <button
-          className={`mt-6 block ${styles.outline}`}
-          onClick={async () => {
-            await Promise.all([
-              loadConnections(),
-              loadNotifications(),
-              loadMeetingRequests()
-            ]);
-            
-            // Force an immediate refresh of the counts in the header
-            await Promise.all([
-              client.get("/connections/requests"),
-              client.get("/meeting-requests/upcoming")
-            ]);
-          }}
-        >
-          Refresh
-        </button>
-
-       </div>
-       
-       
-
-        
-        <div className="mt-6 flex items-center justify-between">
-        <div className="flex gap-2 flex-wrap">
-          {["All", "Connections", "Meetings", "System"].map((t) => {
-            const isActive = filter === t;
-            const showConn = t === "Connections" && (connBadge || 0) > 0;
-            const showMeet = t === "Meetings" && (meetBadge || 0) > 0;
-            const badgeVal =
-              t === "Connections" ? Math.min(99, connBadge || 0)
-              : t === "Meetings" ? Math.min(99, meetBadge || 0)
-              : 0;
-
-            return (
-              <button
-                key={t}
-                onClick={() => setFilter(t)}
-                className={`relative px-4 py-1.5 rounded-full text-sm font-medium ${
-                  isActive ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                <span>{t}</span>
-                {(showConn || showMeet) && (
-                  <span
-                    className={`ml-2 inline-grid place-items-center rounded-full text-[10px] font-semibold
-                      ${isActive ? "bg-white text-brand-600" : "bg-red-500 text-white"}
-                      px-1.5 h-4 min-w-4`}
-                    style={{ lineHeight: "1" }}
-                    aria-label={`${t} pending count`}
-                  >
-                    {badgeVal > 9 ? "9+" : badgeVal}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="flex gap-2 hidden">
           <button onClick={markAllAsRead} className={styles.primary}>
             Mark All Read
           </button>
         </div>
-      </div>
 
+        {/* Filter Tabs */}
+        <div className="mt-6 flex items-center justify-between">
+          <div className="flex gap-2 flex-wrap">
+            {["All", "Connections", "Meetings", "System"].map((tab) => {
+              const isActive = filter === tab;
+              let badgeCount = 0;
+              
+              if (tab === "Connections") badgeCount = connBadge;
+              else if (tab === "Meetings") badgeCount = meetBadge;
+              else if (tab === "System") badgeCount = systemBadge;
+              else if (tab === "All") badgeCount = connBadge + meetBadge + systemBadge;
 
-
-        <div className="mt-6 space-y-6">
-          {(filter === "All" || filter === "Connections" || filter === "Meetings") && (
-            <div className="space-y-6">
-              {filter === "Connections" && (
-                <>
-                  <section>
-                    <h2 className="text-lg font-semibold mb-3">
-                      Incoming Requests
-                    </h2>
-                    {loadingConn && (
-                      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
-                        Loading…
-                      </div>
-                    )}
-                    {errorConn && (
-                      <div className="rounded-2xl bg-white border border-red-200 bg-red-50 shadow-sm p-4 text-sm text-red-700">
-                        {errorConn}
-                      </div>
-                    )}
-                    {!loadingConn && !incoming.length && (
-                      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
-                        No incoming requests.
-                      </div>
-                    )}
-                    {incoming.map((r) => (
-                      <div
-                        key={r.id}
-                        className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex justify-between"
-                      >
-                        <div>
-                          <h3 className="font-semibold">
-                            New Connection Request
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {r.fromName || "Someone"} wants to connect with you.
-                            {r.reason ? (
-                              <span>
-                                {" "}
-                                Reason:{" "}
-                                <span className="font-medium">{r.reason}</span>.
-                              </span>
-                            ) : null}
-                            {r.message ? (
-                              <span> Message: “{r.message}”</span>
-                            ) : null}
-                          </p>
-                          <div className="mt-2 flex gap-2 text-sm">
-                            <button
-                              onClick={() => handleRespond(r.id, "accept")}
-                              className={styles.primary}
-                            >
-                              Accept
-                            </button>
-                            <button
-                              onClick={() => handleRespond(r.id, "reject")}
-                              className={styles.outline}
-                            >
-                              Decline
-                            </button>
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {timeAgo(r.createdAt)}
-                        </div>
-                      </div>
-                    ))}
-                  </section>
-
-                  <section>
-                    <h2 className="text-lg font-semibold mb-3">
-                      Sent Requests
-                    </h2>
-                    {loadingConn && (
-                      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
-                        Loading…
-                      </div>
-                    )}
-                    {!loadingConn && !outgoing.length && (
-                      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
-                        You haven’t sent any connection requests.
-                      </div>
-                    )}
-                    {outgoing.map((r) => (
-                      <div
-                        key={r.id}
-                        className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex justify-between"
-                      >
-                        <div>
-                          <h3 className="font-semibold">
-                            Connection Request Sent
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            Waiting for approval from {r.toName || "user"}.
-                            {r.reason ? (
-                              <span>
-                                {" "}
-                                Reason:{" "}
-                                <span className="font-medium">{r.reason}</span>.
-                              </span>
-                            ) : null}
-                            {r.message ? (
-                              <span> Message: “{r.message}”</span>
-                            ) : null}
-                          </p>
-                          <div className="mt-2 text-xs text-gray-500">
-                            Pending
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {timeAgo(r.createdAt)}
-                        </div>
-                      </div>
-                    ))}
-                  </section>
-                </>
-              )}
-
-              {filter === "Meetings" && (
-                <section>
-                  <h2 className="text-lg font-semibold mb-3">
-                    Meeting Requests
-                  </h2>
-                  {loadingMeetings && (
-                    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
-                      Loading…
-                    </div>
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setFilter(tab)}
+                  className={`relative px-4 py-1.5 rounded-full text-sm font-medium ${
+                    isActive ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  <span>{tab}</span>
+                  {badgeCount > 0 && (
+                    <span className={`ml-2 inline-grid place-items-center rounded-full text-[10px] font-semibold px-1.5 h-4 min-w-4 ${
+                      isActive ? "bg-white text-brand-600" : "bg-red-500 text-white"
+                    }`}>
+                      {badgeCount > 9 ? "9+" : badgeCount}
+                    </span>
                   )}
-                  {errorMeetings && (
-                    <div className="rounded-2xl bg-white border border-red-200 bg-red-50 shadow-sm p-4 text-sm text-red-700">
-                      {errorMeetings}
-                    </div>
-                  )}
-                  {!loadingMeetings && !meetingRequests.filter(m => m.status === "pending" && m.requester?.id!=user?.id).length && (
-                    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
-                      No pending meeting requests.
-                    </div>
-                  )}
-                  {meetingRequests.filter(m => m.status === "pending" && m.requester?.id!=user?.id).map((m) => (
-                    <div
-                      key={m.id}
-                      className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex justify-between"
-                    >
-                      <div>
-                        <h3 className="font-semibold">
-                          New Meeting Request
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {m.requester?.name || "Someone"} wants to schedule a meeting: "{m.title}"
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          📅 {new Date(m.scheduledAt).toLocaleDateString()} at {new Date(m.scheduledAt).toLocaleTimeString()}
-                          • {m.duration} minutes • {m.mode === "video" ? "Video call" : "In person"}
-                        </p>
-                        {m.agenda && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            📝 {m.agenda}
-                          </p>
-                        )}
-                        <div className="mt-2 flex gap-2 text-sm">
-                          <button
-                            onClick={() => handleMeetingRespond(m.id, "accept")}
-                            className={styles.primary}
-                          >
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleMeetingRespond(m.id, "reject")}
-                            className={styles.outline}
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {timeAgo(m.createdAt)}
-                      </div>
-                    </div>
-                  ))}
-                </section>
-              )}
-
-              {filter === "All" && (
-                <section>
-                  {!allItems.length && (
-                    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
-                      No notifications yet.
-                    </div>
-                  )}
-                  {allItems.map((n) => (
-                    <div
-                      key={n.key}
-                      className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 flex justify-between"
-                    >
-                      <div>
-                        <h3 className="font-semibold">{n.title}</h3>
-                        <p className="text-sm text-gray-600">{n.desc}</p>
-                        {n.actions}
-                      </div>
-                      <div className="text-xs text-gray-400">{n.time}</div>
-                    </div>
-                  ))}
-                </section>
-              )}
-            </div>
-          )}
-
-         
-
-          {filter === "Posts" && (
-            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
-              No post notifications.
-            </div>
-          )}
-
-          {filter === "Messages" && (
-            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
-              No message notifications.
-            </div>
-          )}
-
-          {filter === "System" && (
-            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-600">
-              No system notifications.
-            </div>
-          )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        
+        {/* Content */}
+        <div className="mt-6 space-y-6">
+          {loadingConn || loadingMeetings || loadingNotifications ? (
+            <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-center">
+              <div className="animate-pulse">Loading notifications...</div>
+            </div>
+          ) : (
+            <>
+              {/* All Tab */}
+            
+                <div className="space-y-4">
+                 {filteredItems.length === 0 ? (
+                    <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-center text-gray-500">
+                      No {filter.toLowerCase()} notifications yet
+                    </div>
+                  ) : (
+                    filteredItems.map((item) => (
+                      <div key={item.key} className={`rounded-2xl bg-white border shadow-sm p-4 flex justify-between ${
+                        item.readAt ? "border-gray-100 opacity-75" : "border-brand-200 bg-brand-50"
+                      }`}>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{item.title}</h3>
+                            {(!item.readAt &&  !item.hasApproval) && (
+                              <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{item.desc}</p>
+                          {item.meta && <p className="text-xs text-gray-500 mt-1">{item.meta}</p>}
+                          {item.actions}
+                        </div>
+                        <div className="text-xs text-gray-400 whitespace-nowrap ml-4">
+                          {item.time}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              
+
+           
+  
+            </>
+          )}
+        </div>
       </main>
     </div>
   );
