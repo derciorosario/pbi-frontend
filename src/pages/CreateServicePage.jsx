@@ -451,6 +451,16 @@ export default function CreateServicePage() {
     const arr = Array.from(files || []);
     if (!arr.length) return;
 
+    // Check file sizes (5MB limit)
+    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+    const oversizedFiles = arr.filter(file => file.size > maxSizeBytes);
+
+    if (oversizedFiles.length > 0) {
+      const fileNames = oversizedFiles.map(file => file.name).join(', ');
+      toast.error(`Files exceeding 5MB limit: ${fileNames}`);
+      return;
+    }
+
     // Optionally cap total
     const remainingSlots = 20 - attachments.length;
     const slice = remainingSlots > 0 ? arr.slice(0, remainingSlots) : [];
@@ -1178,7 +1188,7 @@ export default function CreateServicePage() {
                     <path d="M12 4v16m8-8H4" />
                   </svg>
                 </div>
-                Upload images or documents showcasing your work
+                Upload images or documents showcasing your work (max 5MB per file)
                 <div className="mt-3">
                   <input
                     ref={fileInputRef}

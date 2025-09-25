@@ -602,6 +602,16 @@ const industrySubcategoryOptions = useMemo(() => {
     const arr = Array.from(files || []);
     if (!arr.length) return;
 
+    // Check file sizes (5MB limit)
+    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+    const oversizedFiles = arr.filter(file => file.size > maxSizeBytes);
+
+    if (oversizedFiles.length > 0) {
+      const fileNames = oversizedFiles.map(file => file.name).join(', ');
+      toast.error(`Images exceeding 5MB limit: ${fileNames}`);
+      return;
+    }
+
     // Only allow images
     const imgFiles = arr.filter((f) => f.type.startsWith("image/"));
     if (imgFiles.length !== arr.length) {
@@ -767,7 +777,7 @@ const industrySubcategoryOptions = useMemo(() => {
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <div className="text-sm">➕ Click to add images (JPG/PNG/WebP…)</div>
-                  <div className="text-xs text-gray-400 mt-1">Up to 20 images</div>
+                  <div className="text-xs text-gray-400 mt-1">Up to 20 images • Max 5MB per image</div>
                 </div>
 
                 {images.length > 0 && (

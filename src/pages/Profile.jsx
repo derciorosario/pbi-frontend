@@ -2206,8 +2206,20 @@ const toggleIdentityWant = (identityKey) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Phone</label>
-                  <input onWheel={e => e.currentTarget.blur()} type="number" className="w-full border rounded-lg px-3 py-2" value={personal.phone}
-                         onChange={e=>setPersonal({...personal, phone:e.target.value})}/>
+                  <input onWheel={e => e.currentTarget.blur()} type="tel" className="w-full border rounded-lg px-3 py-2" value={personal.phone}
+                         onChange={e=>{
+                           const newValue = e.target.value;
+                           // Allow only one "+" and it should be at the beginning, no spaces allowed
+                           const cleaned = newValue.replace(/[^+\d\-\(\)]/g, '');
+                           const plusCount = (cleaned.match(/\+/g) || []).length;
+                           if (plusCount > 1) {
+                             // If more than one +, remove all + and add one at the beginning
+                             const withoutPlus = cleaned.replace(/\+/g, '');
+                             setPersonal({...personal, phone: '+' + withoutPlus});
+                           } else {
+                             setPersonal({...personal, phone: cleaned});
+                           }
+                         }}/>
                 </div>
                {!isCompany && <div>
                   <label className="block text-sm font-medium mb-1">Birth date</label>

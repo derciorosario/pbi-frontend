@@ -6,7 +6,7 @@ export default function CoverImagePicker({
   value,                  // base64 string (data URL) or null
   onChange,               // (base64OrNull) => void
   accept = "image/png, image/jpeg, image/jpg",
-  maxSizeMB = 10,
+  maxSizeMB = 5,
 }) {
   const fileRef = useRef(null);
 
@@ -69,7 +69,7 @@ export default function CoverImagePicker({
             <img
               src={value}
               alt="Cover preview"
-              className="w-full rounded-xl object-cover aspect-[16/9] shadow"
+              className="w-full max-w-md rounded-xl object-contain aspect-[16/6] shadow max-h-32"
             />
             <div className="flex items-center gap-3">
               <button

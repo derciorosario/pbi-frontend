@@ -630,7 +630,7 @@ export default function CreateMomentPage() {
 
     const sizeErrors = onlyImages.filter((f) => f.size > 5 * 1024 * 1024);
     if (sizeErrors.length) {
-      toast.error("Each image must be ≤ 5MB.");
+      toast.error("Each image must be up to 5MB.");
     }
     const accepted = onlyImages.filter((f) => f.size <= 5 * 1024 * 1024);
 

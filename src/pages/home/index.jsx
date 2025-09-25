@@ -981,11 +981,24 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                          <Input
                            label={labelPhone}
                            name="phone"
-                           type="number"
+                           type="tel"
                            onWheel={e => e.currentTarget.blur()}
                            placeholder={acct === "company" ? "Phone" : "Phone"}
                            value={signupForm.phone}
-                           onChange={onAuthSignupChange}
+                           onChange={(e) => {
+                             const { name, value: newValue } = e.target;
+                             // Allow only one "+" and it should be at the beginning, no spaces allowed
+                             const cleaned = newValue.replace(/[^+\d\-\(\)]/g, '');
+                             const plusCount = (cleaned.match(/\+/g) || []).length;
+                             if (plusCount > 1) {
+                               // If more than one +, remove all + and add one at the beginning
+                               const withoutPlus = cleaned.replace(/\+/g, '');
+                               setSignupForm((f) => ({ ...f, [name]: '+' + withoutPlus }));
+                             } else {
+                               setSignupForm((f) => ({ ...f, [name]: cleaned }));
+                             }
+                             setSignupErrors((prev) => ({ ...prev, [name]: "" })); // clear that field's error while typing
+                           }}
                            error={signupErrors.phone}
                          />
                        </div>

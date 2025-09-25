@@ -1187,7 +1187,7 @@ export default function CreateJobOpportunity() {
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <Header page={"jobs"} />
-      <main className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-5 cursor-pointer">
           <a onClick={() => navigate("/jobs")} className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
             <I.back /> Back to Jobs

@@ -350,11 +350,24 @@ export default function Signup() {
               <Input
                 label={labelPhone}
                 name="phone"
-                type="number"
+                type="tel"
                 onWheel={e => e.currentTarget.blur()}
                 placeholder={acct === "company" ? "Phone" : "Phone"}
                 value={form.phone}
-                onChange={onChange}
+                onChange={(e) => {
+                  const { name, value: newValue } = e.target;
+                  // Allow only one "+" and it should be at the beginning, no spaces allowed
+                  const cleaned = newValue.replace(/[^+\d\-\(\)]/g, '');
+                  const plusCount = (cleaned.match(/\+/g) || []).length;
+                  if (plusCount > 1) {
+                    // If more than one +, remove all + and add one at the beginning
+                    const withoutPlus = cleaned.replace(/\+/g, '');
+                    setForm((f) => ({ ...f, [name]: '+' + withoutPlus }));
+                  } else {
+                    setForm((f) => ({ ...f, [name]: cleaned }));
+                  }
+                  setErrors((prev) => ({ ...prev, [name]: "" })); // clear that field's error while typing
+                }}
                 error={errors.phone}
               />
             </div>
