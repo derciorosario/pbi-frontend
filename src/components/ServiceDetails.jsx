@@ -274,7 +274,9 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
                 if (att.startsWith("data:image")) return true;
 
                 // Case 2: http/https or filename ending with image extension
-                return /\.(jpe?g|png|gif|webp|svg)$/i.test(att);
+                return  (typeof att === "string" &&
+    /\.(jpe?g|png|gif|webp|svg)$/i.test(att)) || (att.startsWith("http://") || att.startsWith("https://"))
+  
               });
 
               if (imageAttachments.length === 0) return null;

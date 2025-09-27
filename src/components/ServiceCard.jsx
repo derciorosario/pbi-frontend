@@ -132,16 +132,18 @@ export default function ServiceCard({
   const imageUrl = (() => {
   const attachments = item?.images || [];
 
+  
+  console.log({attachments})
+
+
   // Case 1: if it has a base64 image
   const base64 = attachments.find(att => att?.startsWith("data:image"));
   if (base64) return base64;
 
-  console.log({attachments})
-
   // Case 2: if it has a string that looks like an image file or URL
   const imageFile = attachments.find(att =>
-    typeof att === "string" &&
-    /\.(jpe?g|png|gif|webp|svg)$/i.test(att)
+  (typeof att === "string" &&
+    /\.(jpe?g|png|gif|webp|svg)$/i.test(att)) || (att.startsWith("http://") || att.startsWith("https://"))
   );
   if (imageFile) return imageFile;
 
