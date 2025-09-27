@@ -13,6 +13,7 @@ import EventDetails from "./EventDetails";
 import EventRegistrationDialog from "./EventRegistrationDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
+import client,{API_URL} from "../api/client";
 import { Edit, Eye, Share2, MapPin, Clock, User as UserIcon, Copy as CopyIcon, Heart, MessageCircle, Flag, Calendar } from "lucide-react";
 import {
   FacebookShareButton,
@@ -121,7 +122,14 @@ export default function EventCard({
   const isOwner = user?.id && e?.organizerUserId && user.id === e.organizerUserId;
   const isList = type === "list";
 
-  const imageUrl = e?.coverImageBase64 || e?.coverImage || null;
+  let imageUrl = e?.coverImageBase64 || e?.coverImage || null;
+   imageUrl =
+  imageUrl && (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
+    ? imageUrl
+    : imageUrl
+    ? `${API_URL}/uploads/${imageUrl}`
+    : null; 
+
 
   // Share data
   const shareUrl = `${window.location.origin}/event/${e?.id}`;

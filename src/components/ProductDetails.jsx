@@ -19,7 +19,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import PostDetailsSkeleton from "./ui/PostDetailsSkeleton";
-import client from "../api/client";
+import client, { API_URL } from "../api/client";
 import {
   FacebookShareButton,
   FacebookIcon,
@@ -187,9 +187,18 @@ export default function ProductDetails({ productId, isOpen, onClose, onSave }) {
   if (!isOpen) return null;
 
   // Get the current image URL
-  const imageUrl = product?.images?.[currentImageIndex]?.base64url || 
+  let imageUrl = product?.images?.[currentImageIndex]?.filename || 
                   product?.images?.[currentImageIndex] || 
                   null;
+
+  imageUrl =
+    imageUrl && (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
+      ? imageUrl
+      : imageUrl
+      ? `${API_URL}/uploads/${imageUrl}`
+      : null;
+
+  
 
   // Format seller initials
   const initials = (product?.seller?.name || product?.sellerUserName || "?")

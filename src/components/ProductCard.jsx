@@ -6,6 +6,7 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
+import { API_URL } from "../api/client";
 
 export default function ProductCard({
   item,
@@ -25,7 +26,15 @@ export default function ProductCard({
   }
 
   // pick first image if exists
-  const imageUrl = item?.images?.[0]?.base64url || item?.images?.[0] || null;
+  let imageUrl = item?.images?.[0]?.filename || item?.images?.[0] || null;
+  console.log({imageUrl})
+  imageUrl =
+  imageUrl && (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
+    ? imageUrl
+    : imageUrl
+    ? `${API_URL}/uploads/${imageUrl}`
+    : null;
+
   const initials = (item?.seller?.name || "?")
     .split(" ")
     .map((s) => s[0])

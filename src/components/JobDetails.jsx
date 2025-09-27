@@ -21,7 +21,7 @@ import { useData } from "../contexts/DataContext";
 import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
-import client from "../api/client";
+import client, { API_URL } from "../api/client";
 import {
   FacebookShareButton,
   FacebookIcon,
@@ -182,6 +182,15 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+   let imageUrl = job?.coverImageBase64 || job?.coverImage || null;
+  
+    imageUrl =
+    imageUrl && (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
+      ? imageUrl
+      : imageUrl
+      ? `${API_URL}/uploads/${imageUrl}`
+      : null; 
+
   // Format poster initials
   const initials = (job?.postedBy?.name || "?")
     .split(" ")
@@ -221,7 +230,7 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
               {job.coverImageBase64 && (
                 <div className="relative mb-6">
                   <img
-                    src={job.coverImageBase64}
+                    src={imageUrl}
                     alt={job.title}
                     className="w-full h-64 object-cover bg-gray-50 rounded-lg"
                   />

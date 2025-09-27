@@ -2,12 +2,19 @@
 import axios from "axios";
 
 const env="pro"
-const API_URL = env=="dev" ? "http://localhost:5000/api" : env=="test" ? 'https://54links-testserver.derflash.com/api' :  "https://kaziwani-server.visum.co.mz/api" //import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
+export const API_URL = env=="dev"
+  ? "http://localhost:5000/api"
+  : env=="test"
+  ? "https://54links-testserver.derflash.com/api"
+  : "https://kaziwani-server.visum.co.mz/api";
 
 const client = axios.create({
     baseURL: API_URL,
     headers: { "Content-Type": "application/json" },
 });
+
+
 
 /** Helpers to read/write token consistently */
 export function getStoredToken() {  
@@ -17,6 +24,7 @@ export function getStoredToken() {
     null
   );
 }
+
 
 export function setStoredToken(token) {
   if (!token) {

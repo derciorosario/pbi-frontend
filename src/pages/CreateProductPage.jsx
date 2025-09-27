@@ -5,7 +5,7 @@ import Header from "../components/Header";
 import COUNTRIES from "../constants/countries";
 import CITIES from "../constants/cities.json";
 import AudienceTree from "../components/AudienceTree";
-import client from "../api/client";
+import client, { API_URL } from "../api/client";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
 import FullPageLoader from "../components/ui/FullPageLoader";
@@ -474,7 +474,7 @@ const industrySubcategoryOptions = useMemo(() => {
 
   const [tagInput, setTagInput] = useState("");
 
-  // Images: [{ title, base64url }]
+  // Images: [{ title, filename, base64url }]
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -549,12 +549,14 @@ const industrySubcategoryOptions = useMemo(() => {
         if (Array.isArray(data.images)) {
           setImages(
             data.images
-              .filter((x) => x?.base64url)
+              .filter((x) => x?.filename || x?.base64url)
               .map((x, i) => ({
                 title: x.title || x.name || `Image ${i + 1}`,
-                base64url: x.base64url,
+                filename: x.filename,
+                base64url: x.filename ? `${API_URL}/uploads/${x.filename}` : x.base64url,
               }))
           );
+          console.log({i:data.images})
         }
 
         setAudSel({
@@ -598,6 +600,34 @@ const industrySubcategoryOptions = useMemo(() => {
     return null;
   }
 
+  // Function to upload multiple images
+  const uploadImages = async (files) => {
+    if (!files || files.length === 0) return [];
+
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images', file);
+    });
+
+    try {
+      const response = await client.post('/products/upload-images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      return response.data.filenames.map((filename, index) => ({
+        filename: filename,
+        title: files[index].name.replace(/\.[^/.]+$/, ""),
+        base64url: `${API_URL}/api/uploads/${filename}` // For preview
+      }));
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error('Failed to upload images');
+      return [];
+    }
+  };
+
   async function handleFilesChosen(files) {
     const arr = Array.from(files || []);
     if (!arr.length) return;
@@ -616,22 +646,24 @@ const industrySubcategoryOptions = useMemo(() => {
     const imgFiles = arr.filter((f) => f.type.startsWith("image/"));
     if (imgFiles.length !== arr.length) {
       toast.error("Only image files are allowed.");
+      return;
     }
+
     const remaining = 20 - images.length;
     const slice = imgFiles.slice(0, Math.max(0, remaining));
 
+    if (slice.length === 0) {
+      toast.error("Maximum number of images reached (20).");
+      return;
+    }
+
     try {
-      const mapped = await Promise.all(
-        slice.map(async (file) => {
-          const base64url = await fileToDataURL(file);
-          const base = file.name.replace(/\.[^/.]+$/, "");
-          return { title: base, base64url };
-        })
-      );
-      setImages((prev) => [...prev, ...mapped]);
+      // Upload images and get filenames
+      const uploadedImages = await uploadImages(slice);
+      setImages((prev) => [...prev, ...uploadedImages]);
     } catch (err) {
       console.error(err);
-      toast.error("Some images could not be read.");
+      toast.error("Failed to upload images.");
     }
   }
 
@@ -676,7 +708,10 @@ const industrySubcategoryOptions = useMemo(() => {
         country: form.country || undefined,
         city: form.city || undefined,
         tags: form.tags,
-        images,
+        images: images.map(img => ({
+          filename: img.filename,
+          title: img.title
+        })),
         currency:form.currency,
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
@@ -698,9 +733,9 @@ const industrySubcategoryOptions = useMemo(() => {
       } else {
         await client.post("/products", payload);
         toast.success("Product published!");
+        navigate("/products");
       }
 
-      navigate("/products");
     } catch (error) {
       console.error(error);
       toast.error(error?.response?.data?.message || "Could not save product");
@@ -723,7 +758,7 @@ const industrySubcategoryOptions = useMemo(() => {
       <Header page={"products"} />
 
       {/* ===== Content ===== */}
-      <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 fle justify-center gap-6">
+      <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8 fle justify-center gap-6">
         {/* Left/Main Form OR Read-only */}
         <section className="lg:col-span-8">
           {!isEditMode ? null : isLoading ? (

@@ -192,9 +192,13 @@ export default function NeedDetails({ needId, isOpen, onClose, item }) {
   // Get first valid image from attachments (computed inline to avoid hooks issues)
   const getMainImageUrl = () => {
     if (need?.attachments?.length > 0) {
-      for (const attachment of need.attachments) {
+     for (const attachment of need.attachments) {
         if (attachment?.base64url && attachment.base64url.startsWith('data:image')) {
           return attachment.base64url;
+        }
+         if (attachment.base64url.startsWith("http://") || attachment.base64url.startsWith("https://")) {
+              // full image URL
+              return attachment.base64url;
         }
       }
     }

@@ -21,7 +21,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import PostDetailsSkeleton from "./ui/PostDetailsSkeleton";
-import client from "../api/client";
+import client, { API_URL } from "../api/client";
 import {
   FacebookShareButton,
   FacebookIcon,
@@ -217,6 +217,15 @@ export default function EventDetails({ eventId, isOpen, onClose, item }) {
 
   if (!isOpen) return null;
 
+   let imageUrl = event?.coverImageUrl || event?.coverImage || null;
+    
+      imageUrl =
+      imageUrl && (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
+        ? imageUrl
+        : imageUrl
+        ? `${API_URL}/uploads/${imageUrl}`
+        : null; 
+
   // Format organizer initials
   const initials = (event?.organizerUserName || item?.organizerUserName || "?")
     .split(" ")
@@ -256,7 +265,7 @@ export default function EventDetails({ eventId, isOpen, onClose, item }) {
               {event.coverImageUrl && (
                 <div className="relative mb-6">
                   <img
-                    src={event.coverImageUrl}
+                    src={imageUrl}
                     alt={event.title}
                     className="w-full h-64 object-cover bg-gray-50 rounded-lg"
                   />

@@ -1,7 +1,7 @@
 // src/pages/CreateServicePage.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import client from "../api/client";
+import client, { API_URL } from "../api/client";
 import COUNTRIES from "../constants/countries";
 import CITIES from "../constants/cities.json";
 import AudienceTree from "../components/AudienceTree";
@@ -384,8 +384,6 @@ export default function CreateServicePage() {
         let nextAttachments = [];
         if (Array.isArray(data.attachments)) {
           nextAttachments = data.attachments
-            .filter((a) => a?.name && a?.base64url)
-            .map((a) => ({ name: a.name, base64url: a.base64url }));
           setAttachments(nextAttachments);
         } else {
           setAttachments([]);
@@ -466,16 +464,23 @@ export default function CreateServicePage() {
     const slice = remainingSlots > 0 ? arr.slice(0, remainingSlots) : [];
 
     try {
-      const mapped = await Promise.all(
-        slice.map(async (file) => {
-          const base64url = await fileToDataURL(file);
-          return { name: file.name, base64url };
-        })
-      );
+      const formData = new FormData();
+      slice.forEach(file => {
+        formData.append('attachments', file);
+      });
+
+      const response = await client.post('/services/upload-attachments', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const mapped = response.data.filenames.map((filename) => (`${API_URL}/uploads/${filename}` ));
+
       setAttachments((prev) => [...prev, ...mapped]);
     } catch (err) {
       console.error(err);
-      toast.error("Some files could not be read.");
+      toast.error("Some files could not be uploaded.");
     }
   }
 
@@ -788,7 +793,7 @@ export default function CreateServicePage() {
             ? Number(form.priceAmount)
             : undefined,
         currency:form.currency || 'USD',
-        attachments,
+        attachments: attachments.map(a => a.filename || a),
         identityIds,
         categoryIds,
         subcategoryIds,
@@ -802,10 +807,10 @@ export default function CreateServicePage() {
         industrySubcategoryId: selectedIndustry.subcategoryId || null,
       };
 
-      if (form.locationType === "Remote") {
+     /* if (form.locationType === "Remote") {
         delete payload.country;
         delete payload.city;
-      }
+      }*/
 
       if (isEditMode) {
         await client.put(`/services/${id}`, payload);
@@ -813,9 +818,10 @@ export default function CreateServicePage() {
       } else {
         await client.post("/services", payload);
         toast.success("Service published!");
+        
+      navigate("/services");
       }
 
-      navigate("/services");
     } catch (error) {
       console.error(error);
       toast.error(error?.response?.data?.message || "Could not save service");
@@ -832,6 +838,7 @@ export default function CreateServicePage() {
         );
       }
     
+      console.log({attachments})
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
@@ -1207,19 +1214,33 @@ export default function CreateServicePage() {
                   </button>
                 </div>
 
-                {attachments.length > 0 && (
-                  <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
-                    {attachments.map((a, idx) => (
-                      <div key={`${a.name}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+               
+               {attachments.length > 0 && (
+                <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
+                  {attachments.map((att, idx) => {
+                    const isImg = att.startsWith("data:image") || /\.(jpe?g|png|gif|webp|svg)$/i.test(att);
+
+                    // Resolve URL for filenames (not base64 or full URL)
+                    let src = null;
+                    if (att.startsWith("data:image")) {
+                      src = att; // base64
+                    } else if (att.startsWith("http://") || att.startsWith("https://")) {
+                      src = att; // full URL
+                    } else if (isImg) {
+                      src = att
+                    }
+
+                    return (
+                      <div key={`${att}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
                         <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
-                          {isImage(a.base64url) ? (
-                            <img src={a.base64url} alt={a.name} className="h-full w-full object-cover" />
+                          {isImg ? (
+                            <img src={src} alt={att} className="h-full w-full object-cover" />
                           ) : (
                             <span className="text-xs text-gray-500">DOC</span>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="truncate text-sm font-medium">{a.name}</div>
+                          <div className="truncate text-sm font-medium">Attachment {idx+1}</div>
                           <div className="text-[11px] text-gray-500 truncate">Attached</div>
                         </div>
                         <button
@@ -1231,9 +1252,12 @@ export default function CreateServicePage() {
                           <I.trash />
                         </button>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
+              )}
+
+
               </div>
             </section>
 

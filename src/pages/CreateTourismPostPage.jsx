@@ -7,7 +7,7 @@ import {
 import AudienceTree from "../components/AudienceTree";
 import COUNTRIES from "../constants/countries";
 import CITIES from "../constants/cities.json";
-import client from "../api/client";
+import client, { API_URL } from "../api/client";
 import { toast } from "../lib/toast";
 import Header from "../components/Header";
 import { useAuth } from "../contexts/AuthContext";
@@ -303,10 +303,6 @@ export default function CreateTourismPostPage() {
         if (Array.isArray(data.images)) {
           setImages(
             data.images
-              .map((x, i) => ({
-                title: x.title || x.name || `Image ${i + 1}`,
-                base64url: x.base64url || x,
-              }))
           );
         } else {
           setImages([]);
@@ -371,25 +367,27 @@ export default function CreateTourismPostPage() {
     const slice = accepted.slice(0, Math.max(0, remaining));
 
     try {
-      const mapped = await Promise.all(
-        slice.map(async (file) => {
-          const base64url = await fileToDataURL(file);
-          const nameBase = file.name.replace(/\.[^/.]+$/, "");
-          return { title: nameBase, base64url };
-        })
-      );
+      const formData = new FormData();
+      slice.forEach(file => {
+        formData.append('images', file);
+      });
+
+      const response = await client.post('/tourism/upload-images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const mapped = response.data.filenames.map((filename, index) => (`${API_URL}/uploads/${filename}`));
+
       setImages((prev) => [...prev, ...mapped]);
     } catch (err) {
       console.error(err);
-      toast.error("Some images could not be read.");
+      toast.error("Some images could not be uploaded.");
     }
   }
 
-  function updateImageTitle(idx, title) {
-    if (readOnly) return;
-    setImages((prev) => prev.map((x, i) => (i === idx ? { ...x, title } : x)));
-  }
-
+ 
   function removeImage(idx) {
     if (readOnly) return;
     setImages((prev) => prev.filter((_, i) => i !== idx));
@@ -664,7 +662,7 @@ export default function CreateTourismPostPage() {
         season: form.season || undefined,
         budgetRange: form.budgetRange || undefined,
         tags: form.tags,
-        images, // [{ title, base64url }]
+        images: images.map(img => img.filename || img),
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
         subcategoryIds: Array.from(audSel.subcategoryIds),
@@ -822,25 +820,32 @@ export default function CreateTourismPostPage() {
                 </button>
                 <p className="mt-1 text-xs text-gray-400">Supported formats: JPG, PNG, WebP, GIF (Max 5MB each)</p>
 
-                {images.length > 0 && (
-                  <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
-                    {images.map((img, idx) => (
+               
+               {images.length > 0 && (
+                <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
+                  {images.map((img, idx) => {
+                    const isImg = true
+
+                    // Resolve URL for filenames
+                    let src = img
+
+                    return (
                       <div key={idx} className="border rounded-xl overflow-hidden">
                         <div className="h-44 bg-gray-100">
-                          <img
-                            src={img.base64url}
-                            alt={img.title || `Image ${idx + 1}`}
-                            className="h-full w-full object-cover"
-                          />
+                          {isImg ? (
+                            <img
+                              src={src}
+                              alt={`Image ${idx + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+                              Not an image
+                            </div>
+                          )}
                         </div>
                         <div className="p-3 flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={img.title}
-                            onChange={(e) => updateImageTitle(idx, e.target.value)}
-                            placeholder={`Image ${idx + 1} title`}
-                            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
-                          />
+                          <span>Delete</span>
                           <button
                             type="button"
                             onClick={() => removeImage(idx)}
@@ -851,9 +856,12 @@ export default function CreateTourismPostPage() {
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
+              )}
+
+
               </div>
             </section>
 

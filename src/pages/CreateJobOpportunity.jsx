@@ -1,7 +1,8 @@
 // src/pages/CreateJobOpportunity.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
-import client from "../api/client";
+import client,{API_URL} from "../api/client";
 import COUNTRIES from "../constants/countries";
 import CITIES from "../constants/cities.json";
 import Header from "../components/Header";
@@ -577,20 +578,21 @@ function InlineCompanyPicker({ companies = [], value, onChange, required }) {
 }
 
 /* ---------- Read-only component for non-owners (with images) ---------- */
-function ReadOnlyJobView({ form, audSel, audTree, media, coverImageBase64 }) {
+function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
   const maps = useMemo(() => buildAudienceMaps(audTree), [audTree]);
   const identities = Array.from(audSel.identityIds || []).map((k) => maps.ids.get(String(k))).filter(Boolean);
   const categories = Array.from(audSel.categoryIds || []).map((k) => maps.cats.get(String(k))).filter(Boolean);
   const subcategories = Array.from(audSel.subcategoryIds || []).map((k) => maps.subs.get(String(k))).filter(Boolean);
   const subsubs = Array.from(audSel.subsubCategoryIds || []).map((k) => maps.subsubs.get(String(k))).filter(Boolean);
 
-  const skills = (form.requiredSkills || [])
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const skills = Array.isArray(form.requiredSkills)
+    ? form.requiredSkills
+    : (form.requiredSkills || "").split(",").map((s) => s.trim()).filter(Boolean);
 
   const { logoUrl, coverImageUrl, images = [] } = media || {};
-  const coverSrc = coverImageBase64 || coverImageUrl || null;
+  const coverSrc = coverImage || coverImageUrl || null;
+
+  console.log({coverSrc})
 
   return (
     <div className="mt-6 rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
@@ -719,7 +721,8 @@ export default function CreateJobOpportunity() {
   const [isLoading, setIsLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const { user } = useAuth();
-  const [coverImageBase64, setCoverImageBase64] = useState(null);
+  const [coverImage, setCoverImage] = useState(null);
+  const [coverImageFilename, setCoverImageFilename] = useState(null);
 
   // Form validation errors
   const [errors, setErrors] = useState({
@@ -922,7 +925,18 @@ export default function CreateJobOpportunity() {
 
         // Collect images/logos/cover
         setMedia(extractMedia(job));
-        if (job.coverImageBase64) setCoverImageBase64(job.coverImageBase64);
+        if (job.coverImageBase64) {
+           console.log({aaa:job.coverImageBase64})
+          // If it's a base64 string (old format), use it as preview
+          if (job.coverImageBase64.startsWith('data:') || job.coverImageBase64.startsWith('http')) {
+            setCoverImage(job.coverImageBase64);
+          } else {
+            // If it's a filename (new format), store it
+            setCoverImageFilename(job.coverImageBase64);
+            // Set preview URL for the image
+            setCoverImage(API_URL+`/uploads/${job.coverImageBase64}`);
+          }
+        }
 
         // Set industry selections if they exist
         setSelectedIndustry({
@@ -1099,6 +1113,28 @@ export default function CreateJobOpportunity() {
     return next
   }
 
+  // Function to upload the cover image
+  const uploadCoverImage = async (file) => {
+    if (!file) return null;
+    
+    const formData = new FormData();
+    formData.append('coverImage', file);
+    
+    try {
+      const response = await client.post('/jobs/upload-cover', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      return response.data.filename;
+    } catch (error) {
+      console.error('Error uploading cover image:', error);
+      toast.error('Failed to upload cover image');
+      return null;
+    }
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     if (readOnly) return;
@@ -1130,8 +1166,16 @@ export default function CreateJobOpportunity() {
     setIsLoading(true);
 
     try {
+      // Upload cover image if there's a new one
+      let imageFilename = coverImageFilename;
+      
+      if (coverImage instanceof File) {
+        imageFilename = await uploadCoverImage(coverImage);
+      }
+      
       const payload = {
         ...form,
+
         positions: Number(form.positions || 1),
         requiredSkills: form.requiredSkills, // backend will normalize
         minSalary: form.minSalary === "" ? null : Number(form.minSalary),
@@ -1144,7 +1188,8 @@ export default function CreateJobOpportunity() {
         subcategoryIds: Array.from(audSel.subcategoryIds),
         subsubCategoryIds: Array.from(audSel.subsubCategoryIds),
 
-        coverImageBase64,
+        // Use the filename instead of base64 data
+        coverImageBase64: imageFilename,
 
         companyId: form.companyId || null,
         companyName: form.companyName || "",
@@ -1214,7 +1259,7 @@ export default function CreateJobOpportunity() {
             audSel={audSel}
             audTree={audTree}
             media={media}
-            coverImageBase64={coverImageBase64}
+            coverImage={coverImage}
           />
         ) : isLoading && !isEditMode ? (
           <div className="mt-6 rounded-2xl bg-white border border-gray-100 shadow-sm p-5 md:p-6 flex items-center justify-center h-64">
@@ -1542,8 +1587,9 @@ export default function CreateJobOpportunity() {
             </p>
             <CoverImagePicker
               label="Upload a cover image (optional)"
-              value={coverImageBase64}
-              onChange={setCoverImageBase64}
+              value={coverImage}
+              preview={typeof coverImage === 'string' ? coverImage : null}
+              onChange={setCoverImage}
             />
             <div className="flex justify-end gap-3 mt-8">
               {isLoading ? (

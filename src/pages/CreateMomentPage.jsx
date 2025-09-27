@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Image as ImageIcon, Plus } from "lucide-react";
 import COUNTRIES from "../constants/countries"; // optional: if you want to suggest locations, else unused
 import CITIES from "../constants/cities.json";
-import client from "../api/client";
+import client, { API_URL } from "../api/client";
 import { toast } from "../lib/toast";
 import Header from "../components/Header";
 import AudienceTree from "../components/AudienceTree";
@@ -375,9 +375,12 @@ export default function CreateMomentPage() {
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState([]);
 
-  // Images ONLY: [{ title, base64url }]
+  // Images: [{ title, base64url }]
   const [images, setImages] = useState([]);
+  // Attachments: [{ name, base64url }]
+  const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
+  const attachmentInputRef = useRef(null);
 
   // General taxonomy (Category/Subcategory/SubsubCategory)
   const [generalTree, setGeneralTree] = useState([]);
@@ -437,14 +440,15 @@ export default function CreateMomentPage() {
   useEffect(() => {
     (async () => {
       try {
-        const typeParam = currentType ? `?type=${currentType}` : "?type=need";
+        let t=form.relatedEntityType=="funding" ? 'opportunity' :  form.relatedEntityType
+        const typeParam = t ? `?type=${t}` : "?type=moment";
         const { data } = await client.get(`/general-categories/tree${typeParam}`);
         setGeneralTree(data.generalCategories || []);
       } catch (err) {
         console.error("Failed to load general categories", err);
       }
     })();
-  }, [currentType]);
+  }, [form.relatedEntityType]);
 
   useEffect(() => {
     (async () => {
@@ -546,13 +550,22 @@ export default function CreateMomentPage() {
 
         if (Array.isArray(data.images)) {
           setImages(
-            data.images.map((x, i) => ({
-              title: x.title || x.name || `Image ${i + 1}`,
-              base64url: x.base64url || x,
-            }))
+            data.images
           );
         } else {
           setImages([]);
+        }
+
+        // Set attachments if they exist
+        if (Array.isArray(data.attachments)) {
+          setAttachments(
+            data.attachments.map((att) => ({
+              name: att.name || "Attachment",
+              base64url: att.base64url || att.url || ""
+            }))
+          );
+        } else {
+          setAttachments([]);
         }
 
         setSelectedGeneral({
@@ -618,6 +631,7 @@ export default function CreateMomentPage() {
     return null;
   }
 
+
   async function handleFilesChosen(files) {
     if (readOnly) return;
     const arr = Array.from(files || []);
@@ -626,31 +640,48 @@ export default function CreateMomentPage() {
     const onlyImages = arr.filter((f) => f.type.startsWith("image/"));
     if (onlyImages.length !== arr.length) {
       toast.error("Only image files are allowed.");
+      return;
     }
 
     const sizeErrors = onlyImages.filter((f) => f.size > 5 * 1024 * 1024);
     if (sizeErrors.length) {
       toast.error("Each image must be up to 5MB.");
+      return;
     }
-    const accepted = onlyImages.filter((f) => f.size <= 5 * 1024 * 1024);
 
+    const accepted = onlyImages.filter((f) => f.size <= 5 * 1024 * 1024);
     const remaining = 20 - images.length;
     const slice = accepted.slice(0, Math.max(0, remaining));
 
+    // Upload files immediately and store filenames
     try {
-      const mapped = await Promise.all(
-        slice.map(async (file) => {
-          const base64url = await fileToDataURL(file);
-          const nameBase = file.name.replace(/\.[^/.]+$/, "");
-          return { title: nameBase, base64url };
-        })
-      );
+      const formData = new FormData();
+      slice.forEach(file => {
+        formData.append('images', file);
+      });
+
+      const response = await client.post('/moments/upload-images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const uploadedFilenames = response.data.filenames || [];
+
+      // Store as {base64url: filename, title: ''}
+      const mapped = slice.map((file, index) => ({
+        base64url: `${API_URL}/uploads/${uploadedFilenames[index] || file.name}`,
+        title: file.name.replace(/\.[^/.]+$/, ""), // filename without extension as title
+      }));
+
       setImages((prev) => [...prev, ...mapped]);
-    } catch (err) {
-      console.error(err);
-      toast.error("Some images could not be read.");
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error('Failed to upload images');
     }
   }
+
+
 
   function updateImageTitle(idx, title) {
     if (readOnly) return;
@@ -660,6 +691,45 @@ export default function CreateMomentPage() {
   function removeImage(idx) {
     if (readOnly) return;
     setImages((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+
+  async function handleAttachmentsChosen(files) {
+    if (readOnly) return;
+    const arr = Array.from(files || []);
+    if (!arr.length) return;
+
+    // Check file sizes (5MB limit)
+    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+    const oversizedFiles = arr.filter(file => file.size > maxSizeBytes);
+
+    if (oversizedFiles.length > 0) {
+      const fileNames = oversizedFiles.map(file => file.name).join(', ');
+      toast.error(`Files exceeding 5MB limit: ${fileNames}`);
+      return;
+    }
+
+    // Optionally cap total
+    const remainingSlots = 20 - attachments.length;
+    const slice = remainingSlots > 0 ? arr.slice(0, remainingSlots) : [];
+
+    try {
+      const mapped = await Promise.all(
+        slice.map(async (file) => {
+          const base64url = await fileToDataURL(file);
+          return { name: file.name, base64url };
+        })
+      );
+      setAttachments((prev) => [...prev, ...mapped]);
+    } catch (err) {
+      console.error(err);
+      toast.error("Some files could not be read.");
+    }
+  }
+
+  function removeAttachment(idx) {
+    if (readOnly) return;
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
   }
 
   /* -------- Submit -------- */
@@ -686,7 +756,8 @@ export default function CreateMomentPage() {
         country: form.country || undefined,
         city: form.city || undefined,
         tags: tags,
-        images, // [{ title, base64url }]
+        images, // Already contains {base64url: filename, title: ''}
+        attachments, // Keep attachments as base64 for now
 
         // Audience selections
         identityIds,
@@ -794,11 +865,12 @@ export default function CreateMomentPage() {
                 <option value="product">Product</option>
                 <option value="service">Service</option>
                 <option value="tourism">Tourism</option>
-                <option value="funding">Opportunity</option>
+                <option value="funding">Funding</option>
               </select>
 
             </div>
           </section>
+
 
           {/* Type */}
           <section>
@@ -878,6 +950,78 @@ export default function CreateMomentPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </section>
+
+          {/* Attachments  hidden for now*/}
+          <section className="hidden">
+            <h2 className="font-semibold">Attachments (Optional)</h2>
+            <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
+              <div className="mb-2">
+                <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              Upload documents or other files to support your experience (max 5MB per file)
+              <div className="mt-3">
+                <input
+                  ref={attachmentInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                  className="hidden"
+                  onChange={(e) => handleAttachmentsChosen(e.target.files)}
+                />
+                <button
+                  type="button"
+                  onClick={() => attachmentInputRef.current?.click()}
+                  className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  Choose Files
+                </button>
+              </div>
+
+             
+        
+          {attachments.map((a, idx) => {
+        const isImage =
+          typeof a.base64url === "string" &&
+          (a.base64url.startsWith("data:image") || /\.(jpe?g|png|gif|webp|svg)$/i.test(a.base64url));
+
+        // Resolve src for image
+        let src = null;
+        if (a.base64url?.startsWith("data:image") || a.base64url?.startsWith("http")) {
+          src = a.base64url;
+        } else if (isImage) {
+          // It's a filename like "1.png"
+          src = a.base64url
+        }
+
+        return (
+          <div key={`${a.name}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+            <div className="h-10 w-10 rounded-md bg-gray-100 grid place-items-center overflow-hidden">
+              {isImage ? (
+                <img src={src} alt={a.title} className="h-full w-full object-cover" />
+              ) : (
+                <span className="text-xs text-gray-500">DOC</span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="truncate text-sm font-medium">{a.title}</div>
+              <div className="text-[11px] text-gray-500 truncate">Attached</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => removeAttachment(idx)}
+              className="p-1 rounded hover:bg-gray-100"
+              title="Remove"
+            >
+              <I.trash />
+            </button>
+          </div>
+        );
+      })}
+
             </div>
           </section>
 
@@ -1006,7 +1150,7 @@ export default function CreateMomentPage() {
           </section>
 
          
-          <section>
+          <section className={`${form.relatedEntityType=="job" ? 'hidden':''}`}>
             <h2 className="font-semibold text-brand-600">General Classification</h2>
             <div className="grid md:grid-cols-2 gap-4 mt-2">
               <div>

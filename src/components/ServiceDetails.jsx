@@ -202,8 +202,31 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  // Get the current image URL
-  const imageUrl = service?.attachments?.[currentImageIndex] || null;
+  
+  // Get the current image URL safely
+  const imageUrl = (() => {
+    const attachments = service?.attachments || [];
+    const file = attachments[currentImageIndex];
+
+    // Case 1: base64 image
+    if (file && file.startsWith("data:image")) {
+      return file;
+    }
+
+    // Case 2: string file name or URL ending with image extension
+    if (
+      typeof file === "string" &&
+      /\.(jpe?g|png|gif|webp|svg)$/i.test(file)
+    ) {
+      // If it's just a filename (e.g. "1.png"), prepend API URL
+      return file.startsWith("http")
+        ? file
+        : `${API_URL}/uploads/${file}`;
+    }
+
+    return null;
+  })();
+
 
   // Format provider initials
   const initials = (service?.provider?.name || "?")
@@ -241,7 +264,37 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
           ) : (
             <>
               {/* Service Images */}
-              {service.attachments?.length > 0 && (
+           
+               {(() => {
+  // filter only images
+              const imageAttachments = (service.attachments || []).filter(att => {
+                if (typeof att !== "string") return false;
+
+                // Case 1: base64 image
+                if (att.startsWith("data:image")) return true;
+
+                // Case 2: http/https or filename ending with image extension
+                return /\.(jpe?g|png|gif|webp|svg)$/i.test(att);
+              });
+
+              if (imageAttachments.length === 0) return null;
+
+              // resolve current image URL
+              const currentFile = imageAttachments[currentImageIndex];
+              let imageUrl = null;
+
+              if (currentFile.startsWith("data:image")) {
+                // base64 image
+                imageUrl = currentFile;
+              } else if (currentFile.startsWith("http://") || currentFile.startsWith("https://")) {
+                // already a URL
+                imageUrl = currentFile;
+              } else {
+                // assume it's just a filename → prepend API
+                imageUrl = `${API_URL}/uploads/${currentFile}`;
+              }
+
+              return (
                 <div className="relative mb-6">
                   <div className="relative">
                     <img
@@ -249,20 +302,20 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
                       alt={service.title}
                       className="w-full h-64 object-contain bg-gray-50 rounded-lg"
                     />
-                    
+
                     {/* Image navigation controls */}
-                    {service.attachments.length > 1 && (
+                    {imageAttachments.length > 1 && (
                       <div className="absolute inset-x-0 bottom-0 flex justify-between p-2">
-                        <button 
+                        <button
                           onClick={prevImage}
                           className="p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-lg hover:bg-white"
                         >
                           &larr;
                         </button>
                         <div className="bg-white/80 backdrop-blur-sm rounded-full px-3 py-1 text-xs">
-                          {currentImageIndex + 1} / {service.attachments.length}
+                          {currentImageIndex + 1} / {imageAttachments.length}
                         </div>
-                        <button 
+                        <button
                           onClick={nextImage}
                           className="p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-lg hover:bg-white"
                         >
@@ -272,7 +325,9 @@ export default function ServiceDetails({ serviceId, isOpen, onClose }) {
                     )}
                   </div>
                 </div>
-              )}
+              );
+            })()}
+
 
               {/* Service Header */}
               <div className="flex items-start justify-between">

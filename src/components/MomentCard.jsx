@@ -140,13 +140,18 @@ export default function MomentCard({
   const imageUrl = useMemo(() => {
     // Check images array first (for moments) - find first valid image
     if (moment?.images?.length > 0) {
-      for (const image of moment.images) {
-        if (typeof image === 'string' && image.startsWith('data:image')) {
-          return image;
-        } else if (image?.base64url && image.base64url.startsWith('data:image')) {
-          return image.base64url;
+       for (const img of moment.images) {
+          if (typeof img?.base64url === "string") {
+            if (img.base64url.startsWith("data:image")) {
+              // base64 image
+              return img.base64url;
+            }
+            if (img.base64url.startsWith("http://") || img.base64url.startsWith("https://")) {
+              // full image URL
+              return img.base64url;
+            }
+          }
         }
-      }
     }
 
     // Check attachments array as fallback - find first valid image
@@ -155,11 +160,18 @@ export default function MomentCard({
         if (attachment?.base64url && attachment.base64url.startsWith('data:image')) {
           return attachment.base64url;
         }
+         if (attachment.base64url.startsWith("http://") || attachment.base64url.startsWith("https://")) {
+              // full image URL
+              return attachment.base64url;
+        }
       }
     }
 
     return null;
   }, [moment?.images, moment?.attachments]);
+
+
+
 
 
   const locationLabel = useMemo(() => {

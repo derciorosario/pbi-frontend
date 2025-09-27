@@ -1,7 +1,7 @@
 // src/pages/CreateNeedPage.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import client from "../api/client";
+import client, { API_URL } from "../api/client";
 import COUNTRIES from "../constants/countries";
 import CITIES from "../constants/cities.json";
 import AudienceTree from "../components/AudienceTree";
@@ -55,6 +55,11 @@ const I = {
       <path d="M3 6h18v12H3z"/><circle cx="12" cy="12" r="3" fill="white"/>
     </svg>
   ),
+  pin: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+    </svg>
+  ),
 };
 
 /* File → data URL */
@@ -98,7 +103,7 @@ function ReadOnlyNeedView({ form, attachments, audSel, audTree }) {
   const subcategories = Array.from(audSel.subcategoryIds || []).map((k) => maps.subs.get(String(k))).filter(Boolean);
   const subsubs = Array.from(audSel.subsubCategoryIds || []).map((k) => maps.subsubs.get(String(k))).filter(Boolean);
 
-  // Extract images and docs from attachments
+  // Extract images and docs from attachments (stored as [{name: '', base64url: ''}])
   const images = attachments?.filter(att => isImage(att.base64url)) || [];
   const docs = attachments?.filter(att => !isImage(att.base64url)) || [];
   const coverImageUrl = images[0]?.base64url || null;
@@ -158,21 +163,21 @@ function ReadOnlyNeedView({ form, attachments, audSel, audTree }) {
           </div>
         )}
 
-        {/* Non-image attachments */}
+        {/* Attachments */}
         {docs.length > 0 && (
           <div>
             <h3 className="text-sm font-semibold text-gray-700">Attachments</h3>
             <div className="mt-3 grid sm:grid-cols-2 gap-3">
-              {docs.map((d, i) => (
+              {docs.map((att, i) => (
                 <a
-                  key={`${d.name}-${i}`}
-                  href={d.base64url}
-                  download={d.name}
+                  key={`${att.name}-${i}`}
+                  href={`${client.defaults.baseURL}/uploads/needs/${att.base64url}`}
+                  download={att.name}
                   className="flex items-center gap-3 border rounded-lg p-3 hover:bg-gray-50"
                 >
                   <div className="h-10 w-10 rounded-md bg-gray-100 grid place-items-center text-xs text-gray-500">DOC</div>
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">{d.name}</div>
+                    <div className="truncate text-sm font-medium">{att.name}</div>
                     <div className="text-[11px] text-gray-500 truncate">Tap to download</div>
                   </div>
                 </a>
@@ -484,14 +489,15 @@ export default function CreateNeedPage() {
   useEffect(() => {
     (async () => {
       try {
-        const typeParam = currentType ? `?type=${currentType}` : "?type=need";
+        let t=form.relatedEntityType=="funding" ? 'opportunity' :  form.relatedEntityType
+        const typeParam = t ? `?type=${t}` : "?type=need";
         const { data } = await client.get(`/general-categories/tree${typeParam}`);
         setGeneralTree(data.generalCategories || []);
       } catch (err) {
         console.error("Failed to load general categories", err);
       }
     })();
-  }, [currentType]);
+  }, [form.relatedEntityType]);
 
   // Load industry categories
   useEffect(() => {
@@ -533,12 +539,14 @@ export default function CreateNeedPage() {
 
         
 
-        // Set attachments if they exist
-        if (data.attachments && Array.isArray(data.attachments)) {
+        // Set attachments if they exist (stored as [{name: '', base64url: ''}])
+        if (Array.isArray(data.attachments)) {
           setAttachments(data.attachments.map(att => ({
-            name: att.name || "Attachment",
-            base64url: att.base64url || att.url || ""
+            name: att.name || att,
+            base64url: att.base64url || att,
           })));
+        } else {
+          setAttachments([]);
         }
 
         // Set audience selections
@@ -648,6 +656,7 @@ export default function CreateNeedPage() {
     setForm((f) => ({ ...f, criteria: f.criteria.filter((_, i) => i !== idx) }));
   }
 
+
   async function handleFilesChosen(files) {
     const arr = Array.from(files || []);
     if (!arr.length) return;
@@ -662,21 +671,35 @@ export default function CreateNeedPage() {
       return;
     }
 
-    // Optionally cap total
+    // Cap total attachments
     const remainingSlots = 20 - attachments.length;
     const slice = remainingSlots > 0 ? arr.slice(0, remainingSlots) : [];
 
+    // Upload files immediately and store filenames
     try {
-      const mapped = await Promise.all(
-        slice.map(async (file) => {
-          const base64url = await fileToDataURL(file);
-          return { name: file.name, base64url };
-        })
-      );
+      const formData = new FormData();
+      slice.forEach(file => {
+        formData.append('attachments', file);
+      });
+
+      const response = await client.post('/needs/upload-attachments', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const uploadedFilenames = response.data.filenames || [];
+
+      // Store as [{name: '', base64url: ''}] where base64url is the uploaded filename
+      const mapped = slice.map((file, index) => ({
+        name: file.name,
+        base64url: `${API_URL}/uploads/${uploadedFilenames[index] || file.name}`,
+      }));
+
       setAttachments((prev) => [...prev, ...mapped]);
-    } catch (err) {
-      console.error(err);
-      toast.error("Some files could not be read.");
+    } catch (error) {
+      console.error('Error uploading attachments:', error);
+      toast.error('Failed to upload attachments');
     }
   }
 
@@ -716,7 +739,7 @@ export default function CreateNeedPage() {
         country: form.country || undefined,
         city: form.city || undefined,
         criteria: form.criteria,
-        attachments,
+        attachments, // Already contains {name: '', base64: ''} where base64 is uploaded filename
 
         // Audience selections
         identityIds,
@@ -864,6 +887,7 @@ export default function CreateNeedPage() {
             </div>
           </section>
 
+
           {/* Budget & Urgency */}
           <section>
             <h2 className="font-semibold text-brand-600">Budget & Urgency</h2>
@@ -1001,27 +1025,47 @@ export default function CreateNeedPage() {
                 </button>
               </div>
 
+            
               {attachments.length > 0 && (
                 <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
-                  {attachments.map((a, idx) => (
-                    <div key={`${a.name}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                      <div className="h-10 w-10 rounded-md bg-gray-100 grid place-items-center text-xs text-gray-500">
-                        {isImage(a.base64url) ? "IMG" : "DOC"}
+                  {attachments.map((a, idx) => {
+                    const isImage =
+                      typeof a.base64url === "string" &&
+                      (a.base64url.startsWith("data:image") || /\.(jpe?g|png|gif|webp|svg)$/i.test(a.base64url));
+
+                    // Resolve src for image
+                    let src = null;
+                    if (a.base64url?.startsWith("data:image") || a.base64url?.startsWith("http")) {
+                      src = a.base64url;
+                    } else if (isImage) {
+                      // It's a filename like "1.png"
+                      src = a.base64url
+                    }
+
+                    return (
+                      <div key={`${a.name}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                        <div className="h-10 w-10 rounded-md bg-gray-100 grid place-items-center overflow-hidden">
+                          {isImage ? (
+                            <img src={src} alt={a.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-xs text-gray-500">DOC</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate text-sm font-medium">{a.name}</div>
+                          <div className="text-[11px] text-gray-500 truncate">Attached</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(idx)}
+                          className="p-1 rounded hover:bg-gray-100"
+                          title="Remove"
+                        >
+                          <I.trash />
+                        </button>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="truncate text-sm font-medium">{a.name}</div>
-                        <div className="text-[11px] text-gray-500 truncate">Attached</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeAttachment(idx)}
-                        className="p-1 rounded hover:bg-gray-100"
-                        title="Remove"
-                      >
-                        <I.trash />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

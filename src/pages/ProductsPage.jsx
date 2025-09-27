@@ -436,70 +436,68 @@ export default function ProductsPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-
         
 
-        {<div className="max-w-6xl mx-auto">
+        
+        
+        <div
+  className={`grid grid-cols-1 ${view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"} gap-6`}
+>
+  {items
+    .filter(item => item.kind === "product")
+    .map((p) => (
+      <ProductCard
+        key={p.id}
+        item={p}
+        {...p}
+        matchPercentage={p.matchPercentage}
+        type={view}
+        onContact={() => alert(`Contact seller of ${p.title}`)}
+        onSave={() => alert(`Saved ${p.title}`)}
+      />
+    ))}
 
-          <div className={`grid grid-cols-1 ${view=="list" ? "sm:grid-cols-1":"lg:grid-cols-2 xl:grid-cols-3"}  gap-6`}>
-            {items.map((p) => (
-              <ProductCard
-                key={p.id}
-                item={p}
-                {...p}
-                matchPercentage={p.matchPercentage}
-                type={view}
-                onContact={() => alert(`Contact seller of ${p.title}`)}
-                onSave={() => alert(`Saved ${p.title}`)}
-              />
-            ))}
-          </div>
-    </div>}
+  {items
+    .filter(item => item.kind === "need")
+    .map((item) => (
+      <NeedCard
+        type={view}
+        key={`need-${item.id}`}
+        matchPercentage={item.matchPercentage}
+        need={{
+          ...item,
+          categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+          subcategoryName: categories
+            .find((c) => String(c.id) === String(item.categoryId))
+            ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+        }}
+      />
+    ))}
 
-        {!loadingFeed &&
-          items.map((item) => {
-            if (item.kind === "job") {
-              return <JobCard key={`job-${item.id}`} job={item} />;
-            }
-            if (item.kind === "need") {
-              return (
-                <NeedCard
-                  type={view}
-                  key={`need-${item.id}`}
-                  matchPercentage={item.matchPercentage}
-                  need={{
-                    ...item,
-                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
-                    subcategoryName: categories
-                      .find((c) => String(c.id) === String(item.categoryId))
-                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
-                  }}
-                />
-              );
-            }
-            if (item.kind === "moment") {
-              return (
-                <MomentCard
-                  type={view}
-                  key={`moment-${item.id}`}
-                  matchPercentage={item.matchPercentage}
-                  moment={{
-                    ...item,
-                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
-                    subcategoryName: categories
-                      .find((c) => String(c.id) === String(item.categoryId))
-                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
-                  }}
-                />
-              );
-            }
-            if (item.kind === "event") {
-              return <EventCard key={`event-${item.id}`} e={item} />;
-            }
-            return null;
-          })}
+  {items
+    .filter(item => item.kind === "moment")
+    .map((item) => (
+      <MomentCard
+        type={view}
+        key={`moment-${item.id}`}
+        matchPercentage={item.matchPercentage}
+        moment={{
+          ...item,
+          categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+          subcategoryName: categories
+            .find((c) => String(c.id) === String(item.categoryId))
+            ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+        }}
+      />
+    ))}
+</div>
+
+   
+
+       
       </>
     );
+  
   };
       
 

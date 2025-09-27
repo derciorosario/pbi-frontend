@@ -1,14 +1,17 @@
 // src/components/CoverImagePicker.jsx
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 
 export default function CoverImagePicker({
   label = "Cover Image (optional)",
-  value,                  // base64 string (data URL) or null
-  onChange,               // (base64OrNull) => void
+  value,                  // filename or null
+  onChange,               // (filenameOrNull) => void
   accept = "image/png, image/jpeg, image/jpg",
   maxSizeMB = 5,
+  preview = null,         // URL for preview (if already uploaded)
 }) {
   const fileRef = useRef(null);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(preview);
 
   const pick = () => fileRef.current?.click();
 
@@ -20,12 +23,26 @@ export default function CoverImagePicker({
       e.target.value = "";
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => onChange?.(reader.result); // data URL
-    reader.readAsDataURL(f);
+    
+    // Store the file for later upload
+    setSelectedFile(f);
+    
+    // Create a preview URL
+    const objectUrl = URL.createObjectURL(f);
+    setPreviewUrl(objectUrl);
+    
+    // Pass the file to parent component
+    onChange?.(f);
   };
 
-  const remove = () => onChange?.(null);
+  const remove = () => {
+    onChange?.(null);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  console.log({previewUrl,value})
 
   return (
     <div>
@@ -39,6 +56,8 @@ export default function CoverImagePicker({
         className="hidden"
         onChange={onFile}
       />
+
+
 
       {/* Pretty card */}
       <div className="mt-2 rounded-2xl border border-dashed border-gray-300 bg-gray-50/60 p-4 hover:border-brand-400 transition-colors">
@@ -67,7 +86,7 @@ export default function CoverImagePicker({
         ) : (
           <div className="grid gap-3">
             <img
-              src={value}
+              src={previewUrl || value}
               alt="Cover preview"
               className="w-full max-w-md rounded-xl object-contain aspect-[16/6] shadow max-h-32"
             />

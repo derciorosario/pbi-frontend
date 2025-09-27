@@ -124,11 +124,38 @@ export default function ServiceCard({
       .catch(() => {});
   }, [item?.id]);
 
+
+  
+
   // First image (supports base64url or string URL)
-  const imageUrl =
-    item?.images?.[0]?.base64url ||
-    (typeof item?.images?.[0] === "string" ? item.images[0] : null) ||
-    null;
+
+  const imageUrl = (() => {
+  const attachments = item?.images || [];
+
+  // Case 1: if it has a base64 image
+  const base64 = attachments.find(att => att?.startsWith("data:image"));
+  if (base64) return base64;
+
+  console.log({attachments})
+
+  // Case 2: if it has a string that looks like an image file or URL
+  const imageFile = attachments.find(att =>
+    typeof att === "string" &&
+    /\.(jpe?g|png|gif|webp|svg)$/i.test(att)
+  );
+  if (imageFile) return imageFile;
+
+  // Case 3: fallback to item.images[0] if it's a valid image URL
+  if (
+    item?.images?.[0] &&
+    (item.images[0].startsWith("http://") || item.images[0].startsWith("https://")) &&
+    /\.(jpe?g|png|gif|webp|svg)$/i.test(item.images[0])
+  ) {
+    return item.images[0];
+  }
+  return null;
+})();
+
 
   const priceLabel = useMemo(() => {
     const amount = Number(item?.priceAmount ?? 0);

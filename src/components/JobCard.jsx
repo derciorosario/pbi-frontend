@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { toast } from "../lib/toast";
 import * as socialApi from "../api/social";
-import client from "../api/client";
+import client,{API_URL} from "../api/client";
 import {
   Edit,
   Eye,
@@ -161,7 +161,14 @@ export default function JobCard({
   const isOwner =
     user?.id && job?.postedByUserId && user.id === job.postedByUserId;
   const isList = type === "list";
-  const imageUrl = job?.coverImage || job?.image || null;
+  let imageUrl = job?.coverImage || job?.image || null;
+
+  imageUrl =
+  imageUrl && (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
+    ? imageUrl
+    : imageUrl
+    ? `${API_URL}/uploads/${imageUrl}`
+    : null; 
 
   const allTags = [
     job?.jobType,

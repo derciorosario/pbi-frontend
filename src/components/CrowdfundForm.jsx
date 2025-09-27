@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import COUNTRIES from "../constants/countries";
 import CITIES from "../constants/cities.json";
-import client from "../api/client";
+import client, { API_URL } from "../api/client";
 import AudienceTree from "../components/AudienceTree";
 import DefaultLayout from "../layout/DefaultLayout";
 import Header from "./Header";
@@ -384,14 +384,9 @@ export default function CrowdfundForm() {
           status: data.status || "draft",
         }));
 
+        // Images are stored as array of strings (filenames)
         if (Array.isArray(data.images)) {
-          setImages(
-            data.images
-              .map((x, i) => ({
-                title: x.title || x.name || `Image ${i + 1}`,
-                base64url: x.base64url || x,
-              }))
-          );
+          setImages(data.images);
         } else {
           setImages([]);
         }
@@ -446,41 +441,47 @@ function removeTag(idx) {
     const onlyImages = arr.filter((f) => f.type.startsWith("image/"));
     if (onlyImages.length !== arr.length) {
       toast.error("Only image files are allowed.");
+      return;
     }
 
     const oversize = onlyImages.filter((f) => f.size > 5 * 1024 * 1024);
     if (oversize.length) {
       toast.error("Each image must be at most 5MB.");
+      return;
     }
     const accepted = onlyImages.filter((f) => f.size <= 5 * 1024 * 1024);
 
     const remaining = 20 - images.length;
     const slice = accepted.slice(0, Math.max(0, remaining));
 
+    // Upload files immediately and store filenames
     try {
-      const mapped = await Promise.all(
-        slice.map(async (file) => {
-          const base64url = await fileToDataURL(file);
-          const base = file.name.replace(/\.[^/.]+$/, "");
-          return { title: base, base64url };
-        })
-      );
-      setImages((prev) => [...prev, ...mapped]);
-    } catch (err) {
-      console.error(err);
-      toast.error("Some images could not be read.");
-    }
-  }
+      const formData = new FormData();
+      slice.forEach(file => {
+        formData.append('images', file);
+      });
 
-  function updateImageTitle(idx, title) {
-    if (readOnly) return;
-    setImages((prev) => prev.map((x, i) => (i === idx ? { ...x, title } : x)));
+      const response = await client.post('/funding/upload-images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const uploadedFilenames = (response.data.filenames || []).map(i=>`${API_URL}/uploads/${i}`);
+
+      // Store as array of filenames (strings)
+      setImages((prev) => [...prev, ...uploadedFilenames]);
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error('Failed to upload images');
+    }
   }
 
   function removeImage(idx) {
     if (readOnly) return;
     setImages((prev) => prev.filter((_, i) => i !== idx));
   }
+
 
   /* Helpers -> payload */
   function parsedTags() {
@@ -783,7 +784,7 @@ function removeTag(idx) {
         phone: form.phone || undefined,
         visibility: form.visibility || "public",
         status, // "draft" | "published"
-        images, // [{ title, base64url }]
+        images, // Already contains {base64url: filename, title: ''}
         // Include audience targeting data
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
@@ -866,6 +867,7 @@ function removeTag(idx) {
                 </Select>
               </div>
             </div>
+
 
             {/* Location */}
             <div className="mt-4 grid md:grid-cols-2 gap-4">
@@ -965,21 +967,17 @@ function removeTag(idx) {
                   {/* Preview */}
                   {images.length > 0 && (
                     <div className="mt-5 grid sm:grid-cols-2 gap-4 text-left">
-                      {images.map((img, idx) => (
+                      {images.map((filename, idx) => (
                         <div key={idx} className="border rounded-xl overflow-hidden">
                           <div className="h-44 bg-gray-100">
                             <img
-                              src={img.base64url}
-                              alt={img.title || `Image ${idx + 1}`}
+                              src={filename}
+                              alt={`Image ${idx + 1}`}
                               className="h-full w-full object-cover"
                             />
                           </div>
                           <div className="p-3 flex items-center gap-2">
-                            <Input
-                              value={img.title}
-                              onChange={(e) => updateImageTitle(idx, e.target.value)}
-                              placeholder={`Image ${idx + 1} title`}
-                            />
+                            <span className="text-sm text-gray-600 truncate">Delete</span>
                             <button
                               type="button"
                               onClick={() => removeImage(idx)}

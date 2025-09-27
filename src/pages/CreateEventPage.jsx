@@ -1,7 +1,7 @@
 // src/pages/CreateEventPage.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import client from "../api/client";
+import client,{API_URL} from "../api/client";
 import COUNTRIES from "../constants/countries";
 import CITIES from "../constants/cities.json";
 import FullPageLoader from "../components/ui/FullPageLoader";
@@ -307,7 +307,7 @@ function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
   const subcategories = Array.from(audSel.subcategoryIds || []).map((k) => maps.subs.get(String(k))).filter(Boolean);
   const subsubs = Array.from(audSel.subsubCategoryIds || []).map((k) => maps.subsubs.get(String(k))).filter(Boolean);
 
-  const coverSrc = coverImageBase64 || form.coverImageUrl || "";
+  const coverSrc = coverImageBase64 || form.coverImageUrl || null;
 
   return (
     <div className="mt-6 rounded-2xl bg-white border p-0 shadow-sm overflow-hidden">
@@ -469,6 +469,7 @@ export default function CreateEventPage() {
   const [meta, setMeta] = useState({ categories: [], currencies: [], timezones: [] });
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [coverImageBase64, setCoverImageBase64] = useState(null);
+  const [coverImageFilename, setCoverImageFilename] = useState(null);
 
   // Support single or multi-country (comma-separated) selection
   const selectedCountries = useMemo(() => {
@@ -530,7 +531,17 @@ export default function CreateEventPage() {
           coverImageBase64:data.coverImageBase64 || data.coverImageUrl 
         });
 
-        if (data.coverImageBase64) setCoverImageBase64(data.coverImageBase64);
+        if (data.coverImageBase64) {
+          if (data.coverImageBase64.startsWith('data:') || data.coverImageBase64.startsWith('http')) {
+            // If it's a base64 string (old format), use it as preview
+            setCoverImageBase64(data.coverImageBase64);
+          } else {
+            // If it's a filename (new format), store it
+            setCoverImageFilename(data.coverImageBase64);
+            // Set preview URL for the image
+            setCoverImageBase64(API_URL+`/uploads/${data.coverImageBase64}`);
+          }
+        }
 
         if (
           data.audienceIdentities?.length ||
@@ -649,6 +660,28 @@ export default function CreateEventPage() {
     });
   }
 
+  // Function to upload the cover image
+  const uploadCoverImage = async (file) => {
+    if (!file) return null;
+
+    const formData = new FormData();
+    formData.append('coverImage', file);
+
+    try {
+      const response = await client.post('/events/upload-cover', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      return response.data.filename;
+    } catch (error) {
+      console.error('Error uploading cover image:', error);
+      toast.error('Failed to upload cover image');
+      return null;
+    }
+  };
+
   async function onSubmit(e) {
     e.preventDefault();
     if (readOnly) return;
@@ -673,14 +706,24 @@ export default function CreateEventPage() {
       const subcategoryIds = Array.from(audSel.subcategoryIds);
       const subsubCategoryIds = Array.from(audSel.subsubCategoryIds);
 
+      // Upload cover image if there's a new one
+      let imageFilename = coverImageFilename;
+
+      if (coverImageBase64 instanceof File) {
+        imageFilename = await uploadCoverImage(coverImageBase64);
+      }
+
+      console.log({a:imageFilename})
+
       const payload = {
         ...form,
-        coverImageBase64,
-        coverImageUrl:coverImageBase64,
         identityIds,
         categoryIds,
         subcategoryIds,
         subsubCategoryIds,
+        // Use the filename instead of base64 data
+        coverImageBase64: imageFilename,
+        coverImageUrl: imageFilename,
         // NEW — general taxonomy from searchable pickers
         generalCategoryId: selectedGeneral.categoryId || null,
         generalSubcategoryId: selectedGeneral.subcategoryId || null,
@@ -1145,7 +1188,12 @@ export default function CreateEventPage() {
             {/* Cover */}
             <section>
               <h2 className="font-semibold text-brand-600 mt-8">Cover Image</h2>
-              <CoverImagePicker label="Cover Image (optional)" value={coverImageBase64} onChange={setCoverImageBase64} />
+              <CoverImagePicker
+                label="Cover Image (optional)"
+                value={coverImageBase64}
+                preview={typeof coverImageBase64 === 'string' ? coverImageBase64 : null}
+                onChange={setCoverImageBase64}
+              />
             </section>
 
             {/* Actions */}
