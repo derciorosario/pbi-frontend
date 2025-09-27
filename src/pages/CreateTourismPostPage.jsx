@@ -76,7 +76,7 @@ function ReadOnlyTourismPost({ postType, form, images, audSel, audTree }) {
   const subcategories = Array.from(audSel.subcategoryIds || []).map(k => maps.subs.get(String(k))).filter(Boolean);
   const subsubs = Array.from(audSel.subsubCategoryIds || []).map(k => maps.subsubs.get(String(k))).filter(Boolean);
 
-  const hero = images?.[0]?.base64url || null;
+  const hero = images?.[0] ? `${API_URL}/uploads/${images[0]}` : null;
   const gallery = (images || []).slice(1);
 
 
@@ -132,16 +132,14 @@ function ReadOnlyTourismPost({ postType, form, images, audSel, audTree }) {
           <div>
             <h3 className="text-sm font-semibold text-gray-700">Photos</h3>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {gallery.map((img, idx) => (
-                <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
-                  <img src={img.base64url} alt={img.title || `Photo ${idx + 2}`} className="h-full w-full object-cover" />
-                  {img.title ? (
-                    <div className="absolute left-2 bottom-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">
-                      {img.title}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
+              {gallery.map((img, idx) => {
+                const src = img.startsWith('http') ? img : `${API_URL}/uploads/${img}`;
+                return (
+                  <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
+                    <img src={src} alt={`Photo ${idx + 2}`} className="h-full w-full object-cover" />
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -193,6 +191,8 @@ export default function CreateTourismPostPage() {
   const { user } = useAuth();
 
   const [loading,setLoading]=useState(true)
+  const [uploading, setUploading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [ownerUserId, setOwnerUserId] = useState(null);
 
   const [postType, setPostType] = useState("Destination");
@@ -222,7 +222,7 @@ export default function CreateTourismPostPage() {
   const [tagInput, setTagInput] = useState("");
 
 
-  // Images ONLY: [{ title, base64url }]
+  // Images: array of strings (filenames)
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -303,6 +303,8 @@ export default function CreateTourismPostPage() {
         if (Array.isArray(data.images)) {
           setImages(
             data.images
+              .filter((x) => x?.filename || typeof x === 'string')
+              .map((x) => typeof x === 'string' ? x : x.filename)
           );
         } else {
           setImages([]);
@@ -367,6 +369,8 @@ export default function CreateTourismPostPage() {
     const slice = accepted.slice(0, Math.max(0, remaining));
 
     try {
+      setUploading(true);
+      setUploadingCount(slice.length);
       const formData = new FormData();
       slice.forEach(file => {
         formData.append('images', file);
@@ -378,12 +382,15 @@ export default function CreateTourismPostPage() {
         }
       });
 
-      const mapped = response.data.filenames.map((filename, index) => (`${API_URL}/uploads/${filename}`));
+      const mapped = response.data.filenames.map((filename) => filename);
 
       setImages((prev) => [...prev, ...mapped]);
     } catch (err) {
       console.error(err);
       toast.error("Some images could not be uploaded.");
+    } finally {
+      setUploading(false);
+      setUploadingCount(0);
     }
   }
 
@@ -662,7 +669,7 @@ export default function CreateTourismPostPage() {
         season: form.season || undefined,
         budgetRange: form.budgetRange || undefined,
         tags: form.tags,
-        images: images.map(img => img.filename || img),
+        images: images.map(img => `${API_URL}/uploads/${img}`),
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
         subcategoryIds: Array.from(audSel.subcategoryIds),
@@ -797,67 +804,85 @@ export default function CreateTourismPostPage() {
 
             {/* Media Upload (Images Only) */}
             <section>
-              <h2 className="font-semibold">Photos</h2>
-              <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-500">
-                <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
-                <p className="mt-2">Upload Images</p>
-                <p className="text-xs">Drag and drop your photos here, or click to browse</p>
+              <h2 className="font-semibold text-brand-600">Photos</h2>
+              <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
+                <div className="mb-2">
+                  <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                Upload images to showcase your tourism post (max 5MB per file)
+                <div className="mt-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleFilesChosen(e.target.files)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  >
+                    Choose Files
+                  </button>
+                </div>
 
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFilesChosen(e.target.files)}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mt-3 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                >
-                  Choose Files
-                </button>
-                <p className="mt-1 text-xs text-gray-400">Supported formats: JPG, PNG, WebP, GIF (Max 5MB each)</p>
 
-               
-               {images.length > 0 && (
+               {(images.length > 0 || uploadingCount > 0) && (
                 <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                   {images.map((img, idx) => {
                     const isImg = true
 
                     // Resolve URL for filenames
-                    let src = img
+                    let src = null;
+                    if (img.startsWith("data:image")) {
+                      src = img; // base64
+                    } else if (img.startsWith("http://") || img.startsWith("https://")) {
+                      src = img; // full URL
+                    } else if (isImg) {
+                      src = `${API_URL}/uploads/${img}`; // filename to full URL
+                    }
 
                     return (
-                      <div key={idx} className="border rounded-xl overflow-hidden">
-                        <div className="h-44 bg-gray-100">
+                      <div key={`${img}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                        <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
                           {isImg ? (
-                            <img
-                              src={src}
-                              alt={`Image ${idx + 1}`}
-                              className="h-full w-full object-cover"
-                            />
+                            <img src={src} alt={img} className="h-full w-full object-cover" />
                           ) : (
-                            <div className="flex items-center justify-center h-full text-gray-500 text-sm">
-                              Not an image
-                            </div>
+                            <span className="text-xs text-gray-500">DOC</span>
                           )}
                         </div>
-                        <div className="p-3 flex items-center gap-2">
-                          <span>Delete</span>
-                          <button
-                            type="button"
-                            onClick={() => removeImage(idx)}
-                            className="p-2 rounded hover:bg-gray-100"
-                            title="Remove"
-                          >
-                            <I.trash />
-                          </button>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate text-sm font-medium">Image {idx+1}</div>
+                          <div className="text-[11px] text-gray-500 truncate">Attached</div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="p-1 rounded hover:bg-gray-100"
+                          title="Remove"
+                        >
+                          <I.trash />
+                        </button>
                       </div>
                     );
                   })}
+
+                  {uploadingCount > 0 &&
+                    Array.from({ length: uploadingCount }).map((_, idx) => (
+                      <div key={`img-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                        <div className="h-12 w-12 rounded-md bg-gray-200 animate-pulse" />
+                        <div className="flex-1 min-w-0">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                          <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                        <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
+                      </div>
+                    ))
+                  }
                 </div>
               )}
 

@@ -101,11 +101,15 @@ function ReadOnlyProductView({ form, images, audSel, audTree }) {
       {/* Gallery */}
       {images?.length ? (
         <div className="grid gap-2 p-2 sm:grid-cols-2 md:grid-cols-3">
-          {images.slice(0, 6).map((img, i) => (
-            <div key={i} className="aspect-[4/3] w-full bg-gray-100 overflow-hidden rounded-lg">
-              <img src={img.base64url} alt={img.title || `Image ${i + 1}`} className="h-full w-full object-cover" />
-            </div>
-          ))}
+          {images.slice(0, 6).map((img, i) => {
+            // Handle both filename strings and full URLs
+            const src = img.startsWith('http') ? img : `${API_URL}/uploads/${img}`;
+            return (
+              <div key={i} className="aspect-[4/3] w-full bg-gray-100 overflow-hidden rounded-lg">
+                <img src={src} alt={`Image ${i + 1}`} className="h-full w-full object-cover" />
+              </div>
+            );
+          })}
         </div>
       ) : null}
 
@@ -178,6 +182,8 @@ export default function CreateProductPage() {
   const { user } = useAuth();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [ownerUserId, setOwnerUserId] = useState(null);
 
   const [cats, setCats] = useState([]); // [{id,name,subcategories:[{id,name}]}]
@@ -474,7 +480,7 @@ const industrySubcategoryOptions = useMemo(() => {
 
   const [tagInput, setTagInput] = useState("");
 
-  // Images: [{ title, filename, base64url }]
+  // Images: array of strings (filenames)
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -550,12 +556,8 @@ const industrySubcategoryOptions = useMemo(() => {
         if (Array.isArray(data.images)) {
           setImages(
             data.images
-              .filter((x) => x?.filename || x?.base64url)
-              .map((x, i) => ({
-                title: x.title || x.name || `Image ${i + 1}`,
-                filename: x.filename,
-                base64url: x.filename ? `${API_URL}/uploads/${x.filename}` : x.base64url,
-              }))
+              .filter((x) => x?.filename || typeof x === 'string')
+              .map((x) => typeof x === 'string' ? x : x.filename)
           );
         }
 
@@ -652,7 +654,7 @@ const industrySubcategoryOptions = useMemo(() => {
 
     if (oversizedFiles.length > 0) {
       const fileNames = oversizedFiles.map(file => file.name).join(', ');
-      toast.error(`Images exceeding 5MB limit: ${fileNames}`);
+      toast.error(`Files exceeding 5MB limit: ${fileNames}`);
       return;
     }
 
@@ -663,26 +665,34 @@ const industrySubcategoryOptions = useMemo(() => {
       return;
     }
 
-    const remaining = 20 - images.length;
-    const slice = imgFiles.slice(0, Math.max(0, remaining));
-
-    if (slice.length === 0) {
-      toast.error("Maximum number of images reached (20).");
-      return;
-    }
+    // Cap total attachments
+    const remainingSlots = 20 - images.length;
+    const slice = remainingSlots > 0 ? arr.slice(0, remainingSlots) : [];
 
     try {
-      // Upload images and get filenames
-      const uploadedImages = await uploadImages(slice);
-      setImages((prev) => [...prev, ...uploadedImages]);
+      setUploading(true);
+      setUploadingCount(slice.length);
+      const formData = new FormData();
+      slice.forEach(file => {
+        formData.append('images', file);
+      });
+
+      const response = await client.post('/products/upload-images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const mapped = response.data.filenames.map((filename) => filename);
+
+      setImages((prev) => [...prev, ...mapped]);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to upload images.");
+      toast.error("Some images could not be uploaded.");
+    } finally {
+      setUploading(false);
+      setUploadingCount(0);
     }
-  }
-
-  function updateImageTitle(idx, title) {
-    setImages((prev) => prev.map((x, i) => (i === idx ? { ...x, title } : x)));
   }
 
   function removeImage(idx) {
@@ -722,10 +732,7 @@ const industrySubcategoryOptions = useMemo(() => {
         country: form.country || undefined,
         city: form.city || undefined,
         tags: form.tags,
-        images: images.map(img => ({
-          filename: img.filename,
-          title: img.title
-        })),
+        images: images.map(img => `${API_URL}/uploads/${img}`),
         currency:form.currency,
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
@@ -811,57 +818,92 @@ const industrySubcategoryOptions = useMemo(() => {
               </div>
 
               {/* Product Images */}
-              <div>
-                <h2 className="font-semibold mb-2">Product Images</h2>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFilesChosen(e.target.files)}
-                />
-                <div
-                  className="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center text-gray-500 cursor-pointer hover:bg-gray-50"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <div className="text-sm">➕ Click to add images (JPG/PNG/WebP…)</div>
-                  <div className="text-xs text-gray-400 mt-1">Up to 20 images • Max 5MB per image</div>
-                </div>
-
-                {images.length > 0 && (
-                  <div className="mt-4 grid sm:grid-cols-2 gap-4">
-                    {images.map((img, idx) => (
-                      <div key={idx} className="border rounded-xl overflow-hidden">
-                        <div className="h-44 bg-gray-100">
-                          <img
-                            src={img.base64url}
-                            alt={img.title || `Image ${idx + 1}`}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <div className="p-3 flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={img.title}
-                            onChange={(e) => updateImageTitle(idx, e.target.value)}
-                            placeholder={`Image ${idx + 1} title`}
-                            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(idx)}
-                            className="p-2 rounded hover:bg-gray-100"
-                            title="Remove"
-                          >
-                            <I.trash />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+              <section>
+                <h2 className="font-semibold text-brand-600">Product Images</h2>
+                <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
+                  <div className="mb-2">
+                    <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M12 4v16m8-8H4" />
+                    </svg>
                   </div>
-                )}
-              </div>
+                  Upload images to showcase your product (max 5MB per file)
+                  <div className="mt-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                      className="hidden"
+                      onChange={(e) => handleFilesChosen(e.target.files)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                    >
+                      Choose Files
+                    </button>
+                  </div>
+
+
+                  {(images.length > 0 || uploadingCount > 0) && (
+                    <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
+                      {images.map((img, idx) => {
+                        const isImg = true
+
+                        // Resolve URL for filenames
+                        let src = null;
+                        if (img.startsWith("data:image")) {
+                          src = img; // base64
+                        } else if (img.startsWith("http://") || img.startsWith("https://")) {
+                          src = img; // full URL
+                        } else if (isImg) {
+                          src = `${API_URL}/uploads/${img}`; // filename to full URL
+                        }
+
+                        return (
+                          <div key={`${img}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                            <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
+                              {isImg ? (
+                                <img src={src} alt={img} className="h-full w-full object-cover" />
+                              ) : (
+                                <span className="text-xs text-gray-500">DOC</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="truncate text-sm font-medium">Image {idx+1}</div>
+                              <div className="text-[11px] text-gray-500 truncate">Attached</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeImage(idx)}
+                              className="p-1 rounded hover:bg-gray-100"
+                              title="Remove"
+                            >
+                              <I.trash />
+                            </button>
+                          </div>
+                        );
+                      })}
+
+                      {uploadingCount > 0 &&
+                        Array.from({ length: uploadingCount }).map((_, idx) => (
+                          <div key={`img-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                            <div className="h-12 w-12 rounded-md bg-gray-200 animate-pulse" />
+                            <div className="flex-1 min-w-0">
+                              <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                              <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                            </div>
+                            <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
+                          </div>
+                        ))
+                      }
+                    </div>
+                  )}
+
+
+                </div>
+              </section>
 
               {/* Product Title */}
               <div>

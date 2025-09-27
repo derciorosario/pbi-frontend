@@ -1,7 +1,10 @@
 // src/pages/MessagesPage.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Send, User, Check, CheckCheck, ArrowLeft, Plus, X } from "lucide-react";
+import { Search, Send, User, Check, CheckCheck, ArrowLeft, Plus, X, Paperclip, File, Image, Download, Smile } from "lucide-react";
+// Emoji picker
+
+import EmojiPicker from 'emoji-picker-react';
 import Header from "../components/Header";
 import { useSocket } from "../contexts/SocketContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -32,7 +35,10 @@ export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState("");
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [attachments, setAttachments] = useState([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
@@ -260,6 +266,18 @@ export default function MessagesPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showEmojiPicker && !event.target.closest('.emoji-picker-container')) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showEmojiPicker]);
+
   useEffect(() => {
     const refreshInterval = setInterval(async () => {
       try {
@@ -272,11 +290,51 @@ export default function MessagesPage() {
     return () => clearInterval(refreshInterval);
   }, []);
 
+  const handleFileSelect = (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter(file => {
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      return file.size <= maxSize;
+    });
+
+    if (validFiles.length !== files.length) {
+      toast.error("Some files exceed the 5MB limit");
+    }
+
+    setAttachments(prev => [...prev, ...validFiles]);
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const isImageFile = (filename) => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+  };
+
+  // Also detect by mimetype when available (server returns mimetype)
+  const isImageAttachment = (att) => {
+    if (!att) return false;
+    if (att.mimetype && typeof att.mimetype === 'string' && att.mimetype.startsWith('image/')) return true;
+    return isImageFile(String(att.filename || ''));
+  };
+
+  const onEmojiClick = (emojiData, event) => {
+    const emoji = emojiData?.emoji;
+    if (!emoji) return;
+    setNewMessage(prev => prev + emoji);
+    // Keep picker open so user can choose multiple emojis (uncomment to auto-close)
+    // setShowEmojiPicker(false);
+  };
+
   async function handleSend() {
-    if (!newMessage.trim() || !activeConversation) return;
+    if ((!newMessage.trim() && attachments.length === 0) || !activeConversation) return;
 
     const content = newMessage.trim();
+    const filesToSend = [...attachments];
     setNewMessage("");
+    setAttachments([]);
 
     const tempId = Date.now().toString();
     const tempMessage = {
@@ -287,16 +345,28 @@ export default function MessagesPage() {
       createdAt: new Date().toISOString(),
       read: false,
       pending: true,
+      attachments: filesToSend.map(f => ({
+        filename: f.name,
+        url: URL.createObjectURL(f),
+        mimetype: f.type,
+        size: f.size,
+      })),
     };
     setMessages((prev) => [...prev, tempMessage]);
 
     try {
       let confirmed;
-      if (connected) {
+      // Use socket only for text-only messages. For any attachments, use REST (multipart)
+      if (filesToSend.length === 0 && connected) {
         const res = await sendPrivateMessage(activeConversation.otherUser.id, content);
         confirmed = res?.message || res?.data?.message || null;
       } else {
-        const { data } = await messageApi.sendMessage(activeConversation.otherUser.id, content);
+        const formData = new FormData();
+        formData.append('content', content);
+        filesToSend.forEach(file => {
+          formData.append('attachments', file);
+        });
+        const { data } = await messageApi.sendMessage(activeConversation.otherUser.id, formData);
         confirmed = data || null;
       }
 
@@ -305,7 +375,11 @@ export default function MessagesPage() {
         const idx = updated.findIndex((c) => c.id === activeConversation.id);
         if (idx >= 0) {
           const conv = { ...updated[idx] };
-          conv.lastMessage = content;
+          const preview =
+            content && content.length > 0
+              ? content
+              : (filesToSend.length === 1 ? "Attachment" : `${filesToSend.length} attachments`);
+          conv.lastMessage = preview;
           conv.lastMessageTime = new Date().toISOString();
           updated.splice(idx, 1);
           updated.unshift(conv);
@@ -383,7 +457,7 @@ export default function MessagesPage() {
 
               {/* Online users */}
               {onlineConnections && onlineConnections.length > 0 && (
-                <div className="p-4 border-b bg-gray-50">
+                <div className="p-4 border-b bg-gray-50 hidden">
                   <h3 className="text-sm font-medium text-gray-700 mb-3">Online Connections</h3>
                   <div className="flex flex-wrap gap-2">
                     {onlineConnections.map((c) => (
@@ -551,7 +625,55 @@ export default function MessagesPage() {
                             m.senderId === user.id ? "bg-brand-500 text-white" : "bg-gray-100"
                           } ${m.pending ? "opacity-70" : ""}`}
                         >
-                          {m.content}
+                          {m.content && <div className="mb-2">{m.content}</div>}
+                          {m.attachments && m.attachments.length > 0 && (
+                            <div className="space-y-2">
+                              {m.attachments.map((attachment, idx) => (
+                                <div key={idx} className="p-2 rounded bg-white/10">
+                                  {isImageAttachment(attachment) ? (
+                                    <a
+                                      href={attachment.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block"
+                                      title={attachment.filename}
+                                    >
+                                      <img
+                                        src={attachment.url}
+                                        alt={attachment.filename}
+                                        className="rounded-lg max-w-[240px] max-h-[240px] object-cover border border-black/10"
+                                      />
+                                    </a>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <File size={16} />
+                                      <div className="flex-1 min-w-0">
+                                        <a
+                                          href={attachment.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs underline hover:no-underline truncate block"
+                                        >
+                                          {attachment.filename}
+                                        </a>
+                                        <span className="text-xs opacity-70">
+                                          {(attachment.size / 1024).toFixed(1)} KB
+                                        </span>
+                                      </div>
+                                      <a
+                                        href={attachment.url}
+                                        download={attachment.filename}
+                                        className="p-1 hover:bg-white/20 rounded"
+                                        title="Download"
+                                      >
+                                        <Download size={12} />
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-gray-400">
                             <span>{formatMessageTime(m.createdAt)}</span>
                             {m.senderId === user.id && (m.read ? <CheckCheck size={12} /> : <Check size={12} />)}
@@ -564,26 +686,88 @@ export default function MessagesPage() {
                 </div>
 
                 {/* Composer */}
-                <div className="border-t p-3 flex items-center gap-3">
-                  <input
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    placeholder="Type your message..."
-                    className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm"
-                  />
-                  <button
-                    onClick={handleSend}
-                    disabled={!newMessage.trim()}
-                    className="p-2 rounded-xl bg-brand-500 text-white disabled:opacity-50"
-                  >
-                    <Send size={18} />
-                  </button>
+                <div className="border-t p-3 relative">
+                  {/* Attachments preview */}
+                  {attachments.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {attachments.map((file, index) => (
+                        <div key={index} className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
+                          {isImageFile(file.name) ? (
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={file.name}
+                              className="h-16 w-16 object-cover rounded border border-black/10"
+                            />
+                          ) : (
+                            <>
+                              <File size={16} className="text-gray-600" />
+                              <span className="text-sm text-gray-700 truncate max-w-32">{file.name}</span>
+                            </>
+                          )}
+                          <button
+                            onClick={() => removeAttachment(index)}
+                            className="ml-1 text-gray-500 hover:text-gray-700"
+                            title="Remove"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.txt,.csv"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                      title="Attach files"
+                    >
+                      <Paperclip size={18} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        console.log('Emoji button clicked, current state:', showEmojiPicker);
+                        setShowEmojiPicker(!showEmojiPicker);
+                      }}
+                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                      title="Add emoji"
+                    >
+                      <Smile size={18} />
+                    </button>
+                    {showEmojiPicker && (
+                      <div className="fixed bottom-24 right-6 z-[9999] emoji-picker-container">
+                        <EmojiPicker onEmojiClick={onEmojiClick} />
+                      </div>
+                    )}
+                    <input
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSend();
+                        }
+                      }}
+                      placeholder="Type your message..."
+                      className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm"
+                    />
+                    <button
+                      onClick={handleSend}
+                      disabled={(!newMessage.trim() && attachments.length === 0)}
+                      className="p-2 rounded-xl bg-brand-500 text-white disabled:opacity-50"
+                    >
+                      <Send size={18} />
+                    </button>
+                  </div>
+
                 </div>
               </section>
             ) : (

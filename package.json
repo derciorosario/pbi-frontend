@@ -23,6 +23,7 @@
     "@react-oauth/google": "^0.12.2",
     "axios": "^1.11.0",
     "core-js": "^3.39.0",
+    "emoji-picker-react": "^4.13.3",
     "file-saver": "^2.0.5",
     "framer-motion": "^11.3.2",
     "html2canvas": "^1.4.1",

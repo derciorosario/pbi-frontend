@@ -293,6 +293,8 @@ export default function CreateServicePage() {
   const isEditMode = Boolean(id);
   const { user } = useAuth();
   const [loading,setLoading]=useState(true)
+  const [uploading, setUploading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
 
   // owner detection
   const [ownerUserId, setOwnerUserId] = useState(null);
@@ -464,6 +466,8 @@ export default function CreateServicePage() {
     const slice = remainingSlots > 0 ? arr.slice(0, remainingSlots) : [];
 
     try {
+      setUploading(true);
+      setUploadingCount(slice.length);
       const formData = new FormData();
       slice.forEach(file => {
         formData.append('attachments', file);
@@ -475,12 +479,15 @@ export default function CreateServicePage() {
         }
       });
 
-      const mapped = response.data.filenames.map((filename) => (`${API_URL}/uploads/${filename}` ));
+      const mapped = response.data.filenames.map((filename) => (`${API_URL}/uploads/${filename}`  ));
 
       setAttachments((prev) => [...prev, ...mapped]);
     } catch (err) {
       console.error(err);
       toast.error("Some files could not be uploaded.");
+    } finally {
+      setUploading(false);
+      setUploadingCount(0);
     }
   }
 
@@ -1215,7 +1222,7 @@ export default function CreateServicePage() {
                 </div>
 
                
-               {attachments.length > 0 && (
+               {(attachments.length > 0 || uploadingCount > 0) && (
                 <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                   {attachments.map((att, idx) => {
                     const isImg = att.startsWith("data:image") || /\.(jpe?g|png|gif|webp|svg)$/i.test(att);
@@ -1254,6 +1261,19 @@ export default function CreateServicePage() {
                       </div>
                     );
                   })}
+
+                  {uploadingCount > 0 &&
+                    Array.from({ length: uploadingCount }).map((_, idx) => (
+                      <div key={`att-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                        <div className="h-12 w-12 rounded-md bg-gray-200 animate-pulse" />
+                        <div className="flex-1 min-w-0">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                          <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                        <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
+                      </div>
+                    ))
+                  }
                 </div>
               )}
 

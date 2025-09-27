@@ -113,10 +113,10 @@ export const SocketProvider = ({ children }) => {
   );
 
   const sendPrivateMessage = useCallback(
-    (receiverId, content) =>
+    (receiverId, content, attachments = []) =>
       new Promise((resolve, reject) => {
         if (!socket || !connected) return reject(new Error("Socket not connected"));
-        socket.emit("private_message", { receiverId, content }, (res) => {
+        socket.emit("private_message", { receiverId, content, attachments }, (res) => {
           if (res?.ok) resolve(res.data);
           else reject(new Error(res?.error || "Failed to send message"));
         });

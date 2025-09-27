@@ -23,6 +23,7 @@ const styles = {
     "inline-flex items-center rounded-full bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1 text-xs",
 };
 /* -------------- Small helpers -------------- */
+
 const Label = ({ children, required }) => (
   <label className="text-[12px] font-medium text-gray-700">
     {children} {required && <span className="text-pink-600">*</span>}
@@ -393,6 +394,8 @@ export default function CreateNeedPage() {
 
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [ownerUserId, setOwnerUserId] = useState(null);
   const [currentType, setCurrentType] = useState("need");
 
@@ -677,6 +680,8 @@ export default function CreateNeedPage() {
 
     // Upload files immediately and store filenames
     try {
+      setUploading(true);
+      setUploadingCount(slice.length);
       const formData = new FormData();
       slice.forEach(file => {
         formData.append('attachments', file);
@@ -700,6 +705,9 @@ export default function CreateNeedPage() {
     } catch (error) {
       console.error('Error uploading attachments:', error);
       toast.error('Failed to upload attachments');
+    } finally {
+      setUploading(false);
+      setUploadingCount(0);
     }
   }
 
@@ -1026,7 +1034,7 @@ export default function CreateNeedPage() {
               </div>
 
             
-              {attachments.length > 0 && (
+              {(attachments.length > 0 || uploadingCount > 0) && (
                 <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                   {attachments.map((a, idx) => {
                     const isImage =
@@ -1066,6 +1074,19 @@ export default function CreateNeedPage() {
                       </div>
                     );
                   })}
+
+                  {uploadingCount > 0 &&
+                    Array.from({ length: uploadingCount }).map((_, idx) => (
+                      <div key={`att-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                        <div className="h-10 w-10 rounded-md bg-gray-200 animate-pulse" />
+                        <div className="flex-1 min-w-0">
+                          <div className="h-4 w-3/5 bg-gray-200 rounded mb-2 animate-pulse" />
+                          <div className="h-3 w-2/5 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                        <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
+                      </div>
+                    ))
+                  }
                 </div>
               )}
             </div>

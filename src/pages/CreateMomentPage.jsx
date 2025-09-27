@@ -115,7 +115,7 @@ function ReadOnlyMomentView({ form, tags, images, audSel, audTree }) {
           )}
           {(form.location || form.city || form.country) && (
             <div className="rounded-xl border p-4">
-              <div className="flex items-center gap-2 text-gray-700 font-medium">Location</div>
+              <div className="flex items-center gap-2 text-gray-700 font-medium">Address</div>
               <div className="mt-2 text-sm text-gray-700">
                 {[form.location, form.city, form.country].filter(Boolean).join(", ") || "Not specified"}
               </div>
@@ -130,7 +130,7 @@ function ReadOnlyMomentView({ form, tags, images, audSel, audTree }) {
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {images.slice(1).map((img, idx) => (
                 <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
-                  <img src={img.base64url} alt={img.title || `Experience image ${idx + 1}`} className="h-full w-full object-cover" />
+                  <img src={img.base64url} alt={img.name || `Experience image ${idx + 1}`} className="h-full w-full object-cover" />
                 </div>
               ))}
             </div>
@@ -355,6 +355,8 @@ export default function CreateMomentPage() {
 
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [ownerUserId, setOwnerUserId] = useState(null);
   const [currentType, setCurrentType] = useState("need");
 
@@ -375,7 +377,7 @@ export default function CreateMomentPage() {
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState([]);
 
-  // Images: [{ title, base64url }]
+  // Images: [{ name, base64url }]
   const [images, setImages] = useState([]);
   // Attachments: [{ name, base64url }]
   const [attachments, setAttachments] = useState([]);
@@ -655,6 +657,8 @@ export default function CreateMomentPage() {
 
     // Upload files immediately and store filenames
     try {
+      setUploading(true);
+      setUploadingCount(slice.length);
       const formData = new FormData();
       slice.forEach(file => {
         formData.append('images', file);
@@ -668,24 +672,27 @@ export default function CreateMomentPage() {
 
       const uploadedFilenames = response.data.filenames || [];
 
-      // Store as {base64url: filename, title: ''}
+      // Store as {base64url: filename, name: ''}
       const mapped = slice.map((file, index) => ({
         base64url: `${API_URL}/uploads/${uploadedFilenames[index] || file.name}`,
-        title: file.name.replace(/\.[^/.]+$/, ""), // filename without extension as title
+        name: file.name.replace(/\.[^/.]+$/, ""), // filename without extension as name
       }));
 
       setImages((prev) => [...prev, ...mapped]);
     } catch (error) {
       console.error('Error uploading images:', error);
       toast.error('Failed to upload images');
+    } finally {
+      setUploading(false);
+      setUploadingCount(0);
     }
   }
 
 
 
-  function updateImageTitle(idx, title) {
+  function updateImageName(idx, name) {
     if (readOnly) return;
-    setImages((prev) => prev.map((x, i) => (i === idx ? { ...x, title } : x)));
+    setImages((prev) => prev.map((x, i) => (i === idx ? { ...x, name } : x)));
   }
 
   function removeImage(idx) {
@@ -850,7 +857,7 @@ export default function CreateMomentPage() {
               className="mt-6 rounded-2xl bg-white border border-gray-100 p-6 shadow-sm space-y-8"
             >
           {/* Related Entity (Required) - Moved to first position */}
-          <section>
+          <section className="hidden">
             <h2 className="font-semibold">What is this experience about? *</h2>
             <div className="mt-2 grid sm:grid-cols-2 gap-4">
               <select
@@ -881,7 +888,7 @@ export default function CreateMomentPage() {
                   key={label}
                   type="button"
                   onClick={() => setField("type", label)}
-                  className={`border rounded-xl p-3 text-left transition-colors ${
+                  className={`border rounded-xl p-3 text-center transition-colors ${
                     form.type === label
                       ? "border-brand-600 bg-brand-50"
                       : "border-gray-200 bg-white hover:border-brand-600"
@@ -897,59 +904,76 @@ export default function CreateMomentPage() {
           {/* Photos */}
           <section>
             <h2 className="font-semibold">Photos</h2>
-            <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-500">
-              <ImageIcon className="mx-auto h-8 w-8 text-gray-400" />
-              <p className="mt-2">Upload Images</p>
-              <p className="text-xs">Drag and drop your photos here, or click to browse (max 5MB each)</p>
+            <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
+              <div className="mb-2">
+                <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path d="M12 4v16m8-8H4" />
+                </svg>
+              </div>
+              Upload images showcasing your experience (max 5MB per file)
+              <div className="mt-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFilesChosen(e.target.files)}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  Choose Files
+                </button>
+              </div>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handleFilesChosen(e.target.files)}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="mt-3 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-              >
-                Choose Files
-              </button>
-
-              {images.length > 0 && (
+              {(images.length > 0 || uploadingCount > 0) && (
                 <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                   {images.map((img, idx) => (
-                    <div key={idx} className="border rounded-xl overflow-hidden">
-                      <div className="h-44 bg-gray-100">
-                        <img
-                          src={img.base64url}
-                          alt={img.title || `Image ${idx + 1}`}
-                          className="h-full w-full object-cover"
-                        />
+                    <div key={`${img.base64url}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                      <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
+                        <img src={img.base64url} alt={img.name} className="h-full w-full object-cover" />
                       </div>
-                      <div className="p-3 flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
                         <input
                           type="text"
-                          value={img.title}
-                          onChange={(e) => updateImageTitle(idx, e.target.value)}
-                          placeholder={`Image ${idx + 1} title`}
-                          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
+                          value={img.name}
+                          onChange={(e) => updateImageName(idx, e.target.value)}
+                          placeholder={`Image ${idx + 1} name`}
+                          className="w-full text-sm font-medium border-none p-0 focus:outline-none focus:ring-0"
                         />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(idx)}
-                          className="p-2 rounded hover:bg-gray-100"
-                          title="Remove"
-                        >
-                          <I.trash />
-                        </button>
+                        <div className="text-[11px] text-gray-500 truncate">Attached</div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="p-1 rounded hover:bg-gray-100"
+                        title="Remove"
+                      >
+                        <I.trash />
+                      </button>
                     </div>
                   ))}
+
+                  {uploadingCount > 0 &&
+                    Array.from({ length: uploadingCount }).map((_, idx) => (
+                      <div key={`img-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                        <div className="h-12 w-12 rounded-md bg-gray-200 animate-pulse" />
+                        <div className="flex-1 min-w-0">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                          <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                        <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
+                      </div>
+                    ))}
                 </div>
               )}
+
+              <p className="mt-2 text-[11px] text-gray-400">
+                Formats: JPG, PNG, WebP, GIF — up to 5MB each, max 20 images.
+              </p>
             </div>
           </section>
 
@@ -1052,12 +1076,12 @@ export default function CreateMomentPage() {
                 />
               </div>
               <div>
-                <label className="text-[12px] font-medium text-gray-700">Location</label>
+                <label className="text-[12px] font-medium text-gray-700">Address</label>
                 <input
                   type="text"
                   value={form.location}
                   onChange={(e) => setField("location", e.target.value)}
-                  placeholder="Location (e.g., Lagos, Nigeria)"
+                  placeholder="Address"
                   className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                 />
               </div>

@@ -18,6 +18,77 @@ const Icons = {
 function AudienceTree({ tree, selected, onChange, shown = [], from }) {
   const [open, setOpen] = useState({}); // { 'id-..': bool, 'cat-..': bool, 'sc-..': bool }
 
+
+    const selectAll = (select) => {
+    const next = {
+      identityIds: new Set(),
+      categoryIds: new Set(),
+      subcategoryIds: new Set(),
+      subsubCategoryIds: new Set(),
+    };
+
+    if (select) {
+      // Recursively add all items
+      tree.forEach((identity) => {
+        next.identityIds.add(identity.id);
+        (identity.categories || []).forEach((cat) => {
+          next.categoryIds.add(cat.id);
+          (cat.subcategories || []).forEach((sc) => {
+            next.subcategoryIds.add(sc.id);
+            (sc.subsubs || []).forEach((ss) => {
+              next.subsubCategoryIds.add(ss.id);
+            });
+          });
+        });
+      });
+    }
+
+    onChange(next);
+  };
+
+  // Check if everything is selected
+  const isAllSelected = () => {
+    if (!tree.length) return false;
+    
+    let totalItems = 0;
+    let selectedItems = 0;
+
+    tree.forEach((identity) => {
+      totalItems++;
+      if (S(selected.identityIds).has(identity.id)) selectedItems++;
+      
+      (identity.categories || []).forEach((cat) => {
+        totalItems++;
+        if (S(selected.categoryIds).has(cat.id)) selectedItems++;
+        
+        (cat.subcategories || []).forEach((sc) => {
+          totalItems++;
+          if (S(selected.subcategoryIds).has(sc.id)) selectedItems++;
+          
+          (sc.subsubs || []).forEach((ss) => {
+            totalItems++;
+            if (S(selected.subsubCategoryIds).has(ss.id)) selectedItems++;
+          });
+        });
+      });
+    });
+
+    return totalItems > 0 && totalItems === selectedItems;
+  };
+
+  const isPartiallySelected = () => {
+    if (!tree.length) return false;
+    
+    const totalSelected = 
+      S(selected.identityIds).size +
+      S(selected.categoryIds).size +
+      S(selected.subcategoryIds).size +
+      S(selected.subsubCategoryIds).size;
+    
+    return totalSelected > 0 && !isAllSelected();
+  };
+
+
   // ----- utils -----
   const stop = (e) => e.stopPropagation();
   const S = (v) => (v instanceof Set ? v : new Set(v || []));
@@ -209,8 +280,26 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
   // ----- render -----
   return (
     <div className="rounded-xl border border-gray-200">
-      {!shown?.length && (
-        <div className="flex justify-end p-2 border-b bg-white">
+      
+       {!shown?.length && (
+        <div className="flex justify-between items-center p-2 border-b bg-white">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-brand-600"
+              checked={isAllSelected()}
+              ref={(input) => {
+                if (input) {
+                  input.indeterminate = isPartiallySelected();
+                }
+              }}
+              onChange={(e) => selectAll(e.target.checked)}
+            />
+            <span className="text-sm text-gray-700 font-medium">
+              {isAllSelected() ? 'Deselect All' : 'Select All'}
+            </span>
+          </label>
+          
           <button
             type="button"
             onClick={clearAll}

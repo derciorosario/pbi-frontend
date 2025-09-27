@@ -122,7 +122,7 @@ function ReadOnlyCrowdfundView({ form, images, audSel, audTree }) {
   const subcategories = Array.from(audSel.subcategoryIds || []).map(k => maps.subs.get(String(k))).filter(Boolean);
   const subsubs = Array.from(audSel.subsubCategoryIds || []).map(k => maps.subsubs.get(String(k))).filter(Boolean);
 
-  const hero = images?.[0]?.base64url || null;
+  const hero = images?.[0] ? `${API_URL}/uploads/${images[0]}` : null;
   const gallery = (images || []).slice(1);
   const tags = (form.tags || "")
     .split(/[,\n]/g)
@@ -186,16 +186,14 @@ function ReadOnlyCrowdfundView({ form, images, audSel, audTree }) {
           <div>
             <h3 className="text-sm font-semibold text-gray-700">Gallery</h3>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {gallery.map((img, idx) => (
-                <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
-                  <img src={img.base64url} alt={img.title || `Image ${idx + 2}`} className="h-full w-full object-cover" />
-                  {img.title ? (
-                    <div className="absolute left-2 bottom-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded">
-                      {img.title}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
+              {gallery.map((img, idx) => {
+                const src = img.startsWith('http') ? img : `${API_URL}/uploads/${img}`;
+                return (
+                  <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
+                    <img src={src} alt={`Image ${idx + 2}`} className="h-full w-full object-cover" />
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -289,8 +287,10 @@ export default function CrowdfundForm() {
   const [ownerUserId, setOwnerUserId] = useState(null);
 
   const fileRef = useRef(null);
-  // Images: [{ title, base64url }]
+  // Images: array of strings (filenames)
   const [images, setImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [cats, setCats] = useState([]); // [{id,name,subcategories:[{id,name}]}]
   const [saving, setSaving] = useState(false);
 
@@ -401,7 +401,11 @@ export default function CrowdfundForm() {
 
         // Images are stored as array of strings (filenames)
         if (Array.isArray(data.images)) {
-          setImages(data.images);
+          setImages(
+            data.images
+              .filter((x) => x?.filename || typeof x === 'string')
+              .map((x) => typeof x === 'string' ? x : x.filename)
+          );
         } else {
           setImages([]);
         }
@@ -471,6 +475,8 @@ function removeTag(idx) {
 
     // Upload files immediately and store filenames
     try {
+      setUploading(true);
+      setUploadingCount(slice.length);
       const formData = new FormData();
       slice.forEach(file => {
         formData.append('images', file);
@@ -482,13 +488,16 @@ function removeTag(idx) {
         }
       });
 
-      const uploadedFilenames = (response.data.filenames || []).map(i=>`${API_URL}/uploads/${i}`);
+      const uploadedFilenames = response.data.filenames || [];
 
       // Store as array of filenames (strings)
       setImages((prev) => [...prev, ...uploadedFilenames]);
     } catch (error) {
       console.error('Error uploading images:', error);
       toast.error('Failed to upload images');
+    } finally {
+      setUploading(false);
+      setUploadingCount(0);
     }
   }
 
@@ -799,7 +808,7 @@ function removeTag(idx) {
         phone: form.phone || undefined,
         visibility: form.visibility || "public",
         status, // "draft" | "published"
-        images, // Already contains {base64url: filename, title: ''}
+        images: images.map(img => `${API_URL}/uploads/${img}`),
         // Include audience targeting data
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
@@ -955,61 +964,88 @@ function removeTag(idx) {
             {/* Media (images only) */}
             <div className="mt-4">
               <Label>Media (images)</Label>
-              <div className="mt-2 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/60">
-                <div className="p-6 text-center">
-                  <div className="mx-auto mb-2 grid h-12 w-12 place-items-center rounded-full bg-white shadow">
-                    <I.upload />
-                  </div>
-                  <div className="font-semibold text-gray-700">Upload images</div>
-                  <p className="text-sm text-gray-500">Drag & drop, or click below to select files</p>
-
-                  <button
-                    onClick={chooseFiles}
-                    type="button"
-                    className="mt-3 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium"
-                  >
-                    Choose files
-                  </button>
+              <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
+                <div className="mb-2">
+                  <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                Upload images to showcase your crowdfunding project (max 5MB per file)
+                <div className="mt-3">
                   <input
                     ref={fileRef}
                     type="file"
-                    accept="image/*"
                     multiple
+                    accept="image/*"
                     className="hidden"
                     onChange={(e) => handleFilesChosen(e.target.files)}
                   />
-
-                  {/* Preview */}
-                  {images.length > 0 && (
-                    <div className="mt-5 grid sm:grid-cols-2 gap-4 text-left">
-                      {images.map((filename, idx) => (
-                        <div key={idx} className="border rounded-xl overflow-hidden">
-                          <div className="h-44 bg-gray-100">
-                            <img
-                              src={filename}
-                              alt={`Image ${idx + 1}`}
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                          <div className="p-3 flex items-center gap-2">
-                            <span className="text-sm text-gray-600 truncate">Delete</span>
-                            <button
-                              type="button"
-                              onClick={() => removeImage(idx)}
-                              className="p-2 rounded hover:bg-gray-100"
-                              title="Remove"
-                            >
-                              <I.trash />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <p className="mt-2 text-[11px] text-gray-400">
-                    Formats: JPG, PNG, WebP, GIF — up to 5MB each, max 20 images.
-                  </p>
+                  <button
+                    type="button"
+                    onClick={chooseFiles}
+                    className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  >
+                    Choose Files
+                  </button>
                 </div>
+
+
+               {(images.length > 0 || uploadingCount > 0) && (
+                <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
+                  {images.map((img, idx) => {
+                    const isImg = true
+
+                    // Resolve URL for filenames
+                    let src = null;
+                    if (img.startsWith("data:image")) {
+                      src = img; // base64
+                    } else if (img.startsWith("http://") || img.startsWith("https://")) {
+                      src = img; // full URL
+                    } else if (isImg) {
+                      src = `${API_URL}/uploads/${img}`; // filename to full URL
+                    }
+
+                    return (
+                      <div key={`${img}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                        <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
+                          {isImg ? (
+                            <img src={src} alt={img} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-xs text-gray-500">DOC</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate text-sm font-medium">Image {idx+1}</div>
+                          <div className="text-[11px] text-gray-500 truncate">Attached</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="p-1 rounded hover:bg-gray-100"
+                          title="Remove"
+                        >
+                          <I.trash />
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {uploadingCount > 0 &&
+                    Array.from({ length: uploadingCount }).map((_, idx) => (
+                      <div key={`img-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                        <div className="h-12 w-12 rounded-md bg-gray-200 animate-pulse" />
+                        <div className="flex-1 min-w-0">
+                          <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                          <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                        <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
+
+
               </div>
             </div>
 

@@ -13,8 +13,16 @@ export const getMessagesWithUser = (userId, params = {}) =>
   client.get(`/messages/users/${userId}/messages`, { params });
 
 // Send a message to a user via REST API (fallback if socket is not available)
-export const sendMessage = (userId, content) =>
-  client.post(`/messages/users/${userId}/messages`, { content });
+export const sendMessage = (userId, data) => {
+  if (data instanceof FormData) {
+    return client.post(`/messages/users/${userId}/messages`, data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  }
+  return client.post(`/messages/users/${userId}/messages`, data);
+};
 
 // Mark messages as read via REST API (fallback if socket is not available)
 export const markAsRead = (conversationId) =>
