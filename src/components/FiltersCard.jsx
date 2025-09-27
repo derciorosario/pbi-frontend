@@ -110,6 +110,9 @@ export default function FiltersCard({
   /* Industries */
   selectedIndustries = [],
   setSelectedIndustries,
+
+  viewOnlyConnections,
+  setViewOnlyConnections
 }) {
   const data = useData();
   const { user } = useAuth();
@@ -433,7 +436,9 @@ export default function FiltersCard({
         // funding
         (isFunding && (fundingGoal || amountRaised || currency || deadline)) ||
         // people
-        (isPeople && experienceLevel) ||
+        (isPeople && (experienceLevel || viewOnlyConnections)) ||
+
+        (isPeople && (experienceLevel || viewOnlyConnections)) ||
         // events
         (from === "events" && (eventType || date || registrationType)) ||
         // ✅ audience selections
@@ -485,6 +490,7 @@ export default function FiltersCard({
       deadline,
       // people
       isPeople,
+      viewOnlyConnections,
       // events
       eventType,
       date,
@@ -510,6 +516,8 @@ export default function FiltersCard({
     setGoalId?.(undefined);
     setCityQuery("");
     setGoogleInputValue("");
+
+    setViewOnlyConnections?.(false);
 
     // Clear general categories
     setSelectedFilters?.([]);
@@ -632,6 +640,9 @@ export default function FiltersCard({
           break;
         case "Work Mode":
           setWorkMode?.("");
+          break;
+        case "View Only my connections":
+        setViewOnlyConnections?.(false);
           break;
         case "Work Location":
           setWorkLocation?.("");
@@ -882,8 +893,26 @@ export default function FiltersCard({
 
    
 
-      {/* People */}
-      {isPeople && <></>}
+      {isPeople && (
+        <>
+          {/* Existing Experience Level filter if any */}
+          
+          {/* View Only my connections checkbox - only show if user is logged in */}
+          {user && (
+            <div className="mt-3">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 accent-brand-600"
+                  checked={viewOnlyConnections || false}
+                  onClick={(e) => setViewOnlyConnections?.(e.target.checked)}
+                />
+                <span className="text-gray-700">View my connections</span>
+              </label>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Events */}
       {from === "events" && (
@@ -1683,7 +1712,7 @@ export default function FiltersCard({
               type="number"
               min="0"
               value={fundingGoal ?? ""}
-              onChange={(e) => setFundingGoal?.(e.target.value)}
+              onChange={(e) => setFundingGoal?.(e.target.value.replace(/[^\d\-\(\)]/g, ''))}
               placeholder="e.g., 50000"
               className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
@@ -1695,7 +1724,7 @@ export default function FiltersCard({
               type="number"
               min="0"
               value={amountRaised ?? ""}
-              onChange={(e) => setAmountRaised?.(e.target.value)}
+              onChange={(e) => setAmountRaised?.(e.target.value.replace(/[^\d\-\(\)]/g, ''))}
               placeholder="e.g., 25000"
               className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
             />

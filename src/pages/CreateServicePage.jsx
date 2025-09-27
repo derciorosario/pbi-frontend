@@ -354,7 +354,7 @@ export default function CreateServicePage() {
     if (!isEditMode) return;
     (async () => {
       try {
-        const { data } = await client.get(`/services/${id}`);
+        const { data } = await client.get(`/services/${id}?updated=true`);
         
     setLoading(true)
 
@@ -819,7 +819,7 @@ export default function CreateServicePage() {
         await client.post("/services", payload);
         toast.success("Service published!");
         
-      navigate("/services");
+         navigate("/services");
       }
 
     } catch (error) {
@@ -934,7 +934,7 @@ export default function CreateServicePage() {
                     min="0"
                     step="0.01"
                     value={form.priceAmount}
-                    onChange={(e) => setField("priceAmount", e.target.value)}
+                    onChange={(e) => setField("priceAmount", e.target.value.replace(/[^\d\-\(\)]/g, ''))}
                     placeholder="0.00"
                     className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                   />

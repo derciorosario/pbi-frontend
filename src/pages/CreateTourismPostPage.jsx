@@ -268,7 +268,7 @@ export default function CreateTourismPostPage() {
       try {
         
     setLoading(true)
-        const { data } = await client.get(`/tourism/${id}`);
+        const { data } = await client.get(`/tourism/${id}?updated=true`);
 
         // detect owner (support several shapes)
         const ownerId =

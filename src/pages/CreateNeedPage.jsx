@@ -517,7 +517,7 @@ export default function CreateNeedPage() {
     setLoading(true);
     (async () => {
       try {
-        const { data } = await client.get(`/needs/${id}`);
+        const { data } = await client.get(`/needs/${id}?updated=true`);
         const ownerId = data.userId || data.createdById || data.user?.id || null;
         setOwnerUserId(ownerId);
 

@@ -24,6 +24,16 @@ export default function EventRegistrationDialog({ open, onClose, event }) {
     return Object.keys(newErrors).length === 0;
   };
 
+  function closeDialog(done){
+       setNumberOfPeople('');
+       setReasonForAttending('');
+       if(done=="registered"){
+         onClose('registered')
+       }else{
+         onClose()
+       } 
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -40,9 +50,7 @@ export default function EventRegistrationDialog({ open, onClose, event }) {
         reasonForAttending: reasonForAttending.trim(),
       });
       toast.success('Registration submitted successfully!');
-      onClose();
-      setNumberOfPeople('');
-      setReasonForAttending('');
+      closeDialog('registered');
       setErrors({});
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to submit registration');
@@ -68,7 +76,7 @@ export default function EventRegistrationDialog({ open, onClose, event }) {
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={closeDialog}
             className="p-2 text-gray-500 hover:text-brand-600 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X size={20} />
@@ -85,7 +93,7 @@ export default function EventRegistrationDialog({ open, onClose, event }) {
               type="number"
               min="1"
               value={numberOfPeople}
-              onChange={(e) => setNumberOfPeople(e.target.value)}
+              onChange={(e) => setNumberOfPeople(e.target.value.replace(/[^\d\-\(\)]/g, ''))}
               placeholder="Enter number of people"
               className={`w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none ${
                 errors.numberOfPeople ? 'border-red-500' : 'border-gray-200'
@@ -135,7 +143,7 @@ export default function EventRegistrationDialog({ open, onClose, event }) {
           <button
             type="button"
             className="rounded-xl px-4 py-2 text-sm border bg-white hover:bg-gray-50 transition-colors"
-            onClick={onClose}
+            onClick={closeDialog}
             disabled={isSubmitting}
           >
             Cancel

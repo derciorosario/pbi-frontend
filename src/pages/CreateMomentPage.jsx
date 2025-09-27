@@ -516,7 +516,7 @@ export default function CreateMomentPage() {
     (async () => {
       try {
         setLoading(true);
-        const { data } = await client.get(`/moments/${id}`);
+        const { data } = await client.get(`/moments/${id}?updated=true`);
 
         // detect owner (support several shapes)
         const ownerId =

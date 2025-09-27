@@ -57,6 +57,9 @@ export default function EventCard({
   const [openId, setOpenId] = useState(null);
   const [isHovered, setIsHovered] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(e?.connectionStatus || "none");
+  const [registrationStatus, setRegistrationStatus] = useState(
+    e?.registrationStatus || "not_registered"
+  );
   const [eventDetailsOpen, setEventDetailsOpen] = useState(false); // event details modal
   const [registrationOpen, setRegistrationOpen] = useState(false); // event registration modal
 
@@ -667,23 +670,56 @@ export default function EventCard({
               )}
             </button>
 
-            {/* Register */}
-            {!isOwner && (
-              <button
-                onClick={() => {
-                  if (!user?.id) {
-                    data._showPopUp("login_prompt");
-                    return;
-                  }
-                  setRegistrationOpen(true);
-                }}
-                className={`${
-                  type === "grid" ? "flex-1" : ""
-                } rounded-xl px-4 py-2.5 text-sm _login_prompt font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
-              >
-                Register
-              </button>
-            )}
+           
+           {/* Registration Status Buttons - Show different buttons based on status */}
+          {!isOwner && (
+            <>
+              {/* Registered Status - Show checkmark when already registered */}
+              {registrationStatus === 'registered' && (
+                <button
+                  className={`${
+                    type === "grid" ? "flex-1" : ""
+                  } rounded-xl px-4 py-2.5 text-sm font-medium bg-green-100 text-green-700 cursor-default flex items-center justify-center gap-2`}
+                  disabled
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span>Registered</span>
+                </button>
+              )}
+
+              {/* Not Registered - Show regular Register button */}
+              {registrationStatus === 'not_registered' && (
+                <button
+                  onClick={() => {
+                    if (!user?.id) {
+                      data._showPopUp("login_prompt");
+                      return;
+                    }
+                    setRegistrationOpen(true);
+                  }}
+                  className={`${
+                    type === "grid" ? "flex-1" : ""
+                  } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
+                >
+                  <span>Register</span>
+                </button>
+              )}
+
+              {/* Unauthenticated - Show Register button that prompts login */}
+              {(!registrationStatus || registrationStatus === 'unauthenticated') && (
+                <button
+                  onClick={() => data._showPopUp("login_prompt")}
+                  className={`${
+                    type === "grid" ? "flex-1" : ""
+                  } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
+                >
+                  <span>Register</span>
+                </button>
+              )}
+            </>
+          )}
 
             {/* Message - Hidden for now */}
             {false && (
@@ -748,11 +784,17 @@ export default function EventCard({
       />
 
       {/* Event Registration Dialog */}
-      <EventRegistrationDialog
-        open={registrationOpen}
-        onClose={() => setRegistrationOpen(false)}
-        event={e}
-      />
+      {/* Event Registration Dialog */}
+    <EventRegistrationDialog
+      open={registrationOpen}
+      onClose={(registered) => {
+        if (registered === "registered") {
+          setRegistrationStatus('registered');
+        }
+        setRegistrationOpen(false);
+      }}
+      event={e}
+    />
 
       {/* Report dialog */}
       <ConfirmDialog

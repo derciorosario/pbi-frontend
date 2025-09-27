@@ -322,6 +322,7 @@ export default function NotificationsPage() {
     const connectionItems = [
       ...incoming.map((r) => ({
         key: `conn-in-${r.id}`,
+        id:r.id,
         type: "connection",
         tab:"Connections",
         hasApproval:true,
@@ -339,15 +340,16 @@ export default function NotificationsPage() {
           </div>
         ),
       })),
-      ...outgoing.map((r) => ({
+      /*...outgoing.map((r) => ({
         key: `conn-out-${r.id}`,
         type: "connection",
+        id:r.id,
         tab:"Connections",
         title: "Connection Request Sent",
         desc: `Waiting for approval from ${r.toName || "user"}.${r.reason ? ` Reason: ${r.reason}.` : ""}${r.message ? ` Message: "${r.message}"` : ""}`,
         time: timeAgo(r.createdAt),
         actions: <div className="mt-2 text-xs text-gray-500">Pending</div>,
-      })),
+      }))*/
     ];
 
     const meetingItems = meetingRequests
@@ -355,6 +357,7 @@ export default function NotificationsPage() {
       .map((m) => ({
         key: `meeting-${m.id}`,
         type: "meeting",
+        id:m.id,
         title: "New Meeting Request",
         tab:"Meetings",
         hasApproval:true,
@@ -446,10 +449,16 @@ export default function NotificationsPage() {
   // Check if this notification has actionable buttons (accept/reject)
   const hasActions = n.type === "connection.request" || n.type === "meeting_request";
 
+
+  const connectedNot=[...connectionItems,...meetingItems].filter(i=>i.id==n?.payload?.item_id)?.[0]
+
+                       
   return {
     key: `notif-${n.id}`,
+    id:n.id,
     type: notificationType,
     title: title,
+    payload:n.payload,
     tab:notificationType=="connection" ? "Connections":"Meetings",
     desc: message,
     isNotification:true,
@@ -464,7 +473,9 @@ export default function NotificationsPage() {
             Mark Read
           </button>
         )}
-        <button onClick={() => deleteNotification(n.id)} className={styles.danger}>
+        <button title="Respond to delete"  onClick={() => {
+          if(!connectedNot)  deleteNotification(n.id)
+        }} className={`${styles.danger} ${connectedNot ? 'opacity-50 cursor-not-allowed':''} `}>
           Delete
         </button>
       </div>
@@ -550,33 +561,45 @@ export default function NotificationsPage() {
           ) : (
             <>
               {/* All Tab */}
-            
+             
                 <div className="space-y-4">
                  {filteredItems.length === 0 ? (
                     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-center text-gray-500">
                       No {filter.toLowerCase()} notifications yet
                     </div>
                   ) : (
-                    filteredItems.map((item) => (
-                      <div key={item.key} className={`rounded-2xl bg-white border shadow-sm p-4 flex justify-between ${
-                        item.readAt ? "border-gray-100 opacity-75" : "border-brand-200 bg-brand-50"
-                      }`}>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold">{item.title}</h3>
-                            {(!item.readAt &&  !item.hasApproval) && (
-                              <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 mt-1">{item.desc}</p>
-                          {item.meta && <p className="text-xs text-gray-500 mt-1">{item.meta}</p>}
-                          {item.actions}
-                        </div>
-                        <div className="text-xs text-gray-400 whitespace-nowrap ml-4">
-                          {item.time}
-                        </div>
-                      </div>
-                    ))
+                    filteredItems.filter(i=>!i.hasApproval).map((item) => {
+
+             
+                        const connectedNot=filteredItems.filter(i=>i.id==item?.payload?.item_id && i.hasApproval)?.[0]
+                        let connectedNotActions=connectedNot?.actions
+                        let connectedNotMessage=connectedNot?.desc
+
+
+                        return (
+                           <div key={item.key} className={`rounded-2xl  ${item?.hasApproval  ? 'bg-gray-100':'bg-white'} border shadow-sm p-4 flex justify-between ${
+                              item.readAt && !connectedNot  ? "border-gray-100 opacity-75" : "border-brand-200 bg-brand-50"
+                            }`}>
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-semibold">{item.title}</h3>
+                                  {(!item.readAt &&  !item.hasApproval) && (
+                                    <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">{connectedNotMessage || item.desc}</p>
+                                {item.meta && <p className="text-xs text-gray-500 mt-1">{item.meta}</p>}
+                                <div className="flex items-center justify-between gap-x-5 gap-y-1 flex-wrap">
+                                   {item.actions}
+                                   {connectedNotActions}
+                                </div>
+                              </div>
+                              <div className="text-xs text-gray-400 whitespace-nowrap ml-4">
+                                {item.time}
+                              </div>
+                            </div>
+                        )
+                    })
                   )}
                 </div>
               

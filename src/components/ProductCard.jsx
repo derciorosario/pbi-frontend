@@ -184,15 +184,7 @@ export default function ProductCard({
             >
               Connect
             </button>}
-             {item.sellerUserId==user?.id &&  <button
-                onClick={() => {
-                 if(item.sellerUserId==user?.id) navigate('/product/'+item.id)
-                }}
-                className="grid place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600"
-                aria-label="Edit"
-              >
-                <Edit size={19}/>
-              </button>}
+             
           </div>
         </div>
       </div>

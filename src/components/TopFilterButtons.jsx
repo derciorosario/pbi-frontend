@@ -65,8 +65,8 @@ export default function TopFilterButtons({buttons=[], selected=[], setSelected, 
   }
 
   return (
-    <div className="relative w-full">
-      <div className="flex gap-2 w-full rounded-sm whitespace-nowrap py-2 overflow-x-auto">
+    <div className="relative w-full ">
+      <div className="flex gap-2 sticky top-10 w-full rounded-sm whitespace-nowrap py-2 overflow-x-auto">
         {loading ? (
           // Skeleton buttons
           Array.from({ length: 5 }, (_, _i) => (

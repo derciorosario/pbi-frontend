@@ -496,7 +496,7 @@ export default function CreateEventPage() {
     setLoadingMeta(true);
     (async () => {
       try {
-        const { data } = await client.get(`/events/${id}`);
+        const { data } = await client.get(`/events/${id}?updated=true`);
         const orgId =
           data.organizerUserId ??
           data.organizerId ??
@@ -1037,7 +1037,7 @@ export default function CreateEventPage() {
                   type="number"
                   min="1"
                   value={form.capacity}
-                  onChange={(e) => setField("capacity", e.target.value)}
+                  onChange={(e) => setField("capacity", e.target.value.replace(/[^\d\-\(\)]/g, ''))}
                   placeholder="e.g. 200"
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
                 />
@@ -1055,7 +1055,7 @@ export default function CreateEventPage() {
                     type="number"
                     step="0.01"
                     value={form.price}
-                    onChange={(e) => setField("price", e.target.value)}
+                    onChange={(e) => setField("price", e.target.value.replace(/[^\d\-\(\)]/g, ''))}
                     placeholder="e.g. 50.00"
                     className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
                     required

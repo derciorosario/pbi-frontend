@@ -38,15 +38,30 @@ const Label = ({ children, required }) => (
   </label>
 );
 
-const Input = (props) => (
-  <input
-    {...props}
-    className={`w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 ${
-      props.className || ""
-    }`}
-  />
-);
 
+
+const Input = (props) => {
+  const handleChange = (e) => {
+    if (props.type === 'number') {
+      // Remove all non-numeric characters except decimal point and minus sign
+      e.target.value = e.target.value.replace(/[^\d.-]/g, '');
+    }
+    
+    if (props.onChange) {
+      props.onChange(e);
+    }
+  };
+
+  return (
+    <input
+      {...props}
+      onChange={handleChange}
+      className={`w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200 ${
+        props.className || ""
+      }`}
+    />
+  );
+};
 const Select = ({ children, ...rest }) => (
   <div className="relative">
     <select
@@ -344,7 +359,7 @@ export default function CrowdfundForm() {
       try {
 
         
-        const { data } = await client.get(`/funding/projects/${id}`);
+        const { data } = await client.get(`/funding/projects/${id}?updated=true`);
 
         // detect owner (support several shapes)
         const ownerId =

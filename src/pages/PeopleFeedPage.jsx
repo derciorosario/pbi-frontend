@@ -63,6 +63,8 @@ export default function PeopleFeedPage() {
 
   const currentPage = pathname.includes("/people") ? "people" : "companies";
 
+  const [viewOnlyConnections,setViewOnlyConnections]=useState(false)
+
   // ---- NEW: all filter states ----
   // Products
   const [price, setPrice] = useState("");
@@ -222,6 +224,8 @@ export default function PeopleFeedPage() {
         // include ALL filters so backend can leverage them when needed:
         // products
         price: price || undefined,
+
+        viewOnlyConnections,
         // services
         serviceType: serviceType || undefined,
         priceType: priceType || undefined,
@@ -282,6 +286,7 @@ export default function PeopleFeedPage() {
     price,
     serviceType,
     priceType,
+    viewOnlyConnections,
     deliveryTime,
     experienceLevel,
     locationType,
@@ -323,6 +328,7 @@ export default function PeopleFeedPage() {
       price,
       serviceType,
       priceType,
+      viewOnlyConnections,
       deliveryTime,
       experienceLevel,
       locationType,
@@ -377,6 +383,7 @@ export default function PeopleFeedPage() {
     price,
     serviceType,
     priceType,
+    viewOnlyConnections,
     deliveryTime,
     experienceLevel,
     locationType,
@@ -445,6 +452,8 @@ export default function PeopleFeedPage() {
     setServiceType,
     priceType,
     setPriceType,
+    viewOnlyConnections,
+    setViewOnlyConnections,
     deliveryTime,
     setDeliveryTime,
 

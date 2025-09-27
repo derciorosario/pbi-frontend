@@ -22,7 +22,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
         employmentType: employmentType || null,
       });
       toast.success('Application submitted successfully!');
-      onClose();
+      onClose('applied');
       setCoverLetter('');
       setExpectedSalary('');
       setAvailability('');

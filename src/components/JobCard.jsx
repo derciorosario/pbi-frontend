@@ -78,7 +78,12 @@ export default function JobCard({
   const [connectionStatus, setConnectionStatus] = useState(
     job?.connectionStatus || "none"
   );
+  const [applicationStatus, setApplicationStatus] = useState(
+    job?.applicationStatus || "not_applied"
+  );
   const [jobDetailsOpen, setJobDetailsOpen] = useState(false); // job details modal
+
+  console.log({applicationStatus})
 
   // Social state
   const [liked, setLiked] = useState(!!job?.liked);
@@ -828,20 +833,61 @@ export default function JobCard({
               )}
             </button>
 
-           {!isOwner && <button
-              onClick={() => {
-                if (!user?.id) {
-                  data._showPopUp("login_prompt");
-                  return;
-                }
-                setApplicationDialogOpen(true);
-              }}
-              className={`${
-                type === "grid" ? "flex-1" : ""
-              } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
-            >
-              <span>Apply</span>
-            </button>}
+            
+        
+
+          {/* Application Status Buttons - Show different buttons based on status */}
+            
+            {!isOwner && (
+          <>
+            {/* Applied Status - Show checkmark when already applied */}
+            {applicationStatus === 'applied' && (
+              <button
+                className={`${
+                  type === "grid" ? "flex-1" : ""
+                } rounded-xl _login_prompt px-4 py-2.5 text-sm font-medium bg-green-100 text-green-700 cursor-default flex items-center justify-center gap-2`}
+                disabled
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span>Applied</span>
+              </button>
+            )}
+
+            {/* Not Applied - Show regular Apply button */}
+            {applicationStatus === 'not_applied' && (
+              <button
+                onClick={() => {
+                  if (!user?.id) {
+                    data._showPopUp("login_prompt");
+                    return;
+                  }
+                  setApplicationDialogOpen(true);
+                }}
+                className={`${
+                  type === "grid" ? "flex-1" : ""
+                } rounded-xl px-4 _login_prompt py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
+              >
+                <span>Apply</span>
+              </button>
+            )}
+
+            {/* Unauthenticated - Show Apply button that prompts login */}
+            {(!applicationStatus || applicationStatus === 'unauthenticated') && (
+              <button
+                onClick={() => data._showPopUp("login_prompt")}
+                className={`${
+                  type === "grid" ? "flex-1" : ""
+                } rounded-xl px-4 _login_prompt py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
+              >
+                <span>Apply</span>
+              </button>
+            )}
+          </>
+        )}
+
+
 
             {(!isOwner && connectionStatus!="connected") && renderConnectButton()}
           </div>
@@ -899,7 +945,12 @@ export default function JobCard({
       {/* Job Application Dialog */}
       <JobApplicationDialog
         open={applicationDialogOpen}
-        onClose={() => setApplicationDialogOpen(false)}
+        onClose={(sent) => {
+          if(sent=="applied"){
+            setApplicationStatus('applied')
+          }
+          setApplicationDialogOpen(false)
+        }}
         job={job}
       />
     </>

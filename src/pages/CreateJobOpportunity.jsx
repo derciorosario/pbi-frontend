@@ -70,12 +70,26 @@ const Label = ({ children, required }) => (
   </label>
 );
 
-const Input = (props) => (
-  <input
-    {...props}
-    className={` ${props.className || ""} w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 ${props.className || ""}`}
-  />
-);
+const Input = (props) => {
+  const handleChange = (e) => {
+    if (props.type === 'number') {
+      // Remove all non-numeric characters except decimal point and minus sign
+      e.target.value = e.target.value.replace(/[^\d.-]/g, '');
+    }
+    
+    if (props.onChange) {
+      props.onChange(e);
+    }
+  };
+
+  return (
+    <input
+      {...props}
+      onChange={handleChange}
+      className={`w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-100 ${props.className || ""}`}
+    />
+  );
+};
 
 const Select = ({ children, ...rest }) => (
   <div className="relative">
@@ -857,7 +871,7 @@ export default function CreateJobOpportunity() {
 
     (async () => {
       try {
-        const { data } = await client.get(`/jobs/${id}`);
+        const { data } = await client.get(`/jobs/${id}?updated=true`);
         const job = data.job;
 
         // infer owner field across possible shapes
@@ -873,6 +887,7 @@ export default function CreateJobOpportunity() {
 
         // Update form with job data
         setForm({
+          id:job.id,
           title: job.title || "",
           companyId: job.companyId || "",
           companyName: job.company?.name || job.companyName || "",
@@ -1225,10 +1240,11 @@ export default function CreateJobOpportunity() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !form.id) {
     return <FullPageLoader message="Loading job…" tip="Fetching..." />;
   }
 
+ 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
       <Header page={"jobs"} />

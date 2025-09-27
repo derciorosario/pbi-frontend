@@ -518,7 +518,7 @@ const industrySubcategoryOptions = useMemo(() => {
     setIsLoading(true);
     (async () => {
       try {
-        const { data } = await client.get(`/products/${id}`);
+        const { data } = await client.get(`/products/${id}?updated=true`);
 
         // infer owner (support multiple shapes)
         const ownerId =data.sellerUserId;
@@ -528,6 +528,7 @@ const industrySubcategoryOptions = useMemo(() => {
 
         setForm((f) => ({
           ...f,
+          ...data,
           title: data.title || "",
           categoryId: data.categoryId || "",
           subcategoryId: data.subcategoryId || "",
@@ -556,7 +557,6 @@ const industrySubcategoryOptions = useMemo(() => {
                 base64url: x.filename ? `${API_URL}/uploads/${x.filename}` : x.base64url,
               }))
           );
-          console.log({i:data.images})
         }
 
         setAudSel({
@@ -564,6 +564,18 @@ const industrySubcategoryOptions = useMemo(() => {
           categoryIds: new Set((data.audienceCategories || []).map((x) => x.id)),
           subcategoryIds: new Set((data.audienceSubcategories || []).map((x) => x.id)),
           subsubCategoryIds: new Set((data.audienceSubsubs || []).map((x) => x.id)),
+        });
+
+        setSelectedGeneral({
+          categoryId: data.generalCategoryId || "",
+          subcategoryId: data.generalSubcategoryId || "",
+          subsubCategoryId: data.generalSubsubCategoryId || "",
+        });
+
+        setSelectedIndustry({
+          categoryId: data.industryCategoryId || "",
+          subcategoryId: data.industrySubcategoryId || "",
+          subsubCategoryId: data.industrySubsubCategoryId || "",
         });
       } catch (err) {
         console.error(err);
@@ -574,6 +586,8 @@ const industrySubcategoryOptions = useMemo(() => {
       }
     })();
   }, [isEditMode, id, navigate]);
+
+  console.log({form})
 
   // Load categories (legacy tree)
   useEffect(() => {
@@ -619,7 +633,7 @@ const industrySubcategoryOptions = useMemo(() => {
       return response.data.filenames.map((filename, index) => ({
         filename: filename,
         title: files[index].name.replace(/\.[^/.]+$/, ""),
-        base64url: `${API_URL}/api/uploads/${filename}` // For preview
+        base64url: `${API_URL}/uploads/${filename}` // For preview
       }));
     } catch (error) {
       console.error('Error uploading images:', error);
@@ -871,7 +885,7 @@ const industrySubcategoryOptions = useMemo(() => {
                     min="0"
                     step="0.01"
                     value={form.price}
-                    onChange={(e) => setField("price", e.target.value)}
+                    onChange={(e) => setField("price", e.target.value.replace(/[^\d\-\(\)]/g, ''))}
                     placeholder="0.00"
                     className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                   />
@@ -891,7 +905,7 @@ const industrySubcategoryOptions = useMemo(() => {
                     type="number"
                     min="0"
                     value={form.quantity}
-                    onChange={(e) => setField("quantity", e.target.value)}
+                    onChange={(e) => setField("quantity", e.target.value.replace(/[^\d\-\(\)]/g, ''))}
                     placeholder="Enter quantity"
                     className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                   />
