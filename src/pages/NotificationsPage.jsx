@@ -198,7 +198,16 @@ export default function NotificationsPage() {
     try {
       const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : 'Declining'} connection request...`);
       
+      const relatedNotification = notifications.find(n => 
+         n.type === "connection.request" && n.payload?.item_id === id
+      );
+
       if (connected && socket && 0==1) {
+
+        if (relatedNotification) {
+            markNotificationAsRead(relatedNotification.id);
+        }
+
         socket.emit("qa_respond_connection_request", { requestId: id, action }, (response) => {
           if (response?.ok) {
             toast.success(`Connection request ${action === 'accept' ? 'accepted' : 'declined'} successfully`, { id: toastId });
@@ -210,6 +219,9 @@ export default function NotificationsPage() {
       } else {
         await client.post(`/connections/requests/${id}/respond`, { action });
         toast.success(`Connection request ${action === 'accept' ? 'accepted' : 'declined'} successfully`, { id: toastId });
+        if (relatedNotification) {
+            markNotificationAsRead(relatedNotification.id);
+        }
         loadConnections();
       }
     } catch (e) {
@@ -221,12 +233,19 @@ export default function NotificationsPage() {
     try {
       const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : 'Declining'} meeting request...`);
       
+      const relatedNotification = notifications.find(n => 
+          n.type === "meeting_request" && n.payload?.item_id === id
+      );
+
+
       if (connected && socket) {
-        // Socket implementation would need to be added to your backend
-        // For now, fallback to HTTP
         await client.post(`/meeting-requests/${id}/respond`, { action, rejectionReason });
       } else {
         await client.post(`/meeting-requests/${id}/respond`, { action, rejectionReason });
+      }
+
+      if (relatedNotification) {
+        await markNotificationAsRead(relatedNotification.id);
       }
       
       toast.success(`Meeting request ${action === 'accept' ? 'accepted' : 'declined'} successfully`, { id: toastId });

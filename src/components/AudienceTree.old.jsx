@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 
-// Icons for the component
+// Icons
 const Icons = {
   caret: () => (
     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
@@ -14,10 +14,82 @@ const Icons = {
   ),
 };
 
-function AudienceTree({ tree, selected, onChange, shown = [], from }) {
-  const [open, setOpen] = useState({}); // collapse state by key id
 
-  // ---------- helpers ----------
+function AudienceTree({ tree, selected, onChange, shown = [], from }) {
+  const [open, setOpen] = useState({}); // { 'id-..': bool, 'cat-..': bool, 'sc-..': bool }
+
+
+    const selectAll = (select) => {
+    const next = {
+      identityIds: new Set(),
+      categoryIds: new Set(),
+      subcategoryIds: new Set(),
+      subsubCategoryIds: new Set(),
+    };
+
+    if (select) {
+      // Recursively add all items
+      tree.forEach((identity) => {
+        next.identityIds.add(identity.id);
+        (identity.categories || []).forEach((cat) => {
+          next.categoryIds.add(cat.id);
+          (cat.subcategories || []).forEach((sc) => {
+            next.subcategoryIds.add(sc.id);
+            (sc.subsubs || []).forEach((ss) => {
+              next.subsubCategoryIds.add(ss.id);
+            });
+          });
+        });
+      });
+    }
+
+    onChange(next);
+  };
+
+  // Check if everything is selected
+  const isAllSelected = () => {
+    if (!tree.length) return false;
+    
+    let totalItems = 0;
+    let selectedItems = 0;
+
+    tree.forEach((identity) => {
+      totalItems++;
+      if (S(selected.identityIds).has(identity.id)) selectedItems++;
+      
+      (identity.categories || []).forEach((cat) => {
+        totalItems++;
+        if (S(selected.categoryIds).has(cat.id)) selectedItems++;
+        
+        (cat.subcategories || []).forEach((sc) => {
+          totalItems++;
+          if (S(selected.subcategoryIds).has(sc.id)) selectedItems++;
+          
+          (sc.subsubs || []).forEach((ss) => {
+            totalItems++;
+            if (S(selected.subsubCategoryIds).has(ss.id)) selectedItems++;
+          });
+        });
+      });
+    });
+
+    return totalItems > 0 && totalItems === selectedItems;
+  };
+
+  const isPartiallySelected = () => {
+    if (!tree.length) return false;
+    
+    const totalSelected = 
+      S(selected.identityIds).size +
+      S(selected.categoryIds).size +
+      S(selected.subcategoryIds).size +
+      S(selected.subsubCategoryIds).size;
+    
+    return totalSelected > 0 && !isAllSelected();
+  };
+
+
+  // ----- utils -----
   const stop = (e) => e.stopPropagation();
   const S = (v) => (v instanceof Set ? v : new Set(v || []));
   const isChecked = (type, id) => S(selected?.[type]).has(id);
@@ -44,9 +116,9 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     onChange(next);
   };
 
-  // Toggle: open only this CATEGORY within the same identity (close siblings & their open subcats)
+  // Exclusive open: category (closes siblings & their subcats)
   const onToggleCategory = (identity, cat) => {
-    const identityId = identity.id || identity.name;
+    const identityId = identity.id;
     const idKey = `id-${identityId}`;
     const cKey = `cat-${cat.id}`;
 
@@ -57,7 +129,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       // keep identity open
       next[idKey] = true;
 
-      // close all categories and subcategories under this identity
+      // close all categories + their subcats under this identity
       (identity.categories || []).forEach((c) => {
         delete next[`cat-${c.id}`];
         (c.subcategories || []).forEach((sc) => {
@@ -70,79 +142,131 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     });
   };
 
-  // Toggle: open only this SUBCATEGORY within the same category (close sibling subcats)
+  // Exclusive open: subcategory (closes sibling subcats)
   const onToggleSubcategory = (cat, sc) => {
     const scKey = `sc-${sc.id}`;
     setOpen((prev) => {
       const willOpen = !prev[scKey];
       const next = { ...prev };
-
-      (cat.subcategories || []).forEach((s) => {
-        delete next[`sc-${s.id}`];
-      });
-
+      (cat.subcategories || []).forEach((s) => delete next[`sc-${s.id}`]);
       if (willOpen) next[scKey] = true;
       return next;
     });
   };
 
-  // ---------- counts (exclude the node itself) ----------
-  // subcategory: count only selected sub-subs (children)
-  const countSubcategorySelected = (sc) => {
+  // ----- selection handlers -----
+  const onCategoryCheck = (identityId, cat) => (e) => {
+    const checked = e.target.checked;
+    const next = {
+      identityIds: new Set(S(selected.identityIds)),
+      categoryIds: new Set(S(selected.categoryIds)),
+      subcategoryIds: new Set(S(selected.subcategoryIds)),
+      subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
+    };
+
+    if (checked) {
+      next.identityIds.add(identityId);
+      next.categoryIds.add(cat.id);
+    } else {
+      next.categoryIds.delete(cat.id);
+      (cat.subcategories || []).forEach((sc) => {
+        next.subcategoryIds.delete(sc.id);
+        (sc.subsubs || []).forEach((ss) => next.subsubCategoryIds.delete(ss.id));
+      });
+    }
+    onChange(next);
+  };
+
+  const onSubcategoryCheck = (identityId, categoryId, sc) => (e) => {
+    const checked = e.target.checked;
+    const next = {
+      identityIds: new Set(S(selected.identityIds)),
+      categoryIds: new Set(S(selected.categoryIds)),
+      subcategoryIds: new Set(S(selected.subcategoryIds)),
+      subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
+    };
+
+    if (checked) {
+      next.identityIds.add(identityId);
+      next.categoryIds.add(categoryId);
+      next.subcategoryIds.add(sc.id);
+    } else {
+      next.subcategoryIds.delete(sc.id);
+      (sc.subsubs || []).forEach((ss) => next.subsubCategoryIds.delete(ss.id));
+    }
+    onChange(next);
+  };
+
+  const onSubsubCheck = (identityId, categoryId, subcategoryId, ss) => (e) => {
+    const checked = e.target.checked;
+    const next = {
+      identityIds: new Set(S(selected.identityIds)),
+      categoryIds: new Set(S(selected.categoryIds)),
+      subcategoryIds: new Set(S(selected.subcategoryIds)),
+      subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
+    };
+    if (checked) {
+      next.identityIds.add(identityId);
+      next.categoryIds.add(categoryId);
+      next.subcategoryIds.add(subcategoryId);
+      next.subsubCategoryIds.add(ss.id);
+    } else {
+      next.subsubCategoryIds.delete(ss.id);
+    }
+    onChange(next);
+  };
+
+  // ----- counters (IMMEDIATE children only) -----
+  const countIdentityImmediate = (identity) => {
+    const catIds = S(selected.categoryIds);
     let count = 0;
-    (sc.subsubs || []).forEach((ss) => {
-      if (isChecked("subsubCategoryIds", ss.id)) count += 1;
+    (identity.categories || []).forEach((c) => {
+      if (catIds.has(c.id)) count += 1; // only categories directly under identity
     });
     return count;
   };
 
-  // category: count selected subcategories + selected sub-subs (children & grandchildren)
-  const countCategorySelected = (cat) => {
+  const countCategoryImmediate = (cat) => {
+    const scIds = S(selected.subcategoryIds);
     let count = 0;
     (cat.subcategories || []).forEach((sc) => {
-      if (isChecked("subcategoryIds", sc.id)) count += 1; // include selected subcategory
-      count += countSubcategorySelected(sc); // plus its selected sub-subs
+      if (scIds.has(sc.id)) count += 1; // only subcategories directly under category
     });
     return count;
   };
 
-  // identity: count selected categories + subcategories + sub-subs (all descendants)
-  const countIdentitySelected = (identity) => {
+  const countSubcategoryImmediate = (sc) => {
+    const ssIds = S(selected.subsubCategoryIds);
     let count = 0;
-    (identity.categories || []).forEach((cat) => {
-      if (isChecked("categoryIds", cat.id)) count += 1; // include selected category
-      (cat.subcategories || []).forEach((sc) => {
-        if (isChecked("subcategoryIds", sc.id)) count += 1; // include selected subcategory
-        count += countSubcategorySelected(sc); // plus selected sub-subs
-      });
+    (sc.subsubs || []).forEach((ss) => {
+      if (ssIds.has(ss.id)) count += 1; // only sub-subs directly under subcategory
     });
     return count;
   };
 
   const CountPill = ({ count }) =>
     count > 0 ? (
-      <span className="ml-2 inline-flex items-center rounded-full border border-gray-300 px-1.5 py-0.5 text-[10px] leading-none text-gray-600">
+      <span className="ml-2 inline-flex items-center rounded-full border border-gray-200 bg-brand-50 px-1.5 py-0.5 text-[10px] leading-none text-brand-600">
         {count}
       </span>
     ) : null;
 
-  // ---------- initial opening & preselect (shown / from=people) ----------
+  // ----- initial open & optional preselect (from=people) -----
   useEffect(() => {
     if (!shown?.length) return;
 
-    const shownSet = new Set(shown.map((s) => String(s).trim().toLowerCase()));
-    const match = tree.find((identity) =>
-      shownSet.has(String(identity.name).trim().toLowerCase())
-    );
-    if (!match) return;
+    // If there are shown filters, open all identities
+    const allOpen = {};
+    tree.forEach((identity) => {
+      const identityId = identity.id;
+      const idKey = `id-${identityId}`;
+      allOpen[idKey] = true;
+    });
 
-    const identityId = match.id ?? match.name;
-    const idKey = `id-${identityId}`;
+    console.log({allOpen})
+    setOpen(allOpen);
 
-    // open only this identity
-    setOpen({ [idKey]: true });
-
-    // prepare fresh selection
+    // fresh selection
     const next = {
       identityIds: new Set(),
       categoryIds: new Set(),
@@ -150,19 +274,32 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       subsubCategoryIds: new Set(),
     };
 
-    // if invoked from "people", auto-check just the identity
-    if (String(from ?? "").toLowerCase() === "people") {
-      next.identityIds.add(identityId);
-    }
-
     onChange(next);
   }, [shown, tree, from]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ---------- render ----------
+  // ----- render -----
   return (
     <div className="rounded-xl border border-gray-200">
-      {!shown?.length && (
-        <div className="flex justify-end p-2 border-b bg-white">
+      
+       {!shown?.length && (
+        <div className="flex justify-between items-center p-2 border-b bg-white">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-brand-600"
+              checked={isAllSelected()}
+              ref={(input) => {
+                if (input) {
+                  input.indeterminate = isPartiallySelected();
+                }
+              }}
+              onChange={(e) => selectAll(e.target.checked)}
+            />
+            <span className="text-sm text-gray-700 font-medium">
+              {isAllSelected() ? 'Deselect All' : 'Select All'}
+            </span>
+          </label>
+          
           <button
             type="button"
             onClick={clearAll}
@@ -174,60 +311,67 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       )}
 
       {tree.map((identity) => {
-        const identityId = identity.id || identity.name;
+        const identityId = identity.id;
         const idKey = `id-${identityId}`;
         const openId = !!open[idKey];
         const hasCategories = (identity.categories || []).length > 0;
-        const idCount = countIdentitySelected(identity);
+        const idCount = countIdentityImmediate(identity);
 
         return (
           <div
             key={idKey}
+           
             className={`border-b last:border-b-0 ${
-              shown.length && !shown.includes(identity.name) ? "hidden" : ""
+              shown.length && !shown.some(s => s.toLowerCase() === identity.name.toLowerCase() || identity.name.toLowerCase() === s.toLowerCase()) ? "hidden" : ""
             }`}
+
           >
             <div
               role={hasCategories ? "button" : undefined}
               tabIndex={hasCategories ? 0 : -1}
-              onClick={hasCategories ? () => setOpen((o) => ({ ...o, [idKey]: !o[idKey] })) : undefined}
+              onClick={
+                hasCategories ? () => setOpen((o) => ({ ...o, [idKey]: !o[idKey] })) : undefined
+              }
               className={`w-full flex items-center justify-between px-3 py-2 ${
                 hasCategories ? "hover:bg-gray-50 cursor-pointer" : ""
               }`}
             >
-              <div className="flex items-center gap-2 flex-1 w-full">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-brand-600"
-                  checked={isChecked("identityIds", identityId)}
-                  onChange={(e) => setChecked("identityIds", identityId, e.target.checked)}
-                  onClick={stop}
-                />
-                <span className="font-medium w-full flex flex-1 items-center">
+                 <div className={`flex items-center ${openId ? 'bg-brand-50':''}  gap-2 flex-1 min-w-0 px-5 rounded-full py-1.5 border border-gray-200`}>
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-brand-600 shrink-0"
+                checked={isChecked("identityIds", identityId)}
+                onChange={(e) => setChecked("identityIds", identityId, e.target.checked)}
+                onClick={stop}
+              />
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span title={identity.name} className="font-medium text-brand-600 truncate min-w-0">
                   {identity.name}
-                  <CountPill count={idCount} />
                 </span>
+                <CountPill count={idCount} />
               </div>
+              
               {hasCategories && (
-                <span className="text-gray-500">
-                  {openId ? <Icons.caretUp /> : <Icons.caret />}
-                </span>
+                <span className="text-gray-500">{openId ? <Icons.caretUp /> : <Icons.caret />}</span>
               )}
             </div>
+            
+            </div>
 
-            {openId && hasCategories && (
-              <div className="bg-gray-50/60 px-4 py-3 space-y-3">
+            <div className={`${shown.length ? '':'px-4'}`}>
+               {openId && hasCategories && (
+              <div className="bg-slate-50/80 px-4 py-3 space-y-3">
                 {(identity.categories || []).map((cat) => {
                   const cKey = `cat-${cat.id}`;
                   const openCat = !!open[cKey];
                   const hasSubs = (cat.subcategories || []).length > 0;
-                  const catCount = countCategorySelected(cat);
+                  const catCount = countCategoryImmediate(cat);
 
                   return (
-                    <div key={cKey} className="rounded-lg border border-gray-200">
+                    <div key={cKey} className="rounded-lg border border-slate-200">
                       <div
-                        className={`flex items-center justify-between px-3 py-2 bg-white ${
-                          hasSubs ? "cursor-pointer" : ""
+                        className={`flex items-center justify-between px-3 py-2 bg-slate-100 ${
+                          hasSubs ? "cursor-pointer hover:bg-slate-100/80" : ""
                         }`}
                         onClick={hasSubs ? () => onToggleCategory(identity, cat) : undefined}
                       >
@@ -236,32 +380,9 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                             type="checkbox"
                             className="h-4 w-4 accent-brand-600"
                             checked={isChecked("categoryIds", cat.id)}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              const checked = e.target.checked;
-                              const next = {
-                                identityIds: new Set(S(selected.identityIds)),
-                                categoryIds: new Set(S(selected.categoryIds)),
-                                subcategoryIds: new Set(S(selected.subcategoryIds)),
-                                subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
-                              };
-
-                              if (checked) {
-                                next.identityIds.add(identityId);
-                                next.categoryIds.add(cat.id);
-                              } else {
-                                next.categoryIds.delete(cat.id);
-                                (cat.subcategories || []).forEach((sc) => {
-                                  next.subcategoryIds.delete(sc.id);
-                                  (sc.subsubs || []).forEach((ss) =>
-                                    next.subsubCategoryIds.delete(ss.id)
-                                  );
-                                });
-                              }
-                              onChange(next);
-                            }}
+                            onChange={onCategoryCheck(identityId, cat)}
                           />
-                          <span className="text-sm font-medium w-full flex items-center">
+                          <span className="text-sm font-medium text-slate-800 w-full flex items-center">
                             {cat.name}
                             <CountPill count={catCount} />
                           </span>
@@ -274,7 +395,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                               e.stopPropagation();
                               onToggleCategory(identity, cat);
                             }}
-                            className="text-gray-500 hover:text-gray-700"
+                            className="text-slate-600 hover:text-slate-800"
                             aria-label={openCat ? "Collapse" : "Expand"}
                           >
                             {openCat ? <Icons.caretUp /> : <Icons.caret />}
@@ -283,17 +404,17 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                       </div>
 
                       {openCat && hasSubs && (
-                        <div className="px-3 py-2 space-y-2 bg-blue-50">
+                        <div className="px-3 py-2 space-y-2 bg-sky-50 border-l-2 border-sky-200">
                           {(cat.subcategories || []).map((sc) => {
                             const scKey = `sc-${sc.id}`;
                             const openSc = !!open[scKey];
                             const hasSubsubs = (sc.subsubs || []).length > 0;
-                            const scCount = countSubcategorySelected(sc);
+                            const scCount = countSubcategoryImmediate(sc);
 
                             return (
-                              <div key={scKey} className="border rounded-md overflow-hidden">
+                              <div key={scKey} className="border border-slate-200 rounded-md overflow-hidden">
                                 <div
-                                  className={`flex items-center justify-between px-3 py-2 bg-white ${
+                                  className={`flex items-center justify-between px-3 py-2 bg-brand-50 ${
                                     hasSubsubs ? "cursor-pointer" : ""
                                   }`}
                                   onClick={hasSubsubs ? () => onToggleSubcategory(cat, sc) : undefined}
@@ -303,29 +424,9 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                                       type="checkbox"
                                       className="h-4 w-4 accent-brand-600"
                                       checked={isChecked("subcategoryIds", sc.id)}
-                                      onChange={(e) => {
-                                        const checked = e.target.checked;
-                                        const next = {
-                                          identityIds: new Set(S(selected.identityIds)),
-                                          categoryIds: new Set(S(selected.categoryIds)),
-                                          subcategoryIds: new Set(S(selected.subcategoryIds)),
-                                          subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
-                                        };
-
-                                        if (checked) {
-                                          next.identityIds.add(identityId);
-                                          next.categoryIds.add(cat.id);
-                                          next.subcategoryIds.add(sc.id);
-                                        } else {
-                                          next.subcategoryIds.delete(sc.id);
-                                          (sc.subsubs || []).forEach((ss) =>
-                                            next.subsubCategoryIds.delete(ss.id)
-                                          );
-                                        }
-                                        onChange(next);
-                                      }}
+                                      onChange={onSubcategoryCheck(identityId, cat.id, sc)}
                                     />
-                                    <span className="text-sm flex items-center">
+                                    <span className="text-sm font-medium text-sky-900 flex items-center">
                                       {sc.name}
                                       <CountPill count={scCount} />
                                     </span>
@@ -338,7 +439,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                                         e.stopPropagation();
                                         onToggleSubcategory(cat, sc);
                                       }}
-                                      className="text-gray-500 hover:text-gray-700"
+                                      className="text-sky-700 hover:text-sky-900"
                                       aria-label={openSc ? "Collapse" : "Expand"}
                                     >
                                       {openSc ? <Icons.caretUp /> : <Icons.caret />}
@@ -347,33 +448,16 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                                 </div>
 
                                 {openSc && hasSubsubs && (
-                                  <div className="px-3 py-2 bg-emerald-50 grid gap-2">
+                                  <div className="px-3 py-2 bg-[#f0f9ff] border-l-2 border-sky-200 grid gap-2">
                                     {sc.subsubs.map((ss) => (
                                       <label key={ss.id} className="flex items-center gap-2">
                                         <input
                                           type="checkbox"
                                           className="h-4 w-4 accent-brand-600"
                                           checked={isChecked("subsubCategoryIds", ss.id)}
-                                          onChange={(e) => {
-                                            const checked = e.target.checked;
-                                            const next = {
-                                              identityIds: new Set(S(selected.identityIds)),
-                                              categoryIds: new Set(S(selected.categoryIds)),
-                                              subcategoryIds: new Set(S(selected.subcategoryIds)),
-                                              subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
-                                            };
-                                            if (checked) {
-                                              next.identityIds.add(identityId);
-                                              next.categoryIds.add(cat.id);
-                                              next.subcategoryIds.add(sc.id);
-                                              next.subsubCategoryIds.add(ss.id);
-                                            } else {
-                                              next.subsubCategoryIds.delete(ss.id);
-                                            }
-                                            onChange(next);
-                                          }}
+                                          onChange={onSubsubCheck(identityId, cat.id, sc.id, ss)}
                                         />
-                                        <span className="text-xs">{ss.name}</span>
+                                        <span className="text-xs text-indigo-950/90">{ss.name}</span>
                                       </label>
                                     ))}
                                   </div>
@@ -388,6 +472,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
                 })}
               </div>
             )}
+            </div>
           </div>
         );
       })}

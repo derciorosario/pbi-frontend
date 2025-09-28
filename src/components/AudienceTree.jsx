@@ -14,12 +14,10 @@ const Icons = {
   ),
 };
 
-
 function AudienceTree({ tree, selected, onChange, shown = [], from }) {
   const [open, setOpen] = useState({}); // { 'id-..': bool, 'cat-..': bool, 'sc-..': bool }
 
-
-    const selectAll = (select) => {
+  const selectAll = (select) => {
     const next = {
       identityIds: new Set(),
       categoryIds: new Set(),
@@ -88,6 +86,191 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     return totalSelected > 0 && !isAllSelected();
   };
 
+  // ----- Select All for Categories -----
+  const selectAllCategories = (identityId, select) => {
+    const next = {
+      identityIds: new Set(S(selected.identityIds)),
+      categoryIds: new Set(S(selected.categoryIds)),
+      subcategoryIds: new Set(S(selected.subcategoryIds)),
+      subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
+    };
+
+    const identity = tree.find(id => id.id === identityId);
+    if (!identity) return;
+
+    if (select) {
+      next.identityIds.add(identityId);
+      (identity.categories || []).forEach((cat) => {
+        next.categoryIds.add(cat.id);
+        (cat.subcategories || []).forEach((sc) => {
+          next.subcategoryIds.add(sc.id);
+          (sc.subsubs || []).forEach((ss) => {
+            next.subsubCategoryIds.add(ss.id);
+          });
+        });
+      });
+    } else {
+      (identity.categories || []).forEach((cat) => {
+        next.categoryIds.delete(cat.id);
+        (cat.subcategories || []).forEach((sc) => {
+          next.subcategoryIds.delete(sc.id);
+          (sc.subsubs || []).forEach((ss) => {
+            next.subsubCategoryIds.delete(ss.id);
+          });
+        });
+      });
+    }
+
+    onChange(next);
+  };
+
+  // ----- Select All for Subcategories -----
+  const selectAllSubcategories = (identityId, categoryId, select) => {
+    const next = {
+      identityIds: new Set(S(selected.identityIds)),
+      categoryIds: new Set(S(selected.categoryIds)),
+      subcategoryIds: new Set(S(selected.subcategoryIds)),
+      subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
+    };
+
+    const identity = tree.find(id => id.id === identityId);
+    if (!identity) return;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    if (select) {
+      next.identityIds.add(identityId);
+      next.categoryIds.add(categoryId);
+      (category.subcategories || []).forEach((sc) => {
+        next.subcategoryIds.add(sc.id);
+        (sc.subsubs || []).forEach((ss) => {
+          next.subsubCategoryIds.add(ss.id);
+        });
+      });
+    } else {
+      (category.subcategories || []).forEach((sc) => {
+        next.subcategoryIds.delete(sc.id);
+        (sc.subsubs || []).forEach((ss) => {
+          next.subsubCategoryIds.delete(ss.id);
+        });
+      });
+    }
+
+    onChange(next);
+  };
+
+  // ----- Select All for Subsubcategories -----
+  const selectAllSubsubcategories = (identityId, categoryId, subcategoryId, select) => {
+    const next = {
+      identityIds: new Set(S(selected.identityIds)),
+      categoryIds: new Set(S(selected.categoryIds)),
+      subcategoryIds: new Set(S(selected.subcategoryIds)),
+      subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
+    };
+
+    const identity = tree.find(id => id.id === identityId);
+    if (!identity) return;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    const subcategory = category.subcategories?.find(sc => sc.id === subcategoryId);
+    if (!subcategory) return;
+
+    if (select) {
+      next.identityIds.add(identityId);
+      next.categoryIds.add(categoryId);
+      next.subcategoryIds.add(subcategoryId);
+      (subcategory.subsubs || []).forEach((ss) => {
+        next.subsubCategoryIds.add(ss.id);
+      });
+    } else {
+      (subcategory.subsubs || []).forEach((ss) => {
+        next.subsubCategoryIds.delete(ss.id);
+      });
+    }
+
+    onChange(next);
+  };
+
+  // ----- Check if all categories in identity are selected -----
+  const areAllCategoriesSelected = (identityId) => {
+    const identity = tree.find(id => id.id === identityId);
+    if (!identity || !identity.categories?.length) return false;
+
+    const selectedCatIds = S(selected.categoryIds);
+    return identity.categories.every(cat => selectedCatIds.has(cat.id));
+  };
+
+  // ----- Check if all subcategories in category are selected -----
+  const areAllSubcategoriesSelected = (identityId, categoryId) => {
+    const identity = tree.find(id => id.id === identityId);
+    if (!identity) return false;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category || !category.subcategories?.length) return false;
+
+    const selectedSubcatIds = S(selected.subcategoryIds);
+    return category.subcategories.every(sc => selectedSubcatIds.has(sc.id));
+  };
+
+  // ----- Check if all subsubcategories in subcategory are selected -----
+  const areAllSubsubcategoriesSelected = (identityId, categoryId, subcategoryId) => {
+    const identity = tree.find(id => id.id === identityId);
+    if (!identity) return false;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category) return false;
+
+    const subcategory = category.subcategories?.find(sc => sc.id === subcategoryId);
+    if (!subcategory || !subcategory.subsubs?.length) return false;
+
+    const selectedSubsubIds = S(selected.subsubCategoryIds);
+    return subcategory.subsubs.every(ss => selectedSubsubIds.has(ss.id));
+  };
+
+  // ----- Check if partially selected for categories -----
+  const areCategoriesPartiallySelected = (identityId) => {
+    const identity = tree.find(id => id.id === identityId);
+    if (!identity || !identity.categories?.length) return false;
+
+    const selectedCatIds = S(selected.categoryIds);
+    const selectedCount = identity.categories.filter(cat => selectedCatIds.has(cat.id)).length;
+    
+    return selectedCount > 0 && selectedCount < identity.categories.length;
+  };
+
+  // ----- Check if partially selected for subcategories -----
+  const areSubcategoriesPartiallySelected = (identityId, categoryId) => {
+    const identity = tree.find(id => id.id === identityId);
+    if (!identity) return false;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category || !category.subcategories?.length) return false;
+
+    const selectedSubcatIds = S(selected.subcategoryIds);
+    const selectedCount = category.subcategories.filter(sc => selectedSubcatIds.has(sc.id)).length;
+    
+    return selectedCount > 0 && selectedCount < category.subcategories.length;
+  };
+
+  // ----- Check if partially selected for subsubcategories -----
+  const areSubsubcategoriesPartiallySelected = (identityId, categoryId, subcategoryId) => {
+    const identity = tree.find(id => id.id === identityId);
+    if (!identity) return false;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category) return false;
+
+    const subcategory = category.subcategories?.find(sc => sc.id === subcategoryId);
+    if (!subcategory || !subcategory.subsubs?.length) return false;
+
+    const selectedSubsubIds = S(selected.subsubCategoryIds);
+    const selectedCount = subcategory.subsubs.filter(ss => selectedSubsubIds.has(ss.id)).length;
+    
+    return selectedCount > 0 && selectedCount < subcategory.subsubs.length;
+  };
 
   // ----- utils -----
   const stop = (e) => e.stopPropagation();
@@ -361,6 +544,28 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
             <div className={`${shown.length ? '':'px-4'}`}>
                {openId && hasCategories && (
               <div className="bg-slate-50/80 px-4 py-3 space-y-3">
+                {/* Select All for Categories */}
+                {identity.categories && identity.categories.length > 0 && (
+                  <div className="flex justify-between items-center px-3 py-2 bg-slate-200 rounded-lg">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-brand-600"
+                        checked={areAllCategoriesSelected(identityId)}
+                        ref={(input) => {
+                          if (input) {
+                            input.indeterminate = areCategoriesPartiallySelected(identityId);
+                          }
+                        }}
+                        onChange={(e) => selectAllCategories(identityId, e.target.checked)}
+                      />
+                      <span className="text-sm font-medium text-slate-800">
+                        {areAllCategoriesSelected(identityId) ? 'Deselect All Categories' : 'Select All Categories'}
+                      </span>
+                    </label>
+                  </div>
+                )}
+
                 {(identity.categories || []).map((cat) => {
                   const cKey = `cat-${cat.id}`;
                   const openCat = !!open[cKey];
@@ -405,6 +610,28 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
                       {openCat && hasSubs && (
                         <div className="px-3 py-2 space-y-2 bg-sky-50 border-l-2 border-sky-200">
+                          {/* Select All for Subcategories */}
+                          {cat.subcategories && cat.subcategories.length > 0 && (
+                            <div className="flex justify-between items-center px-3 py-2 bg-sky-100 rounded-md">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 accent-brand-600"
+                                  checked={areAllSubcategoriesSelected(identityId, cat.id)}
+                                  ref={(input) => {
+                                    if (input) {
+                                      input.indeterminate = areSubcategoriesPartiallySelected(identityId, cat.id);
+                                    }
+                                  }}
+                                  onChange={(e) => selectAllSubcategories(identityId, cat.id, e.target.checked)}
+                                />
+                                <span className="text-sm font-medium text-sky-900">
+                                  {areAllSubcategoriesSelected(identityId, cat.id) ? 'Deselect All Subcategories' : 'Select All Subcategories'}
+                                </span>
+                              </label>
+                            </div>
+                          )}
+
                           {(cat.subcategories || []).map((sc) => {
                             const scKey = `sc-${sc.id}`;
                             const openSc = !!open[scKey];
@@ -449,6 +676,28 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
                                 {openSc && hasSubsubs && (
                                   <div className="px-3 py-2 bg-[#f0f9ff] border-l-2 border-sky-200 grid gap-2">
+                                    {/* Select All for Subsubcategories */}
+                                    {sc.subsubs && sc.subsubs.length > 0 && (
+                                      <div className="flex justify-between items-center px-3 py-2 bg-indigo-100 rounded-sm">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            className="h-4 w-4 accent-brand-600"
+                                            checked={areAllSubsubcategoriesSelected(identityId, cat.id, sc.id)}
+                                            ref={(input) => {
+                                              if (input) {
+                                                input.indeterminate = areSubsubcategoriesPartiallySelected(identityId, cat.id, sc.id);
+                                              }
+                                            }}
+                                            onChange={(e) => selectAllSubsubcategories(identityId, cat.id, sc.id, e.target.checked)}
+                                          />
+                                          <span className="text-xs font-medium text-indigo-900">
+                                            {areAllSubsubcategoriesSelected(identityId, cat.id, sc.id) ? 'Deselect All Subsubcategories' : 'Select All Subsubcategories'}
+                                          </span>
+                                        </label>
+                                      </div>
+                                    )}
+
                                     {sc.subsubs.map((ss) => (
                                       <label key={ss.id} className="flex items-center gap-2">
                                         <input

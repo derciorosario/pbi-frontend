@@ -868,13 +868,13 @@ export default function MessagesPage() {
                       onChange={handleFileSelect}
                       className="hidden"
                     />
-                    {/** <button
+                    <button
                       onClick={() => fileInputRef.current?.click()}
                       className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
                       title="Attach files"
                     >
                       <Paperclip size={18} />
-                    </button> */}
+                    </button>
                     <button
                       onClick={() => {
                         console.log('Emoji button clicked, current state:', showEmojiPicker);
