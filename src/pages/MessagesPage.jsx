@@ -38,12 +38,17 @@ export default function MessagesPage() {
   const [attachments, setAttachments] = useState([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const [isUserNearBottom, setIsUserNearBottom] = useState(true);
   const fileInputRef = useRef(null);
 
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userSearchResults, setUserSearchResults] = useState([]);
   const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [messageFilter, setMessageFilter] = useState('all'); // 'all' or 'unread'
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   const searchUsers = async (query) => {
@@ -114,6 +119,11 @@ export default function MessagesPage() {
         setConversations((prev) =>
           prev.map((c) => (c.id === activeConversation.id ? { ...c, unreadCount: 0 } : c))
         );
+
+        // Scroll to bottom when first loading messages
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
       } catch (error) {
         console.error("Failed to load messages:", error);
         toast.error("Failed to load messages");
@@ -170,6 +180,10 @@ export default function MessagesPage() {
 
         setMessages((prev) => mergeMessages(prev, data.messages));
         setSelectedUserId(null);
+        // Scroll to bottom when loading messages for a new conversation
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 100);
       } catch (error) {
         console.error("Failed to load messages with user:", error);
         toast.error("Failed to load conversation");
@@ -265,9 +279,30 @@ export default function MessagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onPrivateMessage, activeConversation?.id, user?.id, connected]);
 
+  // Track scroll position to determine if user is near bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      setIsUserNearBottom(distanceFromBottom < 100); // Within 100px of bottom
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    // Initial check
+    handleScroll();
+
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [activeConversation]);
+
+  // Auto-scroll only when user is near bottom
+  useEffect(() => {
+    if (isUserNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isUserNearBottom]);
 
   // Close emoji picker when clicking outside
   useEffect(() => {
@@ -471,6 +506,10 @@ export default function MessagesPage() {
       })),
     };
     setMessages((prev) => [...prev, tempMessage]);
+    // Force scroll to bottom when sending a message
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
 
     try {
       let confirmed;
@@ -539,9 +578,18 @@ export default function MessagesPage() {
     return date.toLocaleDateString();
   }
 
-  const filteredConversations = conversations.filter((conv) =>
-    (conv.otherUser?.name || "User").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Calculate total unread count
+  const totalUnreadCount = conversations.reduce((total, conv) => total + (conv.unreadCount || 0), 0);
+
+  const filteredConversations = conversations.filter((conv) => {
+    // First filter by search query
+    const matchesSearch = (conv.otherUser?.name || "User").toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Then filter by read/unread status
+    const matchesFilter = messageFilter === 'all' || (messageFilter === 'unread' && (conv.unreadCount || 0) > 0);
+
+    return matchesSearch && matchesFilter;
+  });
 
   if (loading && conversations.length === 0) {
     return <FullPageLoader />;
@@ -577,8 +625,18 @@ export default function MessagesPage() {
                   <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
                 </div>
                 <div className="flex gap-4 mt-3 text-sm">
-                  <button className="font-medium text-brand-600">All</button>
-                  <button className="text-gray-500">Unread</button>
+                  <button
+                    onClick={() => setMessageFilter('all')}
+                    className={`font-medium ${messageFilter === 'all' ? 'text-brand-600' : 'text-gray-500'}`}
+                  >
+                    All
+                  </button>
+                  <button
+                    onClick={() => setMessageFilter('unread')}
+                    className={`font-medium ${messageFilter === 'unread' ? 'text-brand-600' : 'text-gray-500'}`}
+                  >
+                    Unread {totalUnreadCount > 0 && `(${totalUnreadCount})`}
+                  </button>
                 </div>
               </div>
 
@@ -720,7 +778,7 @@ export default function MessagesPage() {
                 </div>
 
                 {/* Messages list: fill remaining height and scroll */}
-                <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-3">
+                <div ref={messagesContainerRef} className="flex-1 overflow-y-auto min-h-0 p-4 space-y-3">
                   {messages.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-gray-500">
                       <p>No messages yet. Start the conversation!</p>
@@ -758,25 +816,37 @@ export default function MessagesPage() {
                               {m.attachments.map((attachment, idx) => (
                                 <div key={idx} className={`p-2 rounded ${m.senderId === user.id ? "bg-white/10" : "bg-gray-200"}`}>
                                   {isImageAttachment(attachment) ? (
-                                    <a
-                                      href={attachment.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="block"
-                                      title={attachment.filename}
-                                    >
-                                      <img
-                                        src={attachment.url}
-                                        alt={attachment.filename}
-                                        className="rounded-lg max-w-[240px] max-h-[240px] object-cover border border-black/10"
-                                      />
-                                    </a>
+                                    <div className="relative inline-block">
+                                      <button
+                                        onClick={() => {
+                                          setSelectedImage(attachment);
+                                          setShowImageDialog(true);
+                                        }}
+                                        className="block cursor-pointer"
+                                        title={attachment.filename}
+                                      >
+                                        <img
+                                          src={attachment.url}
+                                          alt={attachment.filename}
+                                          className="rounded-lg max-w-[240px] max-h-[240px] object-cover border border-black/10"
+                                        />
+                                      </button>
+                                      <a
+                                        href={attachment.url.replace("/uploads/", "/download/")}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                                        title="Download"
+                                      >
+                                        <Download size={12} />
+                                      </a>
+                                    </div>
                                   ) : (
                                     <div className="flex items-center gap-2">
                                       <File size={16} />
                                       <div className="flex-1 min-w-0">
                                         <a
-                                          href={attachment.url}
+                                          href={attachment.url.replace("/uploads/", "/download/")}
                                           target="_blank"
                                           rel="noopener noreferrer"
                                           className="text-xs underline hover:no-underline truncate block"
@@ -788,7 +858,7 @@ export default function MessagesPage() {
                                         </span>
                                       </div>
                                       <a
-                                        href={attachment.url}
+                                        href={attachment.url.replace("/uploads/", "/download/")}
                                         download={attachment.filename}
                                         className="p-1 hover:bg-white/20 rounded"
                                         title="Download"
@@ -839,7 +909,7 @@ export default function MessagesPage() {
                             <img
                               src={URL.createObjectURL(file)}
                               alt={file.name}
-                              className="h-16 w-16 object-cover rounded border border-black/10"
+                              className="h-10 w-10 object-cover rounded border border-black/10"
                             />
                           ) : (
                             <>
@@ -927,6 +997,33 @@ export default function MessagesPage() {
           </div>
         </div>
       </div>
+
+      {showImageDialog && selectedImage && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b flex items-center justify-between">
+              <h3 className="font-semibold">{selectedImage.filename}</h3>
+              <div className="flex items-center gap-x-3">
+                    <a
+                    href={selectedImage.url.replace("/uploads/", "/download/")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-black/50 text-white rounded-full hover:bg-black/70"
+                    title="Download"
+                  >
+                    <Download size={12} />
+                  </a>
+                  <button onClick={() => setShowImageDialog(false)} className="p-1 rounded-full hover:bg-gray-100">
+                    <X size={20} />
+                  </button>
+              </div>
+            </div>
+            <div className="p-4">
+              <img src={selectedImage.url} alt={selectedImage.filename} className="max-w-full max-h-[70vh] object-contain" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {showUserSearch && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

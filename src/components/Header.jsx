@@ -130,6 +130,8 @@ function Header({ page }) {
         setProfileOpen(false);
       }
 
+      navigate('/')
+
     } catch (err) {
       console.error("Switch account failed:", err);
     }
