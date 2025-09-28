@@ -44,6 +44,7 @@ export default function MessagesPage() {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [userSearchResults, setUserSearchResults] = useState([]);
   const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   const searchUsers = async (query) => {
     if (!query || query.length < 3) {
@@ -102,7 +103,7 @@ export default function MessagesPage() {
       try {
         setLoading(true);
         const { data } = await messageApi.getMessages(activeConversation.id);
-        setMessages(data);
+        setMessages((prev) => mergeMessages(prev, data));
 
         if (connected) {
           markMessagesAsRead(activeConversation.id).then(refreshUnreadCount).catch(console.error);
@@ -124,21 +125,20 @@ export default function MessagesPage() {
     loadMessages();
 
     const pollInterval = setInterval(async () => {
-      if (!activeConversation) return;
+      if (!activeConversation || isSendingMessage) return; // Skip polling while sending
       try {
         const { data } = await messageApi.getMessages(activeConversation.id);
-        if (data.length !== messages.length) {
-          setMessages(data);
-          if (connected) {
-            markMessagesAsRead(activeConversation.id).then(refreshUnreadCount).catch(console.error);
-          } else {
-            messageApi.markAsRead(activeConversation.id).then(refreshUnreadCount).catch(console.error);
-          }
+        // Always merge, never drop pending optimistic messages
+        setMessages((prev) => mergeMessages(prev, data));
+        if (connected) {
+          markMessagesAsRead(activeConversation.id).then(refreshUnreadCount).catch(console.error);
+        } else {
+          messageApi.markAsRead(activeConversation.id).then(refreshUnreadCount).catch(console.error);
         }
       } catch (error) {
         console.error("Error polling messages:", error);
       }
-    }, 2000);
+    }, 5000); // Increased from 2000ms to 5000ms to reduce race conditions
 
     return () => clearInterval(pollInterval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,7 +168,7 @@ export default function MessagesPage() {
           },
         });
 
-        setMessages(data.messages);
+        setMessages((prev) => mergeMessages(prev, data.messages));
         setSelectedUserId(null);
       } catch (error) {
         console.error("Failed to load messages with user:", error);
@@ -186,13 +186,16 @@ export default function MessagesPage() {
     if (!message) return;
 
     if (message.senderId === user?.id) {
+      // Replace optimistic message with confirmed message
       setMessages((prev) => {
         const idx = prev.findIndex(
           (m) =>
             m.pending &&
             m.senderId === user.id &&
             m.receiverId === message.receiverId &&
-            m.content === message.content
+            m.content === message.content &&
+            // For attachments, also check attachment count matches
+            (!m.attachments || m.attachments.length === (message.attachments?.length || 0))
         );
         if (idx === -1) return prev;
         const next = prev.slice();
@@ -320,6 +323,47 @@ export default function MessagesPage() {
     return isImageFile(String(att.filename || ''));
   };
 
+  // Merge fetched server messages with any optimistic pending messages so they never disappear
+  // Also de-duplicate: if a server message matches a pending one (same sender, receiver, content),
+  // drop the pending copy to avoid duplicates and flicker. Finally, keep a stable chronological order.
+  const mergeMessages = (prev, server) => {
+    if (!Array.isArray(server)) return prev || [];
+    const prevList = Array.isArray(prev) ? prev : [];
+
+    // signature for matching a "same" message without id (more specific for attachments)
+    const sig = (m) => {
+      const content = m?.content || "";
+      const hasAttachments = Array.isArray(m?.attachments) && m.attachments.length > 0;
+      const attachmentCount = hasAttachments ? m.attachments.length : 0;
+      const firstAttachmentName = hasAttachments ? m.attachments[0]?.filename || "" : "";
+      return `${m?.senderId || ""}|${m?.receiverId || ""}|${content}|${attachmentCount}|${firstAttachmentName}`;
+    };
+
+    const serverById = new Set(server.map((m) => m.id));
+    const serverSig = new Set(server.map((m) => sig(m)));
+
+    const merged = [...server];
+
+    // Append still-pending local messages not yet in the server list
+    for (const m of prevList) {
+      if (m?.pending) {
+        // Only skip if we have an exact signature match OR same temp ID was replaced
+        if (serverSig.has(sig(m))) continue;
+        if (serverById.has(m.id)) continue;
+        merged.push(m);
+      }
+    }
+
+    // Sort chronologically (ascending) by createdAt; fallback to 0 if missing
+    merged.sort((a, b) => {
+      const ta = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return ta - tb;
+    });
+
+    return merged;
+  };
+
   const onEmojiClick = (emojiData, event) => {
     const emoji = emojiData?.emoji;
     if (!emoji) return;
@@ -328,6 +372,76 @@ export default function MessagesPage() {
     // setShowEmojiPicker(false);
   };
 
+  // Retry sending a failed message (preserves attachments)
+  async function handleRetry(msg) {
+    if (!activeConversation || !msg) return;
+    const tempId = msg.id; // reuse same temp id
+    const filesToSend = Array.isArray(msg.localFiles) ? msg.localFiles : [];
+    const content = msg.content || "";
+
+    // mark as pending again
+    setMessages((prev) => {
+      const idx = prev.findIndex((m) => m.id === tempId);
+      if (idx === -1) return prev;
+      const next = prev.slice();
+      next[idx] = { ...next[idx], pending: true, failed: false };
+      return next;
+    });
+
+    try {
+      let confirmed;
+      if (filesToSend.length === 0 && connected) {
+        const res = await sendPrivateMessage(activeConversation.otherUser.id, content);
+        confirmed = res?.message || res?.data?.message || null;
+      } else {
+        const formData = new FormData();
+        formData.append('content', content);
+        filesToSend.forEach(file => {
+          formData.append('attachments', file);
+        });
+        const { data } = await messageApi.sendMessage(activeConversation.otherUser.id, formData);
+        confirmed = data || null;
+      }
+
+      // Update conversation preview
+      setConversations((prev) => {
+        const updated = [...prev];
+        const idx = updated.findIndex((c) => c.id === activeConversation.id);
+        if (idx >= 0) {
+          const conv = { ...updated[idx] };
+          const preview =
+            content && content.length > 0
+              ? content
+              : (filesToSend.length === 1 ? "Attachment" : `${filesToSend.length} attachments`);
+          conv.lastMessage = preview;
+          conv.lastMessageTime = new Date().toISOString();
+          updated.splice(idx, 1);
+          updated.unshift(conv);
+        }
+        return updated;
+      });
+
+      // Replace this temp failed message with confirmed one
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === tempId);
+        if (idx === -1) return prev;
+        const next = prev.slice();
+        next[idx] = confirmed ? { ...confirmed, pending: false } : { ...next[idx], pending: false, failed: false };
+        return next;
+      });
+    } catch (error) {
+      console.error("Retry failed:", error);
+      toast.error("Retry failed");
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === tempId);
+        if (idx === -1) return prev;
+        const next = prev.slice();
+        next[idx] = { ...next[idx], pending: false, failed: true };
+        return next;
+      });
+    }
+  }
+
   async function handleSend() {
     if ((!newMessage.trim() && attachments.length === 0) || !activeConversation) return;
 
@@ -335,6 +449,7 @@ export default function MessagesPage() {
     const filesToSend = [...attachments];
     setNewMessage("");
     setAttachments([]);
+    setIsSendingMessage(true); // Prevent polling interference
 
     const tempId = Date.now().toString();
     const tempMessage = {
@@ -345,6 +460,9 @@ export default function MessagesPage() {
       createdAt: new Date().toISOString(),
       read: false,
       pending: true,
+      failed: false,
+      // keep original File objects to allow retry
+      localFiles: filesToSend,
       attachments: filesToSend.map(f => ({
         filename: f.name,
         url: URL.createObjectURL(f),
@@ -397,7 +515,16 @@ export default function MessagesPage() {
     } catch (error) {
       console.error("Failed to send message:", error);
       toast.error("Failed to send message");
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      // Mark as failed but keep it visible for retry
+      setMessages((prev) => {
+        const idx = prev.findIndex((m) => m.id === tempId);
+        if (idx === -1) return prev;
+        const next = prev.slice();
+        next[idx] = { ...next[idx], pending: false, failed: true };
+        return next;
+      });
+    } finally {
+      setIsSendingMessage(false); // Re-enable polling
     }
   }
 
@@ -629,7 +756,7 @@ export default function MessagesPage() {
                           {m.attachments && m.attachments.length > 0 && (
                             <div className="space-y-2">
                               {m.attachments.map((attachment, idx) => (
-                                <div key={idx} className="p-2 rounded bg-white/10">
+                                <div key={idx} className={`p-2 rounded ${m.senderId === user.id ? "bg-white/10" : "bg-gray-200"}`}>
                                   {isImageAttachment(attachment) ? (
                                     <a
                                       href={attachment.url}
@@ -674,9 +801,25 @@ export default function MessagesPage() {
                               ))}
                             </div>
                           )}
-                          <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-gray-400">
-                            <span>{formatMessageTime(m.createdAt)}</span>
-                            {m.senderId === user.id && (m.read ? <CheckCheck size={12} /> : <Check size={12} />)}
+                          <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-gray-400">
+                            <div className="flex items-center gap-2">
+                              {m.pending && <span className="opacity-70">Sending…</span>}
+                              {m.failed && (
+                                <div className="flex items-center gap-2 text-red-500">
+                                  <span>Failed</span>
+                                  <button
+                                    onClick={() => handleRetry(m)}
+                                    className="px-2 py-0.5 rounded bg-red-100 text-red-600 hover:bg-red-200"
+                                  >
+                                    Retry
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span>{formatMessageTime(m.createdAt)}</span>
+                              {m.senderId === user.id && (m.read ? <CheckCheck size={12} /> : <Check size={12} />)}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -725,13 +868,13 @@ export default function MessagesPage() {
                       onChange={handleFileSelect}
                       className="hidden"
                     />
-                    <button
+                    {/** <button
                       onClick={() => fileInputRef.current?.click()}
                       className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
                       title="Attach files"
                     >
                       <Paperclip size={18} />
-                    </button>
+                    </button> */}
                     <button
                       onClick={() => {
                         console.log('Emoji button clicked, current state:', showEmojiPicker);
