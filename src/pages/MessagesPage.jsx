@@ -728,7 +728,7 @@ export default function MessagesPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <h3 className="font-medium truncate">{conv.otherUser?.name || "User"}</h3>
-                            <span className="text-xs text-gray-500">{formatMessageTime(conv.lastMessageTime)}</span> 
+                            {conv.lastMessageTime && <span className="text-xs text-gray-500">{formatMessageTime(conv.lastMessageTime)}</span> }
                           </div>
                           <div className="flex items-center justify-between">
                             <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>

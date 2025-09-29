@@ -12,8 +12,6 @@ export default function JobApplicationDialog({ open, onClose, job }) {
   const [employmentType, setEmploymentType] = useState('');
   const {profile} = useAuth()
 
-  console.log({profile})
-
   // CV selection state
   const [cvSelection, setCvSelection] = useState('existing'); // 'existing' or 'upload'
   const [selectedCvIndex, setSelectedCvIndex] = useState(0);

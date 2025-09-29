@@ -51,7 +51,7 @@ export default function ProfilePage() {
   const { id: userId } = useParams();
   const location = useLocation();
   const isAdminEditing = location.pathname.includes('/admin/user-profile/');
-  const {user} = useAuth() 
+  const {user,profile, setProfile} = useAuth() 
   
   const [active, setActive]   = useState(Tab.PERSONAL);
   const [loading, setLoading] = useState(true);
@@ -1016,12 +1016,15 @@ export default function ProfilePage() {
           },
           progress: data.progress
         });
+
+       
       } else {
         // User editing their own profile
         const { data } = await updatePortfolio({
           cvBase64: portfolio.cvBase64
         });
         setMe(data);
+        setProfile({...profile,cvBase64: portfolio.cvBase64})
         toast.success("Portfolio info saved!");
       }
     } catch (e) {

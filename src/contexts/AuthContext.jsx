@@ -104,6 +104,7 @@ export function AuthProvider({ children }) {
       profile,
       loading,
       ready,
+      setProfile,
       setToken: signInWithToken,
       refreshAuth: fetchMe,
       signOut,
