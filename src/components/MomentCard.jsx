@@ -378,7 +378,7 @@ export default function MomentCard({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                   {/* User name and logo on image */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div className="absolute bottom-3 left-3 z-10 flex flex-wrap gap-2">
                     <div
                       className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
                       onClick={(ev) => {
@@ -438,6 +438,35 @@ export default function MomentCard({
                   <Share2 size={16} className="text-gray-600" />
                 </button>
               </div>
+              <div className="absolute bottom-3 left-3">
+                <div
+              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                if (moment?.userId) {
+                  setOpenId(moment.userId);
+                  data._showPopUp?.("profile");
+                }
+              }}
+            >
+              {moment?.user?.avatarUrl || moment?.userAvatarUrl ? (
+                <img
+                  src={moment.user?.avatarUrl || moment.userAvatarUrl}
+                  alt={moment?.user?.name || moment?.userName || "User"}
+                  className="w-7 h-7 rounded-full shadow-lg object-cover"
+                />
+              ) : (
+                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                  <UserIcon size={12} className="text-brand-600" />
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                  {moment?.user?.name || moment?.userName || "User"}
+                </span>
+              </div>
+            </div>
+            </div>
             </div>
           )
         ) : (
@@ -453,7 +482,7 @@ export default function MomentCard({
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                 {/* User name and logo on image */}
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                <div className="absolute bottom-3 left-3 z-10 flex flex-wrap gap-2">
                   <div
                     className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
                     onClick={(ev) => {
@@ -517,6 +546,37 @@ export default function MomentCard({
                 </button>
               </div>
             )}
+
+
+            <div className="absolute bottom-3 left-3">
+                <div
+              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                if (moment?.userId) {
+                  setOpenId(moment.userId);
+                  data._showPopUp?.("profile");
+                }
+              }}
+            >
+              {moment?.user?.avatarUrl || moment?.userAvatarUrl ? (
+                <img
+                  src={moment.user?.avatarUrl || moment.userAvatarUrl}
+                  alt={moment?.user?.name || moment?.userName || "User"}
+                  className="w-7 h-7 rounded-full shadow-lg object-cover"
+                />
+              ) : (
+                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                  <UserIcon size={12} className="text-brand-600" />
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                  {moment?.user?.name || moment?.userName || "User"}
+                </span>
+              </div>
+            </div>
+            </div>
           </div>
         )}
 
@@ -585,37 +645,7 @@ export default function MomentCard({
             {moment?.title}
           </h3>
 
-          {/* User display when there's no image */}
-          {!imageUrl && (
-            <div
-              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
-              onClick={(ev) => {
-                ev.stopPropagation();
-                if (moment?.userId) {
-                  setOpenId(moment.userId);
-                  data._showPopUp?.("profile");
-                }
-              }}
-            >
-              {moment?.user?.avatarUrl || moment?.userAvatarUrl ? (
-                <img
-                  src={moment.user?.avatarUrl || moment.userAvatarUrl}
-                  alt={moment?.user?.name || moment?.userName || "User"}
-                  className="w-7 h-7 rounded-full shadow-lg object-cover"
-                />
-              ) : (
-                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                  <UserIcon size={12} className="text-brand-600" />
-                </div>
-              )}
-              <div className="flex flex-col">
-                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                  {moment?.user?.name || moment?.userName || "User"}
-                </span>
-              </div>
-            </div>
-          )}
-
+         
           {/* Description */}
           <p
             className={`mt-2 text-sm text-gray-600 leading-relaxed ${
