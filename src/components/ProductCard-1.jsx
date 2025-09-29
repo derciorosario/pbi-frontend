@@ -327,14 +327,35 @@ export default function ProductCard({
                            </div>
             )}
 
-            {/* Featured badge */}
-           
+            {/* User name and logo on image */}
             <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                 {item?.audienceCategories?.map(i=>(
-                        <span className="inline-flex items-center gap-1 bg-gradient-to-r bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                           {i.name}
-                        </span>
-                   ))}
+              <div
+                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (item?.sellerUserId) {
+                    setOpenId(item.sellerUserId);
+                    data._showPopUp?.("profile");
+                  }
+                }}
+              >
+                {item.avatarUrl ? (
+                  <img
+                    src={item.avatarUrl}
+                    alt={item?.sellerUserName || "User"}
+                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                    <User2 size={12} className="text-brand-600" />
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                    {item?.sellerUserName || "User"}
+                  </span>
+                </div>
+              </div>
             </div>
             
              
@@ -400,15 +421,36 @@ export default function ProductCard({
             </div>
           )}
 
-            {/* Featured badge */}
-          
-              <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                 {item?.audienceCategories?.map(i=>(
-                        <span className="inline-flex items-center gap-1 bg-gradient-to-r bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                           {i.name}
-                        </span>
-                   ))}
+            {/* User name and logo on image */}
+            <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+              <div
+                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (item?.sellerUserId) {
+                    setOpenId(item.sellerUserId);
+                    data._showPopUp?.("profile");
+                  }
+                }}
+              >
+                {item.avatarUrl ? (
+                  <img
+                    src={item.avatarUrl}
+                    alt={item?.sellerUserName || "User"}
+                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                    <User2 size={12} className="text-brand-600" />
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                    {item?.sellerUserName || "User"}
+                  </span>
+                </div>
               </div>
+            </div>
            
             {/* View & Save - only show when not text mode */}
             {settings?.contentType !== 'text' && (
@@ -483,19 +525,33 @@ export default function ProductCard({
                   <Share2 size={16} className="text-gray-600" />
                 </button>
               </div>
-              {Array.isArray(item?.audienceCategories) &&
-                item.audienceCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {item.audienceCategories.map((c) => (
-                      <span
-                        key={c.id || c.name}
-                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
-                      >
-                        {c.name}
-                      </span>
-                    ))}
+              <div
+                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (item?.sellerUserId) {
+                    setOpenId(item.sellerUserId);
+                    data._showPopUp?.("profile");
+                  }
+                }}
+              >
+                {item.avatarUrl ? (
+                  <img
+                    src={item.avatarUrl}
+                    alt={item?.sellerUserName || "User"}
+                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                    <User2 size={12} className="text-brand-600" />
                   </div>
                 )}
+                <div className="flex flex-col">
+                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                    {item?.sellerUserName || "User"}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -522,34 +578,9 @@ export default function ProductCard({
 
           {/* Meta info */}
           <div className={`${isList ? "mb-2" : "mb-3"} space-y-2`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <div onClick={()=>{
-                         setOpenId(item.sellerUserId);
-                          data._showPopUp("profile");
-                }} className="flex items-center _profile gap-1 hover:underline cursor-pointer">
-                  
-
-                  {item.avatarUrl ? (
-                    <img
-                        src={item.avatarUrl}
-                        alt={item?.sellerUserName }
-                        className="w-7 h-7 rounded-full object-cover"
-                    />
-                ) : (
-                   
-                  <div className="w-7 h-7 bg-brand-100 rounded-full flex items-center justify-center">
-                    <User2 size={12} className="text-brand-600" />
-                  </div>
-                )}
-
-                  <div className="flex flex-col">
-                    <span className="font-medium mb-0">
-                      {item?.sellerUserName || initials}
-                    </span>
-                  </div>
-                </div>
-              </div>
+            <div className="flex items-center justify-between pb-1">
+              {/* User display removed - now shown prominently above */}
+             
 
               {/* Match percentage */}
               {matchPercentage !== undefined && matchPercentage !== null && (
@@ -582,9 +613,20 @@ export default function ProductCard({
           </div>
 
           {/* Tags with tooltip for "+X more" */}
-          {item?.tags?.length > 0 && (
+          {((item?.audienceCategories?.length > 0) || (item?.tags?.length > 0)) && (
             <div className={`${isList ? "mb-3" : "mb-4"} flex flex-wrap gap-2`}>
-              {item.tags.slice(0, type=="grid" ? 1 : 100).map((t) => (
+              {/* Show audienceCategories first */}
+              {item?.audienceCategories?.slice(0, type=="grid" ? 1 : 100).map((c) => (
+                <span
+                  key={`audience-${c.id || c.name}`}
+                  className="inline-flex items-center rounded-full bg-gradient-to-r from-brand-50 to-brand-100 text-brand-700 px-3 py-1 text-xs font-medium border border-brand-200/50"
+                >
+                  {c.name}
+                </span>
+              ))}
+
+              {/* Then show regular tags */}
+              {item.tags?.slice(0, type=="grid" ? Math.max(0, 1 - (item?.audienceCategories?.length || 0)) : 100).map((t) => (
                 <span
                   key={t}
                   className="inline-flex items-center rounded-full bg-gradient-to-r from-brand-50 to-brand-100 text-brand-700 px-3 py-1 text-xs font-medium border border-brand-200/50"
@@ -593,14 +635,15 @@ export default function ProductCard({
                 </span>
               ))}
 
-              {item.tags.length > 1 && (
+              {/* Calculate total count for "more" tooltip */}
+              {((item?.audienceCategories?.length || 0) + (item?.tags?.length || 0)) > (type=="grid" ? 1 : 100) && (
                 <div className={`relative inline-block group/tagmore ${type=="list" ? 'hidden':''}`}>
                   <span
                     className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-3 py-1 text-xs font-medium cursor-default hover:bg-gray-200 transition-colors duration-200"
                     aria-describedby={`tags-more-${item.id}`}
                     tabIndex={0}
                   >
-                    +{item.tags.length - 1} more
+                    +{((item?.audienceCategories?.length || 0) + (item?.tags?.length || 0)) - (type=="grid" ? 1 : 100)} more
                   </span>
 
                   <div
@@ -612,10 +655,18 @@ export default function ProductCard({
                       focus-within:opacity-100 focus-within:visible z-10 whitespace-nowrap"
                   >
                     <div className="flex flex-wrap gap-1 max-w-xs">
-                      {item.tags.slice(1).map((tag, i) => (
-                        <span key={i} className="inline-block">
+                      {/* Show remaining audienceCategories first */}
+                      {item?.audienceCategories?.slice(type=="grid" ? 1 : 100).map((c, i) => (
+                        <span key={`audience-more-${i}`} className="inline-block">
+                          {c.name}
+                          {i < ((item?.audienceCategories?.length || 0) - (type=="grid" ? 1 : 100) + (item?.tags?.length || 0) - 1) ? "," : ""}
+                        </span>
+                      ))}
+                      {/* Then show remaining tags */}
+                      {item.tags?.slice(type=="grid" ? Math.max(0, 1 - (item?.audienceCategories?.length || 0)) : 100).map((tag, i) => (
+                        <span key={`tag-more-${i}`} className="inline-block">
                           {tag}
-                          {i < item.tags.length - 2 ? "," : ""}
+                          {i < (item.tags?.length || 0) - (type=="grid" ? Math.max(0, 1 - (item?.audienceCategories?.length || 0)) : 100) - 1 ? "," : ""}
                         </span>
                       ))}
                     </div>

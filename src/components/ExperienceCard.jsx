@@ -134,7 +134,10 @@ export default function ExperienceCard({
     null;
 
   // Exactly 2 tags (use the provided tags array)
-  const allTags = Array.isArray(item?.tags) ? item.tags.filter(Boolean) : [];
+  const allTags = [
+    ...(Array.isArray(item?.audienceCategories) ? item?.audienceCategories.map(i=>i.name) : []),
+    ...(Array.isArray(item?.tags) ? item.tags.filter(Boolean) : [])
+  ];
   const visibleTags = allTags.slice(0, 2);
   const extraCount = Math.max(0, allTags.length - visibleTags.length);
 
@@ -202,19 +205,37 @@ export default function ExperienceCard({
                 <>
                   <img src={imageUrl} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  {/* audience over image when image exists */}
-                  {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                      {item.audienceCategories.map((c) => (
-                        <span
-                          key={c.id || c.name}
-                          className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                        >
-                          {c.name}
+  
+                  {/* Author name and logo on image */}
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    <div
+                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        if (item?.authorUserId) {
+                          setOpenId(item.authorUserId);
+                          data._showPopUp?.("profile");
+                        }
+                      }}
+                    >
+                      {item?.avatarUrl ? (
+                        <img
+                          src={item.avatarUrl}
+                          alt={item?.authorUserName || "User"}
+                          className="w-7 h-7 rounded-full shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                          <UserIcon size={12} className="text-brand-600" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          {item?.authorUserName || "User"}
                         </span>
-                      ))}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </>
               ) : (
                 // clean placeholder (no text/icon)
@@ -266,19 +287,37 @@ export default function ExperienceCard({
                   className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                {/* audience over image when image exists */}
-                {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    {item.audienceCategories.map((c) => (
-                      <span
-                        key={c.id || c.name}
-                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                      >
-                        {c.name}
+
+                {/* Author name and logo on image */}
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      if (item?.authorUserId) {
+                        setOpenId(item.authorUserId);
+                        data._showPopUp?.("profile");
+                      }
+                    }}
+                  >
+                    {item?.avatarUrl ? (
+                      <img
+                        src={item.avatarUrl}
+                        alt={item?.authorUserName || "User"}
+                        className="w-7 h-7 rounded-full shadow-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                        <UserIcon size={12} className="text-brand-600" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                        {item?.authorUserName || "User"}
                       </span>
-                    ))}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             ) : (
               // clean placeholder (no text/icon)
@@ -345,19 +384,33 @@ export default function ExperienceCard({
                   <Share2 size={16} className="text-gray-600" />
                 </button>
               </div>
-              {Array.isArray(item?.audienceCategories) &&
-                item.audienceCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {item.audienceCategories.map((c) => (
-                      <span
-                        key={c.id || c.name}
-                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
-                      >
-                        {c.name}
-                      </span>
-                    ))}
+              <div
+                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (item?.authorUserId) {
+                    setOpenId(item.authorUserId);
+                    data._showPopUp?.("profile");
+                  }
+                }}
+              >
+                {item?.avatarUrl ? (
+                  <img
+                    src={item.avatarUrl}
+                    alt={item?.authorUserName || "User"}
+                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                    <UserIcon size={12} className="text-brand-600" />
                   </div>
                 )}
+                <div className="flex flex-col">
+                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                    {item?.authorUserName || "User"}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -369,17 +422,34 @@ export default function ExperienceCard({
           {/* Title */}
           <h3 className="mt-1 font-semibold text-gray-900 text-lg">{item?.title}</h3>
 
-          {/* audienceCategories HERE ONLY when there is NO image */}
-          {!imageUrl && Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {item.audienceCategories.map((c) => (
-                <span
-                  key={c.id || c.name}
-                  className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
-                >
-                  {c.name}
+          {/* Author display when there's no image */}
+          {!imageUrl && (
+            <div
+              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                if (item?.authorUserId) {
+                  setOpenId(item.authorUserId);
+                  data._showPopUp?.("profile");
+                }
+              }}
+            >
+              {item?.avatarUrl ? (
+                <img
+                  src={item.avatarUrl}
+                  alt={item?.authorUserName || "User"}
+                  className="w-7 h-7 rounded-full shadow-lg object-cover"
+                />
+              ) : (
+                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                  <UserIcon size={12} className="text-brand-600" />
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                  {item?.authorUserName || "User"}
                 </span>
-              ))}
+              </div>
             </div>
           )}
 
@@ -388,27 +458,9 @@ export default function ExperienceCard({
             {item?.description}
           </p>
 
-           {/* Meta row: author (opens profile) + match + time (duplicate time available above as author/time) */}
-          <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
-            <div
-              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (item?.authorUserId) {
-                  setOpenId(item.authorUserId);
-                }
-              }}
-            >
-              {item?.avatarUrl ? (
-                <img src={item.avatarUrl} alt={item?.authorUserName || "Author"} className="w-7 h-7 rounded-full object-cover" />
-              ) : (
-                <div className="w-7 h-7 bg-brand-100 rounded-full grid place-items-center">
-                  <UserIcon size={12} className="text-brand-600" />
-                </div>
-              )}
-              <span className="font-medium">{item?.authorUserName || "Author"}</span>
-            </div>
-
+           {/* Meta row: match + time (author display moved to top) */}
+          <div className="mt-3 flex items-center justify-between text-xs text-gray-500 pb-1">
+           
             {/* Match % chip */}
             {matchPercentage !== undefined && matchPercentage !== null && (
               <div className="flex items-center gap-1">

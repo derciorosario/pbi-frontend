@@ -935,9 +935,7 @@ export default function CreateEventPage() {
               <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
                 <I.chevron />
               </span>
-              <p className="mt-1 text-[11px] text-gray-500">
-                O fuso é mostrado com o offset atual. Ex.: Africa/Maputo (UTC+02:00)
-              </p>
+             
             </div>
           </section>
 

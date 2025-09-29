@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Search, Send, User, Check, CheckCheck, ArrowLeft, Plus, X, Paperclip, File, Image, Download, Smile } from "lucide-react";
-// Emoji picker
 
+// Emoji picker
 import EmojiPicker from 'emoji-picker-react';
 import Header from "../components/Header";
 import { useSocket } from "../contexts/SocketContext";
@@ -567,16 +567,31 @@ export default function MessagesPage() {
     }
   }
 
+  
   function formatMessageTime(dateString) {
-    
-    const date = !dateString ? new Date() : new Date(dateString);
-    const now = new Date();
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return date.toLocaleDateString([], { weekday: "long" });
-    return date.toLocaleDateString();
+  
+  const date = dateString ? new Date(dateString) : new Date();
+  const now = new Date();
+
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const diffDays = Math.floor((startOfToday - startOfDate) / (1000 * 60 * 60 * 24));
+
+  const timePart = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  if (diffDays === 0) {
+    return timePart; // Today
   }
+  if (diffDays === 1) {
+    return `Yesterday ${timePart}`;
+  }
+  if (diffDays < 7) {
+    return `${date.toLocaleDateString([], { weekday: "long" })} ${timePart}`;
+  }
+  return `${date.toLocaleDateString([], { day: "2-digit", month: "2-digit", year: "numeric" })} ${timePart}`;
+}
+
 
   // Calculate total unread count
   const totalUnreadCount = conversations.reduce((total, conv) => total + (conv.unreadCount || 0), 0);
@@ -713,7 +728,7 @@ export default function MessagesPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <h3 className="font-medium truncate">{conv.otherUser?.name || "User"}</h3>
-                            <span className="text-xs text-gray-500">{formatMessageTime(conv.lastMessageTime)}</span>
+                            <span className="text-xs text-gray-500">{formatMessageTime(conv.lastMessageTime)}</span> 
                           </div>
                           <div className="flex items-center justify-between">
                             <p className="text-sm text-gray-500 truncate">{conv.lastMessage}</p>

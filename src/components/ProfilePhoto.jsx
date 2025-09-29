@@ -74,9 +74,9 @@ export default function ProfilePhoto({ avatarUrl, onChange }) {
   return (
     <div className="flex items-center gap-4">
       {/* Avatar with camera icon */}
-      <div className="relative">
+      <div className="relative flex-shrink-0">
         {(isUploading || isRemoving) ? (
-          <div className="h-24 w-24 rounded-full border shadow flex items-center justify-center bg-gray-100">
+          <div className="h-24 w-24 flex-shrink-0 rounded-full border shadow flex items-center justify-center bg-gray-100">
             <svg className="h-6 w-6 animate-spin text-brand-600" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
               <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"/>
@@ -86,7 +86,7 @@ export default function ProfilePhoto({ avatarUrl, onChange }) {
           <img
             src={avatarUrl || "https://placehold.co/100x100?text=Photo"}
             alt="Profile Photo"
-            className="h-24 w-24 rounded-full object-cover border shadow"
+            className="h-24 w-24 flex-shrink-0 rounded-full object-cover border shadow"
           />
         )}
         <button

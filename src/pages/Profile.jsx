@@ -28,6 +28,7 @@ import UserSelectionModal from "../components/UserSelectionModal";
  import StaffInvitationModal from "../components/StaffInvitationModal";
  import OrganizationSelectionModal from "../components/OrganizationSelectionModal";
 import { useAuth } from "../contexts/AuthContext.jsx";
+import { Download } from "lucide-react";
 
 const Tab = {
   PERSONAL: "personal",
@@ -92,8 +93,7 @@ export default function ProfilePage() {
 
   // Portfolio
   const [portfolio, setPortfolio] = useState({
-    cvBase64: "",
-    cvFileName: "",
+    cvBase64: [],
     workSamples: [],
   });
   const [workSamples, setWorkSamples] = useState([]);
@@ -114,6 +114,10 @@ export default function ProfilePage() {
   const [skillTagInput, setSkillTagInput] = useState("");
   const [attachmentTitle, setAttachmentTitle] = useState("");
   const [editingAttachmentTitle, setEditingAttachmentTitle] = useState(null);
+
+  // CV editing state
+  const [editingCvIndex, setEditingCvIndex] = useState(null);
+  const [editingCvTitle, setEditingCvTitle] = useState("");
 
   // DOES (what I DO)
   const [doIdentityIds, setDoIdentityIds] = useState([]);
@@ -822,8 +826,10 @@ export default function ProfilePage() {
 
         // hydrate portfolio
         setPortfolio({
-          cvBase64: p.cvBase64 || "",
-          cvFileName: p.cvFileName || "",
+          cvBase64: Array.isArray(p.cvBase64) ? p.cvBase64.map(cv => ({
+            ...cv,
+            created_at: cv.created_at || new Date().toISOString() // Add created_at for backward compatibility
+          })) : (p.cvBase64 ? [{ original_filename: p.cvFileName || "", title: "", base64: p.cvBase64, created_at: new Date().toISOString() }] : []),
         });
 
         // hydrate availability
@@ -991,8 +997,7 @@ export default function ProfilePage() {
         // Admin editing another user
         const userData = {
           profile: {
-            cvBase64: portfolio.cvBase64,
-            cvFileName: portfolio.cvFileName
+            cvBase64: portfolio.cvBase64
           }
         };
 
@@ -1007,16 +1012,14 @@ export default function ProfilePage() {
           ...me,
           profile: {
             ...me.profile,
-            cvBase64: portfolio.cvBase64,
-            cvFileName: portfolio.cvFileName
+            cvBase64: portfolio.cvBase64
           },
           progress: data.progress
         });
       } else {
         // User editing their own profile
         const { data } = await updatePortfolio({
-          cvBase64: portfolio.cvBase64,
-          cvFileName: portfolio.cvFileName
+          cvBase64: portfolio.cvBase64
         });
         setMe(data);
         toast.success("Portfolio info saved!");
@@ -2474,53 +2477,181 @@ const toggleIdentityWant = (identityKey) => {
                   {isCompany ? "Company CV/Resume" : "CV/Resume"}
                 </h3>
                 <div className="space-y-4">
+                  {/* Existing CVs */}
+                  {portfolio.cvBase64.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-gray-700">Uploaded CVs</h4>
+                      {portfolio.cvBase64.map((cv, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                          <div className="flex-1 min-w-0">
+                            {editingCvIndex === index ? (
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={editingCvTitle}
+                                  onChange={(e) => setEditingCvTitle(e.target.value)}
+                                  className="flex-1 text-sm border rounded px-2 py-1"
+                                  placeholder="Enter CV title"
+                                  autoFocus
+                                />
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium truncate">{cv.title || cv.original_filename}</span>
+                                {cv.title && (
+                                  <span className="text-xs text-gray-500 truncate">({cv.original_filename})</span>
+                                )}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-500 mt-1">
+                              {(cv.base64.length * 0.75 / 1024).toFixed(1)} KB • Uploaded {new Date(cv.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {editingCvIndex === index ? (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setPortfolio(p => ({
+                                      ...p,
+                                      cvBase64: p.cvBase64.map((cvItem, i) =>
+                                        i === index ? { ...cvItem, title: editingCvTitle.trim() || "" } : cvItem
+                                      )
+                                    }));
+                                    setEditingCvIndex(null);
+                                    setEditingCvTitle("");
+                                  }}
+                                  className="text-green-600 hover:text-green-800 p-1"
+                                  title="Save"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingCvIndex(null);
+                                    setEditingCvTitle("");
+                                  }}
+                                  className="text-gray-600 hover:text-gray-800 p-1"
+                                  title="Cancel"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setEditingCvIndex(index);
+                                    setEditingCvTitle(cv.title || "");
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 p-1"
+                                  title="Edit title"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
+                                <a
+                                  href={cv.base64}
+                                  download={cv.original_filename}
+                                  className="text-blue-600 hover:text-blue-800 p-1"
+                                  title="Download"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                  </svg>
+                                </a>
+                                <button
+                                  onClick={() => {
+                                    setPortfolio(p => ({
+                                      ...p,
+                                      cvBase64: p.cvBase64.filter((_, i) => i !== index)
+                                    }));
+                                  }}
+                                  className="text-red-600 hover:text-red-800 p-1"
+                                  title="Remove"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add New CV */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
-                      Upload CV (PDF, DOC, DOCX)
-                      <span className="text-red-500 ml-1">*</span>
+                      Add CV (PDF, DOC, DOCX)
                     </label>
-                    <div className="relative">
+                    <div className="space-y-3">
                       <input
-                        type="file"
-                        accept=".pdf,.doc,.docx"
-                        className="hidden"
-                        id="cv-upload"
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (file) {
-                            // Validate file size (max 10MB)
-                            if (file.size > 10 * 1024 * 1024) {
-                              toast.error("File size must be less than 10MB");
-                              return;
-                            }
-
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              const base64 = event.target.result;
-                              setPortfolio(p => ({
-                                ...p,
-                                cvBase64: base64,
-                                cvFileName: file.name
-                              }));
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
+                        type="text"
+                        placeholder="CV Title (optional)"
+                        className="w-full border rounded-lg px-3 py-2 text-sm"
+                        id="cv-title"
                       />
-                      <label
-                        htmlFor="cv-upload"
-                        className="flex items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-500 hover:bg-brand-50 transition-colors"
-                      >
-                        <div className="text-center">
-                          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <p className="mt-1 text-sm text-gray-600">
-                            {portfolio.cvFileName ? `Selected: ${portfolio.cvFileName}` : "Click to upload or drag and drop"}
-                          </p>
-                          <p className="text-xs text-gray-500">PDF, DOC, DOCX up to 10MB</p>
-                        </div>
-                      </label>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          className="hidden"
+                          id="cv-upload"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            const title = document.getElementById('cv-title').value.trim();
+
+                            if (file) {
+                              // Validate file size (max 10MB)
+                              if (file.size > 10 * 1024 * 1024) {
+                                toast.error("File size must be less than 10MB");
+                                return;
+                              }
+
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const base64 = event.target.result;
+                                setPortfolio(p => ({
+                                  ...p,
+                                  cvBase64: [...p.cvBase64, {
+                                    original_filename: file.name,
+                                    title: title || "",
+                                    base64: base64,
+                                    created_at: new Date().toISOString()
+                                  }]
+                                }));
+                                // Clear the title input
+                                document.getElementById('cv-title').value = '';
+                                // Clear the file input
+                                e.target.value = '';
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor="cv-upload"
+                          className="flex items-center justify-center w-full h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-brand-500 hover:bg-brand-50 transition-colors"
+                        >
+                          <div className="text-center">
+                            <svg className="mx-auto h-8 w-8 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                              <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <p className="mt-1 text-sm text-gray-600">
+                              Click to upload CV
+                            </p>
+                            <p className="text-xs text-gray-500">PDF, DOC, DOCX up to 10MB</p>
+                          </div>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2926,8 +3057,8 @@ const toggleIdentityWant = (identityKey) => {
                   disabled={saving}
                   onClick={async () => {
                     // Validate CV upload
-                    if (!portfolio.cvBase64) {
-                      toast.error("Please upload a CV before saving");
+                    if (!portfolio.cvBase64 || portfolio.cvBase64.length === 0) {
+                      toast.error("Please upload at least one CV before saving");
                       return;
                     }
 
@@ -3560,6 +3691,13 @@ const toggleIdentityWant = (identityKey) => {
                             >
                               Message
                             </button>
+                             {application.cvBase64?.base64 && <a
+                              href={application.cvBase64?.base64}
+                              download={application.cvBase64?.original_filename}
+                              className="px-3 py-1 bg-brand-600 flex items-center gap-x-1 text-white rounded-lg text-sm hover:bg-brand-700"
+                            >
+                             <Download size={15}/> CV
+                            </a>}
                           </div>
                         </div>
                       </div>
@@ -3886,6 +4024,14 @@ const toggleIdentityWant = (identityKey) => {
                             >
                               Message
                             </button>
+
+                            {application.cvBase64?.base64 && <a
+                              href={application.cvBase64?.base64}
+                              download={application.cvBase64?.original_filename}
+                              className="px-3 py-1 bg-brand-600 flex items-center gap-x-1 text-white rounded-lg text-sm hover:bg-brand-700"
+                            >
+                             <Download size={15}/> CV
+                            </a>}
                           </div>
                         </div>
                       </div>

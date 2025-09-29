@@ -13,6 +13,8 @@ import {
   MessageCircle,
   Share2,
   Copy as CopyIcon,
+  MoreVertical,
+  Trash2,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -77,13 +79,19 @@ export default function ServiceCard({
 
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+
+  // Options menu
+  const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
+  const optionsMenuRef = useRef(null);
   
   // Share popover
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
   const cardRef = useRef(null);
   
-  // Close share menu on outside click / Esc
+  // Close menus on outside click / Esc
   useEffect(() => {
     function onDown(e) {
       if (
@@ -93,9 +101,20 @@ export default function ServiceCard({
       ) {
         setShareOpen(false);
       }
+      if (
+        optionsMenuRef.current &&
+        !optionsMenuRef.current.contains(e.target)
+      ) {
+        setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
+      }
     }
     function onEsc(e) {
-      if (e.key === "Escape") setShareOpen(false);
+      if (e.key === "Escape") {
+        setShareOpen(false);
+        setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
+      }
     }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onEsc);
@@ -186,6 +205,7 @@ export default function ServiceCard({
   // Tags (exactly 2 visible)
   const allTags = useMemo(() => {
     const arr = [
+      ...(Array.isArray(item?.audienceCategories) ? item?.audienceCategories.map(i=>i.name) : []),
       item?.serviceType,
       item?.experienceLevel,
       item?.categoryName,
@@ -193,7 +213,7 @@ export default function ServiceCard({
       item?.deliveryTime,
     ].filter(Boolean);
     return [...new Set(arr.map((t) => String(t).trim()))];
-  }, [item?.serviceType, item?.experienceLevel, item?.categoryName, item?.subcategoryName, item?.deliveryTime]);
+  }, [item?.audienceCategories, item?.serviceType, item?.experienceLevel, item?.categoryName, item?.subcategoryName, item?.deliveryTime]);
 
   const visibleTags = allTags.slice(0, 2);
   const extraCount = Math.max(0, allTags.length - visibleTags.length);
@@ -267,7 +287,7 @@ export default function ServiceCard({
 
   return (
     <>
-      <div ref={cardRef} className={`${containerBase} ${containerLayout}`}>
+      <div ref={cardRef} className={`${containerBase} ${containerLayout} ${isDeleted ? "hidden" : ""}`}>
         {/* IMAGE */}
         {isList ? (
           // Only show image side in list view if not text mode
@@ -277,19 +297,37 @@ export default function ServiceCard({
                 <>
                   <img src={imageUrl} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  {/* audienceCategories overlay when image exists */}
-                  {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                      {item.audienceCategories.map((c) => (
-                        <span
-                          key={c.id || c.name}
-                          className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                        >
-                          {c.name}
+  
+                  {/* Provider name and logo on image */}
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    <div
+                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        if (item?.providerUserId) {
+                          setOpenId(item.providerUserId);
+                          data._showPopUp?.("profile");
+                        }
+                      }}
+                    >
+                      {item?.avatarUrl ? (
+                        <img
+                          src={item.avatarUrl}
+                          alt={item?.providerUserName || "User"}
+                          className="w-7 h-7 rounded-full shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                          <UserIcon size={12} className="text-brand-600" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          {item?.providerUserName || "User"}
                         </span>
-                      ))}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </>
               ) : (
                 // clean placeholder (no text)
@@ -344,19 +382,37 @@ export default function ServiceCard({
                   className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                {/* audienceCategories overlay when image exists */}
-                {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    {item.audienceCategories.map((c) => (
-                      <span
-                        key={c.id || c.name}
-                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                      >
-                        {c.name}
+
+                {/* Provider name and logo on image */}
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      if (item?.providerUserId) {
+                        setOpenId(item.providerUserId);
+                        data._showPopUp?.("profile");
+                      }
+                    }}
+                  >
+                    {item?.avatarUrl ? (
+                      <img
+                        src={item.avatarUrl}
+                        alt={item?.providerUserName || "User"}
+                        className="w-7 h-7 rounded-full shadow-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                        <UserIcon size={12} className="text-brand-600" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                        {item?.providerUserName || "User"}
                       </span>
-                    ))}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             ) : (
               // clean placeholder (no text)
@@ -398,6 +454,21 @@ export default function ServiceCard({
             >
               <Share2 size={16} className="text-gray-600" />
             </button>
+
+          
+            {/* Options (Delete) - only for owner */}
+            {isOwner && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOptionsMenuOpen((s) => !s);
+                }}
+                className="p-2 rounded-full hidden bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                aria-label="More options"
+              >
+                <MoreVertical size={16} className="text-gray-600" />
+              </button>
+            )}
               </div>
             )}
           </div>
@@ -424,30 +495,48 @@ export default function ServiceCard({
                 >
                   {isOwner ? <Edit size={16} /> : <Eye size={16} />}
                 </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                  aria-label="Share service"
-                >
-                  <Share2 size={16} className="text-gray-600" />
-                </button>
+
+                {/* Options (Delete) - only for owner */}
+                {isOwner && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOptionsMenuOpen((s) => !s);
+                    }}
+                    className="p-2 rounded-full hidden bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                    aria-label="More options"
+                  >
+                    <MoreVertical size={16} className="text-gray-600" />
+                  </button>
+                )}
               </div>
-              {Array.isArray(item?.audienceCategories) &&
-                item.audienceCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {item.audienceCategories.map((c) => (
-                      <span
-                        key={c.id || c.name}
-                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
-                      >
-                        {c.name}
-                      </span>
-                    ))}
+              <div
+                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (item?.providerUserId) {
+                    setOpenId(item.providerUserId);
+                    data._showPopUp?.("profile");
+                  }
+                }}
+              >
+                {item?.avatarUrl ? (
+                  <img
+                    src={item.avatarUrl}
+                    alt={item?.providerUserName || "User"}
+                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                    <UserIcon size={12} className="text-brand-600" />
                   </div>
                 )}
+                <div className="flex flex-col">
+                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                    {item?.providerUserName || "User"}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -456,17 +545,34 @@ export default function ServiceCard({
             {item?.title}
           </h3>
 
-          {/* audienceCategories UNDER title (only when there is NO image) */}
-          {!imageUrl && Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-            <div className="mt-1 flex flex-wrap gap-2">
-              {item.audienceCategories.map((c) => (
-                <span
-                  key={c.id || c.name}
-                  className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
-                >
-                  {c.name}
+          {/* Provider display when there's no image */}
+          {!imageUrl && (
+            <div
+              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                if (item?.providerUserId) {
+                  setOpenId(item.providerUserId);
+                  data._showPopUp?.("profile");
+                }
+              }}
+            >
+              {item?.avatarUrl ? (
+                <img
+                  src={item.avatarUrl}
+                  alt={item?.providerUserName || "User"}
+                  className="w-7 h-7 rounded-full shadow-lg object-cover"
+                />
+              ) : (
+                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                  <UserIcon size={12} className="text-brand-600" />
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                  {item?.providerUserName || "User"}
                 </span>
-              ))}
+              </div>
             </div>
           )}
 
@@ -482,30 +588,9 @@ export default function ServiceCard({
 
           {/* Meta (provider + match + time + location) */}
           <div className="mb-3 space-y-2">
-            <div className="flex items-center justify-between">
-              {/* Provider inline profile (opens ProfileModal) */}
-              <div
-                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (item?.providerUserId) {
-                    setOpenId(item.providerUserId);
-                  }
-                }}
-              >
-                {item?.avatarUrl ? (
-                  <img
-                    src={item.avatarUrl}
-                    alt={item?.providerUserName || "Provider"}
-                    className="w-7 h-7 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-7 h-7 bg-brand-100 rounded-full grid place-items-center">
-                    <UserIcon size={12} className="text-brand-600" />
-                  </div>
-                )}
-                <span className="font-medium">{item?.providerUserName || "Provider"}</span>
-              </div>
+            <div className="flex items-center justify-between pb-1">
+              {/* Provider display removed - now shown prominently above */}
+            
 
               {/* Match % chip */}
               {matchPercentage !== undefined && matchPercentage !== null && (
@@ -668,6 +753,18 @@ export default function ServiceCard({
 
         {/* SHARE MENU - inside the card for proper positioning */}
         {shareOpen && <ShareMenu item={item} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
+
+        {/* OPTIONS MENU */}
+        {optionsMenuOpen && (
+          <OptionsMenu
+            item={item}
+            optionsMenuRef={optionsMenuRef}
+            setOptionsMenuOpen={setOptionsMenuOpen}
+            setShowDeleteConfirm={setShowDeleteConfirm}
+            showDeleteConfirm={showDeleteConfirm}
+            setIsDeleted={setIsDeleted}
+          />
+        )}
       </div>
 
       {/* Connection Request Modal */}
@@ -773,6 +870,58 @@ export default function ServiceCard({
     );
   }
 }
+
+// Options menu
+const OptionsMenu = ({ item, optionsMenuRef, setOptionsMenuOpen, setShowDeleteConfirm, showDeleteConfirm, setIsDeleted }) => (
+  <div
+    ref={optionsMenuRef}
+    className="absolute z-30 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-xl top-12 right-3"
+    role="dialog"
+    aria-label="Options menu"
+  >
+    {showDeleteConfirm ? (
+      // Confirmation mode
+      <>
+        <div className="px-3 py-2 text-sm font-medium text-gray-900 border-b border-gray-200 mb-2">
+          Delete this service?
+        </div>
+        <button
+          onClick={async () => {
+            try {
+              await client.delete(`/services/${item.id}`);
+              toast.success("Service deleted successfully");
+              setIsDeleted(true); // Hide the card
+            } catch (error) {
+              console.error("Failed to delete service:", error);
+              toast.error(error?.response?.data?.message || "Failed to delete service");
+            }
+            setOptionsMenuOpen(false);
+            setShowDeleteConfirm(false);
+          }}
+          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mb-1"
+        >
+          <Trash2 size={16} />
+          Confirm Delete
+        </button>
+        <button
+          onClick={() => setShowDeleteConfirm(false)}
+          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+        >
+          Cancel
+        </button>
+      </>
+    ) : (
+      // Initial menu
+      <button
+        onClick={() => setShowDeleteConfirm(true)}
+        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+      >
+        <Trash2 size={16} />
+        Delete
+      </button>
+    )}
+  </div>
+);
 
 // Share data and components
 const ShareMenu = ({ item, shareMenuRef, setShareOpen }) => {

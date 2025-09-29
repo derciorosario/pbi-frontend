@@ -129,7 +129,10 @@ export default function CrowdfundCard({
   }, [item?.deadline]);
 
   // Tags (exactly 2)
-  const allTags = Array.isArray(item?.tags) ? item.tags.filter(Boolean) : [];
+  const allTags = [
+    ...(Array.isArray(item?.audienceCategories) ? item?.audienceCategories.map(i=>i.name) : []),
+    ...(Array.isArray(item?.tags) ? item.tags.filter(Boolean) : [])
+  ];
   const visibleTags = allTags.slice(0, 2);
   const extraCount = Math.max(0, allTags.length - visibleTags.length);
 
@@ -318,19 +321,37 @@ export default function CrowdfundCard({
                 <>
                   <img src={imageUrl} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  {/* audienceCategories overlay when image exists */}
-                  {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                      {item.audienceCategories.map((c) => (
-                        <span
-                          key={c.id || c.name}
-                          className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                        >
-                          {c.name}
+  
+                  {/* Creator name and logo on image */}
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    <div
+                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        if (item?.creatorUserId) {
+                          setOpenId(item.creatorUserId);
+                          data._showPopUp?.("profile");
+                        }
+                      }}
+                    >
+                      {item?.avatarUrl ? (
+                        <img
+                          src={item.avatarUrl}
+                          alt={item?.creatorUserName || "User"}
+                          className="w-7 h-7 rounded-full shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                          <UserIcon size={12} className="text-brand-600" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          {item?.creatorUserName || "User"}
                         </span>
-                      ))}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </>
               ) : (
                 // clean placeholder (no text)
@@ -379,19 +400,37 @@ export default function CrowdfundCard({
                   className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                {/* audienceCategories overlay when image exists */}
-                {Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    {item.audienceCategories.map((c) => (
-                      <span
-                        key={c.id || c.name}
-                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                      >
-                        {c.name}
+
+                {/* Creator name and logo on image */}
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      if (item?.creatorUserId) {
+                        setOpenId(item.creatorUserId);
+                        data._showPopUp?.("profile");
+                      }
+                    }}
+                  >
+                    {item?.avatarUrl ? (
+                      <img
+                        src={item.avatarUrl}
+                        alt={item?.creatorUserName || "User"}
+                        className="w-7 h-7 rounded-full shadow-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                        <UserIcon size={12} className="text-brand-600" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                        {item?.creatorUserName || "User"}
                       </span>
-                    ))}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             ) : (
               // clean placeholder (no text)
@@ -460,19 +499,33 @@ export default function CrowdfundCard({
                   <Share2 size={16} className="text-gray-600" />
                 </button>
               </div>
-              {Array.isArray(item?.audienceCategories) &&
-                item.audienceCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {item.audienceCategories.map((c) => (
-                      <span
-                        key={c.id || c.name}
-                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
-                      >
-                        {c.name}
-                      </span>
-                    ))}
+              <div
+                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (item?.creatorUserId) {
+                    setOpenId(item.creatorUserId);
+                    data._showPopUp?.("profile");
+                  }
+                }}
+              >
+                {item?.avatarUrl ? (
+                  <img
+                    src={item.avatarUrl}
+                    alt={item?.creatorUserName || "User"}
+                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                    <UserIcon size={12} className="text-brand-600" />
                   </div>
                 )}
+                <div className="flex flex-col">
+                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                    {item?.creatorUserName || "User"}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -481,17 +534,34 @@ export default function CrowdfundCard({
             {item?.title}
           </h3>
 
-          {/* audienceCategories HERE ONLY when there is NO image */}
-          {!imageUrl && Array.isArray(item?.audienceCategories) && item.audienceCategories.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {item.audienceCategories.map((c) => (
-                <span
-                  key={c.id || c.name}
-                  className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
-                >
-                  {c.name}
+          {/* Creator display when there's no image */}
+          {!imageUrl && (
+            <div
+              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                if (item?.creatorUserId) {
+                  setOpenId(item.creatorUserId);
+                  data._showPopUp?.("profile");
+                }
+              }}
+            >
+              {item?.avatarUrl ? (
+                <img
+                  src={item.avatarUrl}
+                  alt={item?.creatorUserName || "User"}
+                  className="w-7 h-7 rounded-full shadow-lg object-cover"
+                />
+              ) : (
+                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                  <UserIcon size={12} className="text-brand-600" />
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                  {item?.creatorUserName || "User"}
                 </span>
-              ))}
+              </div>
             </div>
           )}
 
@@ -500,31 +570,9 @@ export default function CrowdfundCard({
 
           {/* Meta row (creator + match + time + location) */}
           <div className="mt-3 space-y-2">
-            <div className="flex items-center justify-between">
-              {/* Creator quick profile (opens ProfileModal) */}
-              <div
-                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (item?.creatorUserId) {
-                    setOpenId(item.creatorUserId);
-                  }
-                }}
-              >
-                {item?.avatarUrl ? (
-                  <img
-                    src={item.avatarUrl}
-                    alt={item?.creatorUserName || "Creator"}
-                    className="w-7 h-7 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-7 h-7 bg-brand-100 rounded-full grid place-items-center">
-                    <UserIcon size={12} className="text-brand-600" />
-                  </div>
-                )}
-                <span className="font-medium">{item?.creatorUserName || item?.creatorName || "Creator"}</span>
-              </div>
-
+            <div className="flex items-center justify-between pb-1">
+              {/* Creator display removed - now shown prominently above */}
+            
               {/* Match % chip */}
               {matchPercentage !== undefined && matchPercentage !== null && (
                 <div

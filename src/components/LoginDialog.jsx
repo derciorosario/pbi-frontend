@@ -538,7 +538,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                 <Input
                   label={labelPhone}
                   name="phone"
-                  type="tel"
+                  type="number"
                   onWheel={e => e.currentTarget.blur()}
                   placeholder={acct === "company" ? "Phone" : "Phone"}
                   value={signupForm.phone}

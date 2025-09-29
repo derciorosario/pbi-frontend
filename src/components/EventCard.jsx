@@ -14,7 +14,7 @@ import EventRegistrationDialog from "./EventRegistrationDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import client,{API_URL} from "../api/client";
-import { Edit, Eye, Share2, MapPin, Clock, User as UserIcon, Copy as CopyIcon, Heart, MessageCircle, Flag, Calendar } from "lucide-react";
+import { Edit, Eye, Share2, MapPin, Clock, User as UserIcon, Copy as CopyIcon, Heart, MessageCircle, Flag, Calendar, MoreVertical, Trash2 } from "lucide-react";
 import {
   FacebookShareButton,
   FacebookIcon,
@@ -80,8 +80,14 @@ export default function EventCard({
 
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+
+  // Options menu
+  const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
+  const optionsMenuRef = useRef(null);
   
-  // Close share menu on outside click / Esc
+  // Close menus on outside click / Esc
   useEffect(() => {
     function onDown(e) {
       if (
@@ -91,9 +97,20 @@ export default function EventCard({
       ) {
         setShareOpen(false);
       }
+      if (
+        optionsMenuRef.current &&
+        !optionsMenuRef.current.contains(e.target)
+      ) {
+        setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
+      }
     }
     function onEsc(e) {
-      if (e.key === "Escape") setShareOpen(false);
+      if (e.key === "Escape") {
+        setShareOpen(false);
+        setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
+      }
     }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onEsc);
@@ -229,7 +246,63 @@ export default function EventCard({
     </div>
   );
 
-  const allTags = [e.eventType || "Event", e.categoryName, e.subcategoryName].filter(Boolean);
+  const OptionsMenu = () => (
+    <div
+      ref={optionsMenuRef}
+      className="absolute z-30 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-xl top-12 right-3"
+      role="dialog"
+      aria-label="Options menu"
+    >
+      {showDeleteConfirm ? (
+        // Confirmation mode
+        <>
+          <div className="px-3 py-2 text-sm font-medium text-gray-900 border-b border-gray-200 mb-2">
+            Delete this event?
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                await client.delete(`/events/${e.id}`);
+                toast.success("Event deleted successfully");
+                setIsDeleted(true); // Hide the card
+              } catch (error) {
+                console.error("Failed to delete event:", error);
+                toast.error(error?.response?.data?.message || "Failed to delete event");
+              }
+              setOptionsMenuOpen(false);
+              setShowDeleteConfirm(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mb-1"
+          >
+            <Trash2 size={16} />
+            Confirm Delete
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(false)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        // Initial menu
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+        >
+          <Trash2 size={16} />
+          Delete
+        </button>
+      )}
+    </div>
+  );
+
+  const allTags = [
+    ...(Array.isArray(e?.audienceCategories) ? e?.audienceCategories.map(i=>i.name) : []),
+    e.eventType || "Event",
+    e.categoryName,
+    e.subcategoryName
+  ].filter(Boolean);
   const visibleTags = allTags.slice(0, 2);
   const extraCount = Math.max(0, allTags.length - visibleTags.length);
 
@@ -292,7 +365,7 @@ export default function EventCard({
     <>
       <div
         ref={cardRef}
-        className={`${containerBase} relative ${containerLayout} ${!isList && isHovered ? "transform -translate-y-1" : ""}`}
+        className={`${containerBase} relative ${containerLayout} ${!isList && isHovered ? "transform -translate-y-1" : ""} ${isDeleted ? "hidden" : ""}`}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -305,19 +378,37 @@ export default function EventCard({
                 <>
                   <img src={imageUrl} alt={e?.title} className="absolute inset-0 w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  {/* audience over image when there IS image */}
-                  {Array.isArray(e?.audienceCategories) && e.audienceCategories.length > 0 && (
-                    <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                      {e.audienceCategories.map((c) => (
-                        <span
-                          key={c.id || c.name}
-                          className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                        >
-                          {c.name}
+  
+                  {/* Organizer name and logo on image */}
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    <div
+                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        if (e?.organizerUserId) {
+                          setOpenId(e.organizerUserId);
+                          data._showPopUp?.("profile");
+                        }
+                      }}
+                    >
+                      {e?.organizerUserAvatarUrl ? (
+                        <img
+                          src={e.organizerUserAvatarUrl}
+                          alt={e?.organizerUserName || "User"}
+                          className="w-7 h-7 rounded-full shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                          <UserIcon size={12} className="text-brand-600" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          {e?.organizerUserName || "User"}
                         </span>
-                      ))}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </>
               ) : (
                 // clean placeholder (no text/icon)
@@ -350,6 +441,20 @@ export default function EventCard({
                 >
                   <Share2 size={16} className="text-gray-600" />
                 </button>
+
+                {/* Options (Delete) - only for owner */}
+                {isOwner && (
+                  <button
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      setOptionsMenuOpen((s) => !s);
+                    }}
+                    className="p-2 hidden rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                    aria-label="More options"
+                  >
+                    <MoreVertical size={16} className="text-gray-600" />
+                  </button>
+                )}
               </div>
             </div>
           )
@@ -364,19 +469,37 @@ export default function EventCard({
                   className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                {/* audience over image when there IS image */}
-                {Array.isArray(e?.audienceCategories) && e.audienceCategories.length > 0 && (
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    {e.audienceCategories.map((c) => (
-                      <span
-                        key={c.id || c.name}
-                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                      >
-                        {c.name}
+
+                {/* Organizer name and logo on image */}
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      if (e?.organizerUserId) {
+                        setOpenId(e.organizerUserId);
+                        data._showPopUp?.("profile");
+                      }
+                    }}
+                  >
+                    {e?.organizerUserAvatarUrl ? (
+                      <img
+                        src={e.organizerUserAvatarUrl}
+                        alt={e?.organizerUserName || "User"}
+                        className="w-7 h-7 rounded-full shadow-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                        <UserIcon size={12} className="text-brand-600" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                        {e?.organizerUserName || "User"}
                       </span>
-                    ))}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             ) : (
               // clean placeholder (no text/icon)
@@ -408,6 +531,20 @@ export default function EventCard({
                 >
                   <Share2 size={16} className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200" />
                 </button>
+
+                {/* Options (Delete) - only for owner */}
+                {isOwner && (
+                  <button
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      setOptionsMenuOpen((s) => !s);
+                    }}
+                    className="p-2 hidden rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                    aria-label="More options"
+                  >
+                    <MoreVertical size={16} className="text-gray-600" />
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -456,20 +593,48 @@ export default function EventCard({
                 >
                   <Share2 size={16} className="text-gray-600" />
                 </button>
+
+                {/* Options (Delete) - only for owner */}
+                {isOwner && (
+                  <button
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      setOptionsMenuOpen((s) => !s);
+                    }}
+                    className="p-2 hidden rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                    aria-label="More options"
+                  >
+                    <MoreVertical size={16} className="text-gray-600" />
+                  </button>
+                )}
               </div>
-              {Array.isArray(e?.audienceCategories) &&
-                e.audienceCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {e.audienceCategories.map((c) => (
-                      <span
-                        key={c.id || c.name}
-                        className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
-                      >
-                        {c.name}
-                      </span>
-                    ))}
+              <div
+                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (e?.organizerUserId) {
+                    setOpenId(e.organizerUserId);
+                    data._showPopUp?.("profile");
+                  }
+                }}
+              >
+                {e?.organizerUserAvatarUrl ? (
+                  <img
+                    src={e.organizerUserAvatarUrl}
+                    alt={e?.organizerUserName || "User"}
+                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                    <UserIcon size={12} className="text-brand-600" />
                   </div>
                 )}
+                <div className="flex flex-col">
+                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                    {e?.organizerUserName || "User"}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -478,17 +643,34 @@ export default function EventCard({
             {e?.title}
           </h3>
 
-          {/* audienceCategories HERE ONLY when there is NO image */}
-          {!imageUrl && Array.isArray(e?.audienceCategories) && e.audienceCategories.length > 0 && (
-            <div className="mt-1 flex flex-wrap gap-2">
-              {e.audienceCategories.map((c) => (
-                <span
-                  key={c.id || c.name}
-                  className="inline-flex items-center gap-1 bg-brand-50 text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full"
-                >
-                  {c.name}
+          {/* Organizer display when there's no image */}
+          {!imageUrl && (
+            <div
+              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                if (e?.organizerUserId) {
+                  setOpenId(e.organizerUserId);
+                  data._showPopUp?.("profile");
+                }
+              }}
+            >
+              {e?.organizerUserAvatarUrl ? (
+                <img
+                  src={e.organizerUserAvatarUrl}
+                  alt={e?.organizerUserName || "User"}
+                  className="w-7 h-7 rounded-full shadow-lg object-cover"
+                />
+              ) : (
+                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                  <UserIcon size={12} className="text-brand-600" />
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                  {e?.organizerUserName || "User"}
                 </span>
-              ))}
+              </div>
             </div>
           )}
 
@@ -504,32 +686,9 @@ export default function EventCard({
 
           {/* Meta: organizer + match + time + location */}
           <div className={`${isList ? "mb-2" : "mb-3"} space-y-2`}>
-            <div className="flex items-center justify-between">
-              {/* Organizer inline profile */}
-              {e?.organizerUserName ? (
-                <div
-                  className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    if (e?.organizerUserId) {
-                      setOpenId(e.organizerUserId);
-                    }
-                  }}
-                >
-                  {e?.organizerUserAvatarUrl ? (
-                    <img
-                      src={e.organizerUserAvatarUrl}
-                      alt={e.organizerUserName}
-                      className="w-7 h-7 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-7 h-7 bg-brand-100 rounded-full grid place-items-center">
-                      <UserIcon size={12} className="text-brand-600" />
-                    </div>
-                  )}
-                  <span className="font-medium">{e.organizerUserName}</span>
-                </div>
-              ) : <span />}
+            <div className="flex items-center justify-between pb-2">
+              {/* Organizer display removed - now shown prominently above */}
+             
 
               {/* Match % chip */}
               {matchPercentage !== undefined && matchPercentage !== null && (
@@ -756,6 +915,9 @@ export default function EventCard({
         
         {/* SHARE MENU - inside the card for proper positioning */}
         {shareOpen && <ShareMenu />}
+
+        {/* OPTIONS MENU */}
+        {optionsMenuOpen && <OptionsMenu />}
       </div>
 
       {/* Connection Request Modal */}
