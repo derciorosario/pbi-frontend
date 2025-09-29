@@ -78,7 +78,10 @@ export default function ExperienceCard({
 
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
-  
+
+  // Image slider state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   // Share popover
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
@@ -128,10 +131,23 @@ export default function ExperienceCard({
   const isOwner = !!user?.id && item?.authorUserId === user.id;
   const isList = type === "list";
 
-  const imageUrl =
-    item?.images?.[0]?.base64url ||
-    (typeof item?.images?.[0] === "string" ? item.images[0] : null) ||
-    null;
+  // Get all valid images for slider
+  const getValidImages = () => {
+    const images = item?.images || [];
+    const validImages = [];
+
+    images.forEach(img => {
+      let imageUrl = img?.base64url || (typeof img === "string" ? img : null);
+      if (imageUrl) {
+        validImages.push(imageUrl);
+      }
+    });
+
+    return validImages;
+  };
+
+  const validImages = getValidImages();
+  const hasMultipleImages = validImages.length > 1;
 
   // Exactly 2 tags (use the provided tags array)
   const allTags = [
@@ -201,41 +217,51 @@ export default function ExperienceCard({
           // Only show image side in list view if not text mode
           settings?.contentType !== 'text' && (
             <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-              {imageUrl ? (
+              {validImages.length > 0 ? (
                 <>
-                  <img src={imageUrl} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-  
-                  {/* Author name and logo on image */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    <div
-                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        if (item?.authorUserId) {
-                          setOpenId(item.authorUserId);
-                          data._showPopUp?.("profile");
-                        }
-                      }}
-                    >
-                      {item?.avatarUrl ? (
-                        <img
-                          src={item.avatarUrl}
-                          alt={item?.authorUserName || "User"}
-                          className="w-7 h-7 rounded-full shadow-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                          <UserIcon size={12} className="text-brand-600" />
-                        </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                          {item?.authorUserName || "User"}
-                        </span>
+                  {/* Image Slider */}
+                  <div className="relative w-full h-full overflow-hidden">
+                    {hasMultipleImages ? (
+                      <div
+                        className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                        style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                      >
+                        {validImages.map((img, index) => (
+                          <img
+                            key={index}
+                            src={img}
+                            alt={`${item?.title} - ${index + 1}`}
+                            className="flex-shrink-0 w-full h-full object-cover"
+                          />
+                        ))}
                       </div>
-                    </div>
+                    ) : (
+                      <img src={validImages[0]} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
+                    )}
                   </div>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                
+
+                  {/* Slider Dots */}
+                  {hasMultipleImages && (
+                    <div className="absolute bottom-3 right-3 flex gap-1">
+                      {validImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex(index);
+                          }}
+                          className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
+                          aria-label={`Go to image ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 // clean placeholder (no text/icon)
@@ -274,18 +300,69 @@ export default function ExperienceCard({
                   <Share2 size={16} className="text-gray-600" />
                 </button>
               </div>
+
+                {/* Author name and logo on image */}
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    <div
+                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        if (item?.authorUserId) {
+                          setOpenId(item.authorUserId);
+                          data._showPopUp?.("profile");
+                        }
+                      }}
+                    >
+                      {item?.avatarUrl ? (
+                        <img
+                          src={item.avatarUrl}
+                          alt={item?.authorUserName || "User"}
+                          className="w-7 h-7 rounded-full shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                          <UserIcon size={12} className="text-brand-600" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          {item?.authorUserName || "User"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
             </div>
           )
         ) : (
           // GRID IMAGE
           <div className="relative overflow-hidden">
-            {settings?.contentType === 'text' ? null : imageUrl ? (
+            {settings?.contentType === 'text' ? null : validImages.length > 0 ? (
               <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt={item?.title}
-                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                {/* Image Slider */}
+                <div className="relative w-full h-48 overflow-hidden">
+                  {hasMultipleImages ? (
+                    <div
+                      className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                      style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                    >
+                      {validImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={img}
+                          alt={`${item?.title} - ${index + 1}`}
+                          className="flex-shrink-0 w-full h-full object-cover transition-transform duration-500 "
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <img
+                      src={validImages[0]}
+                      alt={item?.title}
+                      className="w-full h-48 object-cover transition-transform duration-500 "
+                    />
+                  )}
+                </div>
+
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                 {/* Author name and logo on image */}
@@ -318,10 +395,59 @@ export default function ExperienceCard({
                     </div>
                   </div>
                 </div>
+
+                {/* Slider Dots */}
+                {hasMultipleImages && (
+                  <div className="absolute bottom-3 right-3 flex gap-1">
+                    {validImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex(index);
+                        }}
+                        className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               // clean placeholder (no text/icon)
-              <div className="w-full h-48 bg-gray-100" />
+              <div className="w-full h-48 bg-gray-500 relative">
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      if (item?.authorUserId) {
+                        setOpenId(item.authorUserId);
+                        data._showPopUp?.("profile");
+                      }
+                    }}
+                  >
+                    {item?.avatarUrl ? (
+                      <img
+                        src={item.avatarUrl}
+                        alt={item?.authorUserName || "User"}
+                        className="w-7 h-7 rounded-full shadow-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                        <UserIcon size={12} className="text-brand-600" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                        {item?.authorUserName || "User"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* View & Share - only show when not text mode */}
@@ -422,36 +548,7 @@ export default function ExperienceCard({
           {/* Title */}
           <h3 className="mt-1 font-semibold text-gray-900 text-lg">{item?.title}</h3>
 
-          {/* Author display when there's no image */}
-          {!imageUrl && (
-            <div
-              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
-              onClick={(ev) => {
-                ev.stopPropagation();
-                if (item?.authorUserId) {
-                  setOpenId(item.authorUserId);
-                  data._showPopUp?.("profile");
-                }
-              }}
-            >
-              {item?.avatarUrl ? (
-                <img
-                  src={item.avatarUrl}
-                  alt={item?.authorUserName || "User"}
-                  className="w-7 h-7 rounded-full shadow-lg object-cover"
-                />
-              ) : (
-                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                  <UserIcon size={12} className="text-brand-600" />
-                </div>
-              )}
-              <div className="flex flex-col">
-                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                  {item?.authorUserName || "User"}
-                </span>
-              </div>
-            </div>
-          )}
+         
 
           {/* Description */}
           <p className={`text-sm text-gray-600 mt-2 leading-relaxed ${type=="list" ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"}`}>

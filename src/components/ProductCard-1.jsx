@@ -80,7 +80,10 @@ export default function ProductCard({
 
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
-  
+
+  // Image slider state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   // Close share menu on outside click / Esc
   useEffect(() => {
     function onDown(e) {
@@ -130,16 +133,26 @@ export default function ProductCard({
 
   const isList = type === "list";
 
-  // pick first image if exists
+  // Get all valid images for slider
+  const getValidImages = () => {
+    const images = item?.images || [];
+    const validImages = [];
 
-   let imageUrl = item?.images?.[0]?.filename || item?.images?.[0] || null;
-   console.log({imageUrl,item})
-    imageUrl =
-    imageUrl && (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
-      ? imageUrl
-      : imageUrl
-      ? `${API_URL}/uploads/${imageUrl}`
-      : null;
+    images.forEach(img => {
+      let imageUrl = img?.filename || img || null;
+      if (imageUrl) {
+        imageUrl = (imageUrl.startsWith("data:image") || imageUrl.startsWith("http"))
+          ? imageUrl
+          : `${API_URL}/uploads/${imageUrl}`;
+        validImages.push(imageUrl);
+      }
+    });
+
+    return validImages;
+  };
+
+  const validImages = getValidImages();
+  const hasMultipleImages = validImages.length > 1;
   
 
   const initials = (item?.seller?.name || item?.sellerUserName || "?")
@@ -310,21 +323,55 @@ export default function ProductCard({
           // Only show image side in list view if not text mode
           settings?.contentType !== 'text' ? (
             <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-            {imageUrl ? (
+            {validImages.length > 0 ? (
               <>
-                {/* Fill the entire left column */}
-                <img
-                  src={imageUrl}
-                  alt={item?.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+                {/* Image Slider */}
+                <div className="relative w-full h-full overflow-hidden">
+                  {hasMultipleImages ? (
+                    <div
+                      className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                      style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                    >
+                      {validImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={img}
+                          alt={`${item?.title} - ${index + 1}`}
+                          className="flex-shrink-0 w-full h-full object-cover"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <img src={validImages[0]} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
+                  )}
+                </div>
+
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Slider Dots */}
+                {hasMultipleImages && (
+                  <div className="absolute bottom-3 right-3 flex gap-1">
+                    {validImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex(index);
+                        }}
+                        className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
-             
+
               <div className="w-full h-full bg-gray-200 flex justify-center items-center">
-                             <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
-                           </div>
+                              <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
+                            </div>
             )}
 
             {/* User name and logo on image */}
@@ -404,20 +451,59 @@ export default function ProductCard({
       ) : (
         // GRID IMAGE
         <div className="relative overflow-hidden">
-          {settings?.contentType === 'text' ? null : imageUrl ? (
+          {settings?.contentType === 'text' ? null : validImages.length > 0 ? (
             <div className="relative">
-              <img
-                src={imageUrl}
-                alt={item?.title}
-                className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-              />
+              {/* Image Slider */}
+              <div className="relative w-full h-48 overflow-hidden">
+                {hasMultipleImages ? (
+                  <div
+                    className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                    style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                  >
+                    {validImages.map((img, index) => (
+                      <img
+                        key={index}
+                        src={img}
+                        alt={`${item?.title} - ${index + 1}`}
+                        className="flex-shrink-0 w-full h-full object-cover transition-transform duration-500 "
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <img
+                    src={validImages[0]}
+                    alt={item?.title}
+                    className="w-full h-48 object-cover transition-transform duration-500 "
+                  />
+                )}
+              </div>
+
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+              {/* Slider Dots */}
+              {hasMultipleImages && (
+                <div className="absolute bottom-3 right-3 flex gap-1">
+                  {validImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentImageIndex(index);
+                      }}
+                      className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                        index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                      }`}
+                      aria-label={`Go to image ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="relative h-48">
               <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
-                               <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
-             </div>
+                                <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
+              </div>
             </div>
           )}
 

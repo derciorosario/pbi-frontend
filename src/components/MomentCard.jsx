@@ -92,6 +92,9 @@ export default function MomentCard({
   // Moment details modal
   const [momentDetailsOpen, setMomentDetailsOpen] = useState(false);
 
+  // Image slider state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   // Close share menu on outside click / Esc
   useEffect(() => {
     function onDown(e) {
@@ -136,39 +139,40 @@ export default function MomentCard({
   const isOwner =
     user?.id && moment?.userId && user.id === moment.userId;
   const isList = type === "list";
-  // Get first valid image from images or attachments arrays
-  const imageUrl = useMemo(() => {
-    // Check images array first (for moments) - find first valid image
-    if (moment?.images?.length > 0) {
-       for (const img of moment.images) {
-          if (typeof img?.base64url === "string") {
-            if (img.base64url.startsWith("data:image")) {
-              // base64 image
-              return img.base64url;
-            }
-            if (img.base64url.startsWith("http://") || img.base64url.startsWith("https://")) {
-              // full image URL
-              return img.base64url;
-            }
-          }
-        }
-    }
+  // Get all valid images for slider
+  const getValidImages = () => {
+    const validImages = [];
 
-    // Check attachments array as fallback - find first valid image
-    if (moment?.attachments?.length > 0) {
-      for (const attachment of moment.attachments) {
-        if (attachment?.base64url && attachment.base64url.startsWith('data:image')) {
-          return attachment.base64url;
-        }
-         if (attachment.base64url.startsWith("http://") || attachment.base64url.startsWith("https://")) {
-              // full image URL
-              return attachment.base64url;
+    // Check images array first (for moments)
+    if (moment?.images?.length > 0) {
+      for (const img of moment.images) {
+        if (typeof img?.base64url === "string") {
+          if (img.base64url.startsWith("data:image") ||
+              img.base64url.startsWith("http://") ||
+              img.base64url.startsWith("https://")) {
+            validImages.push(img.base64url);
+          }
         }
       }
     }
 
-    return null;
-  }, [moment?.images, moment?.attachments]);
+    // Check attachments array as fallback
+    if (moment?.attachments?.length > 0 && validImages.length === 0) {
+      for (const attachment of moment.attachments) {
+        if (attachment?.base64url &&
+            (attachment.base64url.startsWith('data:image') ||
+             attachment.base64url.startsWith("http://") ||
+             attachment.base64url.startsWith("https://"))) {
+          validImages.push(attachment.base64url);
+        }
+      }
+    }
+
+    return validImages;
+  };
+
+  const validImages = getValidImages();
+  const hasMultipleImages = validImages.length > 1;
 
 
 
@@ -368,13 +372,29 @@ export default function MomentCard({
           // Only show image side in list view if not text mode
           settings?.contentType !== 'text' && (
             <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-              {imageUrl ? (
+              {validImages.length > 0 ? (
                 <>
-                  <img
-                    src={imageUrl}
-                    alt={moment?.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
+                  {/* Image Slider */}
+                  <div className="relative w-full h-full overflow-hidden">
+                    {hasMultipleImages ? (
+                      <div
+                        className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                        style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                      >
+                        {validImages.map((img, index) => (
+                          <img
+                            key={index}
+                            src={img}
+                            alt={`${moment?.title} - ${index + 1}`}
+                            className="flex-shrink-0 w-full h-full object-cover"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <img src={validImages[0]} alt={moment?.title} className="absolute inset-0 w-full h-full object-cover" />
+                    )}
+                  </div>
+
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                   {/* User name and logo on image */}
@@ -389,9 +409,9 @@ export default function MomentCard({
                         }
                       }}
                     >
-                      {moment?.user?.avatarUrl || moment?.userAvatarUrl ? (
+                      {moment?.user?.avatarUrl || moment?.avatarUrl ? (
                         <img
-                          src={moment.user?.avatarUrl || moment.userAvatarUrl}
+                          src={moment.user?.avatarUrl || moment.avatarUrl}
                           alt={moment?.user?.name || moment?.userName || "User"}
                           className="w-7 h-7 rounded-full shadow-lg object-cover"
                         />
@@ -407,6 +427,25 @@ export default function MomentCard({
                       </div>
                     </div>
                   </div>
+
+                  {/* Slider Dots */}
+                  {hasMultipleImages && (
+                    <div className="absolute bottom-3 right-3 flex gap-1">
+                      {validImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex(index);
+                          }}
+                          className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
+                          aria-label={`Go to image ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
@@ -449,9 +488,9 @@ export default function MomentCard({
                 }
               }}
             >
-              {moment?.user?.avatarUrl || moment?.userAvatarUrl ? (
+              {moment?.user?.avatarUrl || moment?.avatarUrl ? (
                 <img
-                  src={moment.user?.avatarUrl || moment.userAvatarUrl}
+                  src={moment.user?.avatarUrl || moment.avatarUrl}
                   alt={moment?.user?.name || moment?.userName || "User"}
                   className="w-7 h-7 rounded-full shadow-lg object-cover"
                 />
@@ -472,13 +511,33 @@ export default function MomentCard({
         ) : (
           // GRID IMAGE
           <div className="relative overflow-hidden">
-            {settings?.contentType === 'text' ? null : imageUrl ? (
+            {settings?.contentType === 'text' ? null : validImages.length > 0 ? (
               <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt={moment?.title}
-                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                {/* Image Slider */}
+                <div className="relative w-full h-48 overflow-hidden">
+                  {hasMultipleImages ? (
+                    <div
+                      className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                      style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                    >
+                      {validImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={img}
+                          alt={`${moment?.title} - ${index + 1}`}
+                          className="flex-shrink-0 w-full h-full object-cover transition-transform duration-500 "
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <img
+                      src={validImages[0]}
+                      alt={moment?.title}
+                      className="w-full h-48 object-cover transition-transform duration-500 "
+                    />
+                  )}
+                </div>
+
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                 {/* User name and logo on image */}
@@ -493,9 +552,9 @@ export default function MomentCard({
                       }
                     }}
                   >
-                    {moment?.user?.avatarUrl || moment?.userAvatarUrl ? (
+                    {moment?.user?.avatarUrl || moment?.avatarUrl ? (
                       <img
-                        src={moment.user?.avatarUrl || moment.userAvatarUrl}
+                        src={moment.user?.avatarUrl || moment.avatarUrl}
                         alt={moment?.user?.name || moment?.userName || "User"}
                         className="w-7 h-7 rounded-full shadow-lg object-cover"
                       />
@@ -511,6 +570,25 @@ export default function MomentCard({
                     </div>
                   </div>
                 </div>
+
+                {/* Slider Dots */}
+                {hasMultipleImages && (
+                  <div className="absolute bottom-3 right-3 flex gap-1">
+                    {validImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex(index);
+                        }}
+                        className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="w-full h-48 bg-gray-200 flex justify-center items-center">
@@ -559,9 +637,9 @@ export default function MomentCard({
                 }
               }}
             >
-              {moment?.user?.avatarUrl || moment?.userAvatarUrl ? (
+              {moment?.user?.avatarUrl || moment?.avatarUrl ? (
                 <img
-                  src={moment.user?.avatarUrl || moment.userAvatarUrl}
+                  src={moment.user?.avatarUrl || moment.avatarUrl}
                   alt={moment?.user?.name || moment?.userName || "User"}
                   className="w-7 h-7 rounded-full shadow-lg object-cover"
                 />
@@ -620,9 +698,9 @@ export default function MomentCard({
                   }
                 }}
               >
-                {moment?.user?.avatarUrl || moment?.userAvatarUrl ? (
+                {moment?.user?.avatarUrl || moment?.avatarUrl ? (
                   <img
-                    src={moment.user?.avatarUrl || moment.userAvatarUrl}
+                    src={moment.user?.avatarUrl || moment.avatarUrl}
                     alt={moment?.user?.name || moment?.userName || "User"}
                     className="w-7 h-7 rounded-full shadow-lg object-cover"
                   />

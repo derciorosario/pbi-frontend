@@ -391,9 +391,9 @@ export default function EventCard({
                         }
                       }}
                     >
-                      {e?.organizerUserAvatarUrl ? (
+                      {e?.avatarUrl ? (
                         <img
-                          src={e.organizerUserAvatarUrl}
+                          src={e.avatarUrl}
                           alt={e?.organizerUserName || "User"}
                           className="w-7 h-7 rounded-full shadow-lg object-cover"
                         />
@@ -482,9 +482,9 @@ export default function EventCard({
                       }
                     }}
                   >
-                    {e?.organizerUserAvatarUrl ? (
+                    {e?.avatarUrl ? (
                       <img
-                        src={e.organizerUserAvatarUrl}
+                        src={e.avatarUrl}
                         alt={e?.organizerUserName || "User"}
                         className="w-7 h-7 rounded-full shadow-lg object-cover"
                       />
@@ -618,9 +618,9 @@ export default function EventCard({
                   }
                 }}
               >
-                {e?.organizerUserAvatarUrl ? (
+                {e?.avatarUrl ? (
                   <img
-                    src={e.organizerUserAvatarUrl}
+                    src={e.avatarUrl}
                     alt={e?.organizerUserName || "User"}
                     className="w-7 h-7 rounded-full shadow-lg object-cover"
                   />
@@ -655,9 +655,9 @@ export default function EventCard({
                 }
               }}
             >
-              {e?.organizerUserAvatarUrl ? (
+              {e?.avatarUrl ? (
                 <img
-                  src={e.organizerUserAvatarUrl}
+                  src={e.avatarUrl}
                   alt={e?.organizerUserName || "User"}
                   className="w-7 h-7 rounded-full shadow-lg object-cover"
                 />

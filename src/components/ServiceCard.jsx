@@ -90,6 +90,9 @@ export default function ServiceCard({
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
   const cardRef = useRef(null);
+
+  // Image slider state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Close menus on outside click / Esc
   useEffect(() => {
@@ -146,36 +149,38 @@ export default function ServiceCard({
 
   
 
-  // First image (supports base64url or string URL)
+  // Get all valid images for slider
+  const getValidImages = () => {
+    const attachments = item?.images || [];
+    const validImages = [];
 
-  const imageUrl = (() => {
-  const attachments = item?.images || [];
+    // Add base64 images
+    attachments.forEach(att => {
+      if (att?.startsWith("data:image")) {
+        validImages.push(att);
+      }
+    });
 
-  
-  console.log({attachments})
+    // Add URL images
+    attachments.forEach(att => {
+      if (typeof att === "string" &&
+          (/\.(jpe?g|png|gif|webp|svg)$/i.test(att) || att.startsWith("http://") || att.startsWith("https://"))) {
+        if (!validImages.includes(att)) validImages.push(att);
+      }
+    });
 
+    // Fallback to item.images[0] if valid
+    if (validImages.length === 0 && item?.images?.[0] &&
+        (item.images[0].startsWith("http://") || item.images[0].startsWith("https://")) &&
+        /\.(jpe?g|png|gif|webp|svg)$/i.test(item.images[0])) {
+      validImages.push(item.images[0]);
+    }
 
-  // Case 1: if it has a base64 image
-  const base64 = attachments.find(att => att?.startsWith("data:image"));
-  if (base64) return base64;
+    return validImages;
+  };
 
-  // Case 2: if it has a string that looks like an image file or URL
-  const imageFile = attachments.find(att =>
-  (typeof att === "string" &&
-    /\.(jpe?g|png|gif|webp|svg)$/i.test(att)) || (att.startsWith("http://") || att.startsWith("https://"))
-  );
-  if (imageFile) return imageFile;
-
-  // Case 3: fallback to item.images[0] if it's a valid image URL
-  if (
-    item?.images?.[0] &&
-    (item.images[0].startsWith("http://") || item.images[0].startsWith("https://")) &&
-    /\.(jpe?g|png|gif|webp|svg)$/i.test(item.images[0])
-  ) {
-    return item.images[0];
-  }
-  return null;
-})();
+  const validImages = getValidImages();
+  const hasMultipleImages = validImages.length > 1;
 
 
   const priceLabel = useMemo(() => {
@@ -293,11 +298,31 @@ export default function ServiceCard({
           // Only show image side in list view if not text mode
           settings?.contentType !== 'text' && (
             <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-              {imageUrl ? (
+              {validImages.length > 0 ? (
                 <>
-                  <img src={imageUrl} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
+                  {/* Image Slider */}
+                  <div className="relative w-full h-full overflow-hidden">
+                    {hasMultipleImages ? (
+                      <div
+                        className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                        style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                      >
+                        {validImages.map((img, index) => (
+                          <img
+                            key={index}
+                            src={img}
+                            alt={`${item?.title} - ${index + 1}`}
+                            className="flex-shrink-0 w-full h-full object-cover"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <img src={validImages[0]} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
+                    )}
+                  </div>
+
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-  
+
                   {/* Provider name and logo on image */}
                   <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
                     <div
@@ -328,6 +353,25 @@ export default function ServiceCard({
                       </div>
                     </div>
                   </div>
+
+                  {/* Slider Dots */}
+                  {hasMultipleImages && (
+                    <div className="absolute bottom-3 right-3 flex gap-1">
+                      {validImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex(index);
+                          }}
+                          className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
+                          aria-label={`Go to image ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 // clean placeholder (no text)
@@ -374,13 +418,33 @@ export default function ServiceCard({
           )
         ) : (
           <div className="relative overflow-hidden">
-            {settings?.contentType === 'text' ? null : imageUrl ? (
+            {settings?.contentType === 'text' ? null : validImages.length > 0 ? (
               <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt={item?.title}
-                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                {/* Image Slider */}
+                <div className="relative w-full h-48 overflow-hidden">
+                  {hasMultipleImages ? (
+                    <div
+                      className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                      style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                    >
+                      {validImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={img}
+                          alt={`${item?.title} - ${index + 1}`}
+                          className="flex-shrink-0 w-full h-full object-cover transition-transform duration-500 "
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <img
+                      src={validImages[0]}
+                      alt={item?.title}
+                      className="w-full h-48 object-cover transition-transform duration-500 "
+                    />
+                  )}
+                </div>
+
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                 {/* Provider name and logo on image */}
@@ -413,6 +477,25 @@ export default function ServiceCard({
                     </div>
                   </div>
                 </div>
+
+                {/* Slider Dots */}
+                {hasMultipleImages && (
+                  <div className="absolute bottom-3 right-3 flex gap-1">
+                    {validImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex(index);
+                        }}
+                        className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               // clean placeholder (no text)
@@ -546,7 +629,7 @@ export default function ServiceCard({
           </h3>
 
           {/* Provider display when there's no image */}
-          {!imageUrl && (
+          {validImages.length === 0 && (
             <div
               className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
               onClick={(ev) => {

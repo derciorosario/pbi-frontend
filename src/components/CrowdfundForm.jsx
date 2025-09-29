@@ -418,6 +418,19 @@ export default function CrowdfundForm() {
           subsubCategoryIds: new Set((data.audienceSubsubs || []).map((x) => x.id)),
         });
 
+          // If event already has general taxonomy set, prefill selectedGeneral
+        setSelectedGeneral({
+          categoryId: data.generalCategoryId || "",
+          subcategoryId: data.generalSubcategoryId || "",
+          subsubCategoryId: data.generalSubsubCategoryId || "",
+        });
+
+        // If event already has industry taxonomy set, prefill selectedIndustry
+        setSelectedIndustry({
+          categoryId: data.industryCategoryId || "",
+          subcategoryId: data.industrySubcategoryId || "",
+        });
+
         setLoading(false)
       } catch (err) {
         console.error(err);
@@ -829,8 +842,8 @@ function removeTag(idx) {
       } else {
         await client.post("/funding/projects", payload);
         toast.success(status === "draft" ? "Draft saved!" : "Project published!");
+        navigate("/funding");
       }
-      navigate("/funding");
     } catch (e) {
       console.error(e);
       toast.error(e?.response?.data?.message || "Could not save the project.");

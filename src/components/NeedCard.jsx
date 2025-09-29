@@ -89,6 +89,9 @@ export default function NeedCard({
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
 
+  // Image slider state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   // Close share menu on outside click / Esc
   useEffect(() => {
     function onDown(e) {
@@ -133,23 +136,26 @@ export default function NeedCard({
   const isOwner =
     user?.id && need?.userId && user.id === need.userId;
   const isList = type === "list";
-  // Get first valid image from attachments array
-  const imageUrl = useMemo(() => {
+  // Get all valid images for slider
+  const getValidImages = () => {
+    const validImages = [];
+
     if (need?.attachments?.length > 0) {
       for (const attachment of need.attachments) {
-        if (attachment?.base64url && attachment.base64url.startsWith('data:image')) {
-          return attachment.base64url;
-        }
-         if (attachment.base64url.startsWith("http://") || attachment.base64url.startsWith("https://")) {
-              // full image URL
-              return attachment.base64url;
+        if (attachment?.base64url &&
+            (attachment.base64url.startsWith('data:image') ||
+             attachment.base64url.startsWith("http://") ||
+             attachment.base64url.startsWith("https://"))) {
+          validImages.push(attachment.base64url);
         }
       }
     }
-    return null;
-  }, [need?.attachments]);
 
-  console.log({imageUrl,a:need?.attachments})
+    return validImages;
+  };
+
+  const validImages = getValidImages();
+  const hasMultipleImages = validImages.length > 1;
 
   const allTags = useMemo(() => {
     const apiTags = Array.isArray(need?.tags) ? need.tags : [];
@@ -345,13 +351,29 @@ export default function NeedCard({
           // Only show image side in list view if not text mode
           settings?.contentType !== 'text' && (
             <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-              {imageUrl ? (
+              {validImages.length > 0 ? (
                 <>
-                  <img
-                    src={imageUrl}
-                    alt={need?.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
+                  {/* Image Slider */}
+                  <div className="relative w-full h-full overflow-hidden">
+                    {hasMultipleImages ? (
+                      <div
+                        className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                        style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                      >
+                        {validImages.map((img, index) => (
+                          <img
+                            key={index}
+                            src={img}
+                            alt={`${need?.title} - ${index + 1}`}
+                            className="flex-shrink-0 w-full h-full object-cover"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <img src={validImages[0]} alt={need?.title} className="absolute inset-0 w-full h-full object-cover" />
+                    )}
+                  </div>
+
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                   {/* User name and logo on image */}
@@ -384,6 +406,25 @@ export default function NeedCard({
                       </div>
                     </div>
                   </div>
+
+                  {/* Slider Dots */}
+                  {hasMultipleImages && (
+                    <div className="absolute bottom-3 right-3 flex gap-1">
+                      {validImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex(index);
+                          }}
+                          className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
+                          aria-label={`Go to image ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
@@ -420,13 +461,33 @@ export default function NeedCard({
         ) : (
           // GRID IMAGE
           <div className="relative overflow-hidden">
-            {settings?.contentType === 'text' ? null : imageUrl ? (
+            {settings?.contentType === 'text' ? null : validImages.length > 0 ? (
               <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt={need?.title}
-                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                {/* Image Slider */}
+                <div className="relative w-full h-48 overflow-hidden">
+                  {hasMultipleImages ? (
+                    <div
+                      className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                      style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                    >
+                      {validImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={img}
+                          alt={`${need?.title} - ${index + 1}`}
+                          className="flex-shrink-0 w-full h-full object-cover transition-transform duration-500 "
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <img
+                      src={validImages[0]}
+                      alt={need?.title}
+                      className="w-full h-48 object-cover transition-transform duration-500 "
+                    />
+                  )}
+                </div>
+
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                 {/* User name and logo on image */}
@@ -459,6 +520,25 @@ export default function NeedCard({
                     </div>
                   </div>
                 </div>
+
+                {/* Slider Dots */}
+                {hasMultipleImages && (
+                  <div className="absolute bottom-3 right-3 flex gap-1">
+                    {validImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex(index);
+                        }}
+                        className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="w-full h-48 bg-gray-200 flex justify-center items-center">
@@ -563,7 +643,7 @@ export default function NeedCard({
           </h3>
 
           {/* User display when there's no image */}
-          {!imageUrl && (
+          {validImages.length === 0 && (
             <div
               className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
               onClick={(ev) => {

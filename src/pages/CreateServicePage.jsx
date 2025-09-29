@@ -399,6 +399,18 @@ export default function CreateServicePage() {
           subsubCategoryIds: new Set((data.audienceSubsubs || []).map((x) => x.id)),
         });
 
+        setSelectedGeneral({
+          categoryId: data.generalCategoryId || "",
+          subcategoryId: data.generalSubcategoryId || "",
+          subsubCategoryId: data.generalSubsubCategoryId || "",
+        });
+
+        setSelectedIndustry({
+          categoryId: data.industryCategoryId || "",
+          subcategoryId: data.industrySubcategoryId || "",
+          subsubCategoryId: data.industrySubsubCategoryId || "",
+        });
+
         // build media
         setMedia(extractServiceMedia(data, nextAttachments));
         setLoading(false)

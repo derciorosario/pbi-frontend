@@ -263,11 +263,7 @@ export default function MomentDetails({ momentId, isOpen, onClose, item }) {
                     />
                   </div>
                 ) : (moment?.images?.length > 0 || moment?.attachments?.length > 0) ? (
-                  <div className="relative mb-6">
-                    <div className="w-full h-64 bg-gray-200 flex justify-center items-center rounded-lg">
-                      <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
-                    </div>
-                  </div>
+                  <></>
                 ) : null;
               })()}
 
@@ -387,7 +383,7 @@ export default function MomentDetails({ momentId, isOpen, onClose, item }) {
                 <Section title="Attachments" icon={Tag}>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {[...(moment.images || []), ...(moment.attachments || [])].map((attachment, index) => {
-                      const isImage = attachment.base64url && attachment.base64url.startsWith('data:image');
+                      const isImage = true // attachment.base64url.startsWith('data:image') || attachment.base64url?.toUpperCase()?.includes('jpg') || attachment.base64url?.toUpperCase()?.includes('png');
                       const fileName = attachment.name || attachment.title || `Attachment ${index + 1}`;
 
                       return (

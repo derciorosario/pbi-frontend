@@ -316,6 +316,20 @@ export default function CreateTourismPostPage() {
           subcategoryIds: new Set((data.audienceSubcategories || []).map((x) => x.id)),
           subsubCategoryIds: new Set((data.audienceSubsubs || []).map((x) => x.id)),
         });
+
+          // If event already has general taxonomy set, prefill selectedGeneral
+        setSelectedGeneral({
+          categoryId: data.generalCategoryId || "",
+          subcategoryId: data.generalSubcategoryId || "",
+          subsubCategoryId: data.generalSubsubCategoryId || "",
+        });
+
+        // If event already has industry taxonomy set, prefill selectedIndustry
+        setSelectedIndustry({
+          categoryId: data.industryCategoryId || "",
+          subcategoryId: data.industrySubcategoryId || "",
+        });
+
         setLoading(false)
       } catch (err) {
         console.error(err);
@@ -689,9 +703,9 @@ export default function CreateTourismPostPage() {
       } else {
         await client.post("/tourism", payload);
         toast.success("Tourism post published!");
+        navigate("/tourism");
       }
       setLoading(true)
-      navigate("/tourism");
     } catch (error) {
       console.error(error);
       toast.error(error?.response?.data?.message || "Could not save tourism post");

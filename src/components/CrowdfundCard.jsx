@@ -79,6 +79,9 @@ export default function CrowdfundCard({
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
 
+  // Image slider state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   // Share popover
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
@@ -109,11 +112,31 @@ export default function CrowdfundCard({
     };
   }, []);
 
-  // First image (supports base64url or string URL)
-  const imageUrl =
-    item?.images?.[0]?.base64url ||
-    (typeof item?.images?.[0] === "string" ? item.images[0] : null) ||
-    null;
+  // Get all valid images for slider
+  const getValidImages = () => {
+    const validImages = [];
+
+    if (item?.images?.length > 0) {
+      for (const img of item.images) {
+        if (img?.base64url &&
+            (img.base64url.startsWith("data:image") ||
+             img.base64url.startsWith("http://") ||
+             img.base64url.startsWith("https://"))) {
+          validImages.push(img.base64url);
+        } else if (typeof img === "string" &&
+                   (img.startsWith("data:image") ||
+                    img.startsWith("http://") ||
+                    img.startsWith("https://"))) {
+          validImages.push(img);
+        }
+      }
+    }
+
+    return validImages;
+  };
+
+  const validImages = getValidImages();
+  const hasMultipleImages = validImages.length > 1;
 
   // Raised/goal/progress
   const raised = parseFloat(item?.raised || 0);
@@ -317,11 +340,31 @@ export default function CrowdfundCard({
           // Only show image side in list view if not text mode
           settings?.contentType !== 'text' && (
             <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-              {imageUrl ? (
+              {validImages.length > 0 ? (
                 <>
-                  <img src={imageUrl} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
+                  {/* Image Slider */}
+                  <div className="relative w-full h-full overflow-hidden">
+                    {hasMultipleImages ? (
+                      <div
+                        className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                        style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                      >
+                        {validImages.map((img, index) => (
+                          <img
+                            key={index}
+                            src={img}
+                            alt={`${item?.title} - ${index + 1}`}
+                            className="flex-shrink-0 w-full h-full object-cover"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <img src={validImages[0]} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
+                    )}
+                  </div>
+
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-  
+
                   {/* Creator name and logo on image */}
                   <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
                     <div
@@ -352,6 +395,25 @@ export default function CrowdfundCard({
                       </div>
                     </div>
                   </div>
+
+                  {/* Slider Dots */}
+                  {hasMultipleImages && (
+                    <div className="absolute bottom-3 right-3 flex gap-1">
+                      {validImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex(index);
+                          }}
+                          className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
+                          aria-label={`Go to image ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 // clean placeholder (no text)
@@ -392,13 +454,33 @@ export default function CrowdfundCard({
           )
         ) : (
           <div className="relative overflow-hidden">
-            {settings?.contentType === 'text' ? null : imageUrl ? (
+            {settings?.contentType === 'text' ? null : validImages.length > 0 ? (
               <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt={item?.title}
-                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                />
+                {/* Image Slider */}
+                <div className="relative w-full h-48 overflow-hidden">
+                  {hasMultipleImages ? (
+                    <div
+                      className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                      style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                    >
+                      {validImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={img}
+                          alt={`${item?.title} - ${index + 1}`}
+                          className="flex-shrink-0 w-full h-full object-cover transition-transform duration-500 "
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <img
+                      src={validImages[0]}
+                      alt={item?.title}
+                      className="w-full h-48 object-cover transition-transform duration-500 "
+                    />
+                  )}
+                </div>
+
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                 {/* Creator name and logo on image */}
@@ -431,6 +513,25 @@ export default function CrowdfundCard({
                     </div>
                   </div>
                 </div>
+
+                {/* Slider Dots */}
+                {hasMultipleImages && (
+                  <div className="absolute bottom-3 right-3 flex gap-1">
+                    {validImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex(index);
+                        }}
+                        className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               // clean placeholder (no text)
@@ -535,7 +636,7 @@ export default function CrowdfundCard({
           </h3>
 
           {/* Creator display when there's no image */}
-          {!imageUrl && (
+          {validImages.length === 0 && (
             <div
               className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
               onClick={(ev) => {

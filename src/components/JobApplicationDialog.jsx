@@ -18,9 +18,11 @@ export default function JobApplicationDialog({ open, onClose, job }) {
   const [newCvFile, setNewCvFile] = useState(null);
   const [newCvTitle, setNewCvTitle] = useState('');
   const [saveToProfile, setSaveToProfile] = useState(true); // Default checked
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     // Validate CV selection
     if (cvSelection === 'existing' && (!profile?.cvBase64 || profile.cvBase64.length === 0)) {
@@ -81,6 +83,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
 
       toast.success('Application submitted successfully!');
       onClose('applied');
+      setIsSubmitting(false);
 
       // Reset form
       setCoverLetter('');
@@ -95,6 +98,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
       setSaveToProfile(true);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to submit application');
+      setIsSubmitting(false);
     }
   };
 
@@ -347,11 +351,12 @@ export default function JobApplicationDialog({ open, onClose, job }) {
                 type="submit"
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 rounded-lg transition-colors"
                 disabled={
+                  isSubmitting ||
                   (cvSelection === 'existing' && (!profile?.cvBase64 || profile.cvBase64.length === 0)) ||
                   (cvSelection === 'upload' && !newCvFile)
                 }
               >
-                Submit Application
+                {isSubmitting ? 'Submitting Application...' : 'Submit Application'}
               </button>
             </div>
           </form>
