@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Upload, File } from 'lucide-react';
+import { X, Upload, Download, CheckCircle } from 'lucide-react';
 import { toast } from '../lib/toast';
 import client from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,7 +10,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
   const [availability, setAvailability] = useState('');
   const [availabilityDate, setAvailabilityDate] = useState('');
   const [employmentType, setEmploymentType] = useState('');
-  const {profile} = useAuth()
+  const { profile } = useAuth();
 
   // CV selection state
   const [cvSelection, setCvSelection] = useState('existing'); // 'existing' or 'upload'
@@ -21,6 +21,17 @@ export default function JobApplicationDialog({ open, onClose, job }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate CV selection
+    if (cvSelection === 'existing' && (!profile?.cvBase64 || profile.cvBase64.length === 0)) {
+      toast.error('Please upload a CV to proceed with your application');
+      return;
+    }
+
+    if (cvSelection === 'upload' && !newCvFile) {
+      toast.error('Please upload a CV file to proceed with your application');
+      return;
+    }
 
     // Prepare CV data
     let cvData = null;
@@ -36,7 +47,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
       });
       cvData = {
         original_filename: newCvFile.name,
-        title: newCvTitle.trim() || "",
+        title: newCvTitle.trim() || newCvFile.name,
         base64: base64,
         created_at: new Date().toISOString()
       };
@@ -50,7 +61,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
         availability: availability || null,
         availabilityDate: availability === 'specific' ? availabilityDate : null,
         employmentType: employmentType || null,
-        cvData: cvData || null,
+        cvData: cvData,
       });
 
       // Save CV to profile if checkbox is checked and it's a new upload
@@ -91,7 +102,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-md w-full   max-h-[90vh]  overflow-y-auto">
+      <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-gray-900">
@@ -107,6 +118,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Cover Letter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Cover Letter
@@ -120,6 +132,8 @@ export default function JobApplicationDialog({ open, onClose, job }) {
                 required
               />
             </div>
+
+            {/* Expected Salary */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Expected Salary / Rate <span className="text-gray-500">(optional)</span>
@@ -133,6 +147,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
               />
             </div>
 
+            {/* Availability */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Availability <span className="text-gray-500">(optional)</span>
@@ -157,6 +172,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
               )}
             </div>
 
+            {/* Employment Type */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Employment Type Preference <span className="text-gray-500">(optional)</span>
@@ -177,10 +193,10 @@ export default function JobApplicationDialog({ open, onClose, job }) {
               </select>
             </div>
 
-            {/* CV Selection */}
+            {/* CV Selection - Required */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                CV/Resume <span className="text-gray-500">(optional)</span>
+                CV/Resume <span className="text-red-500">*</span>
               </label>
 
               {/* Selection Type */}
@@ -213,19 +229,43 @@ export default function JobApplicationDialog({ open, onClose, job }) {
               {cvSelection === 'existing' && (
                 <div>
                   {profile?.cvBase64?.length > 0 ? (
-                    <select
-                      value={selectedCvIndex}
-                      onChange={(e) => setSelectedCvIndex(parseInt(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                    >
+                    <div className="space-y-2">
                       {profile.cvBase64.map((cv, index) => (
-                        <option key={index} value={index}>
-                          {cv.title || cv.original_filename}
-                        </option>
+                        <div 
+                          key={index}
+                          className={`flex items-center justify-between border rounded-lg p-3 cursor-pointer transition-colors ${
+                            selectedCvIndex === index ? 'border-brand-500 bg-brand-50' : 'border-gray-300 hover:border-gray-400'
+                          }`}
+                          onClick={() => setSelectedCvIndex(index)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-12 bg-red-600 text-white flex items-center justify-center rounded">
+                              PDF
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {cv.title || cv.original_filename}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {Math.round((cv.base64.length * 3) / 4 / 1024)} KB · Last used on {new Date(cv.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <a href={cv.base64} download={cv.original_filename}>
+                              <Download size={18} className="text-gray-500 cursor-pointer" />
+                            </a>
+                            {selectedCvIndex === index && (
+                              <CheckCircle size={20} className="text-green-600" />
+                            )}
+                          </div>
+                        </div>
                       ))}
-                    </select>
+                    </div>
                   ) : (
-                    <p className="text-sm text-gray-500">No CVs available. Upload one in your profile first.</p>
+                    <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">
+                      No CVs available in your profile. Please switch to "Upload new CV" to upload a resume.
+                    </div>
                   )}
                 </div>
               )}
@@ -252,10 +292,15 @@ export default function JobApplicationDialog({ open, onClose, job }) {
                             return;
                           }
                           setNewCvFile(file);
+                          // Auto-fill title with filename if empty
+                          if (!newCvTitle.trim()) {
+                            setNewCvTitle(file.name.replace(/\.[^/.]+$/, "")); // Remove extension
+                          }
                         }
                       }}
                       className="hidden"
                       id="cv-upload-job"
+                      required={cvSelection === 'upload'}
                     />
                     <label
                       htmlFor="cv-upload-job"
@@ -270,6 +315,9 @@ export default function JobApplicationDialog({ open, onClose, job }) {
                       </div>
                     </label>
                   </div>
+                  {!newCvFile && (
+                    <p className="text-sm text-red-600">Please upload a CV file to continue</p>
+                  )}
                   <div className="flex items-center">
                     <input
                       type="checkbox"
@@ -286,6 +334,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
               )}
             </div>
 
+            {/* Actions */}
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
@@ -297,6 +346,10 @@ export default function JobApplicationDialog({ open, onClose, job }) {
               <button
                 type="submit"
                 className="flex-1 px-4 py-2 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 rounded-lg transition-colors"
+                disabled={
+                  (cvSelection === 'existing' && (!profile?.cvBase64 || profile.cvBase64.length === 0)) ||
+                  (cvSelection === 'upload' && !newCvFile)
+                }
               >
                 Submit Application
               </button>
