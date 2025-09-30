@@ -430,6 +430,9 @@ export default function CreateNeedPage() {
   const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
 
+  // Temporary debug
+{console.log('Attachments:', attachments)}
+
   // General taxonomy
   const [generalTree, setGeneralTree] = useState([]);
   const [selectedGeneral, setSelectedGeneral] = useState({
@@ -544,10 +547,7 @@ export default function CreateNeedPage() {
 
         // Set attachments if they exist (stored as [{name: '', base64url: ''}])
         if (Array.isArray(data.attachments)) {
-          setAttachments(data.attachments.map(att => ({
-            name: att.name || att,
-            base64url: att.base64url || att,
-          })));
+          setAttachments(data.attachments);
         } else {
           setAttachments([]);
         }
@@ -720,6 +720,8 @@ export default function CreateNeedPage() {
     if (!form.description.trim()) return "Description is required";
     return null;
   }
+
+  
 
   async function onSubmit(e) {
     e.preventDefault();

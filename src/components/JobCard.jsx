@@ -453,7 +453,37 @@ export default function JobCard({
                 </>
               ) : (
                 <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
-                    <img src={job?.company?.avatarUrl || LogoGray} className="w-[100px]"/>
+                  <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
+                  {/* Organizer name and logo positioned absolutely when no image */}
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    <div
+                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (job?.postedByUserId) {
+                          setOpenId(job.postedByUserId);
+                          data._showPopUp?.("profile");
+                        }
+                      }}
+                    >
+                      {job?.postedByUserAvatarUrl ? (
+                        <img
+                          src={job.postedByUserAvatarUrl}
+                          alt={job?.postedByUserName || "User"}
+                          className="w-7 h-7 rounded-full shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                          <UserIcon size={12} className="text-brand-600" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          {job?.postedByUserName || "User"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -542,7 +572,37 @@ export default function JobCard({
               </div>
             ) : (
               <div className="w-full h-48 bg-gray-200 flex justify-center items-center">
-                  <img src={job?.company?.avatarUrl || LogoGray} className="w-[100px]"/>
+                <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
+                {/* Organizer name and logo positioned absolutely when no image */}
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (job?.postedByUserId) {
+                        setOpenId(job.postedByUserId);
+                        data._showPopUp?.("profile");
+                      }
+                    }}
+                  >
+                    {job?.postedByUserAvatarUrl ? (
+                      <img
+                        src={job.postedByUserAvatarUrl}
+                        alt={job?.postedByUserName || "User"}
+                        className="w-7 h-7 rounded-full shadow-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                        <UserIcon size={12} className="text-brand-600" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                        {job?.postedByUserName || "User"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -682,38 +742,6 @@ export default function JobCard({
               </p>
             )}
 
-            {!imageUrl &&
-
-              <div
-                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (job?.postedByUserId) {
-                    setOpenId(job.postedByUserId);
-                    data._showPopUp?.("profile");
-                  }
-                }}
-              >
-                {job?.postedByUserAvatarUrl ? (
-                  <img
-                    src={job.postedByUserAvatarUrl}
-                    alt={job?.postedByUserName || "User"}
-                    className="w-7 h-7 rounded-full shadow-lg object-cover"
-                  />
-                ) : (
-                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                    <UserIcon size={12} className="text-brand-600" />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span    className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                       >
-                    {job?.postedByUserName || "User"}
-                  </span>
-                </div>
-                       </div>
-              
-            }
           </div>
 
           {/* Description */}

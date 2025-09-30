@@ -28,9 +28,9 @@ export default function LeftPanel() {
           />
         </div>
         <h1 className="mt-6 text-[2rem] md:text-[2rem] font-bold leading-tight">
-          One African, One Market,
+         Connect. Collaborate.
           <br />
-          One App
+          Grow.
         </h1>
         <p className="mt-8 tracking-wide uppercase text-sm text-white/80">
           &copy; 2025 54Links

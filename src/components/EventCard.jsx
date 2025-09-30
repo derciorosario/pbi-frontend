@@ -14,6 +14,7 @@ import EventRegistrationDialog from "./EventRegistrationDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import client,{API_URL} from "../api/client";
+import LogoGray from '../assets/logo.png';
 import { Edit, Eye, Share2, MapPin, Clock, User as UserIcon, Copy as CopyIcon, Heart, MessageCircle, Flag, Calendar, MoreVertical, Trash2 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -411,8 +412,39 @@ export default function EventCard({
                   </div>
                 </>
               ) : (
-                // clean placeholder (no text/icon)
-                <div className="absolute inset-0 w-full h-full bg-gray-100" />
+                <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
+                  <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
+                  {/* Organizer name and logo positioned absolutely when no image */}
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    <div
+                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        if (e?.organizerUserId) {
+                          setOpenId(e.organizerUserId);
+                          data._showPopUp?.("profile");
+                        }
+                      }}
+                    >
+                      {e?.avatarUrl ? (
+                        <img
+                          src={e.avatarUrl}
+                          alt={e?.organizerUserName || "User"}
+                          className="w-7 h-7 rounded-full shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                          <UserIcon size={12} className="text-brand-600" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          {e?.organizerUserName || "User"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* Quick actions on image */}
@@ -502,8 +534,39 @@ export default function EventCard({
                 </div>
               </div>
             ) : (
-              // clean placeholder (no text/icon)
-              <div className="w-full h-48 bg-gray-100" />
+              <div className="w-full h-48 bg-gray-200 flex justify-center items-center">
+                <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
+                {/* Organizer name and logo positioned absolutely when no image */}
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      if (e?.organizerUserId) {
+                        setOpenId(e.organizerUserId);
+                        data._showPopUp?.("profile");
+                      }
+                    }}
+                  >
+                    {e?.avatarUrl ? (
+                      <img
+                        src={e.avatarUrl}
+                        alt={e?.organizerUserName || "User"}
+                        className="w-7 h-7 rounded-full shadow-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                        <UserIcon size={12} className="text-brand-600" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                        {e?.organizerUserName || "User"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* View & Share - only show when not text mode */}
@@ -643,36 +706,6 @@ export default function EventCard({
             {e?.title}
           </h3>
 
-          {/* Organizer display when there's no image */}
-          {!imageUrl && (
-            <div
-              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
-              onClick={(ev) => {
-                ev.stopPropagation();
-                if (e?.organizerUserId) {
-                  setOpenId(e.organizerUserId);
-                  data._showPopUp?.("profile");
-                }
-              }}
-            >
-              {e?.avatarUrl ? (
-                <img
-                  src={e.avatarUrl}
-                  alt={e?.organizerUserName || "User"}
-                  className="w-7 h-7 rounded-full shadow-lg object-cover"
-                />
-              ) : (
-                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                  <UserIcon size={12} className="text-brand-600" />
-                </div>
-              )}
-              <div className="flex flex-col">
-                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                  {e?.organizerUserName || "User"}
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Description */}
           <p className={`mt-2 text-sm text-gray-600 leading-relaxed ${isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"}`}>

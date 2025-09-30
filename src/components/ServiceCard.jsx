@@ -374,8 +374,39 @@ export default function ServiceCard({
                   )}
                 </>
               ) : (
-                // clean placeholder (no text)
-                <div className="absolute inset-0 w-full h-full bg-gray-100" />
+                // clean placeholder with absolute positioned provider info - matches EventCard.jsx behavior
+                <div className="absolute inset-0 w-full h-full bg-gray-100">
+                  {/* Provider name and logo positioned absolutely when no image */}
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    <div
+                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        if (item?.providerUserId) {
+                          setOpenId(item.providerUserId);
+                          data._showPopUp?.("profile");
+                        }
+                      }}
+                    >
+                      {item?.avatarUrl ? (
+                        <img
+                          src={item.avatarUrl}
+                          alt={item?.providerUserName || "User"}
+                          className="w-7 h-7 rounded-full shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                          <UserIcon size={12} className="text-brand-600" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          {item?.providerUserName || "User"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* Quick actions on image */}
@@ -498,8 +529,39 @@ export default function ServiceCard({
                 )}
               </div>
             ) : (
-              // clean placeholder (no text)
-              <div className="w-full h-48 bg-gray-100" />
+              // clean placeholder with absolute positioned provider info - matches EventCard.jsx behavior
+              <div className="relative w-full h-48 bg-gray-100">
+                {/* Provider name and logo positioned absolutely when no image */}
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      if (item?.providerUserId) {
+                        setOpenId(item.providerUserId);
+                        data._showPopUp?.("profile");
+                      }
+                    }}
+                  >
+                    {item?.avatarUrl ? (
+                      <img
+                        src={item.avatarUrl}
+                        alt={item?.providerUserName || "User"}
+                        className="w-7 h-7 rounded-full shadow-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                        <UserIcon size={12} className="text-brand-600" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                        {item?.providerUserName || "User"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Quick actions on image - only show when not text mode */}
@@ -579,6 +641,17 @@ export default function ServiceCard({
                   {isOwner ? <Edit size={16} /> : <Eye size={16} />}
                 </button>
 
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label="Share"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
+
                 {/* Options (Delete) - only for owner */}
                 {isOwner && (
                   <button
@@ -628,36 +701,6 @@ export default function ServiceCard({
             {item?.title}
           </h3>
 
-          {/* Provider display when there's no image */}
-          {validImages.length === 0 && (
-            <div
-              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
-              onClick={(ev) => {
-                ev.stopPropagation();
-                if (item?.providerUserId) {
-                  setOpenId(item.providerUserId);
-                  data._showPopUp?.("profile");
-                }
-              }}
-            >
-              {item?.avatarUrl ? (
-                <img
-                  src={item.avatarUrl}
-                  alt={item?.providerUserName || "User"}
-                  className="w-7 h-7 rounded-full shadow-lg object-cover"
-                />
-              ) : (
-                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                  <UserIcon size={12} className="text-brand-600" />
-                </div>
-              )}
-              <div className="flex flex-col">
-                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                  {item?.providerUserName || "User"}
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Description */}
           <p className={`mt-2 text-sm text-gray-600 leading-relaxed ${isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"}`}>

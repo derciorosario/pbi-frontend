@@ -83,7 +83,7 @@ export function AuthProvider({ children }) {
   const signOut = () => {
     setLoading(true)
     window.location.href="/"
-    window.location.reload()
+   // window.location.reload()
     localStorage.removeItem("auth_token");
     localStorage.removeItem("token");
     localStorage.removeItem("activeAccountId");

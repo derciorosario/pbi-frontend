@@ -4,7 +4,8 @@ import { toast } from "../lib/toast";
 import client from "../api/client";
 import Input from "../components/Input";
 
-const emailOK = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").toLowerCase());
+const emailOK = (v) =>
+  /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(String(v || "").toLowerCase());
 
 export default function ForgotPassword() {
   const navigate = useNavigate();

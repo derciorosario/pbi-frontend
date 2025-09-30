@@ -110,7 +110,7 @@ export default function Login() {
                 <img src={Logo} width={130} className="mb-6"/>
               </h2>
               <p className="mt-1 text-gray-600">
-                Discover, connect, and collaborate across Africa.
+               Discover, connect, and collaborate across markets.
               </p>
               <p className="mt-1 text-gray-500">Log in to start connecting.</p>
             </>

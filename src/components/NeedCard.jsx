@@ -429,6 +429,36 @@ export default function NeedCard({
               ) : (
                 <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
                   <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
+                  {/* User name and logo positioned absolutely when no image */}
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    <div
+                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        if (need?.userId) {
+                          setOpenId(need.userId);
+                          data._showPopUp?.("profile");
+                        }
+                      }}
+                    >
+                      {need?.userAvatarUrl ? (
+                        <img
+                          src={need.userAvatarUrl}
+                          alt={need?.userName || "User"}
+                          className="w-7 h-7 rounded-full shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                          <UserIcon size={12} className="text-brand-600" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          {need?.userName || "User"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -543,6 +573,36 @@ export default function NeedCard({
             ) : (
               <div className="w-full h-48 bg-gray-200 flex justify-center items-center">
                 <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
+                {/* User name and logo positioned absolutely when no image */}
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      if (need?.userId) {
+                        setOpenId(need.userId);
+                        data._showPopUp?.("profile");
+                      }
+                    }}
+                  >
+                    {need?.userAvatarUrl ? (
+                      <img
+                        src={need.userAvatarUrl}
+                        alt={need?.userName || "User"}
+                        className="w-7 h-7 rounded-full shadow-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                        <UserIcon size={12} className="text-brand-600" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                        {need?.userName || "User"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -642,36 +702,6 @@ export default function NeedCard({
             {need?.title}
           </h3>
 
-          {/* User display when there's no image */}
-          {validImages.length === 0 && (
-            <div
-              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
-              onClick={(ev) => {
-                ev.stopPropagation();
-                if (need?.userId) {
-                  setOpenId(need.userId);
-                  data._showPopUp?.("profile");
-                }
-              }}
-            >
-              {need?.userAvatarUrl ? (
-                <img
-                  src={need.userAvatarUrl}
-                  alt={need?.userName || "User"}
-                  className="w-7 h-7 rounded-full shadow-lg object-cover"
-                />
-              ) : (
-                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                  <UserIcon size={12} className="text-brand-600" />
-                </div>
-              )}
-              <div className="flex flex-col">
-                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                  {need?.userName || "User"}
-                </span>
-              </div>
-            </div>
-          )}
 
           {/* Description */}
           <p

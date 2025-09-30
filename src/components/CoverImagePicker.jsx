@@ -59,6 +59,8 @@ export default function CoverImagePicker({
 
 
 
+ 
+
       {/* Pretty card */}
       <div className="mt-2 rounded-2xl border border-dashed border-gray-300 bg-gray-50/60 p-4 hover:border-brand-400 transition-colors">
         {!value ? (

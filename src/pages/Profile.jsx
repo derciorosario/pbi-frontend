@@ -22,11 +22,12 @@ import {
 import { getUserById, updateUser } from "../api/admin";
 import client from "../api/client";
 import ProfilePhoto from "../components/ProfilePhoto";
+import SearchableSelect from "../components/SearchableSelect.jsx";
 import COUNTRIES from "../constants/countries.js";
 import Header from "../components/Header.jsx";
 import UserSelectionModal from "../components/UserSelectionModal";
- import StaffInvitationModal from "../components/StaffInvitationModal";
- import OrganizationSelectionModal from "../components/OrganizationSelectionModal";
+  import StaffInvitationModal from "../components/StaffInvitationModal";
+  import OrganizationSelectionModal from "../components/OrganizationSelectionModal";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { Download } from "lucide-react";
 
@@ -2234,30 +2235,33 @@ const toggleIdentityWant = (identityKey) => {
                 </div>}
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Nationality</label>
-                  <select value={personal.nationality} onChange={e=>setPersonal({...personal, nationality:e.target.value})}
-                          className="w-full border rounded-lg px-3 py-2">
-                    <option value="">Select</option>
-                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <SearchableSelect
+                    label="Nationality"
+                    options={COUNTRIES}
+                    value={personal.nationality}
+                    onChange={(value) => setPersonal({...personal, nationality: value})}
+                    placeholder="Select nationality"
+                  />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Country of residence</label>
-                  <select value={personal.countryOfResidence} onChange={e=>setPersonal({...personal, countryOfResidence:e.target.value})}
-                          className="w-full border rounded-lg px-3 py-2">
-                    <option value="">Select</option>
-                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <SearchableSelect
+                    label="Country of residence"
+                    options={COUNTRIES}
+                    value={personal.countryOfResidence}
+                    onChange={(value) => setPersonal({...personal, countryOfResidence: value})}
+                    placeholder="Select country of residence"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">Country (birth)</label>
-                  <select value={personal.country} onChange={e=>setPersonal({...personal, country:e.target.value})}
-                          className="w-full border rounded-lg px-3 py-2">
-                    <option value="">Select</option>
-                    {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <SearchableSelect
+                    label="Country (birth)"
+                    options={COUNTRIES}
+                    value={personal.country}
+                    onChange={(value) => setPersonal({...personal, country: value})}
+                    placeholder="Select country of birth"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">City</label>
@@ -2281,70 +2285,18 @@ const toggleIdentityWant = (identityKey) => {
                     </div>
 
                     {/* Other Countries of Operations */}
-                    <div className="md:col-span-2 space-y-3">
-                      <label className="block text-sm font-medium mb-1">
-                        Other Countries of Operations (Branches)
-                      </label>
-
-                      {/* Selected Countries Chips */}
-                      {personal.otherCountries.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {personal.otherCountries.map((country) => (
-                            <div
-                              key={country}
-                              className="inline-flex items-center gap-1 px-3 py-1 bg-brand-100 text-brand-800 rounded-full text-sm"
-                            >
-                              <span>{country}</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setPersonal(prev => ({
-                                    ...prev,
-                                    otherCountries: prev.otherCountries.filter(c => c !== country)
-                                  }));
-                                }}
-                                className="text-brand-600 hover:text-brand-800"
-                              >
-                                <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Country Selector */}
-                      <div className="relative">
-                        <select
-                          value=""
-                          onChange={(e) => {
-                            const selectedCountry = e.target.value;
-                            if (selectedCountry && !personal.otherCountries.includes(selectedCountry)) {
-                              setPersonal(prev => ({
-                                ...prev,
-                                otherCountries: [...prev.otherCountries, selectedCountry]
-                              }));
-                            }
-                            e.target.value = ""; // Reset select
-                          }}
-                          className="w-full border rounded-lg px-3 py-2"
-                        >
-                          <option value="" disabled>Add a country...</option>
-                          {COUNTRIES
-                            .filter(country => !personal.otherCountries.includes(country))
-                            .map((c) => (
-                              <option key={c} value={c}>{c}</option>
-                            ))}
-                        </select>
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-gray-500">
+                    <div className="md:col-span-2">
+                      <SearchableSelect
+                        label="Other Countries of Operations (Branches)"
+                        options={COUNTRIES}
+                        value=""
+                        onChange={() => {}} // Not used for multiple select
+                        placeholder="Add a country..."
+                        multiple={true}
+                        selectedValues={personal.otherCountries}
+                        onMultipleChange={(values) => setPersonal(prev => ({ ...prev, otherCountries: values }))}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
                         Select countries where your company has branches or operations
                       </p>
                     </div>

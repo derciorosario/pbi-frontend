@@ -941,7 +941,6 @@ export default function CreateJobOpportunity() {
         // Collect images/logos/cover
         setMedia(extractMedia(job));
         if (job.coverImageBase64) {
-           console.log({aaa:job.coverImageBase64})
           // If it's a base64 string (old format), use it as preview
           if (job.coverImageBase64.startsWith('data:') || job.coverImageBase64.startsWith('http')) {
             setCoverImage(job.coverImageBase64);
@@ -1204,7 +1203,7 @@ export default function CreateJobOpportunity() {
         subsubCategoryIds: Array.from(audSel.subsubCategoryIds),
 
         // Use the filename instead of base64 data
-        coverImageBase64: imageFilename,
+        coverImageBase64: !coverImage ? null :  imageFilename,
 
         companyId: form.companyId || null,
         companyName: form.companyName || "",

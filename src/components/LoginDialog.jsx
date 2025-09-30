@@ -4,6 +4,7 @@ import Input from "./Input.jsx";
 import client from "../api/client.js";
 import { toast } from "../lib/toast";
 import GoogleCustomBtn from "./GoogleBtn.jsx";
+import SearchableSelect from "./SearchableSelect.jsx";
 import { X } from "lucide-react";
 import COUNTRIES from "../constants/countries.js";
 import { useRef } from "react";
@@ -176,6 +177,8 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
     if (!signupForm.password) next.password = "Password is required.";
     else if (signupForm.password.length < 8) {
       next.password = "Password must be at least 8 characters long.";
+    }else if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&_\-])[A-Za-z\d@$!%*?&_\-]+$/.test(signupForm.password)) {
+      next.password = "Create a strong password with a mix of letters, numbers and symbols.";
     }
     if (!signupForm.confirmPassword) next.confirmPassword = "Please confirm password.";
     else if (signupForm.password !== signupForm.confirmPassword)
@@ -334,7 +337,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
           <>
             <h2 className="mt-2 text-3xl font-bold text-gray-900">54Links</h2>
             <p className="mt-1 text-gray-600">
-              Discover, connect, and collaborate across Africa.
+             Discover, connect, and collaborate across markets.
             </p>
             <p className="mt-1 text-gray-500">{activeTab === "login" ? "Log in to start connecting." : "Join the global networking community"}</p>
           </>
@@ -374,7 +377,8 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
             />
 
             {/* PASSWORD with show/hide */}
-            <Input
+            <div>
+                <Input
               name="password"
               label="Password"
               type={showPwd ? "text" : "password"}
@@ -405,6 +409,8 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                 </button>
               }
             />
+        
+            </div>
 
             <div className="flex items-center justify-between text-sm">
               <label className="inline-flex items-center gap-2">
@@ -538,7 +544,6 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                 <Input
                   label={labelPhone}
                   name="phone"
-                  type="number"
                   onWheel={e => e.currentTarget.blur()}
                   placeholder={acct === "company" ? "Phone" : "Phone"}
                   value={signupForm.phone}
@@ -561,22 +566,18 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
               </div>
 
               {/* Country */}
-              <div className="md:col-span-2 space-y-1">
-                <label className="text-sm font-medium text-gray-700">Country of residence</label>
-                <select
-                  name="country"
+              <div className="md:col-span-2">
+                <SearchableSelect
+                  label="Country"
+                  options={COUNTRIES}
                   value={signupForm.country}
-                  onChange={onSignupChange}
-                  className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-brand-500 focus:ring-2 bg-white ${
-                    signupErrors.country ? "border-red-400 focus:ring-red-400" : "border-gray-200"
-                  }`}
-                >
-                  <option value="" disabled>Select your country</option>
-                  {COUNTRIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                {signupErrors.country && <p className="text-xs text-red-600">{signupErrors.country}</p>}
+                  onChange={(value) => {
+                    setSignupForm(prev => ({ ...prev, country: value }));
+                    setSignupErrors(prev => ({ ...prev, country: "" }));
+                  }}
+                  placeholder="Select your country"
+                  error={signupErrors.country}
+                />
               </div>
 
               {/* Individual-specific fields */}
@@ -676,22 +677,18 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                   </div>
 
                   {/* Nationality */}
-                  <div className="md:col-span-2 space-y-1">
-                    <label className="text-sm font-medium text-gray-700">Nationality</label>
-                    <select
-                      name="nationality"
+                  <div className="md:col-span-2">
+                    <SearchableSelect
+                      label="Nationality"
+                      options={COUNTRIES}
                       value={signupForm.nationality}
-                      onChange={onSignupChange}
-                      className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-brand-500 focus:ring-2 bg-white ${
-                        signupErrors.nationality ? "border-red-400 focus:ring-red-400" : "border-gray-200"
-                      }`}
-                    >
-                      <option value="" disabled>Select your nationality</option>
-                      {COUNTRIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
-                    {signupErrors.nationality && <p className="text-xs text-red-600">{signupErrors.nationality}</p>}
+                      onChange={(value) => {
+                        setSignupForm(prev => ({ ...prev, nationality: value }));
+                        setSignupErrors(prev => ({ ...prev, nationality: "" }));
+                      }}
+                      placeholder="Select your nationality"
+                      error={signupErrors.nationality}
+                    />
                   </div>
                 </>
               )}
@@ -761,75 +758,25 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                   </div>
 
                   {/* Other Countries of Operations */}
-                  <div className="md:col-span-2 space-y-3">
-                    <label className="text-sm font-medium text-gray-700">
-                      Other Countries of Operations (Branches) <span className="text-gray-400 font-normal">(Optional)</span>
-                    </label>
-
-                    {/* Selected Countries Chips */}
-                    {signupForm.otherCountries.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        {signupForm.otherCountries.map((country) => (
-                          <div
-                            key={country}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-brand-100 text-brand-800 rounded-full text-sm"
-                          >
-                            <span>{country}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSignupForm(prev => ({
-                                  ...prev,
-                                  otherCountries: prev.otherCountries.filter(c => c !== country)
-                                }));
-                              }}
-                              className="text-brand-600 hover:text-brand-800"
-                            >
-                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Country Selector */}
-                    <div className="relative">
-                      <select
-                        value=""
-                        onChange={(e) => {
-                          const selectedCountry = e.target.value;
-                          if (selectedCountry && !signupForm.otherCountries.includes(selectedCountry)) {
-                            setSignupForm(prev => ({
-                              ...prev,
-                              otherCountries: [...prev.otherCountries, selectedCountry]
-                            }));
-                          }
-                          e.target.value = ""; // Reset select
-                        }}
-                        className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-brand-500 focus:ring-2 bg-white ${
-                          signupErrors.otherCountries ? "border-red-400 focus:ring-red-400" : "border-gray-200"
-                        }`}
-                      >
-                        <option value="" disabled>Add a country...</option>
-                        {COUNTRIES
-                          .filter(country => !signupForm.otherCountries.includes(country))
-                          .map((c) => (
-                            <option key={c} value={c}>{c}</option>
-                          ))}
-                      </select>
-                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                        <svg className="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </div>
-
-                    <p className="text-xs text-gray-500">
+                  <div className="md:col-span-2">
+                    <SearchableSelect
+                      label="Other Countries of Operations (Branches)"
+                      sublabel="Optional"
+                      options={COUNTRIES}
+                      value=""
+                      onChange={() => {}} // Not used for multiple select
+                      placeholder="Add a country..."
+                      error={signupErrors.otherCountries}
+                      multiple={true}
+                      selectedValues={signupForm.otherCountries}
+                      onMultipleChange={(values) => {
+                        setSignupForm(prev => ({ ...prev, otherCountries: values }));
+                        setSignupErrors(prev => ({ ...prev, otherCountries: "" }));
+                      }}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
                       Select countries where your company has branches or operations (optional)
                     </p>
-                    {signupErrors.otherCountries && <p className="text-xs text-red-600">{signupErrors.otherCountries}</p>}
                   </div>
 
                   {/* Webpage */}
@@ -851,8 +798,11 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                 </>
               )}
 
+                 
+         
               {/* Passwords with show/hide */}
-              <Input
+              <div>
+                  <Input
                 label="Password"
                 name="password"
                 type={showPwd1 ? "text" : "password"}
@@ -883,6 +833,10 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                   </button>
                 }
               />
+              {!signupErrors.password &&  <p className="text-xs text-gray-500 my-2">Create a strong password with a mix of letters, numbers and symbols.</p>}
+
+
+              </div>
               <Input
                 label="Confirm Password"
                 name="confirmPassword"

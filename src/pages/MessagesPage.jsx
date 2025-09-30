@@ -51,6 +51,9 @@ export default function MessagesPage() {
   const [messageFilter, setMessageFilter] = useState('all'); // 'all' or 'unread'
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
+  // Image loading states
+  const [imageLoadingStates, setImageLoadingStates] = useState({});
+
   const searchUsers = async (query) => {
     if (!query || query.length < 3) {
       setUserSearchResults([]);
@@ -357,6 +360,34 @@ export default function MessagesPage() {
     if (att.mimetype && typeof att.mimetype === 'string' && att.mimetype.startsWith('image/')) return true;
     return isImageFile(String(att.filename || ''));
   };
+
+  // Image loading handlers
+  const handleImageLoad = (imageKey) => {
+    setImageLoadingStates(prev => ({ ...prev, [imageKey]: false }));
+  };
+
+  const handleImageError = (imageKey) => {
+    setImageLoadingStates(prev => ({ ...prev, [imageKey]: 'error' }));
+  };
+
+  const getImageLoadingState = (imageKey) => {
+    return imageLoadingStates[imageKey];
+  };
+
+  const setImageLoading = (imageKey) => {
+    setImageLoadingStates(prev => ({ ...prev, [imageKey]: true }));
+  };
+
+  // Skeleton loader component with image icon
+  const ImageSkeleton = ({ className = "", showIcon = false }) => (
+    <div className={`animate-pulse bg-gray-200 relative ${className}`}>
+      {showIcon && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Image size={24} className="text-gray-400" />
+        </div>
+      )}
+    </div>
+  );
 
   // Merge fetched server messages with any optimistic pending messages so they never disappear
   // Also de-duplicate: if a server message matches a pending one (same sender, receiver, content),
@@ -706,10 +737,16 @@ export default function MessagesPage() {
                       <div className="flex items-center gap-3 relative">
                         {conv.otherUser?.avatarUrl ? (
                           <div className="relative">
+                            {getImageLoadingState(`conv-${conv.id}`) !== false && (
+                              <ImageSkeleton className="h-10 w-10 rounded-full" />
+                            )}
                             <img
                               src={conv.otherUser.avatarUrl}
                               alt={conv.otherUser.name}
-                              className="h-10 w-10 rounded-full object-cover"
+                              className={`h-10 w-10 rounded-full object-cover ${getImageLoadingState(`conv-${conv.id}`) === false ? 'block' : 'hidden'}`}
+                              onLoad={() => handleImageLoad(`conv-${conv.id}`)}
+                              onError={() => handleImageError(`conv-${conv.id}`)}
+                              onLoadStart={() => setImageLoading(`conv-${conv.id}`)}
                             />
                             {onlineConnections?.some((c) => c.userId === conv.otherUser.id) && (
                               <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-1 ring-white" />
@@ -761,10 +798,16 @@ export default function MessagesPage() {
 
                     {activeConversation.otherUser?.avatarUrl ? (
                       <div className="relative">
+                        {getImageLoadingState(`header-${activeConversation.otherUser.id}`) !== false && (
+                          <ImageSkeleton className="h-10 w-10 rounded-full" />
+                        )}
                         <img
                           src={activeConversation.otherUser.avatarUrl}
                           alt={activeConversation.otherUser.name}
-                          className="h-10 w-10 rounded-full object-cover"
+                          className={`h-10 w-10 rounded-full object-cover ${getImageLoadingState(`header-${activeConversation.otherUser.id}`) === false ? 'block' : 'hidden'}`}
+                          onLoad={() => handleImageLoad(`header-${activeConversation.otherUser.id}`)}
+                          onError={() => handleImageError(`header-${activeConversation.otherUser.id}`)}
+                          onLoadStart={() => setImageLoading(`header-${activeConversation.otherUser.id}`)}
                         />
                         {onlineConnections?.some((c) => c.userId === activeConversation.otherUser.id) && (
                           <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 ring-1 ring-white" />
@@ -807,11 +850,19 @@ export default function MessagesPage() {
                         {m.senderId !== user.id && (
                           <div className="flex-shrink-0 mr-2">
                             {m.sender?.avatarUrl ? (
-                              <img
-                                src={m.sender.avatarUrl}
-                                alt={m.sender.name}
-                                className="h-8 w-8 rounded-full object-cover"
-                              />
+                              <>
+                                {getImageLoadingState(`msg-${m.id}-sender`) !== false && (
+                                  <ImageSkeleton className="h-8 w-8 rounded-full" />
+                                )}
+                                <img
+                                  src={m.sender.avatarUrl}
+                                  alt={m.sender.name}
+                                  className={`h-8 w-8 rounded-full object-cover ${getImageLoadingState(`msg-${m.id}-sender`) === false ? 'block' : 'hidden'}`}
+                                  onLoad={() => handleImageLoad(`msg-${m.id}-sender`)}
+                                  onError={() => handleImageError(`msg-${m.id}-sender`)}
+                                  onLoadStart={() => setImageLoading(`msg-${m.id}-sender`)}
+                                />
+                              </>
                             ) : (
                               <div className="h-8 w-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center">
                                 <User size={16} />
@@ -832,18 +883,24 @@ export default function MessagesPage() {
                                 <div key={idx} className={`p-2 rounded ${m.senderId === user.id ? "bg-white/10" : "bg-gray-200"}`}>
                                   {isImageAttachment(attachment) ? (
                                     <div className="relative inline-block">
+                                      {getImageLoadingState(`attachment-${m.id}-${idx}`) !== false && (
+                                        <ImageSkeleton className="rounded-lg max-w-[240px] max-h-[240px]" showIcon={true} />
+                                      )}
                                       <button
                                         onClick={() => {
                                           setSelectedImage(attachment);
                                           setShowImageDialog(true);
                                         }}
-                                        className="block cursor-pointer"
+                                        className={`block cursor-pointer ${getImageLoadingState(`attachment-${m.id}-${idx}`) === false ? 'block' : 'hidden'}`}
                                         title={attachment.filename}
                                       >
                                         <img
                                           src={attachment.url}
                                           alt={attachment.filename}
                                           className="rounded-lg max-w-[240px] max-h-[240px] object-cover border border-black/10"
+                                          onLoad={() => handleImageLoad(`attachment-${m.id}-${idx}`)}
+                                          onError={() => handleImageError(`attachment-${m.id}-${idx}`)}
+                                          onLoadStart={() => setImageLoading(`attachment-${m.id}-${idx}`)}
                                         />
                                       </button>
                                       <a
@@ -921,11 +978,19 @@ export default function MessagesPage() {
                       {attachments.map((file, index) => (
                         <div key={index} className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
                           {isImageFile(file.name) ? (
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={file.name}
-                              className="h-10 w-10 object-cover rounded border border-black/10"
-                            />
+                            <>
+                              {getImageLoadingState(`preview-${index}`) !== false && (
+                                <ImageSkeleton className="h-10 w-10 rounded" />
+                              )}
+                              <img
+                                src={URL.createObjectURL(file)}
+                                alt={file.name}
+                                className={`h-10 w-10 object-cover rounded border border-black/10 ${getImageLoadingState(`preview-${index}`) === false ? 'block' : 'hidden'}`}
+                                onLoad={() => handleImageLoad(`preview-${index}`)}
+                                onError={() => handleImageError(`preview-${index}`)}
+                                onLoadStart={() => setImageLoading(`preview-${index}`)}
+                              />
+                            </>
                           ) : (
                             <>
                               <File size={16} className="text-gray-600" />
@@ -1034,7 +1099,17 @@ export default function MessagesPage() {
               </div>
             </div>
             <div className="p-4">
-              <img src={selectedImage.url} alt={selectedImage.filename} className="max-w-full max-h-[70vh] object-contain" />
+              {getImageLoadingState(`dialog-${selectedImage.url}`) !== false && (
+                <ImageSkeleton className="max-w-full max-h-[70vh] rounded-lg" showIcon={true} />
+              )}
+              <img
+                src={selectedImage.url}
+                alt={selectedImage.filename}
+                className={`max-w-full max-h-[70vh] object-contain ${getImageLoadingState(`dialog-${selectedImage.url}`) === false ? 'block' : 'hidden'}`}
+                onLoad={() => handleImageLoad(`dialog-${selectedImage.url}`)}
+                onError={() => handleImageError(`dialog-${selectedImage.url}`)}
+                onLoadStart={() => setImageLoading(`dialog-${selectedImage.url}`)}
+              />
             </div>
           </div>
         </div>
@@ -1086,7 +1161,19 @@ export default function MessagesPage() {
                       className="p-3 border-b last:border-0 flex items-center gap-3 hover:bg-gray-50 cursor-pointer"
                     >
                       {u.avatarUrl ? (
-                        <img src={u.avatarUrl} alt={u.name} className="h-10 w-10 rounded-full object-cover" />
+                        <>
+                          {getImageLoadingState(`search-${u.id}`) !== false && (
+                            <ImageSkeleton className="h-10 w-10 rounded-full" />
+                          )}
+                          <img
+                            src={u.avatarUrl}
+                            alt={u.name}
+                            className={`h-10 w-10 rounded-full object-cover ${getImageLoadingState(`search-${u.id}`) === false ? 'block' : 'hidden'}`}
+                            onLoad={() => handleImageLoad(`search-${u.id}`)}
+                            onError={() => handleImageError(`search-${u.id}`)}
+                            onLoadStart={() => setImageLoading(`search-${u.id}`)}
+                          />
+                        </>
                       ) : (
                         <div className="h-10 w-10 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center">
                           <User size={20} />

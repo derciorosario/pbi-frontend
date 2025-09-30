@@ -19,6 +19,9 @@ export default function ResetPassword() {
     const n = { password: "", confirm: "" };
     if (!password) n.password = "Password is required.";
     else if (password.length < 6) n.password = "Use at least 6 characters.";
+    else if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&_\-])[A-Za-z\d@$!%*?&_\-]+$/.test(password)) {
+      n.password = "Create a strong password with a mix of letters, numbers and symbols.";
+    }
     if (!confirm) n.confirm = "Please confirm your password.";
     else if (password !== confirm) n.confirm = "Passwords do not match.";
     setErr(n);
@@ -49,7 +52,10 @@ export default function ResetPassword() {
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 text-center">Create a new password</h1>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <Input
+         
+          <div>
+
+             <Input
             label="New password"
             type={showPwd1 ? "text" : "password"}
             name="password"
@@ -80,6 +86,10 @@ export default function ResetPassword() {
               </button>
             }
           />
+
+           {!err.password &&  <p className="text-xs text-gray-500 my-2">Create a strong password with a mix of letters, numbers and symbols.</p>}
+
+          </div>
 
           <Input
             label="Confirm password"

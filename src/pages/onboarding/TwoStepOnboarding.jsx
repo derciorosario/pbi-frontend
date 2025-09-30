@@ -46,7 +46,8 @@ export default function FourStepOnboarding() {
 
   // flow
   const [step, setStep] = useState(1);
-  const progress = useMemo(() => [0, 16.67, 33.33, 50, 66.67, 83.33, 100][step] ?? 100, [step]);
+
+
 
   // ⬇️ NEW: always scroll to top when the step changes
   useEffect(() => {
@@ -58,6 +59,18 @@ export default function FourStepOnboarding() {
   const [error, setError] = useState("");
   const [identities, setIdentities] = useState([]);
   const [userAccountType, setUserAccountType] = useState(null);
+
+    // Calculate progress based on account type and current step
+  const progress = useMemo(() => {
+    if (userAccountType === "company") {
+      // For companies: Step 1, 2, 5 (skip 3, 4)
+      const companyProgressMap = { 1: 0, 2: 33.33, 5: 100 };
+      return companyProgressMap[step] ?? 100;
+    } else {
+      // For individuals: Step 1, 2, 3, 4, 5
+      return [0, 16.67, 33.33, 50, 66.67, 83.33, 100][step] ?? 100;
+    }
+  }, [step, userAccountType]);
 
   // selections (what user DOES)
   const [identityIds, setIdentityIds] = useState([]);
@@ -98,6 +111,14 @@ export default function FourStepOnboarding() {
         const userResponse = await client.get("/auth/me");
         const userAccountType = userResponse.data?.accountType;
         setUserAccountType(userAccountType);
+
+        // For company accounts, clear interest arrays (steps 3 and 4)
+        if (userAccountType === "company") {
+          setInterestIdentityIds([]);
+          setInterestCategoryIds([]);
+          setInterestSubcategoryIds([]);
+          setInterestSubsubCategoryIds([]);
+        }
 
         // gets identities + canonical IDs for categories/subcats/subsubs + goals WITH ids
         const { data } = await client.get("/public/identities");
@@ -1274,7 +1295,7 @@ export default function FourStepOnboarding() {
           toggleSubOpen={toggleSubOpenDoes}
           prev={() => setStep(1)}
           nextLabel="Continue"
-          onNext={() => setStep(3)}
+          onNext={() => setStep(userAccountType === "company" ? 5 : 3)}
           canNext={canContinue2}
         />
       )}
@@ -1348,7 +1369,7 @@ export default function FourStepOnboarding() {
           onToggleIndustrySubsub={toggleIndustrySubsub}
           onToggleIndustryCatOpen={handleIndustryCatOpen}
           toggleIndustrySubOpen={toggleIndustrySubOpen}
-          prev={() => setStep(4)}
+          prev={() => setStep(userAccountType === "company" ? 2 : 4)}
           nextLabel="Save & Finish"
           onNext={async () => {
             if (!canFinish) return;

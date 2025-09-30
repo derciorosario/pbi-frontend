@@ -713,7 +713,7 @@ export default function CreateEventPage() {
         imageFilename = await uploadCoverImage(coverImageBase64);
       }
 
-      console.log({a:imageFilename})
+      console.log({a:imageFilename,coverImageBase64})
 
       const payload = {
         ...form,
@@ -722,8 +722,8 @@ export default function CreateEventPage() {
         subcategoryIds,
         subsubCategoryIds,
         // Use the filename instead of base64 data
-        coverImageBase64: imageFilename,
-        coverImageUrl: imageFilename,
+        coverImageBase64: !coverImageBase64 ? null : imageFilename,
+        coverImageUrl:!coverImageBase64 ? null :  imageFilename,
         // NEW — general taxonomy from searchable pickers
         generalCategoryId: selectedGeneral.categoryId || null,
         generalSubcategoryId: selectedGeneral.subcategoryId || null,
