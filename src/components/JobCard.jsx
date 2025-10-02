@@ -206,6 +206,28 @@ export default function JobCard({
     setConnectionStatus("pending_outgoing");
   }
 
+
+
+
+const cleanText = (htmlContent) => {
+  if (!htmlContent) return '';
+
+  // Replace <br>, <br/>, or <br /> with a period
+  const contentWithPeriods = htmlContent.replace(/<br\s*\/?>/gi, '. ');
+  
+  // Create a temporary div to parse HTML and extract text
+  const div = document.createElement('div');
+  div.innerHTML = contentWithPeriods;
+  
+  // Get text content
+  let textContent = div.textContent || div.innerText || '';
+  
+  // Clean up spacing: replace multiple whitespaces with a single space, and trim
+  textContent = textContent.replace(/\s+/g, ' ').trim();
+  
+  return textContent;
+};
+
   const containerBase =
     "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
   const containerLayout = isList
@@ -750,14 +772,25 @@ export default function JobCard({
           </div>
 
           {/* Description */}
-          <div
+
+          {/**  <div
             className={`mt-2 text-sm text-gray-600 leading-relaxed ${
               isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"
             }`}
             dangerouslySetInnerHTML={{
               __html: job?.description || ''
             }}
-          />
+          /> */}
+
+           <div
+            className={`mt-2 text-sm text-gray-600 leading-relaxed ${
+              isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"
+            }`}
+          > 
+          {cleanText(job?.description)}
+          </div>
+
+       
 
           {/* Salary */}
           {salaryText && (

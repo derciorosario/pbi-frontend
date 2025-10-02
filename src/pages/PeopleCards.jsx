@@ -627,7 +627,7 @@ export default function PeopleProfileCard({
 
         {/* About */}
         {about && (
-          <p className={`mt-3 text-[15px] leading-relaxed text-gray-700 ${isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-3"}`}>
+          <p className={`mt-3 text-[15px] leading-relaxed text-gray-700 ${isList ? "line-clamp-3 md:line-clamp-6" : "line-clamp-6"}`}>
             {displayedAbout}
           </p>
         )}

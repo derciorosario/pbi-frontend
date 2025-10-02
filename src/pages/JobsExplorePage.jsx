@@ -599,8 +599,6 @@ export default function PeopleFeedPage() {
               { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
             ]} />
           <ProfileCard />
-         
-         
         </aside>
 
     

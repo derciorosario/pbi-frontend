@@ -1,29 +1,31 @@
 // src/components/ProfileModal.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
-  MapPin,
-  X,
-  Briefcase,
-  CalendarDays,
-  Star,
-  Hash,
-  User2,
-  Target,
-  Layers,
-  Languages,
-  ExternalLink,
-  Clock,
-  Video,
-  Map as MapIcon,
-  Link as LinkIcon,
-  UserCheck,
-  UserMinus,
-  UserX,
-  Trash2,
-  ShieldBan,
-  Flag,
-  Activity,
-} from "lucide-react";
+   MapPin,
+   X,
+   Briefcase,
+   CalendarDays,
+   Star,
+   Hash,
+   User2,
+   Target,
+   Layers,
+   Languages,
+   ExternalLink,
+   Clock,
+   Video,
+   Map as MapIcon,
+   Link as LinkIcon,
+   UserCheck,
+   UserMinus,
+   UserX,
+   Trash2,
+   ShieldBan,
+   Flag,
+   Activity,
+   Share2,
+   Copy as CopyIcon,
+ } from "lucide-react";
 import client from "../api/client";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import { useData } from "../contexts/DataContext";
@@ -39,6 +41,22 @@ import MomentCard from "./MomentCard";
 import ExperienceCard from "./ExperienceCard";
 import CrowdfundCard from "./CrowdfundCard";
 import EventCard from "./EventCard";
+import {
+  FacebookShareButton,
+  FacebookIcon,
+  LinkedinShareButton,
+  LinkedinIcon,
+  TwitterShareButton,
+  TwitterIcon,
+  WhatsappShareButton,
+  WhatsappIcon,
+  TelegramShareButton,
+  TelegramIcon,
+  EmailShareButton,
+  EmailIcon,
+  FacebookMessengerShareButton,
+  FacebookMessengerIcon,
+} from "react-share";
 
 // Profile Modal Skeleton Component
 const ProfileModalSkeleton = () => (
@@ -1079,6 +1097,106 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
   );
 }
 
+// Share data and components
+const ShareMenu = ({ profile, shareMenuRef, setShareOpen }) => {
+  const shareUrl = `${window.location.origin}/profile/${profile?.id}`;
+  const shareTitle = `${profile?.name || "Profile"} on 54Links`;
+  const shareDescription = profile?.about || `Check out ${profile?.name || "this profile"} on 54Links`;
+  const shareQuote = shareDescription.slice(0, 160) + (shareDescription.length > 160 ? "…" : "");
+  const shareHashtags = ["54Links", "Profile", "Networking"].filter(Boolean);
+  const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
+
+  return (
+    <div
+      ref={shareMenuRef}
+      className="absolute bottom-14 left-0 mt-2 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      role="dialog"
+      aria-label="Share options"
+    >
+      <div className="text-xs font-medium text-gray-500 px-1 pb-2">
+        Share this profile
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <WhatsappIcon size={40} round />
+            <span className="text-xs text-gray-700">WhatsApp</span>
+          </div>
+        </WhatsappShareButton>
+
+        <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <FacebookIcon size={40} round />
+            <span className="text-xs text-gray-700">Facebook</span>
+          </div>
+        </FacebookShareButton>
+
+        <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <LinkedinIcon size={40} round />
+            <span className="text-xs text-gray-700">LinkedIn</span>
+          </div>
+        </LinkedinShareButton>
+
+        <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <TwitterIcon size={40} round />
+            <span className="text-xs text-gray-700">X / Twitter</span>
+          </div>
+        </TwitterShareButton>
+
+        <TelegramShareButton url={shareUrl} title={shareTitle}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <TelegramIcon size={40} round />
+            <span className="text-xs text-gray-700">Telegram</span>
+          </div>
+        </TelegramShareButton>
+
+        <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <EmailIcon size={40} round />
+            <span className="text-xs text-gray-700">Email</span>
+          </div>
+        </EmailShareButton>
+
+        {messengerAppId && (
+          <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <FacebookMessengerIcon size={40} round />
+              <span className="text-xs text-gray-700">Messenger</span>
+            </div>
+          </FacebookMessengerShareButton>
+        )}
+      </div>
+
+      <div className="mt-2">
+        <CopyLinkButton shareUrl={shareUrl} setShareOpen={setShareOpen} />
+      </div>
+    </div>
+  );
+};
+
+const CopyLinkButton = ({ shareUrl, setShareOpen }) => {
+  return (
+    <button
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Link copied");
+          setShareOpen(false);
+        } catch {
+          toast.error("Failed to copy link");
+        }
+      }}
+      className="flex items-center gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+    >
+      <CopyIcon size={16} />
+      Copy link
+    </button>
+  );
+};
+
 /* ------------------------------ ProfileModal ----------------------------- */
 export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
   const [loading, setLoading] = useState(false);
@@ -1096,6 +1214,11 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [categories, setCategories] = useState([]);
   const [showAllPosts, setShowAllPosts] = useState(false);
+
+  // Share menu state
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareMenuRef = useRef(null);
+  const shareButtonRef = useRef(null);
 
   // handlers (inside the component)
   
@@ -1159,6 +1282,29 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
       document.body.style.overflow = '';
     };
   }, [crOpen]);
+
+  // Close share menu on outside click / Esc
+  useEffect(() => {
+    function onDown(e) {
+      if (
+        shareButtonRef.current &&
+        shareMenuRef.current &&
+        !shareButtonRef.current.contains(e.target) &&
+        !shareMenuRef.current.contains(e.target)
+      ) {
+        setShareOpen(false);
+      }
+    }
+    function onEsc(e) {
+      if (e.key === "Escape") setShareOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
 
   function openCR() {
     if (!user) return data._showPopUp("login_prompt");
@@ -2339,7 +2485,37 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
 
 
               {/* Actions */}
-              <div className={`flex gap-3 mt-6 ${isUnblock ? 'hidden':''}`}>
+              <div className={`flex gap-3 mt-6 relative ${isUnblock ? 'hidden':''}`}>
+
+              {/* Share Menu */}
+              {shareOpen && <ShareMenu profile={profile} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
+
+              {/* Share */}
+              <button
+                ref={shareButtonRef}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShareOpen((s) => !s);
+                }}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
+              >
+                <Share2 size={18} />
+                Share
+              </button>
+
+              <button
+                onClick={() => {
+                  if (!user) {
+                    data._showPopUp("login_prompt");
+                    return;
+                  }
+                  onClose();
+                  navigate(`/profile/${userId}`);
+                }}
+                className="flex-1 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
+              >
+                View Full Profile
+              </button>
               {renderConnectButton()}
              {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) &&  <button
                   onClick={openMR}

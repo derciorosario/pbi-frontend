@@ -509,7 +509,7 @@ export default function EventsPage() {
             />
                       </div>
           <QuickActions title="Quick Actions" items={[
-            { label: "Edit Profile", Icon: Pencil,onClick: () => navigate("profile") },
+            { label: "Edit Profile", Icon: Pencil,onClick: () => navigate("/profile") },
             { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
             { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company"},
             { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company"},
