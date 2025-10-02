@@ -177,7 +177,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
             </div>
 
             {/* Employment Type */}
-            <div>
+            <div className="hidden">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Employment Type Preference <span className="text-gray-500">(optional)</span>
               </label>

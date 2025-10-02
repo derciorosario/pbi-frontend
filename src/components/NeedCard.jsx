@@ -168,6 +168,7 @@ export default function NeedCard({
 
     // Combine with audienceCategories first, then relatedEntityType, then deduplicate
     return [...new Set([
+      (need?.relatedEntityType == "job" ? 'Job Seekers':''),
       ...(Array.isArray(need?.audienceCategories) ? need?.audienceCategories.map(i=>i.name) : []),
       need?.relatedEntityType,
       ...apiTags,

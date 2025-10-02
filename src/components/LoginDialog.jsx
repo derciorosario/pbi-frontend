@@ -7,10 +7,150 @@ import GoogleCustomBtn from "./GoogleBtn.jsx";
 import SearchableSelect from "./SearchableSelect.jsx";
 import { X } from "lucide-react";
 import COUNTRIES from "../constants/countries.js";
+import CITIES from "../constants/cities.json";
 import { useRef } from "react";
 
 const emailOK = (v) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").toLowerCase());
+
+// City options for SearchableSelect (limit to reasonable number)
+const allCityOptions = CITIES.slice(0, 10000).map(city => ({
+  value: city.city,
+  label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
+  country: city.country
+}));
+
+// Get filtered cities for a specific country
+const getCitiesForCountry = (country) => {
+  if (!country) return [];
+  return allCityOptions.filter((c) => c.country?.toLowerCase() === country.toLowerCase());
+};
+
+// Component for managing country-city pairs
+const CountryCitySelector = ({ value, onChange, error }) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newCountry, setNewCountry] = useState("");
+  const [newCity, setNewCity] = useState("");
+
+  const handleAddCountryCity = () => {
+    if (newCountry && newCity) {
+      const newPair = { country: newCountry, city: newCity };
+      onChange([...value, newPair]);
+      setNewCountry("");
+      setNewCity("");
+      setShowAddForm(false);
+    }
+  };
+
+  const handleRemoveCountryCity = (index) => {
+    const updated = value.filter((_, i) => i !== index);
+    onChange(updated);
+  };
+
+  const handleCityChange = (index, city) => {
+    const updated = value.map((item, i) =>
+      i === index ? { ...item, city } : item
+    );
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-gray-700">
+        Other Countries of Operations (Branches) <span className="text-gray-400 font-normal">(Optional)</span>
+      </label>
+
+      {/* Display selected country-city pairs */}
+      {value.length > 0 && (
+        <div className="space-y-2">
+          {value.map((item, index) => (
+            <div key={index} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+              <div className="flex-1">
+                <div className="font-medium text-sm">{item.country}</div>
+                <div className="text-xs text-gray-500">City: {item.city}</div>
+              </div>
+              <SearchableSelect
+                options={getCitiesForCountry(item.country)}
+                value={item.city}
+                onChange={(city) => handleCityChange(index, city)}
+                placeholder="Select city"
+                className="w-48"
+              />
+              <button
+                type="button"
+                onClick={() => handleRemoveCountryCity(index)}
+                className="p-1 text-red-500 hover:text-red-700"
+                title="Remove"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add new country-city pair */}
+      {showAddForm ? (
+        <div className="p-3 border border-gray-200 rounded-lg bg-blue-50 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <SearchableSelect
+              options={COUNTRIES}
+              value={newCountry}
+              onChange={setNewCountry}
+              placeholder="Select country"
+            />
+            <SearchableSelect
+              options={newCountry ? getCitiesForCountry(newCountry) : []}
+              value={newCity}
+              onChange={setNewCity}
+              placeholder="Select city"
+              disabled={!newCountry}
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleAddCountryCity}
+              disabled={!newCountry || !newCity}
+              className="px-3 py-1 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddForm(false);
+                setNewCountry("");
+                setNewCity("");
+              }}
+              className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowAddForm(true)}
+          className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Add Country & City
+        </button>
+      )}
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <p className="text-xs text-gray-500">
+        Select countries where your company has branches or operations (optional)
+      </p>
+    </div>
+  );
+};
 
 export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) {
   const navigate = useNavigate();
@@ -157,9 +297,10 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
       next.name = `${labelName} is required.`;
     } else if (signupForm.name.trim().length < 2) {
       next.name = `${labelName} must be at least 2 characters long.`;
-    } else if (!/^[a-zA-Z\s\-'\.]+$/.test(signupForm.name.trim())) {
-      next.name = `${labelName} can only contain letters, spaces, hyphens, apostrophes, and periods.`;
+    } else if (!/^[a-zA-Z0-9\s\-'\.]+$/.test(signupForm.name.trim())) {
+      next.name = `${labelName} can only contain letters, numbers, spaces, hyphens, apostrophes, and periods.`;
     }
+
     if (!signupForm.email) next.email = `${labelEmail} is required.`;
     else if (!emailOK(signupForm.email)) next.email = "Please enter a valid email.";
     if (!signupForm.phone) next.phone = `${labelPhone} is required.`;
@@ -287,7 +428,7 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
         gender: signupForm.gender,
         nationality: signupForm.nationality,
         // Company fields
-        otherCountries: signupForm.otherCountries,
+        otherCountries: signupForm.otherCountries, // Now contains [{country, city}] pairs
         webpage: signupForm.webpage
       };
 
@@ -757,26 +898,16 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
                     </div>
                   </div>
 
-                  {/* Other Countries of Operations */}
+                  {/* Other Countries of Operations with Cities */}
                   <div className="md:col-span-2">
-                    <SearchableSelect
-                      label="Other Countries of Operations (Branches)"
-                      sublabel="Optional"
-                      options={COUNTRIES}
-                      value=""
-                      onChange={() => {}} // Not used for multiple select
-                      placeholder="Add a country..."
-                      error={signupErrors.otherCountries}
-                      multiple={true}
-                      selectedValues={signupForm.otherCountries}
-                      onMultipleChange={(values) => {
+                    <CountryCitySelector
+                      value={signupForm.otherCountries}
+                      onChange={(values) => {
                         setSignupForm(prev => ({ ...prev, otherCountries: values }));
                         setSignupErrors(prev => ({ ...prev, otherCountries: "" }));
                       }}
+                      error={signupErrors.otherCountries}
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Select countries where your company has branches or operations (optional)
-                    </p>
                   </div>
 
                   {/* Webpage */}

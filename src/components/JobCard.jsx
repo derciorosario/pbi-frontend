@@ -174,7 +174,11 @@ export default function JobCard({
     ? `${API_URL}/uploads/${imageUrl}`
     : null; 
 
+
+  imageUrl = !imageUrl && !job?.make_company_name_private ? job?.company?.avatarUrl : imageUrl
+
   const allTags = [
+    'Job Offer',
     ...(Array.isArray(job?.audienceCategories) ? job?.audienceCategories.map(i=>i.name) : []),
     job?.jobType,
     job?.workMode,
@@ -403,6 +407,7 @@ export default function JobCard({
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+
         {/* IMAGE SIDE */}
         {isList ? (
           // Only show image side in list view if not text mode
@@ -745,13 +750,14 @@ export default function JobCard({
           </div>
 
           {/* Description */}
-          <p
+          <div
             className={`mt-2 text-sm text-gray-600 leading-relaxed ${
               isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"
             }`}
-          >
-            {job?.description}
-          </p>
+            dangerouslySetInnerHTML={{
+              __html: job?.description || ''
+            }}
+          />
 
           {/* Salary */}
           {salaryText && (
@@ -790,8 +796,62 @@ export default function JobCard({
               </span>
               <span className="flex items-center gap-1">
                 <MapPin size={12} />
-                {job?.city ? `${job.city}, ` : ""}
-                {job?.country || "-"}
+                {(() => {
+                  // Priority: use countries array if available, fallback to single country/city
+                  const countriesArray = job?.countries || [];
+                  const singleCountry = job?.country;
+                  const singleCity = job?.city;
+
+                  // If countries array exists and has items, use it
+                  if (countriesArray.length > 0) {
+                    if (countriesArray.length === 1) {
+                      // Single location from array
+                      const location = countriesArray[0];
+                      return (
+                        <span>
+                          {location.city ? `${location.city}, ` : ""}
+                          {location.country || "-"}
+                        </span>
+                      );
+                    } else {
+                      // Multiple locations - show first + count
+                      const firstLocation = countriesArray[0];
+                      const remainingCount = countriesArray.length - 1;
+
+                      return (
+                        <div className="relative group/location">
+                          <span className="cursor-help">
+                            {firstLocation.country}
+                            {firstLocation.city ? `, ${firstLocation.city}` : ""}
+                            {" +"}
+                            {remainingCount}
+                          </span>
+
+                          {/* Tooltip with all locations */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/location:opacity-100 group-hover/location:visible z-10 whitespace-nowrap max-w-xs">
+                            <div className="space-y-1">
+                              {countriesArray.map((location, index) => (
+                                <div key={index} className="text-left">
+                                  {location.city ? `${location.city}, ` : ""}
+                                  {location.country}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
+                          </div>
+                        </div>
+                      );
+                    }
+                  }
+
+                  // Fallback to single country/city fields
+                  return (
+                    <span>
+                      {singleCity ? `${singleCity}, ` : ""}
+                      {singleCountry || "-"}
+                    </span>
+                  );
+                })()}
               </span>
             </div>
           </div>

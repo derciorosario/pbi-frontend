@@ -12,10 +12,85 @@ const Icons = {
       <path d="M7 14l5-5 5 5z" />
     </svg>
   ),
+  search: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  ),
+  clear: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    </svg>
+  ),
 };
 
 function AudienceTree({ tree, selected, onChange, shown = [], from }) {
-  const [open, setOpen] = useState({}); // { 'id-..': bool, 'cat-..': bool, 'sc-..': bool }
+  const [open, setOpen] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredTree, setFilteredTree] = useState(tree);
+
+  // Filter tree based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredTree(tree);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = tree.map(identity => {
+      // Check if identity matches
+      const identityMatches = identity.name.toLowerCase().includes(term);
+      
+      // Filter categories
+      const filteredCategories = (identity.categories || []).map(cat => {
+        const catMatches = cat.name.toLowerCase().includes(term);
+        
+        // Filter subcategories
+        const filteredSubcategories = (cat.subcategories || []).map(sc => {
+          const scMatches = sc.name.toLowerCase().includes(term);
+          
+          // Filter subsubcategories
+          const filteredSubsubs = (sc.subsubs || []).filter(ss => 
+            ss.name.toLowerCase().includes(term)
+          );
+
+          // Keep subcategory if it matches or any of its children match
+          return scMatches || filteredSubsubs.length > 0 ? { ...sc, subsubs: filteredSubsubs } : null;
+        }).filter(Boolean);
+
+        // Keep category if it matches or any of its children match
+        return catMatches || filteredSubcategories.length > 0 ? { ...cat, subcategories: filteredSubcategories } : null;
+      }).filter(Boolean);
+
+      // Keep identity if it matches or any of its children match
+      return identityMatches || filteredCategories.length > 0 ? { ...identity, categories: filteredCategories } : null;
+    }).filter(Boolean);
+
+    setFilteredTree(filtered);
+
+    // Auto-open matching items
+    if (searchTerm.trim()) {
+      const newOpen = { ...open };
+      
+      filtered.forEach(identity => {
+        const identityKey = `id-${identity.id}`;
+        newOpen[identityKey] = true;
+
+        identity.categories?.forEach(cat => {
+          const catKey = `cat-${cat.id}`;
+          newOpen[catKey] = true;
+
+          cat.subcategories?.forEach(sc => {
+            const scKey = `sc-${sc.id}`;
+            newOpen[scKey] = true;
+          });
+        });
+      });
+
+      setOpen(newOpen);
+    }
+  }, [searchTerm, tree]);
 
   const selectAll = (select) => {
     const next = {
@@ -26,8 +101,8 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     };
 
     if (select) {
-      // Recursively add all items
-      tree.forEach((identity) => {
+      // Recursively add all items from filtered tree
+      filteredTree.forEach((identity) => {
         next.identityIds.add(identity.id);
         (identity.categories || []).forEach((cat) => {
           next.categoryIds.add(cat.id);
@@ -44,14 +119,14 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     onChange(next);
   };
 
-  // Check if everything is selected
+  // Check if everything in filtered tree is selected
   const isAllSelected = () => {
-    if (!tree.length) return false;
+    if (!filteredTree.length) return false;
     
     let totalItems = 0;
     let selectedItems = 0;
 
-    tree.forEach((identity) => {
+    filteredTree.forEach((identity) => {
       totalItems++;
       if (S(selected.identityIds).has(identity.id)) selectedItems++;
       
@@ -75,7 +150,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
   };
 
   const isPartiallySelected = () => {
-    if (!tree.length) return false;
+    if (!filteredTree.length) return false;
     
     const totalSelected = 
       S(selected.identityIds).size +
@@ -95,7 +170,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
     };
 
-    const identity = tree.find(id => id.id === identityId);
+    const identity = filteredTree.find(id => id.id === identityId);
     if (!identity) return;
 
     if (select) {
@@ -133,7 +208,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
     };
 
-    const identity = tree.find(id => id.id === identityId);
+    const identity = filteredTree.find(id => id.id === identityId);
     if (!identity) return;
 
     const category = identity.categories?.find(cat => cat.id === categoryId);
@@ -169,7 +244,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
     };
 
-    const identity = tree.find(id => id.id === identityId);
+    const identity = filteredTree.find(id => id.id === identityId);
     if (!identity) return;
 
     const category = identity.categories?.find(cat => cat.id === categoryId);
@@ -196,7 +271,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
   // ----- Check if all categories in identity are selected -----
   const areAllCategoriesSelected = (identityId) => {
-    const identity = tree.find(id => id.id === identityId);
+    const identity = filteredTree.find(id => id.id === identityId);
     if (!identity || !identity.categories?.length) return false;
 
     const selectedCatIds = S(selected.categoryIds);
@@ -205,7 +280,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
   // ----- Check if all subcategories in category are selected -----
   const areAllSubcategoriesSelected = (identityId, categoryId) => {
-    const identity = tree.find(id => id.id === identityId);
+    const identity = filteredTree.find(id => id.id === identityId);
     if (!identity) return false;
 
     const category = identity.categories?.find(cat => cat.id === categoryId);
@@ -217,7 +292,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
   // ----- Check if all subsubcategories in subcategory are selected -----
   const areAllSubsubcategoriesSelected = (identityId, categoryId, subcategoryId) => {
-    const identity = tree.find(id => id.id === identityId);
+    const identity = filteredTree.find(id => id.id === identityId);
     if (!identity) return false;
 
     const category = identity.categories?.find(cat => cat.id === categoryId);
@@ -232,7 +307,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
   // ----- Check if partially selected for categories -----
   const areCategoriesPartiallySelected = (identityId) => {
-    const identity = tree.find(id => id.id === identityId);
+    const identity = filteredTree.find(id => id.id === identityId);
     if (!identity || !identity.categories?.length) return false;
 
     const selectedCatIds = S(selected.categoryIds);
@@ -243,7 +318,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
   // ----- Check if partially selected for subcategories -----
   const areSubcategoriesPartiallySelected = (identityId, categoryId) => {
-    const identity = tree.find(id => id.id === identityId);
+    const identity = filteredTree.find(id => id.id === identityId);
     if (!identity) return false;
 
     const category = identity.categories?.find(cat => cat.id === categoryId);
@@ -257,7 +332,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
   // ----- Check if partially selected for subsubcategories -----
   const areSubsubcategoriesPartiallySelected = (identityId, categoryId, subcategoryId) => {
-    const identity = tree.find(id => id.id === identityId);
+    const identity = filteredTree.find(id => id.id === identityId);
     if (!identity) return false;
 
     const category = identity.categories?.find(cat => cat.id === categoryId);
@@ -284,6 +359,10 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       subcategoryIds: new Set(),
       subsubCategoryIds: new Set(),
     });
+  };
+
+  const closeAll = () => {
+    setOpen({});
   };
 
   const setChecked = (type, id, value) => {
@@ -440,13 +519,12 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
     // If there are shown filters, open all identities
     const allOpen = {};
-    tree.forEach((identity) => {
+    filteredTree.forEach((identity) => {
       const identityId = identity.id;
       const idKey = `id-${identityId}`;
       allOpen[idKey] = true;
     });
 
-    console.log({allOpen})
     setOpen(allOpen);
 
     // fresh selection
@@ -458,13 +536,46 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     };
 
     onChange(next);
-  }, [shown, tree, from]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shown, filteredTree, from]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
 
   // ----- render -----
   return (
     <div className="rounded-xl border border-gray-200">
-      
-       {!shown?.length && (
+      {/* Search Bar */}
+      <div className="p-3 border-b bg-white">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Icons.search />
+          </div>
+          <input
+            type="text"
+            placeholder="Search identities, categories, subcategories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+          />
+          {searchTerm && (
+            <button
+              onClick={clearSearch}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+            >
+              <Icons.clear />
+            </button>
+          )}
+        </div>
+        {searchTerm && (
+          <div className="mt-2 text-xs text-gray-500">
+            Showing {filteredTree.length} result{filteredTree.length !== 1 ? 's' : ''} for "{searchTerm}"
+          </div>
+        )}
+      </div>
+
+      {!shown?.length && (
         <div className="flex justify-between items-center p-2 border-b bg-white">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -483,17 +594,26 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
             </span>
           </label>
           
-          <button
-            type="button"
-            onClick={clearAll}
-            className="text-xs px-2 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            Clear
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={closeAll}
+              className="text-xs px-2 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Close All
+            </button>
+            <button
+              type="button"
+              onClick={clearAll}
+              className="text-xs px-2 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Clear
+            </button>
+          </div>
         </div>
       )}
 
-      {tree.map((identity) => {
+      {filteredTree.map((identity) => {
         const identityId = identity.id;
         const idKey = `id-${identityId}`;
         const openId = !!open[idKey];
@@ -503,11 +623,9 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
         return (
           <div
             key={idKey}
-           
             className={`border-b last:border-b-0 ${
               shown.length && !shown.some(s => s.toLowerCase() === identity.name.toLowerCase() || identity.name.toLowerCase() === s.toLowerCase()) ? "hidden" : ""
             }`}
-
           >
             <div
               role={hasCategories ? "button" : undefined}
@@ -725,6 +843,12 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
           </div>
         );
       })}
+
+      {filteredTree.length === 0 && searchTerm && (
+        <div className="p-4 text-center text-gray-500">
+          No results found for "{searchTerm}"
+        </div>
+      )}
     </div>
   );
 }

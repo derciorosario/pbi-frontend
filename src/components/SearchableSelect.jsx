@@ -21,9 +21,10 @@ const SearchableSelect = ({
   const inputRef = useRef(null);
 
   // Filter options based on search term
-  const filteredOptions = options.filter(option =>
-    option.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+   const filteredOptions = options.filter(option => {
+     const label = typeof option === 'string' ? option : option.label;
+     return label.toLowerCase().includes(searchTerm.toLowerCase());
+   });
 
   // Handle clicks outside to close dropdown
   useEffect(() => {
@@ -84,11 +85,13 @@ const SearchableSelect = ({
 
   const handleSelect = (option) => {
     if (multiple) {
-      if (!selectedValues.includes(option)) {
-        onMultipleChange([...selectedValues, option]);
+      const optionValue = typeof option === 'string' ? option : option.value;
+      if (!selectedValues.includes(optionValue)) {
+        onMultipleChange([...selectedValues, optionValue]);
       }
     } else {
-      onChange(option);
+      const optionValue = typeof option === 'string' ? option : option.value;
+      onChange(optionValue);
       setIsOpen(false);
       setSearchTerm('');
       setHighlightedIndex(-1);
@@ -117,7 +120,18 @@ const SearchableSelect = ({
         ? `${selectedValues.length} selected`
         : placeholder;
     }
-    return value || placeholder;
+
+    // Find the selected option to display its label
+    if (value && options.length > 0) {
+      const selectedOption = options.find(option =>
+        typeof option === 'string' ? option === value : option.value === value
+      );
+      if (selectedOption) {
+        return typeof selectedOption === 'string' ? selectedOption : selectedOption.label;
+      }
+    }
+
+    return placeholder;
   };
 
   const hasValue = () => {
@@ -230,24 +244,30 @@ const SearchableSelect = ({
                 No options found
               </div>
             ) : (
-              filteredOptions.map((option, index) => (
-                <div
-                  key={option}
-                  className={`px-4 py-3 text-sm cursor-pointer transition-colors ${
-                    highlightedIndex === index
-                      ? 'bg-brand-50 text-brand-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  } ${
-                    multiple && selectedValues.includes(option)
-                      ? 'bg-brand-100 text-brand-800'
-                      : ''
-                  }`}
-                  onClick={() => handleSelect(option)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                >
-                  {option}
-                </div>
-              ))
+              filteredOptions.map((option, index) => {
+                const optionValue = typeof option === 'string' ? option : option.value;
+                const optionLabel = typeof option === 'string' ? option : option.label;
+                const isSelected = multiple ? selectedValues.includes(optionValue) : optionValue === value;
+
+                return (
+                  <div
+                    key={optionValue}
+                    className={`px-4 py-3 text-sm cursor-pointer transition-colors ${
+                      highlightedIndex === index
+                        ? 'bg-brand-50 text-brand-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    } ${
+                      isSelected
+                        ? 'bg-brand-100 text-brand-800'
+                        : ''
+                    }`}
+                    onClick={() => handleSelect(option)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                  >
+                    {optionLabel}
+                  </div>
+                );
+              })
             )}
           </div>
         )}

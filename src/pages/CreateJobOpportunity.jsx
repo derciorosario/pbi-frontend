@@ -11,6 +11,9 @@ import AudienceTree from "../components/AudienceTree";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
 import FullPageLoader from "../components/ui/FullPageLoader";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+
 
 /* brand icons (trimmed) */
 const I = {
@@ -130,6 +133,138 @@ const allCityOptions = CITIES.slice(0, 10000).map(city => ({
   label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
   country: city.country
 }));
+
+// Get filtered cities for a specific country
+const getCitiesForCountry = (country) => {
+  if (!country) return [];
+  return allCityOptions.filter((c) => c.country?.toLowerCase() === country.toLowerCase());
+};
+
+// Component for managing country-city pairs
+const CountryCitySelector = ({ value, onChange, error }) => {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newCountry, setNewCountry] = useState("");
+  const [newCity, setNewCity] = useState("");
+
+  const handleAddCountryCity = () => {
+    if (newCountry) {
+      const newPair = { country: newCountry, city: newCity || "" };
+      onChange([...value, newPair]);
+      setNewCountry("");
+      setNewCity("");
+      setShowAddForm(false);
+    }
+  };
+
+  const handleRemoveCountryCity = (index) => {
+    const updated = value.filter((_, i) => i !== index);
+    onChange(updated);
+  };
+
+  const handleCityChange = (index, city) => {
+    const updated = value.map((item, i) =>
+      i === index ? { ...item, city } : item
+    );
+    onChange(updated);
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-gray-700">
+        Countries and cities <span className="text-gray-400 font-normal">(City optional)</span>
+      </label>
+
+      {/* Display selected country-city pairs */}
+      {value.length > 0 && (
+        <div className="space-y-2">
+          {value.map((item, index) => (
+            <div key={index} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+              <div className="flex-1">
+                <div className="font-medium text-sm">{item.country}</div>
+                {item.city && <div className="text-xs text-gray-500">City: {item.city}</div>}
+              </div>
+              <SearchableSelect
+                options={getCitiesForCountry(item.country)}
+                value={item.city}
+                onChange={(city) => handleCityChange(index, city)}
+                placeholder="Select city"
+                className="w-48"
+              />
+              <button
+                type="button"
+                onClick={() => handleRemoveCountryCity(index)}
+                className="p-1 text-red-500 hover:text-red-700"
+                title="Remove"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add new country-city pair */}
+      {showAddForm ? (
+        <div className="p-3 border border-gray-200 rounded-lg bg-blue-50 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <SearchableSelect
+              options={countryOptions}
+              value={newCountry}
+              onChange={setNewCountry}
+              placeholder="Select country"
+            />
+            <SearchableSelect
+              options={newCountry ? getCitiesForCountry(newCountry) : []}
+              value={newCity}
+              onChange={setNewCity}
+              placeholder="Select city (optional)"
+              disabled={!newCountry}
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleAddCountryCity}
+              disabled={!newCountry}
+              className="px-3 py-1 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAddForm(false);
+                setNewCountry("");
+                setNewCity("");
+              }}
+              className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowAddForm(true)}
+          className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Add Country
+        </button>
+      )}
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <p className="text-xs text-gray-500">
+        Select additional countries where this job opportunity is available (optional)
+      </p>
+    </div>
+  );
+};
 
 
 /* ---------- helpers for read-only view ---------- */
@@ -494,6 +629,7 @@ function InlineCompanyPicker({ companies = [], value, onChange, required }) {
       <div className="grid gap-1.5">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
+
             <Input
               ref={inputRef}
               placeholder={selected ? selected.name : "Search companies…"}
@@ -507,7 +643,7 @@ function InlineCompanyPicker({ companies = [], value, onChange, required }) {
               aria-controls="company-results"
               role="combobox"
               autoComplete="off"
-              className={selected ? "text-gray-400 placeholder-black" : "text-gray-700 placeholder-gray-400"}
+              className={selected ? "text-gray-400 placeholder-black border-0" : "text-gray-700 placeholder-gray-400"}
             />
            
             {selected && (
@@ -754,6 +890,13 @@ export default function CreateJobOpportunity() {
     positions: "",
     contactEmail: "",
   });
+
+
+  useEffect(()=>{
+     if(user){
+         setForm({...form,companyId:user.id})
+     }
+  },[user])
   const [skillInput, setSkillInput] = useState("")
 
   const [generalTree, setGeneralTree] = useState([]);
@@ -813,6 +956,7 @@ export default function CreateJobOpportunity() {
     careerLevel: "", paymentType: "",
     workMode: "", description: "", requiredSkills: "",
     country:"", city: "",
+    countries: [], // New field for multiple countries/cities
   });
 
   // Support single or multi-country (comma-separated) selection
@@ -863,6 +1007,7 @@ export default function CreateJobOpportunity() {
 
   const readOnly = isEditMode && ownerUserId && user?.id !== ownerUserId;
 
+  
   // Check if we're in edit mode and fetch job data if we are
   useEffect(() => {
     if (!id) return;
@@ -885,18 +1030,25 @@ export default function CreateJobOpportunity() {
           null;
         setOwnerUserId(ownerId);
 
-        // Update form with job data
+        // Process HTML content for ReactQuill
+        let processedDescription = job.description || '';
+        if (processedDescription && typeof processedDescription === 'string') {
+          // Ensure HTML content is properly formatted for ReactQuill
+          processedDescription = processedDescription.trim();
+          console.log('Loading job data, processed description:', processedDescription);
+        }
+
         setForm({
           id:job.id,
           title: job.title || "",
-          companyId: job.companyId || "",
+          companyId: user?.id || job.companyId || "",
           companyName: job.company?.name || job.companyName || "",
           make_company_name_private: job.make_company_name_private || false,
           department: job.department || "",
           experienceLevel: job.experienceLevel || "",
           jobType: job.jobType || "",
           workMode: job.workMode || "",
-          description: job.description || "",
+          description: processedDescription,
           //requiredSkills: Array.isArray(job.requiredSkills) ? job.requiredSkills.join(", ") : job.requiredSkills || "",
           requiredSkills: Array.isArray(job.requiredSkills)
           ? job.requiredSkills
@@ -905,6 +1057,7 @@ export default function CreateJobOpportunity() {
               : []),
 
           country: job.country || COUNTRIES[0] || "",
+          countries: job.countries || [],
           city: job.city || "",
           minSalary: job.minSalary?.toString() || "",
           maxSalary: job.maxSalary?.toString() || "",
@@ -1068,13 +1221,14 @@ export default function CreateJobOpportunity() {
       next.companyId = "Please select a company.";
     }
 
-    if (!form.country) {
+    /*if (!form.country) {
       next.country = "Country is required.";
+    }*/
+
+    if(form.countries.length==0){
+       next.country = "Select at least one country.";
     }
 
-    if (!form.city) {
-      next.city = "City is required.";
-    }
 
     if (!form.description.trim()) {
       next.description = "Job description is required.";
@@ -1110,7 +1264,7 @@ export default function CreateJobOpportunity() {
     }
 
     // Application deadline validation
-    if (form.applicationDeadline) {
+   /*if (form.applicationDeadline) {
       const deadline = new Date(form.applicationDeadline);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -1118,9 +1272,7 @@ export default function CreateJobOpportunity() {
       if (deadline < today) {
         next.applicationDeadline = "Application deadline cannot be in the past.";
       }
-    }
-
-    console.log({next})
+    }*/
 
     setErrors(next);
    // return Object.values(next).every((v) => !v);
@@ -1172,10 +1324,10 @@ export default function CreateJobOpportunity() {
     const identityIds = Array.from(audSel.identityIds);
     const categoryIds = Array.from(audSel.categoryIds);
 
-    if (!form.categoryId && categoryIds.length === 0) {
+   /*  if (!form.categoryId && categoryIds.length === 0) {
       toast.error("Please select at least one category in target audience");
       return;
-    }
+    }*/
 
     setIsLoading(true);
 
@@ -1300,9 +1452,10 @@ export default function CreateJobOpportunity() {
               </div>
 
               {/* --- Replaced old input+select with InlineCompanyPicker --- */}
-              <div>
+              {companies.length!=0 && <div>
                 <Label required>Company</Label>
-                <InlineCompanyPicker
+                <div className="opacity-60 pointer-events-none">
+                   <InlineCompanyPicker
                   companies={companies}
                   value={form.companyId}
                   required
@@ -1314,6 +1467,7 @@ export default function CreateJobOpportunity() {
                     }));
                   }}
                 />
+                </div>
                 <div className="mt-1 flex items-center">
                   <input
                     type="checkbox"
@@ -1327,7 +1481,7 @@ export default function CreateJobOpportunity() {
                     Make it private
                   </label>
                 </div>
-              </div>
+              </div>}
 
               <div>
                 <Label>Department</Label>
@@ -1360,8 +1514,8 @@ export default function CreateJobOpportunity() {
   </div>
 
   <div>
-    <Label>Work Location</Label>
-    <Select name="workLocation" value={form.workLocation} onChange={onChange} required>
+    <Label required>Work Location</Label>
+    <Select  name="workLocation" value={form.workLocation} onChange={onChange} required>
       <option value="">Select location</option>
       <option>On-Site</option><option>Remote</option>
       <option>Hybrid</option><option>Field-Based</option>
@@ -1369,7 +1523,7 @@ export default function CreateJobOpportunity() {
   </div>
 
   <div>
-    <Label>Work Schedule</Label>
+    <Label required>Work Schedule</Label>
     <Select name="workSchedule" value={form.workSchedule} onChange={onChange} required>
       <option value="">Select schedule</option>
       <option>Day Shift</option><option>Night Shift</option>
@@ -1379,7 +1533,7 @@ export default function CreateJobOpportunity() {
   </div>
 
   <div>
-    <Label>Career Level</Label>
+    <Label required>Career Level</Label>
     <Select name="careerLevel" value={form.careerLevel} onChange={onChange} required>
       <option value="">Select level</option>
       <option>Entry-Level</option><option>Mid-Level</option>
@@ -1389,7 +1543,7 @@ export default function CreateJobOpportunity() {
   </div>
 
   <div>
-    <Label>Payment Type</Label>
+    <Label required>Payment Type</Label>
     <Select name="paymentType" value={form.paymentType} onChange={onChange} required>
       <option value="">Select payment type</option>
       <option>Salaried Jobs</option><option>Hourly Jobs</option>
@@ -1406,7 +1560,37 @@ export default function CreateJobOpportunity() {
 
               <div className="md:col-span-3">
                 <Label required>Job Description</Label>
-                <Textarea name="description" value={form.description} onChange={onChange} rows={4} placeholder="Describe the role, responsibilities, and what you're looking for…" required/>
+                <ReactQuill
+                  theme="snow"
+                  value={form.description || ''}
+                  onChange={(value) => {
+                    console.log('ReactQuill onChange - Raw value:', value);
+                    console.log('ReactQuill onChange - Is HTML?', value.includes('<'));
+                    setForm({ ...form, description: value });
+                  }}
+                  placeholder="Describe the role, responsibilities, and what you're looking for…"
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'color': [] }, { 'background': [] }],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'align': [] }],
+                      ['link'],
+                      ['clean']
+                    ],
+                  }}
+                  formats={[
+                    'header', 'bold', 'italic', 'underline', 'strike',
+                    'color', 'background',
+                    'list', 'bullet', 'align',
+                    'link'
+                  ]}
+                  className="bg-white rounded-xl border border-gray-200"
+                  style={{ minHeight: '200px' }}
+                  preserveWhitespace={true}
+                  required
+                />
               </div>
               
               <div className="md:col-span-3">
@@ -1526,7 +1710,9 @@ export default function CreateJobOpportunity() {
 
             {/* ===== Location & Compensation ===== */}
             <div className="flex items-center gap-2"><I.pin /><h3 className="font-semibold">Location & Compensation</h3></div>
-            <div className="mt-3 grid md:grid-cols-2 gap-4">
+           {/***Hide For now***/}
+           {/**
+            *  <div className="mt-3 grid md:grid-cols-2 gap-4">
               <div>
                 <Label required>Country</Label>
                 <SearchableSelect
@@ -1547,6 +1733,16 @@ export default function CreateJobOpportunity() {
                   placeholder="Search and select city..."
                 />
               </div>
+            </div>
+            */}
+
+            {/* ===== Additional Countries (Multi-select) ===== */}
+
+            <div className="mt-3">
+              <CountryCitySelector
+                value={form.countries}
+                onChange={(values) => setForm(prev => ({ ...prev, countries: values }))}
+              />
             </div>
 
             <div className="mt-3 grid md:grid-cols-3 gap-4">
@@ -1573,6 +1769,7 @@ export default function CreateJobOpportunity() {
                     name="applicationDeadline"
                     type="date"
                     value={form.applicationDeadline}
+                    min={new Date().toISOString().split('T')[0]}
                     onChange={onChange}
                     id="applicationDeadline"
                   />
@@ -1589,6 +1786,7 @@ export default function CreateJobOpportunity() {
                 </div>
               </div>
               <div><Label>Number of Positions</Label><Input name="positions" type="number" min="1" value={form.positions} onChange={onChange}/></div>
+           
             </div>
 
             <div className="mt-3"><Label>Application Instructions</Label><Textarea name="applicationInstructions" value={form.applicationInstructions} onChange={onChange} rows={3} placeholder="Provide specific instructions for applicants…"/></div>

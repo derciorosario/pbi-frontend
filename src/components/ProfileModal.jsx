@@ -22,6 +22,7 @@ import {
   Trash2,
   ShieldBan,
   Flag,
+  Activity,
 } from "lucide-react";
 import client from "../api/client";
 import ConnectionRequestModal from "./ConnectionRequestModal";
@@ -30,6 +31,14 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "../lib/toast";
 import ConfirmDialog from "./ConfirmDialog";
+import JobCard from "./JobCard";
+import NeedCard from "./NeedCard";
+import ServiceCard from "./ServiceCard";
+import ProductCard from "./ProductCard-1";
+import MomentCard from "./MomentCard";
+import ExperienceCard from "./ExperienceCard";
+import CrowdfundCard from "./CrowdfundCard";
+import EventCard from "./EventCard";
 
 // Profile Modal Skeleton Component
 const ProfileModalSkeleton = () => (
@@ -281,6 +290,15 @@ const ProfileModalSkeleton = () => (
 );
 
 /* -------------------------------- utils --------------------------------- */
+
+function getInitials(name) {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.charAt(0).toUpperCase() || "";
+  const second = parts[1]?.charAt(0).toUpperCase() || "";
+  return first + second;
+}
+
 function timeAgo(iso) {
   if (!iso) return "";
   const then = new Date(iso).getTime();
@@ -840,8 +858,6 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
     if (!form.date) e.date = "Pick a date";
     if (!form.time) e.time = "Pick a time";
     if (!form.title.trim()) e.title = "Add a title";
-    if (form.mode === "video" && !form.link.trim()) e.link = "Add a call link";
-    if (form.mode === "in_person" && !form.location.trim()) e.location = "Add a location";
     return e;
   }
 
@@ -1075,6 +1091,12 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
   const [openConfirmBlock, setOpenConfirmBlock] = useState(false);
   const [openConfirmReport, setOpenConfirmReport] = useState(false);
 
+  // Feed items state for Posts and activities section
+  const [feedItems, setFeedItems] = useState([]);
+  const [loadingFeed, setLoadingFeed] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [showAllPosts, setShowAllPosts] = useState(false);
+
   // handlers (inside the component)
   
   async function handleBlockUser(note) {
@@ -1154,6 +1176,18 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
       .filter(Boolean);
   }, [profile]);
 
+  // Load categories for feed items
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/feed/meta");
+        setCategories(data.categories || []);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, []);
+
   // Load profile
   useEffect(() => {
     if (!isOpen || !userId) return;
@@ -1174,6 +1208,32 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
     return () => {
       mounted = false;
     };
+  }, [isOpen, userId]);
+
+  // Load user's feed items when profile modal opens
+  useEffect(() => {
+    if (!isOpen || !userId) return;
+
+    async function loadUserFeed() {
+      setLoadingFeed(true);
+      try {
+        const params = {
+          tab: "all",
+          userId: userId,
+          limit: 20,
+          offset: 0,
+        };
+
+        const { data } = await client.get("/feed", { params });
+        setFeedItems(data.items || []);
+      } catch (error) {
+        console.error("Error loading user feed:", error);
+      } finally {
+        setLoadingFeed(false);
+      }
+    }
+
+    loadUserFeed();
   }, [isOpen, userId]);
 
   // Load meetings from API when modal opens
@@ -1298,16 +1358,80 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
       try {
         await client.delete(`/connections/${userId}`, { data: { note } });
         setProfile((p) => ({ ...p, connectionStatus: "none" }));
-        toast.success("Connection removed");
       } catch (e) {
         console.error(e);
         toast.error(e?.response?.data?.message || "Failed to remove connection");
       }
   }
 
-
   const isUnblock = !!profile?.block?.iBlockedThem;
 
+  // Render function for feed items (same as FeedExplorePage.jsx)
+  const renderFeedItem = (item) => {
+    // Render by kind while preserving order from API
+    if (item.kind === "job") {
+      return (
+        <JobCard
+          type="grid"
+          key={`job-${item.id}`}
+          matchPercentage={item.matchPercentage}
+          job={{
+            ...item,
+            categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+            subcategoryName: categories
+              .find((c) => String(c.id) === String(item.categoryId))
+              ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+          }}
+        />
+      );
+    }
+    if (item.kind === "need") {
+      return (
+        <NeedCard
+          type="grid"
+          key={`need-${item.id}`}
+          matchPercentage={item.matchPercentage}
+          need={{
+            ...item,
+            categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+            subcategoryName: categories
+              .find((c) => String(c.id) === String(item.categoryId))
+              ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+          }}
+        />
+      );
+    }
+    if (item.kind === "service") {
+      return <ServiceCard type="grid" key={`service-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
+    }
+    if (item.kind === "product") {
+      return <ProductCard type="grid" key={`product-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
+    }
+    if (item.kind === "moment") {
+      return (
+        <MomentCard
+          type="grid"
+          key={`moment-${item.id}`}
+          matchPercentage={item.matchPercentage}
+          moment={{
+            ...item,
+            categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+            subcategoryName: categories
+              .find((c) => String(c.id) === String(item.categoryId))
+              ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+          }}
+        />
+      );
+    }
+    if (item.kind === "tourism") {
+      return <ExperienceCard type="grid" key={`tourism-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
+    }
+    if (item.kind === "funding") {
+      return <CrowdfundCard type="grid" key={`funding-${item.id}`} item={item} matchPercentage={item.matchPercentage} currentUserId={user?.id} />;
+    }
+    // default = event
+    return <EventCard type="grid" key={`event-${item.id}`} item={item} e={item} matchPercentage={item.matchPercentage} />;
+  };
 
   if (!isOpen) return null;
 
@@ -1338,44 +1462,70 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
               {/* Header */}
               <div className={`flex items-start gap-4 ${profile.accountType === "company" ? "bg-brand-50 p-4 rounded-lg border" : ""}`}>
                 <div className="relative">
-                  <img
-                    src={
-                      profile.avatarUrl ||
-                      (profile.email
-                        ? `https://i.pravatar.cc/150?u=${encodeURIComponent(profile.email)}`
-                        : "https://i.pravatar.cc/150")
-                    }
-                    alt={profile.name}
-                    className={`${profile.accountType === "company" ? "h-24 w-24  rounded-md" : "h-20 w-20  rounded-full"} border-4 border-white shadow-md object-cover`}
-                  />
+                 
+                   {profile.avatarUrl ? (
+                          <img
+                            src={profile.avatarUrl}
+                            alt={profile.name}
+                            className={`${
+                              profile.accountType === "company" 
+                                ? "h-24 w-24 rounded-md" 
+                                : "h-20 w-20 rounded-full"
+                            } border-4 border-white shadow-md object-cover`}
+                          />
+                        ) : (
+                          <div
+                            className={`${
+                              profile.accountType === "company" 
+                                ? "h-24 w-24 rounded-md" 
+                                : "h-20 w-20 rounded-full"
+                            } border-4 border-white shadow-md bg-brand-50 grid place-items-center flex-shrink-0 overflow-hidden`}
+                          >
+                            <span className="font-semibold text-brand-600 text-lg">
+                              {getInitials(profile.name)}
+                            </span>
+                          </div>
+                    )}
+
                   {/* Company logos for approved staff members */}
-                  {profile.companyMemberships && profile.companyMemberships.length > 0 && (
-                    <div className="absolute -bottom-2 -right-2 flex -space-x-2">
-                      {/* Sort to show main company first */}
-                      {[...profile.companyMemberships]
-                        .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
-                        .slice(0, 3)
-                        .map((membership, index) => (
+                 
+                 {profile.companyMemberships && profile.companyMemberships.length > 0 && (
+                <div className="absolute -bottom-2 -right-2 flex -space-x-2">
+                  {[...profile.companyMemberships]
+                    .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
+                    .slice(0, 3)
+                    .map((membership, index) => (
+                      membership.company.avatarUrl ? (
                         <img
                           key={membership.companyId}
-                          src={
-                            membership.company.avatarUrl ||
-                            `https://i.pravatar.cc/150?u=${encodeURIComponent(membership.company.name)}`
-                          }
+                          src={membership.company.avatarUrl}
                           alt={membership.company.name}
                           className={`h-7 w-7 rounded-full border-2 border-white shadow-sm object-cover ${
                             membership.isMain ? 'ring-2 ring-brand-400' : ''
                           }`}
                           title={`${membership.company.name} (${membership.role})`}
                         />
-                      ))}
-                      {profile.companyMemberships.length > 3 && (
-                        <div className="h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 z-10">
-                          +{profile.companyMemberships.length - 3}
+                      ) : (
+                        <div
+                          key={membership.companyId}
+                          className={`h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 ${
+                            membership.isMain ? 'ring-2 ring-brand-400' : ''
+                          }`}
+                          title={`${membership.company.name} (${membership.role})`}
+                        >
+                          {getInitials(membership.company.name)}
                         </div>
-                      )}
+                      )
+                    ))}
+                  {profile.companyMemberships.length > 3 && (
+                    <div className="h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 z-10">
+                      +{profile.companyMemberships.length - 3}
                     </div>
                   )}
+                </div>
+              )}
+
+
                 </div>
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -1434,7 +1584,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                   <p className={`text-sm text-gray-700 ${profile.accountType === "company" ? "bg-white p-3 rounded border border-gray-100" : ""}`}>
                     {profile.about}
                   </p>
-                  
+
                   {/* For companies, show skills as "Expertise" */}
                   {profile.accountType === "company" && profile.skills && profile.skills.length > 0 && (
                     <div className="mt-3">
@@ -1446,6 +1596,119 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                       </div>
                     </div>
                   )}
+                </Section>
+              )}
+
+              {/* Work Samples - Moved to be right after About */}
+              {Array.isArray(profile.workSamples) && profile.workSamples.length > 0 && (
+                <Section title="Work Samples" icon={Briefcase}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {profile.workSamples.map(ws => (
+                      <div key={ws.id} className="rounded-lg border p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="font-medium text-sm truncate">{ws.title}</div>
+
+                            {ws.category && (
+                              <div className="mt-1">
+                                <Chip tone="brand">{ws.category}</Chip>
+                              </div>
+                            )}
+
+                            {Array.isArray(ws.technologies) && ws.technologies.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {ws.technologies.slice(0, 6).map((t, i) => (
+                                  <Chip key={`${ws.id}-tech-${i}`} tone="gray">{t}</Chip>
+                                ))}
+                                {ws.technologies.length > 6 && (
+                                  <span className="text-[11px] text-gray-500">+{ws.technologies.length - 6} more</span>
+                                )}
+                              </div>
+                            )}
+
+                            {ws.description && (
+                              <p className="mt-2 text-xs text-gray-600 line-clamp-3">{ws.description}</p>
+                            )}
+
+                            <div className="mt-2 text-[11px] text-gray-500">
+                              {ws.completionDate ? new Date(ws.completionDate).toLocaleDateString() : null}
+                              {ws.createdAt ? ` • added ${timeAgo(ws.createdAt)}` : null}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Attachments */}
+                        {Array.isArray(ws.attachments) && ws.attachments.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            {/* Image attachments grid */}
+                            <div className="grid grid-cols-3 gap-2">
+                              {ws.attachments
+                                .filter(a => a?.isImage)
+                                .map((a, idx) => {
+                                  const src = a.base64url || a.url;
+                                  if (!src) return null;
+                                  return (
+                                    <a
+                                      key={`${ws.id}-img-${idx}`}
+                                      href={src}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title={a.name || "Image"}
+                                      className="block"
+                                    >
+                                      <img
+                                        src={src}
+                                        alt={a.name || ws.title}
+                                        className="w-full h-24 object-cover rounded-md border"
+                                        loading="lazy"
+                                      />
+                                    </a>
+                                  );
+                                })}
+                            </div>
+
+                            {/* Document attachments list */}
+                            <div className="flex flex-col gap-1">
+                              {ws.attachments
+                                .filter(a => !a?.isImage)
+                                .map((a, idx) => {
+                                  const href = a.base64url || a.url || "#";
+                                  const filename = a.name || "document";
+                                  return (
+                                    <a
+                                      key={`${ws.id}-doc-${idx}`}
+                                      href={href}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      download={filename}
+                                      className="inline-flex items-center gap-2 text-xs font-medium text-brand-700 underline"
+                                      title={filename}
+                                    >
+                                      <ExternalLink size={14} />
+                                      <span className="truncate max-w-[14rem]">{filename}</span>
+                                    </a>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Optional project link */}
+                        {ws.projectUrl && (
+                          <div className="mt-3">
+                            <a
+                              href={ws.projectUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 underline"
+                            >
+                              <ExternalLink size={14} /> View project
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </Section>
               )}
 
@@ -1499,8 +1762,43 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                   </div>
                 </Section>
               )}
-             
-             
+
+              {/* Posts and activities */}
+              {feedItems.length > 0 && (
+                <Section title="Posts and activities" icon={Activity}>
+                  <div className="space-y-4">
+                    {loadingFeed ? (
+                      <div className="text-sm text-gray-600">Loading posts...</div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {showAllPosts
+                            ? feedItems.map(renderFeedItem)
+                            : feedItems.slice(0, 4).map(renderFeedItem)
+                          }
+                        </div>
+
+                        {feedItems.length > 4 && (
+                          <div className="flex justify-center pt-2">
+                            <button
+                              onClick={() => setShowAllPosts(!showAllPosts)}
+                              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors duration-200"
+                            >
+                              <span>
+                                {showAllPosts
+                                  ? `View Less`
+                                  : `View All ${feedItems.length} posts`
+                                }
+                              </span>
+                              <ExternalLink size={16} className={`transition-transform duration-200 ${showAllPosts ? 'rotate-180' : ''}`} />
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </Section>
+              )}
 
 
 
@@ -1606,122 +1904,6 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                 </Section>
               )}
 
-
-              
-              {/* Work Samples */}
-            {Array.isArray(profile.workSamples) && profile.workSamples.length > 0 && (
-              <Section title="Work Samples" icon={Briefcase}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {profile.workSamples.map(ws => (
-                    <div key={ws.id} className="rounded-lg border p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="font-medium text-sm truncate">{ws.title}</div>
-
-                          {ws.category && (
-                            <div className="mt-1">
-                              <Chip tone="brand">{ws.category}</Chip>
-                            </div>
-                          )}
-
-                          {Array.isArray(ws.technologies) && ws.technologies.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1">
-                              {ws.technologies.slice(0, 6).map((t, i) => (
-                                <Chip key={`${ws.id}-tech-${i}`} tone="gray">{t}</Chip>
-                              ))}
-                              {ws.technologies.length > 6 && (
-                                <span className="text-[11px] text-gray-500">+{ws.technologies.length - 6} more</span>
-                              )}
-                            </div>
-                          )}
-
-                          {ws.description && (
-                            <p className="mt-2 text-xs text-gray-600 line-clamp-3">{ws.description}</p>
-                          )}
-
-                          <div className="mt-2 text-[11px] text-gray-500">
-                            {ws.completionDate ? new Date(ws.completionDate).toLocaleDateString() : null}
-                            {ws.createdAt ? ` • added ${timeAgo(ws.createdAt)}` : null}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Attachments */}
-                      {Array.isArray(ws.attachments) && ws.attachments.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                          {/* Image attachments grid */}
-                          <div className="grid grid-cols-3 gap-2">
-                            {ws.attachments
-                              .filter(a => a?.isImage)
-                              .map((a, idx) => {
-                                const src = a.base64url || a.url;
-                                if (!src) return null;
-                                return (
-                                  <a
-                                    key={`${ws.id}-img-${idx}`}
-                                    href={src}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    title={a.name || "Image"}
-                                    className="block"
-                                  >
-                                    <img
-                                      src={src}
-                                      alt={a.name || ws.title}
-                                      className="w-full h-24 object-cover rounded-md border"
-                                      loading="lazy"
-                                    />
-                                  </a>
-                                );
-                              })}
-                          </div>
-
-                          {/* Document attachments list */}
-                          <div className="flex flex-col gap-1">
-                            {ws.attachments
-                              .filter(a => !a?.isImage)
-                              .map((a, idx) => {
-                                const href = a.base64url || a.url || "#";
-                                const filename = a.name || "document";
-                                return (
-                                  <a
-                                    key={`${ws.id}-doc-${idx}`}
-                                    href={href}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    download={filename}
-                                    className="inline-flex items-center gap-2 text-xs font-medium text-brand-700 underline"
-                                    title={filename}
-                                  >
-                                    <ExternalLink size={14} />
-                                    <span className="truncate max-w-[14rem]">{filename}</span>
-                                  </a>
-                                );
-                              })}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Optional project link */}
-                      {ws.projectUrl && (
-                        <div className="mt-3">
-                          <a
-                            href={ws.projectUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-xs font-medium text-brand-700 underline"
-                          >
-                            <ExternalLink size={14} /> View project
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </Section>
-            )}
-
-
        
        {/* Overview / Stats */}
       {(() => {
@@ -1756,7 +1938,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
 
 
               {/* Recent Activity (Jobs & Events — original) */}
-              {(profile.recent?.jobs?.length || profile.recent?.events?.length) ? (
+              {(0==1 && (profile.recent?.jobs?.length || profile.recent?.events?.length)) ? (
                 <Section title="Recent Activity" icon={Star}>
                   <div className="space-y-3">
                     {(profile.recent.jobs || []).map((j) => (
@@ -1808,7 +1990,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
               ) : null}
 
               {/* Recent Funding */}
-              {Array.isArray(profile.recent?.funding) && profile.recent.funding.length > 0 && (
+              {0==1 && Array.isArray(profile.recent?.funding) && profile.recent.funding.length > 0 && (
                 <Section title="Recent Funding Projects" icon={Briefcase}>
                   <div className="space-y-3">
                     {profile.recent.funding.map((f) => (
@@ -1835,7 +2017,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
               )}
 
               {/* Recent Services */}
-              {Array.isArray(profile.recent?.services) && profile.recent.services.length > 0 && (
+              {0==1 && Array.isArray(profile.recent?.services) && profile.recent.services.length > 0 && (
                 <Section title="Recent Services" icon={Briefcase}>
                   <div className="space-y-3">
                     {profile.recent.services.map((s) => (
@@ -1855,7 +2037,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
               )}
 
               {/* Recent Products */}
-              {Array.isArray(profile.recent?.products) && profile.recent.products.length > 0 && (
+              {0==1 && Array.isArray(profile.recent?.products) && profile.recent.products.length > 0 && (
                 <Section title="Recent Products" icon={Briefcase}>
                   <div className="space-y-3">
                     {profile.recent.products.map((p) => (
@@ -1875,7 +2057,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
               )}
 
               {/* Recent Tourism */}
-              {Array.isArray(profile.recent?.tourism) && profile.recent.tourism.length > 0 && (
+              {0==1 && Array.isArray(profile.recent?.tourism) && profile.recent.tourism.length > 0 && (
                 <Section title="Recent Tourism Posts" icon={Star}>
                   <div className="space-y-3">
                     {profile.recent.tourism.map((t) => (
@@ -1950,29 +2132,48 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                               ) : null}
                               
                               {/* Display meeting participants */}
-                              <div className="flex items-center gap-2 mt-2">
-                                <div className="flex -space-x-2">
-                                  {m.from && (
+                             
+                             <div className="flex items-center gap-2 mt-2">
+                              <div className="flex -space-x-2">
+                                {m.from && (
+                                  m.from.avatarUrl ? (
                                     <img
-                                      src={m.from.avatarUrl || "https://i.pravatar.cc/150"}
+                                      src={m.from.avatarUrl}
                                       alt={m.from.name}
                                       className="h-6 w-6 rounded-full border border-white"
                                       title={m.from.name}
                                     />
-                                  )}
-                                  {m.to && (
+                                  ) : (
+                                    <div
+                                      className="h-6 w-6 rounded-full border border-white bg-brand-50 flex items-center justify-center text-xs font-semibold text-brand-600"
+                                      title={m.from.name}
+                                    >
+                                      {getInitials(m.from.name)}
+                                    </div>
+                                  )
+                                )}
+                                {m.to && (
+                                  m.to.avatarUrl ? (
                                     <img
-                                      src={m.to.avatarUrl || "https://i.pravatar.cc/150"}
+                                      src={m.to.avatarUrl}
                                       alt={m.to.name}
                                       className="h-6 w-6 rounded-full border border-white"
                                       title={m.to.name}
                                     />
-                                  )}
-                                </div>
-                                <span className="text-xs text-gray-500">
-                                  {m.from?.name || "User"} and {m.to?.name || "User"}
-                                </span>
+                                  ) : (
+                                    <div
+                                      className="h-6 w-6 rounded-full border border-white bg-brand-50 flex items-center justify-center text-xs font-semibold text-brand-600"
+                                      title={m.to.name}
+                                    >
+                                      {getInitials(m.to.name)}
+                                    </div>
+                                  )
+                                )}
                               </div>
+                              <span className="text-xs text-gray-500">
+                                {m.from?.name || "User"} and {m.to?.name || "User"}
+                              </span>
+                            </div>
                             </div>
 
                             <div className="shrink-0 flex items-center gap-2">

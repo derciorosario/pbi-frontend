@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X } from "lucide-react";
+import { X, EyeOff } from "lucide-react";
 import Input from "./Input.jsx";
 import { updatePersonal } from "../api/profile";
 import { toast } from "../lib/toast";
@@ -89,15 +89,36 @@ export default function ProfileCompletionDialog({ isOpen, onClose }) {
           }
         </p>
 
+        {/* Profile Visibility Notice */}
+        <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+          <EyeOff size={20} className="text-amber-600 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-800">
+              Your profile is currently hidden
+            </p>
+            <p className="text-xs text-amber-700 mt-1">
+              {isCompany
+                ? "Your company profile will remain hidden from other users until you complete these basic details. You can update this information anytime in your profile settings."
+                : "Your profile will remain hidden from other users until you complete these basic details. You can update this information anytime in your profile settings."
+              }
+            </p>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <Input
-            name="professionalTitle"
-            label={isCompany ? "Company Role or Position" : "Job Title or Role"}
-            placeholder={isCompany ? "e.g. CEO, Marketing Director, Operations Manager" : "e.g. Software Engineer, Marketing Manager"}
-            value={form.professionalTitle}
-            onChange={onChange}
-            error={errors.professionalTitle}
-          />
+         
+         <Input
+          name="professionalTitle"
+          label={isCompany ? "Company Area or Focus" : "Job Title or Role"}
+          placeholder={
+            isCompany
+              ? "e.g. Technology, Finance, Marketing, Logistics"
+              : "e.g. Software Engineer, Marketing Manager"
+          }
+          value={form.professionalTitle}
+          onChange={onChange}
+          error={errors.professionalTitle}
+        />
 
           <div className="space-y-1">
             <label htmlFor="about" className="text-sm font-medium text-gray-700">
@@ -131,14 +152,13 @@ export default function ProfileCompletionDialog({ isOpen, onClose }) {
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" />
               </svg>
             )}
-            {loading ? "Saving..." : "Save details"}
+            {loading ? "Saving..." : "Save details & make profile visible"}
           </button>
 
-          {/* Optional small hint below the button */}
           <p className="text-xs text-gray-500 text-center">
             {isCompany
-              ? "Just enough for others to recognize your company's work."
-              : "Just enough for others to recognize your work."
+              ? "Complete these details to make your company profile visible to others."
+              : "Complete these details to make your profile visible to others."
             }
           </p>
         </form>
@@ -146,9 +166,3 @@ export default function ProfileCompletionDialog({ isOpen, onClose }) {
     </div>
   );
 }
-
-
-
-
-
-

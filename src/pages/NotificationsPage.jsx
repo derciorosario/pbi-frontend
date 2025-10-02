@@ -382,7 +382,7 @@ export default function NotificationsPage() {
         hasApproval:true,
         desc: `${m.requester?.name || "Someone"} wants to schedule a meeting: "${m.title}"`,
         time: timeAgo(m.createdAt),
-        meta: `📅 ${new Date(m.scheduledAt).toLocaleDateString()} • ${m.duration} min • ${m.mode}`,
+        meta: `📅 ${new Date(m.scheduledAt).toLocaleString('en-US', {dateStyle: 'short',timeStyle: 'short'})} ${m.time ? '-':''} ${m.time || ''} (${m.timezone}) • ${m.duration} min • ${m.mode} ${m.link || m.location ? '•':''} ${m.link || m.location || ''}`,
         actions: (
           <div className="mt-2 flex gap-2 text-sm">
             <button onClick={() => handleMeetingRespond(m.id, "accept")} className={styles.primary}>
@@ -390,7 +390,7 @@ export default function NotificationsPage() {
             </button>
             <button onClick={() => handleMeetingRespond(m.id, "reject")} className={styles.outline}>
               Decline
-            </button>
+            </button>  
           </div>
         ),
       }));
@@ -398,13 +398,14 @@ export default function NotificationsPage() {
    
     const notificationItems = notifications.map((n) => {
   // Generate title and message based on notification type and related user
-  let title = "";
-  let message = "";
-  
+    let title = "";
+    let message = "";
+    let meta = ""
+    
   switch (n.type) {
     case "connection.request":
       title = "New Connection Request";
-      message = `${n.user?.name || "Someone"} wants to connect with you`;
+      message = `${n.payload?.fromName || "Someone"} wants to connect with you`;
       if (n.payload?.reason) {
         message += `. Reason: ${n.payload.reason}`;
       }
@@ -412,17 +413,17 @@ export default function NotificationsPage() {
 
     case "connection.accepted":
       title = "Connection Accepted";
-      message = `${n.user?.name || "Someone"} accepted your connection request`;
+      message = `${n.payload?.fromName || "Someone"} accepted your connection request`;
       break;
 
     case "connection.rejected":
       title = "Connection Declined";
-      message = `${n.user?.name || "Someone"} declined your connection request`;
+      message = `${n.payload?.fromName || "Someone"} declined your connection request`;
       break;
 
     case "connection.removed":
       title = "Connection Removed";
-      message = `${n.user?.name || "Someone"} removed the connection`;
+      message = `${n.payload?.fromName || "Someone"} removed the connection`;
       if (n.payload?.note) {
         message += `. Note: ${n.payload.note}`;
       }
@@ -430,15 +431,18 @@ export default function NotificationsPage() {
 
     case "meeting_request":
       title = "New Meeting Request";
-      message = `${n.user?.name || "Someone"} requested a meeting ${n.payload?.title  ? `:${n.payload?.title}`:''}`;
+      message = `${n.payload?.fromName || "Someone"} requested a meeting ${n.payload?.title  ? `:${n.payload?.title}`:''}`;
+      meta= `📅 ${new Date(n.payload.scheduledAt).toLocaleString('en-US', {dateStyle: 'short',timeStyle: 'short'})} ${n.payload.time ? '-':''} ${n.payload.time || ''} (${n.payload.timezone}) • ${n.payload.duration} min • ${n.payload.mode} ${n.payload.link || n.payload.location ? '•':''} ${n.payload.link || n.payload.location || ''}`
       if (n.payload?.agenda) {
         message += `. Agenda: ${n.payload.agenda}`;
       }
       break;
 
     case "meeting_response":
-      title = n.payload?.accepted ? "Meeting Accepted" : "Meeting Declined";
-      message = `${n.user?.name || "Someone"} ${n.payload?.accepted ? "accepted" : "declined"} your meeting request`;
+      title = (n.payload?.action=="accept" ? "Meeting Accepted" : "Meeting Declined");
+      message = `${n.payload?.fromName || "Someone"} ${n.payload?.action=="accept" ? "accepted" : "declined"} your meeting request${n.payload?.title  ? `: ${n.payload?.title}`:''}`;
+      meta= `📅 ${new Date(n.payload.scheduledAt).toLocaleString('en-US', {dateStyle: 'short',timeStyle: 'short'})} ${n.payload.time ? '-':''} ${n.payload.time || ''} (${n.payload.timezone}) • ${n.payload.duration} min • ${n.payload.mode} ${n.payload.link || n.payload.location ? '•':''} ${n.payload.link || n.payload.location || ''}`
+    
       if (n.payload?.rejectionReason) {
         message += `. Reason: ${n.payload.rejectionReason}`;
       }
@@ -478,6 +482,7 @@ export default function NotificationsPage() {
     type: notificationType,
     title: title,
     payload:n.payload,
+    meta,
     tab:notificationType=="connection" ? "Connections":"Meetings",
     desc: message,
     isNotification:true,
@@ -593,8 +598,10 @@ export default function NotificationsPage() {
                         const connectedNot=filteredItems.filter(i=>i.id==item?.payload?.item_id && i.hasApproval)?.[0]
                         let connectedNotActions=connectedNot?.actions
                         let connectedNotMessage=connectedNot?.desc
+                        let connectedNotMeta=connectedNot?.meta
+                        item.meta=connectedNotMeta || item.meta
 
-
+                  
                         return (
                            <div key={item.key} className={`rounded-2xl  ${item?.hasApproval  ? 'bg-gray-100':'bg-white'} border shadow-sm p-4 flex justify-between ${
                               item.readAt && !connectedNot  ? "border-gray-100 opacity-75" : "border-brand-200 bg-brand-50"

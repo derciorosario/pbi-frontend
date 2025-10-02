@@ -24,6 +24,7 @@ import client from "../api/client";
 import ProfilePhoto from "../components/ProfilePhoto";
 import SearchableSelect from "../components/SearchableSelect.jsx";
 import COUNTRIES from "../constants/countries.js";
+import CITIES from "../constants/cities.json";
 import Header from "../components/Header.jsx";
 import UserSelectionModal from "../components/UserSelectionModal";
   import StaffInvitationModal from "../components/StaffInvitationModal";
@@ -74,16 +75,16 @@ export default function ProfilePage() {
   const isCompany = me?.user?.accountType === "company";
 
   // Personal
-  const [personal, setPersonal] = useState({
-    name: "", phone: "", nationality: "",
-    country: "", countryOfResidence: "", city: "",
-    birthDate: "", professionalTitle: "", about: "", avatarUrl: "",
-    // Individual fields
-    gender: "",
-    // Company fields
-    otherCountries: [],
-    webpage: ""
-  });
+   const [personal, setPersonal] = useState({
+     name: "", phone: "", nationality: "",
+     country: "", countryOfResidence: "", city: "", address: "",
+     birthDate: "", professionalTitle: "", about: "", avatarUrl: "",
+     // Individual fields
+     gender: "",
+     // Company fields
+     otherCountries: [],
+     webpage: ""
+   });
 
   // Professional (no categories here)
   const [professional, setProfessional] = useState({
@@ -187,10 +188,176 @@ export default function ProfilePage() {
    const [loadingIndividualEvents, setLoadingIndividualEvents] = useState(false);
 
    // Profile applications state for individuals
-   const [myJobApplications, setMyJobApplications] = useState([]);
-   const [myEventRegistrations, setMyEventRegistrations] = useState([]);
-   const [loadingMyApplications, setLoadingMyApplications] = useState(false);
-   const [loadingMyEvents, setLoadingMyEvents] = useState(false);
+     const [myJobApplications, setMyJobApplications] = useState([]);
+     const [myEventRegistrations, setMyEventRegistrations] = useState([]);
+     const [loadingMyApplications, setLoadingMyApplications] = useState(false);
+     const [loadingMyEvents, setLoadingMyEvents] = useState(false);
+
+     // Cover letter expand/collapse state
+     const [expandedCoverLetters, setExpandedCoverLetters] = useState(new Set());
+
+     // Filter state for applications and events
+     const [selectedJobFilter, setSelectedJobFilter] = useState('all');
+     const [selectedEventFilter, setSelectedEventFilter] = useState('all');
+
+     // Search state
+     const [searchQuery, setSearchQuery] = useState('');
+ 
+   // City options for SearchableSelect (limit to reasonable number)
+   const allCityOptions = CITIES.slice(0, 10000).map(city => ({
+     value: city.city,
+     label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
+     country: city.country
+   }));
+ 
+   // Filtered cities for dropdown based on selected countryOfResidence
+   const cityOptions = useMemo(() => {
+     if (!personal.countryOfResidence) return allCityOptions;
+     return allCityOptions.filter((c) => c.country?.toLowerCase() === personal.countryOfResidence.toLowerCase());
+   }, [personal.countryOfResidence, allCityOptions]);
+ 
+ 
+   // Reset city if it's not in the filtered options when country changes
+   useEffect(() => {
+     if (personal.countryOfResidence && personal.city) {
+       const isCityValid = cityOptions.some(option => option.value === personal.city);
+       if (!isCityValid) {
+         setPersonal(prev => ({ ...prev, city: "" }));
+       }
+     }
+   }, [personal.countryOfResidence, cityOptions, personal.city]);
+ 
+   // Get filtered cities for a specific country
+   const getCitiesForCountry = (country) => {
+     if (!country) return [];
+     return allCityOptions.filter((c) => c.country?.toLowerCase() === country.toLowerCase());
+   };
+ 
+   // Component for managing country-city pairs
+   const CountryCitySelector = ({ value, onChange, error }) => {
+     const [showAddForm, setShowAddForm] = useState(false);
+     const [newCountry, setNewCountry] = useState("");
+     const [newCity, setNewCity] = useState("");
+ 
+     const handleAddCountryCity = () => {
+       if (newCountry && newCity) {
+         const newPair = { country: newCountry, city: newCity };
+         onChange([...value, newPair]);
+         setNewCountry("");
+         setNewCity("");
+         setShowAddForm(false);
+       }
+     };
+ 
+     const handleRemoveCountryCity = (index) => {
+       const updated = value.filter((_, i) => i !== index);
+       onChange(updated);
+     };
+ 
+     const handleCityChange = (index, city) => {
+       const updated = value.map((item, i) =>
+         i === index ? { ...item, city } : item
+       );
+       onChange(updated);
+     };
+ 
+     return (
+       <div className="space-y-3">
+         <label className="block text-sm font-medium text-gray-700">
+           Other Countries of Operations (Branches) <span className="text-gray-400 font-normal">(Optional)</span>
+         </label>
+ 
+         {/* Display selected country-city pairs */}
+         {value.length > 0 && (
+           <div className="space-y-2">
+             {value.map((item, index) => (
+               <div key={index} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                 <div className="flex-1">
+                   <div className="font-medium text-sm">{item.country}</div>
+                   <div className="text-xs text-gray-500">City: {item.city}</div>
+                 </div>
+                 <SearchableSelect
+                   options={getCitiesForCountry(item.country)}
+                   value={item.city}
+                   onChange={(city) => handleCityChange(index, city)}
+                   placeholder="Select city"
+                   className="w-48"
+                 />
+                 <button
+                   type="button"
+                   onClick={() => handleRemoveCountryCity(index)}
+                   className="p-1 text-red-500 hover:text-red-700"
+                   title="Remove"
+                 >
+                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                     <path d="M6 18L18 6M6 6l12 12" />
+                   </svg>
+                 </button>
+               </div>
+             ))}
+           </div>
+         )}
+ 
+         {/* Add new country-city pair */}
+         {showAddForm ? (
+           <div className="p-3 border border-gray-200 rounded-lg bg-blue-50 space-y-3">
+             <div className="grid grid-cols-2 gap-3">
+               <SearchableSelect
+                 options={COUNTRIES}
+                 value={newCountry}
+                 onChange={setNewCountry}
+                 placeholder="Select country"
+               />
+               <SearchableSelect
+                 options={newCountry ? getCitiesForCountry(newCountry) : []}
+                 value={newCity}
+                 onChange={setNewCity}
+                 placeholder="Select city"
+                 disabled={!newCountry}
+               />
+             </div>
+             <div className="flex gap-2">
+               <button
+                 type="button"
+                 onClick={handleAddCountryCity}
+                 disabled={!newCountry || !newCity}
+                 className="px-3 py-1 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                 Add
+               </button>
+               <button
+                 type="button"
+                 onClick={() => {
+                   setShowAddForm(false);
+                   setNewCountry("");
+                   setNewCity("");
+                 }}
+                 className="px-3 py-1 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+               >
+                 Cancel
+               </button>
+             </div>
+           </div>
+         ) : (
+           <button
+             type="button"
+             onClick={() => setShowAddForm(true)}
+             className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+           >
+             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+               <path d="M12 5v14M5 12h14" />
+             </svg>
+             Add Country & City
+           </button>
+         )}
+ 
+         {error && <p className="text-xs text-red-600">{error}</p>}
+         <p className="text-xs text-gray-500">
+           Select countries where your company has branches or operations (optional)
+         </p>
+       </div>
+     );
+   };
 
   // Load company representatives and staff
    useEffect(() => {
@@ -255,6 +422,171 @@ export default function ProfilePage() {
         loadMyEventRegistrations();
       }
     }, [!isCompany, me?.user?.id, active]);
+
+    // Helper function to truncate HTML content while preserving tags
+    const truncateHtml = (html, maxLength = 150) => {
+      if (!html) return '';
+      const textContent = html.replace(/<[^>]*>/g, ''); // Remove HTML tags to get plain text
+      if (textContent.length <= maxLength) return html;
+
+      // Find the position in the original HTML string
+      let currentLength = 0;
+      let inTag = false;
+      let tagBuffer = '';
+
+      for (let i = 0; i < html.length && currentLength < maxLength; i++) {
+        const char = html[i];
+
+        if (char === '<') {
+          inTag = true;
+          tagBuffer = char;
+        } else if (char === '>') {
+          inTag = false;
+          tagBuffer += char;
+        } else if (!inTag) {
+          currentLength++;
+          if (currentLength >= maxLength) {
+            return html.substring(0, i + 1) + '...';
+          }
+        } else {
+          tagBuffer += char;
+        }
+      }
+
+      return html + '...';
+    };
+
+    // Toggle cover letter expansion
+    const toggleCoverLetter = (applicationId) => {
+      setExpandedCoverLetters(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(applicationId)) {
+          newSet.delete(applicationId);
+        } else {
+          newSet.add(applicationId);
+        }
+        return newSet;
+      });
+    };
+
+    // Get unique job options for filter dropdown
+    const getJobOptions = (applications) => {
+      const jobs = applications.map(app => ({
+        id: app.job?.id,
+        title: app.job?.title,
+        companyName: app.job?.companyName || app.job?.postedBy?.name
+      })).filter(job => job.id && job.title);
+
+      // Remove duplicates based on job id
+      const uniqueJobs = jobs.filter((job, index, self) =>
+        index === self.findIndex(j => j.id === job.id)
+      );
+
+      return uniqueJobs;
+    };
+
+
+    // Get unique event options for filter dropdown
+    const getEventOptions = (registrations) => {
+      const events = registrations.map(reg => ({
+        id: reg.event?.id,
+        title: reg.event?.title,
+        organizerName: reg.event?.organizer?.name
+      })).filter(event => event.id && event.title);
+
+      // Remove duplicates based on event id
+      const uniqueEvents = events.filter((event, index, self) =>
+        index === self.findIndex(e => e.id === event.id)
+      );
+
+      return uniqueEvents;
+    };
+
+    // Filter applications based on selected job and search query
+    const getFilteredApplications = (applications) => {
+      let filtered = applications;
+
+      // Filter by job
+      if (selectedJobFilter !== 'all') {
+        filtered = filtered.filter(app => app.job?.id === selectedJobFilter);
+      }
+
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(app =>
+          app.job?.title?.toLowerCase().includes(query) ||
+          app.job?.companyName?.toLowerCase().includes(query) ||
+          app.applicant?.name?.toLowerCase().includes(query) ||
+          app.applicant?.email?.toLowerCase().includes(query) ||
+          app.coverLetter?.toLowerCase().includes(query)
+        );
+      }
+
+      return filtered;
+    };
+
+    // Filter event registrations based on selected event and search query
+    const getFilteredEventRegistrations = (registrations) => {
+      let filtered = registrations;
+
+      // Filter by event
+      if (selectedEventFilter !== 'all') {
+        filtered = filtered.filter(reg => reg.event?.id === selectedEventFilter);
+      }
+
+      // Filter by search query
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        filtered = filtered.filter(reg =>
+          reg.event?.title?.toLowerCase().includes(query) ||
+          reg.event?.organizer?.name?.toLowerCase().includes(query) ||
+          reg.registrant?.name?.toLowerCase().includes(query) ||
+          reg.registrant?.email?.toLowerCase().includes(query) ||
+          reg.reasonForAttending?.toLowerCase().includes(query)
+        );
+      }
+
+      return filtered;
+    };
+
+    // Handle status change for job applications
+    const handleJobApplicationStatusChange = async (applicationId, newStatus) => {
+      try {
+        await client.put(`/job-applications/${applicationId}/status`, {
+          status: newStatus
+        });
+
+        // Update local state
+        setJobApplications(prev => prev.map(app =>
+          app.id === applicationId ? { ...app, status: newStatus } : app
+        ));
+
+        toast.success(`Application ${newStatus} successfully`);
+      } catch (error) {
+        console.error('Failed to update application status:', error);
+        toast.error('Failed to update application status');
+      }
+    };
+
+    // Handle status change for event registrations
+    const handleEventRegistrationStatusChange = async (registrationId, newStatus) => {
+      try {
+        await client.patch(`/event-registrations/${registrationId}/status`, {
+          status: newStatus
+        });
+
+        // Update local state
+        setEventRegistrations(prev => prev.map(reg =>
+          reg.id === registrationId ? { ...reg, status: newStatus } : reg
+        ));
+
+        toast.success(`Registration ${newStatus} successfully`);
+      } catch (error) {
+        console.error('Failed to update registration status:', error);
+        toast.error('Failed to update registration status');
+      }
+    };
 
   async function loadCompanyData() {
     try {
@@ -807,6 +1139,7 @@ export default function ProfilePage() {
           country: u.country || "",
           countryOfResidence: u.countryOfResidence || "",
           city: u.city || "",
+          address: u.address || "",
           birthDate: p.birthDate || "",
           professionalTitle: p.professionalTitle || "",
           about: p.about || "",
@@ -883,7 +1216,9 @@ export default function ProfilePage() {
 
   // Use the progress percentage from the API response
   const progress = me?.progress?.percent ?? 0;
-  const levels = ["Junior", "Mid", "Senior", "Lead", "Director", "C-level"];
+ 
+const levels = ["Junior", "Mid", "Senior", "Lead", "Director", "C-level"];
+const companyStages = ["Startup", "Small business", "Medium business", "Large enterprise", "Public company"];
 
   /* ---------- Save handlers ---------- */
   async function savePersonal() {
@@ -892,28 +1227,29 @@ export default function ProfilePage() {
       
       if (isAdminEditing && userId) {
         // Admin editing another user
-        const userData = {
-          name: personal.name,
-          phone: personal.phone,
-          nationality: personal.nationality,
-          country: personal.country,
-          countryOfResidence: personal.countryOfResidence,
-          city: personal.city,
-          // Individual fields
-          gender: personal.gender,
-          // Company fields
-          otherCountries: personal.otherCountries,
-          webpage: personal.webpage,
-          profile: {
-            birthDate: personal.birthDate,
-            professionalTitle: personal.professionalTitle,
-            about: personal.about,
-            avatarUrl: personal.avatarUrl
-          }
-        };
+         const userData = {
+           name: personal.name,
+           phone: personal.phone,
+           nationality: personal.nationality,
+           country: personal.country,
+           countryOfResidence: personal.countryOfResidence,
+           city: personal.city,
+           address: personal.address,
+           // Individual fields
+           gender: personal.gender,
+           // Company fields
+           otherCountries: personal.otherCountries,
+           webpage: personal.webpage,
+           profile: {
+             birthDate: personal.birthDate,
+             professionalTitle: personal.professionalTitle,
+             about: personal.about,
+             avatarUrl: personal.avatarUrl
+           }
+         };
         
         await updateUser(userId, userData);
-        toast.success("Personal info saved!");
+        toast.success(!isCompany ? "Personal info saved!" :  "Company info saved!");
         
         // Refresh user data
         const { data } = await getUserById(userId);
@@ -926,7 +1262,8 @@ export default function ProfilePage() {
             nationality: personal.nationality,
             country: personal.country,
             countryOfResidence: personal.countryOfResidence,
-            city: personal.city
+            city: personal.city,
+            address: personal.address
           },
           profile: {
             ...me.profile,
@@ -941,7 +1278,7 @@ export default function ProfilePage() {
         // User editing their own profile
         const { data } = await updatePersonal(personal);
         setMe(data);
-        toast.success("Personal info saved!");
+        toast.success(!isCompany ? "Personal info saved!" :  "Company info saved!");
       }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to save.");
@@ -2234,7 +2571,7 @@ const toggleIdentityWant = (identityKey) => {
                          onChange={e=>setPersonal({...personal, birthDate:e.target.value})}/>
                 </div>}
 
-                <div>
+              {/**  <div>
                   <SearchableSelect
                     label="Nationality"
                     options={COUNTRIES}
@@ -2242,19 +2579,11 @@ const toggleIdentityWant = (identityKey) => {
                     onChange={(value) => setPersonal({...personal, nationality: value})}
                     placeholder="Select nationality"
                   />
-                </div>
+                </div> */}
                 
-                <div>
-                  <SearchableSelect
-                    label="Country of residence"
-                    options={COUNTRIES}
-                    value={personal.countryOfResidence}
-                    onChange={(value) => setPersonal({...personal, countryOfResidence: value})}
-                    placeholder="Select country of residence"
-                  />
-                </div>
+              
 
-                <div>
+                {!isCompany && <div>
                   <SearchableSelect
                     label="Country (birth)"
                     options={COUNTRIES}
@@ -2262,11 +2591,33 @@ const toggleIdentityWant = (identityKey) => {
                     onChange={(value) => setPersonal({...personal, country: value})}
                     placeholder="Select country of birth"
                   />
+                </div>}
+
+                  <div>
+                  <SearchableSelect
+                    label={isCompany ? 'Country (Headquarters)': "Country of residence"}
+                    options={COUNTRIES}
+                    value={personal.countryOfResidence}
+                    onChange={(value) => setPersonal({...personal, countryOfResidence: value})}
+                    placeholder={isCompany ? "Select country of Headquarters" : "Select country of residence"}
+                  />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium mb-1">City</label>
-                  <input className="w-full border rounded-lg px-3 py-2" value={personal.city}
-                         onChange={e=>setPersonal({...personal, city:e.target.value})}/>
+                  <label className="block text-sm font-medium mb-1">City {isCompany ? '(Headquarters)':''}</label>
+                  <SearchableSelect
+                    value={personal.city}
+                    onChange={(value) => setPersonal({...personal, city: value})}
+                    options={cityOptions}
+                    placeholder="Search and select city..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">Address</label>
+                  <input className="w-full border rounded-lg px-3 py-2" value={personal.address}
+                         onChange={e=>setPersonal({...personal, address:e.target.value})}
+                         placeholder="Street address, building, apartment, etc."/>
                 </div>
 
                 {/* Individual-specific fields */}
@@ -2284,21 +2635,12 @@ const toggleIdentityWant = (identityKey) => {
                       />
                     </div>
 
-                    {/* Other Countries of Operations */}
+                    {/* Other Countries of Operations with Cities */}
                     <div className="md:col-span-2">
-                      <SearchableSelect
-                        label="Other Countries of Operations (Branches)"
-                        options={COUNTRIES}
-                        value=""
-                        onChange={() => {}} // Not used for multiple select
-                        placeholder="Add a country..."
-                        multiple={true}
-                        selectedValues={personal.otherCountries}
-                        onMultipleChange={(values) => setPersonal(prev => ({ ...prev, otherCountries: values }))}
+                      <CountryCitySelector
+                        value={personal.otherCountries}
+                        onChange={(values) => setPersonal(prev => ({ ...prev, otherCountries: values }))}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        Select countries where your company has branches or operations
-                      </p>
                     </div>
                   </>
                 ) : (
@@ -2347,19 +2689,29 @@ const toggleIdentityWant = (identityKey) => {
           {/* PROFESSIONAL */}
           {active === Tab.PROFESSIONAL && (
             <div className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    {isCompany ? "Company size/stage" : "Experience level"}
-                  </label>
-                  <select className="w-full border rounded-lg px-3 py-2"
-                          value={professional.experienceLevel}
-                          onChange={e=>setProfessional(p=>({ ...p, experienceLevel: e.target.value }))}>
-                    <option value="">Select</option>
-                    {levels.map(l => <option key={l} value={l}>{l}</option>)}
-                  </select>
-                </div>
-              </div>
+             
+             <div className="grid md:grid-cols-2 gap-4">
+  <div>
+    <label className="block text-sm font-medium mb-1">
+      {isCompany ? "Company size/stage" : "Experience level"}
+    </label>
+    <select
+      className="w-full border rounded-lg px-3 py-2"
+      value={professional.experienceLevel}
+      onChange={e =>
+        setProfessional(p => ({ ...p, experienceLevel: e.target.value }))
+      }
+    >
+      <option value="">Select</option>
+      {(isCompany ? companyStages : levels).map(l => (
+        <option key={l} value={l}>
+          {l}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
+
 
               {/* Skills */}
               <div>
@@ -3532,12 +3884,55 @@ const toggleIdentityWant = (identityKey) => {
                   View and manage applications for your job postings, ranked by similarity to your requirements.
                 </p>
 
+                {/* Search and Filter Controls */}
+                {jobApplications.length > 0 && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
+                    {/* Search Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Search Applications
+                      </label>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by job title, company, applicant name, or cover letter content..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Job Filter */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Filter by Job
+                        </label>
+                        <span className="text-xs text-gray-500">
+                          Showing {getFilteredApplications(jobApplications).length} of {jobApplications.length} applications
+                        </span>
+                      </div>
+                      <select
+                        value={selectedJobFilter}
+                        onChange={(e) => setSelectedJobFilter(e.target.value)}
+                        className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      >
+                        <option value="all">All Jobs ({jobApplications.length})</option>
+                        {getJobOptions(jobApplications).map(job => (
+                          <option key={job.id} value={job.id}>
+                            {job.title} {job.companyName ? `at ${job.companyName}` : ''} ({jobApplications.filter(app => app.job?.id === job.id).length})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 {loadingApplications ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
                     <p className="text-gray-500 mt-2">Loading applications...</p>
                   </div>
-                ) : jobApplications.length === 0 ? (
+                ) : getFilteredApplications(jobApplications).length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                     <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -3549,7 +3944,7 @@ const toggleIdentityWant = (identityKey) => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {jobApplications.map((application, index) => (
+                    {getFilteredApplications(jobApplications).map((application, index) => (
                       <div key={application.id} className="border rounded-lg p-4 bg-white">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-3">
@@ -3569,6 +3964,9 @@ const toggleIdentityWant = (identityKey) => {
                             <div className="flex-1">
                               <div className="font-medium">{application.applicant?.name || 'Unknown Applicant'}</div>
                               <div className="text-sm text-gray-600">{application.applicant?.email || 'No email'}</div>
+                              {application.applicant?.profile?.professionalTitle && (
+                                <div className="text-xs text-gray-500">{application.applicant.profile.professionalTitle}</div>
+                              )}
                               <div className="text-xs text-gray-500">
                                 Applied to: {application.job?.title || 'Unknown Job'}
                               </div>
@@ -3590,11 +3988,80 @@ const toggleIdentityWant = (identityKey) => {
                         {application.coverLetter && (
                           <div className="mb-3">
                             <h4 className="text-sm font-medium text-gray-700 mb-1">Cover Letter</h4>
-                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                              {application.coverLetter}
-                            </p>
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <div
+                                className="text-sm text-gray-600"
+                                dangerouslySetInnerHTML={{
+                                  __html: expandedCoverLetters.has(application.id)
+                                    ? application.coverLetter
+                                    : truncateHtml(application.coverLetter, 200)
+                                }}
+                              />
+                              {application.coverLetter.replace(/<[^>]*>/g, '').length > 200 && (
+                                <button
+                                  onClick={() => toggleCoverLetter(application.id)}
+                                  className="mt-2 text-xs text-brand-600 hover:text-brand-800 font-medium"
+                                >
+                                  {expandedCoverLetters.has(application.id) ? 'Show Less' : 'Read More'}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         )}
+                        {/* Application Details Grid - Subtle styling */}
+                        <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                          {application.expectedSalary && (
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-medium text-gray-600">Expected Salary</h4>
+                              <p className="text-sm text-gray-800 font-medium">
+                                {application.expectedSalary}
+                              </p>
+                            </div>
+                          )}
+                          {application.availability && (
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-medium text-gray-600">Availability</h4>
+                              <p className="text-sm text-gray-800">
+                                {application.availability === 'immediate' ? 'Immediate' :
+                                 application.availability === '1month' ? 'Within 1 month' :
+                                 application.availability === 'specific' ? `Specific date: ${application.availabilityDate ? new Date(application.availabilityDate).toLocaleDateString() : 'Not specified'}` :
+                                 application.availability}
+                              </p>
+                            </div>
+                          )}
+                          {application.employmentType && (
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-medium text-gray-600">Employment Type</h4>
+                              <p className="text-sm text-gray-800">
+                                {application.employmentType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </p>
+                            </div>
+                          )}
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-medium text-gray-600">Application Status</h4>
+                            <div className="flex items-center gap-2">
+                              {/**  <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                application.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                application.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
+                                application.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                application.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {application.status ? application.status.charAt(0).toUpperCase() + application.status.slice(1) : 'Unknown'}
+                              </span> */}
+                              <select
+                                value={application.status}
+                                onChange={(e) => handleJobApplicationStatusChange(application.id, e.target.value)}
+                                className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                              >
+                                <option value="pending">Pending</option>
+                                <option value="reviewed">Reviewed</option>
+                                <option value="accepted">Accepted</option>
+                                <option value="rejected">Rejected</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
                         {application.similarity && application.similarity.matches && (
                           <div className="mb-3 hidden">
                             <h4 className="text-sm font-medium text-gray-700 mb-1">Matching Categories</h4>
@@ -3672,12 +4139,55 @@ const toggleIdentityWant = (identityKey) => {
                   View and manage registrations for your events, ranked by similarity to your target audience.
                 </p>
 
+                {/* Event Filter for Companies */}
+                {eventRegistrations.length > 0 && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
+                    {/* Search Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Search Registrations
+                      </label>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by event title, organizer, attendee name, or reason for attending..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Event Filter */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Filter by Event
+                        </label>
+                        <span className="text-xs text-gray-500">
+                          Showing {getFilteredEventRegistrations(eventRegistrations).length} of {eventRegistrations.length} registrations
+                        </span>
+                      </div>
+                      <select
+                        value={selectedEventFilter}
+                        onChange={(e) => setSelectedEventFilter(e.target.value)}
+                        className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      >
+                        <option value="all">All Events ({eventRegistrations.length})</option>
+                        {getEventOptions(eventRegistrations).map(event => (
+                          <option key={event.id} value={event.id}>
+                            {event.title} {event.organizerName ? `by ${event.organizerName}` : ''} ({eventRegistrations.filter(reg => reg.event?.id === event.id).length})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 {loadingEvents ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
                     <p className="text-gray-500 mt-2">Loading registrations...</p>
                   </div>
-                ) : eventRegistrations.length === 0 ? (
+                ) : getFilteredEventRegistrations(eventRegistrations).length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                     <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -3689,7 +4199,7 @@ const toggleIdentityWant = (identityKey) => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {eventRegistrations.map((registration, index) => (
+                    {getFilteredEventRegistrations(eventRegistrations).map((registration, index) => (
                       <div key={registration.id} className="border rounded-lg p-4 bg-white">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-3">
@@ -3709,6 +4219,9 @@ const toggleIdentityWant = (identityKey) => {
                             <div className="flex-1">
                               <div className="font-medium">{registration.registrant?.name || 'Unknown Attendee'}</div>
                               <div className="text-sm text-gray-600">{registration.registrant?.email || 'No email'}</div>
+                              {registration.registrant?.profile?.professionalTitle && (
+                                <div className="text-xs text-gray-500">{registration.registrant.profile.professionalTitle}</div>
+                              )}
                               <div className="text-xs text-gray-500">
                                 Event: {registration.event?.title || 'Unknown Event'}
                               </div>
@@ -3727,19 +4240,60 @@ const toggleIdentityWant = (identityKey) => {
                             </div>
                           </div>
                         </div>
+                        {registration.numberOfPeople && registration.numberOfPeople > 1 && (
+                          <div className="mb-3">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">Number of People</h4>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                              {registration.numberOfPeople} {registration.numberOfPeople === 1 ? 'person' : 'people'}
+                            </p>
+                          </div>
+                        )}
+                        {registration.reasonForAttending && (
+                          <div className="mb-3">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">Reason for Attending</h4>
+                            <div
+                              className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg"
+                              dangerouslySetInnerHTML={{
+                                __html: registration.reasonForAttending || ''
+                              }}
+                            />
+                          </div>
+                        )}
+                        <div className="mb-3">
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">Registration Status</h4>
+                          <div className="flex items-center gap-2">
+                               {/** <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              registration.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                              registration.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {registration.status ? registration.status.charAt(0).toUpperCase() + registration.status.slice(1) : 'Unknown'}
+                            </span> */}
+                            <select
+                              value={registration.status}
+                              onChange={(e) => handleEventRegistrationStatusChange(registration.id, e.target.value)}
+                              className="text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="confirmed">Confirmed</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </div>
+                        </div>
                         <div className="flex items-center justify-between">
                           <div className="text-xs text-gray-500">
                             Registered {new Date(registration.createdAt).toLocaleDateString()}
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => window.open(`/profile/${registration.attendee.id}`, '_blank')}
+                              onClick={() => window.open(`/profile/${registration.registrant.id}`, '_blank')}
                               className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
                             >
                               View Profile
                             </button>
                             <button
-                              onClick={() => window.open(`/messages?userId=${registration.attendee.id}`, '_blank')}
+                              onClick={() => window.open(`/messages?userId=${registration.registrant.id}`, '_blank')}
                               className="px-3 py-1 bg-brand-600 text-white rounded-lg text-sm hover:bg-brand-700"
                             >
                               Message
@@ -3868,12 +4422,55 @@ const toggleIdentityWant = (identityKey) => {
                   View your job applications, ranked by similarity to the job requirements.
                 </p>
 
+                {/* Search and Filter Controls for Individual Applications */}
+                {myJobApplications.length > 0 && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
+                    {/* Search Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Search Applications
+                      </label>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by job title, company, applicant name, or cover letter content..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Job Filter */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Filter by Job
+                        </label>
+                        <span className="text-xs text-gray-500">
+                          Showing {getFilteredApplications(myJobApplications).length} of {myJobApplications.length} applications
+                        </span>
+                      </div>
+                      <select
+                        value={selectedJobFilter}
+                        onChange={(e) => setSelectedJobFilter(e.target.value)}
+                        className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      >
+                        <option value="all">All Jobs ({myJobApplications.length})</option>
+                        {getJobOptions(myJobApplications).map(job => (
+                          <option key={job.id} value={job.id}>
+                            {job.title} {job.companyName ? `at ${job.companyName}` : ''} ({myJobApplications.filter(app => app.job?.id === job.id).length})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 {loadingMyApplications ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
                     <p className="text-gray-500 mt-2">Loading applications...</p>
                   </div>
-                ) : myJobApplications.length === 0 ? (
+                ) : getFilteredApplications(myJobApplications).length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                     <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -3885,7 +4482,7 @@ const toggleIdentityWant = (identityKey) => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {myJobApplications.map((application, index) => (
+                    {getFilteredApplications(myJobApplications).map((application, index) => (
                       <div key={application.id} className="border rounded-lg p-4 bg-white">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-3">
@@ -3923,11 +4520,71 @@ const toggleIdentityWant = (identityKey) => {
                         {application.coverLetter && (
                           <div className="mb-3">
                             <h4 className="text-sm font-medium text-gray-700 mb-1">Cover Letter</h4>
-                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                              {application.coverLetter}
-                            </p>
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <div
+                                className="text-sm text-gray-600"
+                                dangerouslySetInnerHTML={{
+                                  __html: expandedCoverLetters.has(application.id)
+                                    ? application.coverLetter
+                                    : truncateHtml(application.coverLetter, 200)
+                                }}
+                              />
+                              {application.coverLetter.replace(/<[^>]*>/g, '').length > 200 && (
+                                <button
+                                  onClick={() => toggleCoverLetter(application.id)}
+                                  className="mt-2 text-xs text-brand-600 hover:text-brand-800 font-medium"
+                                >
+                                  {expandedCoverLetters.has(application.id) ? 'Show Less' : 'Read More'}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         )}
+                        {/* Application Details Grid - Subtle styling */}
+                        <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
+                          {application.expectedSalary && (
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-medium text-gray-600">Expected Salary</h4>
+                              <p className="text-sm text-gray-800 font-medium">
+                                {application.expectedSalary}
+                              </p>
+                            </div>
+                          )}
+                          {application.availability && (
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-medium text-gray-600">Availability</h4>
+                              <p className="text-sm text-gray-800">
+                                {application.availability === 'immediate' ? 'Immediate' :
+                                 application.availability === '1month' ? 'Within 1 month' :
+                                 application.availability === 'specific' ? `Specific date: ${application.availabilityDate ? new Date(application.availabilityDate).toLocaleDateString() : 'Not specified'}` :
+                                 application.availability}
+                              </p>
+                            </div>
+                          )}
+                          {application.employmentType && (
+                            <div className="space-y-1">
+                              <h4 className="text-xs font-medium text-gray-600">Employment Type</h4>
+                              <p className="text-sm text-gray-800">
+                                {application.employmentType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </p>
+                            </div>
+                          )}
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-medium text-gray-600">Application Status</h4>
+                            <div className="flex items-center gap-2">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                application.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                application.status === 'reviewed' ? 'bg-blue-100 text-blue-800' :
+                                application.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                application.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }`}>
+                                {application.status ? application.status.charAt(0).toUpperCase() + application.status.slice(1) : 'Unknown'}
+                              </span>
+                             
+                            </div>
+                          </div>
+                        </div>
                         {application.similarity && application.similarity.matches && (
                           <div className="mb-3 hidden">
                             <h4 className="text-sm font-medium text-gray-700 mb-1">Matching Categories</h4>
@@ -4006,12 +4663,55 @@ const toggleIdentityWant = (identityKey) => {
                   View your event registrations, ranked by similarity to the event audience.
                 </p>
 
+                {/* Search and Filter Controls for Individual Events */}
+                {myEventRegistrations.length > 0 && (
+                  <div className="mb-6 p-4 bg-gray-50 rounded-lg space-y-4">
+                    {/* Search Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Search Events
+                      </label>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by event title, organizer, attendee name, or reason for attending..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    {/* Event Filter */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          Filter by Event
+                        </label>
+                        <span className="text-xs text-gray-500">
+                          Showing {getFilteredEventRegistrations(myEventRegistrations).length} of {myEventRegistrations.length} registrations
+                        </span>
+                      </div>
+                      <select
+                        value={selectedEventFilter}
+                        onChange={(e) => setSelectedEventFilter(e.target.value)}
+                        className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      >
+                        <option value="all">All Events ({myEventRegistrations.length})</option>
+                        {getEventOptions(myEventRegistrations).map(event => (
+                          <option key={event.id} value={event.id}>
+                            {event.title} {event.organizerName ? `by ${event.organizerName}` : ''} ({myEventRegistrations.filter(reg => reg.event?.id === event.id).length})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 {loadingMyEvents ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
                     <p className="text-gray-500 mt-2">Loading registrations...</p>
                   </div>
-                ) : myEventRegistrations.length === 0 ? (
+                ) : getFilteredEventRegistrations(myEventRegistrations).length === 0 ? (
                   <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
                     <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -4023,7 +4723,7 @@ const toggleIdentityWant = (identityKey) => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {myEventRegistrations.map((registration, index) => (
+                    {getFilteredEventRegistrations(myEventRegistrations).map((registration, index) => (
                       <div key={registration.id} className="border rounded-lg p-4 bg-white">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-3">
@@ -4057,6 +4757,36 @@ const toggleIdentityWant = (identityKey) => {
                               #{index + 1}
                             </div>
                           </div>
+                        </div>
+                        {registration.numberOfPeople && registration.numberOfPeople > 1 && (
+                          <div className="mb-3">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">Number of People</h4>
+                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                              {registration.numberOfPeople} {registration.numberOfPeople === 1 ? 'person' : 'people'}
+                            </p>
+                          </div>
+                        )}
+                        {registration.reasonForAttending && (
+                          <div className="mb-3">
+                            <h4 className="text-sm font-medium text-gray-700 mb-1">Reason for Attending</h4>
+                            <div
+                              className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg"
+                              dangerouslySetInnerHTML={{
+                                __html: registration.reasonForAttending || ''
+                              }}
+                            />
+                          </div>
+                        )}
+                        <div className="mb-3">
+                          <h4 className="text-sm font-medium text-gray-700 mb-1">Registration Status</h4>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                            registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            registration.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                            registration.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {registration.status ? registration.status.charAt(0).toUpperCase() + registration.status.slice(1) : 'Unknown'}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="text-xs text-gray-500">

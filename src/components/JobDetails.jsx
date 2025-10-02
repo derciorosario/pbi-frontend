@@ -247,13 +247,44 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
                   <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
                     <Clock size={16} />
                     <span>{timeAgo(job.createdAt)}</span>
-                    {job.country && (
-                      <>
-                        <span className="mx-1">•</span>
-                        <MapPin size={16} />
-                        <span>{fmtLoc(job.city, job.country)}</span>
-                      </>
-                    )}
+                    {(() => {
+                      // Priority: use countries array if available, fallback to single country/city
+                      const countriesArray = job?.countries || [];
+                      const singleCountry = job?.country;
+                      const singleCity = job?.city;
+
+                      // If countries array exists and has items, use it
+                      if (countriesArray.length > 0) {
+                        return (
+                          <>
+                            <span className="mx-1">•</span>
+                            <MapPin size={16} />
+                            <div className="flex flex-wrap gap-1">
+                              {countriesArray.map((location, index) => (
+                                <span key={index}>
+                                  {location.city ? `${location.city}, ` : ""}
+                                  {location.country}
+                                  {index < countriesArray.length - 1 && ", "}
+                                </span>
+                              ))}
+                            </div>
+                          </>
+                        );
+                      }
+
+                      // Fallback to single country/city fields
+                      if (singleCountry) {
+                        return (
+                          <>
+                            <span className="mx-1">•</span>
+                            <MapPin size={16} />
+                            <span>{fmtLoc(singleCity, singleCountry)}</span>
+                          </>
+                        );
+                      }
+
+                      return null;
+                    })()}
                   </div>
                 </div>
                 {(job.minSalary || job.maxSalary) && (
@@ -306,9 +337,12 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
 
               {/* Description */}
               <Section title="Description" icon={MessageCircle}>
-                <p className="text-sm text-gray-700 whitespace-pre-line">
-                  {job.description || "No description provided."}
-                </p>
+                <div
+                  className="text-sm text-gray-700"
+                  dangerouslySetInnerHTML={{
+                    __html: job.description || "No description provided."
+                  }}
+                />
               </Section>
 
               {/* Job Details */}

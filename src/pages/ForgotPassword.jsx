@@ -22,11 +22,18 @@ export default function ForgotPassword() {
 
   async function onSubmit(e) {
     e.preventDefault();
-    if (!validate()) { toast.error("Please fix the highlighted fields."); return; }
+    if (!validate()) { 
+         if(!email){
+           toast.error("Email is required.")
+         }else if(!emailOK(email)){
+           toast.error("Please enter a valid email.")
+         }else{
+           toast.error("Please fix the highlighted fields."); return;
+         }
+     }
     setLoading(true);
     try {
       const p = client.post("/auth/forgot-password", { email });
-      
       
        await toast.promise(
         p,
