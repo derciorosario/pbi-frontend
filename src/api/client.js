@@ -1,6 +1,6 @@
 // src/api/client.js
 import axios from "axios";
-const env="pro"
+const env="dev"
 
 export const API_URL = env=="dev"
   ? "http://localhost:5000/api"
@@ -8,12 +8,11 @@ export const API_URL = env=="dev"
   ? "https://54links-testserver.derflash.com/api"
   : "https://kaziwani-server.visum.co.mz/api";
 
+
 const client = axios.create({
     baseURL: API_URL,
     headers: { "Content-Type": "application/json" },
 });
-
-
 
 /** Helpers to read/write token consistently */
 export function getStoredToken() {  

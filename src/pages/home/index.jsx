@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import client from "../../api/client";
 import I from "../../lib/icons.jsx";
 import LoginDialog from "../../components/LoginDialog.jsx";
+import ContactDialog from "../../components/ContactDialog.jsx";
 import Input from "../../components/Input.jsx";
 import GoogleCustomBtn from "../../components/GoogleBtn.jsx";
 import SearchableSelect from "../../components/SearchableSelect.jsx";
@@ -170,6 +171,7 @@ const CountryCitySelector = ({ value, onChange, error }) => {
 export default function HomePage() {
   const navigate = useNavigate();
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState("All");
   const tabs = useMemo(() => ["All", "Events", "Jobs","Services","Products"], []);
@@ -280,8 +282,8 @@ export default function HomePage() {
   const labelEmail = acct === "company" ? "Company email" : "Email Address";
   const labelPhone = acct === "company" ? "Company phone" : "Phone Number";
 
-  const emailOK = (v) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").toLowerCase());
+ const emailOK = (v) =>
+   /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(String(v || "").toLowerCase());
   
   function validateAuthLogin() {
     const next = { email: "", password: "" };
@@ -528,7 +530,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                      onClick={() => navigate("/people")}
                      className="px-10 py-4 border-2 border-white/60 text-white font-semibold rounded-xl hover:bg-white/10 hover:border-white transition-all duration-200 text-lg"
                    >
-                     Explore 
+                     Explore
                    </button>
                  </div>
 
@@ -1711,6 +1713,29 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
            </div>
          </div>
 
+        {/* Contact Section */}
+        <div className="py-20 bg-gray-50 border-t border-gray-200">
+           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+             <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-500 rounded-xl mb-6">
+               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                 <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+               </svg>
+             </div>
+             <h2 className="text-3xl font-bold text-gray-900 mb-4">
+               Need Help or Have <span className="text-brand-600">Questions?</span>
+             </h2>
+             <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
+               Get in touch with our team. We're here to help you succeed.
+             </p>
+             <button
+               onClick={() => setContactDialogOpen(true)}
+               className="px-10 py-4 bg-brand-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:bg-brand-700 transform hover:scale-105 transition-all duration-200 text-lg"
+             >
+               Report / Contact Us
+             </button>
+           </div>
+         </div>
+
         {/* Footer */}
         <footer className="bg-brand-700 text-white py-16">
            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -1783,6 +1808,12 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
         isOpen={loginDialogOpen}
         onClose={() => setLoginDialogOpen(false)}
         initialTab="signup" // Show signup tab first when opened from signup button
+      />
+
+      {/* Contact Dialog */}
+      <ContactDialog
+        isOpen={contactDialogOpen}
+        onClose={() => setContactDialogOpen(false)}
       />
    
     </DefaultLayout>

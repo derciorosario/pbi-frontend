@@ -208,10 +208,13 @@ export default function CreateProductPage() {
   });
   
   // Create country options for SearchableSelect
-  const countryOptions = COUNTRIES.map(country => ({
-    value: country,
-    label: country
-  }));
+  const countryOptions = [
+    { value: "All countries", label: "All countries" },
+    ...COUNTRIES.map(country => ({
+      value: country,
+      label: country
+    }))
+  ];
 
   // Industry taxonomy
   const [industryTree, setIndustryTree] = useState([]);
@@ -418,7 +421,7 @@ function SearchableSelect({
     currency: "USD",
     quantity: "",
     description: "",
-    country: "",
+    country: "All countries",
     city: "",
     tags: [],
   });
@@ -441,7 +444,7 @@ function SearchableSelect({
 
   // Filtered cities for dropdown based on selected countries
   const cityOptions = useMemo(() => {
-    if (selectedCountries.length === 0) return allCityOptions;
+    if (selectedCountries.length === 0 || selectedCountries.includes("all countries")) return [];
     const setLC = new Set(selectedCountries);
     return allCityOptions.filter((c) => setLC.has(c.country.toLowerCase()));
   }, [selectedCountries, allCityOptions]);
@@ -604,7 +607,13 @@ const industrySubcategoryOptions = useMemo(() => {
   }, []);
 
   function setField(name, value) {
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((f) => {
+      const next = { ...f, [name]: value };
+      if (name === "country" && value === "All countries") {
+        next.city = ""; // Clear city when "All countries" is selected
+      }
+      return next;
+    });
   }
 
   function validate() {
@@ -730,7 +739,7 @@ const industrySubcategoryOptions = useMemo(() => {
             : undefined,
         description: form.description,
         country: form.country || undefined,
-        city: form.city || undefined,
+        city: (form.country === "All countries") ? undefined : (form.city || undefined),
         tags: form.tags,
         images: images.map(img => `${API_URL}/uploads/${img}`),
         currency:form.currency,
@@ -989,6 +998,7 @@ const industrySubcategoryOptions = useMemo(() => {
                       onChange={(value) => setField("city", value)}
                       options={cityOptions}
                       placeholder="Search and select city..."
+                      disabled={form.country === "All countries"}
                     />
                   </div>
                 </div>

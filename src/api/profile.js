@@ -8,7 +8,7 @@ export const updateProfessional = (payload) => client.put("/profile/professional
 export const updatePortfolio    = (payload) => client.put("/profile/portfolio", payload);
 
 // TAXONOMIA (identidades → categorias → subcategorias → subsub)
-export const getIdentityCatalog = () => client.get("/public/identities");
+export const getIdentityCatalog = () => client.get("/public/identities?type=all");
 
 // NOVO: seleções do que FAZ (identidades/categorias/subs/subsubs)
 export const updateDoSelections = (payload) => client.put("/profile/do-selections", payload);

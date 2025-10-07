@@ -64,9 +64,9 @@ const ProfileModalSkeleton = () => (
     {/* Header Section */}
     <div className="flex items-start gap-4 mb-6">
       <div className="relative">
-        <div className="w-20 h-20 bg-gray-200 rounded-full"></div>
+        <div className="w-32 h-32 bg-gray-200 rounded-md"></div>
         <div className="absolute -bottom-2 -right-2 flex -space-x-2">
-          <div className="w-7 h-7 bg-gray-200 rounded-full border-2 border-white"></div>
+          <div className="w-7 h-7 bg-gray-200 rounded-md border-2 border-white"></div>
         </div>
       </div>
       <div className="flex-1">
@@ -1099,12 +1099,14 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
 
 // Share data and components
 const ShareMenu = ({ profile, shareMenuRef, setShareOpen }) => {
-  const shareUrl = `${window.location.origin}/profile/${profile?.id}`;
+  const shareUrl = 'https://54links.com/login' // `https://54links.com/profile/${profile?.id}`;
   const shareTitle = `${profile?.name || "Profile"} on 54Links`;
   const shareDescription = profile?.about || `Check out ${profile?.name || "this profile"} on 54Links`;
   const shareQuote = shareDescription.slice(0, 160) + (shareDescription.length > 160 ? "…" : "");
   const shareHashtags = ["54Links", "Profile", "Networking"].filter(Boolean);
   const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
+
+  
 
   return (
     <div
@@ -1113,7 +1115,11 @@ const ShareMenu = ({ profile, shareMenuRef, setShareOpen }) => {
       role="dialog"
       aria-label="Share options"
     >
-      <div className="text-xs font-medium text-gray-500 px-1 pb-2">
+      <div className="text-xs font-medium text-gray-500 px-1 pb-2" onClick={()=>{
+        const shareUrl = 'https://panafricanbi.vercel.app/login';
+const facebookShareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+window.open(facebookShareLink, '_blank', 'width=600,height=400');
+      }}>
         Share this profile
       </div>
 
@@ -1430,7 +1436,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
     if (!profile) return null;
     if (profile.connectionStatus === "outgoing_pending") {
       return (
-        <button className="flex-1 rounded-lg px-4 py-2 text-sm font-medium bg-yellow-100 text-yellow-700 cursor-default">
+        <button className="col-span-1 rounded-lg px-3 py-2 text-sm font-medium bg-yellow-100 text-yellow-700 cursor-default">
           Pending request
         </button>
       );
@@ -1438,43 +1444,43 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
       return (
         <button
           onClick={() => navigate("/notifications")}
-          className="flex-1 items-center flex justify-center rounded-lg px-4 py-2 text-sm font-medium bg-brand-100 text-brand-600 cursor-pointer"
+          className="col-span-1 items-center flex justify-center rounded-lg px-3 py-2 text-sm font-medium bg-brand-100 text-brand-600 cursor-pointer"
         >
-          <ExternalLink size={20} className="mr-2" />
+          <ExternalLink size={16} className="mr-1" />
           Respond
         </button>
       );
     } else if (profile.connectionStatus === "connected") {
           return (
-        
-     
-     <div className="flex-1">
+
+
+     <div className="col-span-1">
   <button
     onClick={() => setOpenConfirmRemoveConnection(true)}
     title="Connected — click to remove"
     aria-label="Connected. Click to remove connection"
-    className="group/conn w-full inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold
+    className="group/conn w-full inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold
                bg-green-100 text-green-700 border border-green-200
                hover:bg-red-50 hover:text-red-700 hover:border-red-300
                focus:outline-none focus:ring-2 focus:ring-red-500/30
                transition-all duration-200"
   >
-    <span className="flex items-center gap-2">
+    <span className="flex items-center gap-1">
       {/* Main icon/label swap */}
-      <UserCheck size={16} className="block group-hover/conn:hidden group-focus/conn:hidden" />
-      <UserX     size={16} className="hidden group-hover/conn:block group-focus/conn:block" />
+      <UserCheck size={14} className="block group-hover/conn:hidden group-focus/conn:hidden" />
+      <UserX     size={14} className="hidden group-hover/conn:block group-focus/conn:block" />
 
       <span className="block group-hover/conn:hidden group-focus/conn:hidden">Connected</span>
       <span className="hidden group-hover/conn:block group-focus/conn:block">Remove</span>
 
       {/* Affordance: show delete icon BEFORE hover; show 'tap to remove' AFTER hover */}
-      <span className="ml-2 inline-flex items-center">
+      <span className="ml-1 inline-flex items-center">
         <Trash2
-          size={14}
+          size={12}
           className="block group-hover/conn:hidden group-focus/conn:hidden text-gray-500"
           aria-hidden="true"
         />
-        <span className="hidden group-hover/conn:inline group-focus/conn:inline text-[11px] leading-none text-gray-500">
+        <span className="hidden group-hover/conn:inline group-focus/conn:inline text-[10px] leading-none text-gray-500">
           tap to remove
         </span>
       </span>
@@ -1482,14 +1488,14 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
   </button>
 </div>
 
- 
+
 
         );
     } else {
       return (
         <button
           onClick={openCR}
-          className="flex-1 rounded-lg px-4 py-2 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-colors"
+          className="col-span-1 rounded-lg px-3 py-2 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition-colors"
         >
           Connect
         </button>
@@ -1582,8 +1588,8 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed z-[99] _profile inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white z-[99] w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[75vh] overflow-hidden">
+    <div className="fixed z-[99] _profile inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white z-[99] w-full max-w-5xl rounded-2xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden">
         {/* Header */}
         <div className="bg-brand-500 p-4 flex justify-between items-center">
           <div className="text-white font-medium">Profile</div>
@@ -1599,6 +1605,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
         </div>
 
         {/* Body */}
+
         <div className="p-6 overflow-y-auto">
           {loading && <ProfileModalSkeleton />}
           {error && <div className="text-sm text-red-600">{error}</div>}
@@ -1610,23 +1617,15 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                 <div className="relative">
                  
                    {profile.avatarUrl ? (
-                          <img
-                            src={profile.avatarUrl}
-                            alt={profile.name}
-                            className={`${
-                              profile.accountType === "company" 
-                                ? "h-24 w-24 rounded-md" 
-                                : "h-20 w-20 rounded-full"
-                            } border-4 border-white shadow-md object-cover`}
-                          />
+                          <div className="h-32 w-32 rounded-md border-4 border-white shadow-md bg-white flex justify-center items-center overflow-hidden">
+                              <img
+                              src={profile.avatarUrl}
+                              alt={profile.name}
+                              className={`w-full`}
+                            />
+                          </div>
                         ) : (
-                          <div
-                            className={`${
-                              profile.accountType === "company" 
-                                ? "h-24 w-24 rounded-md" 
-                                : "h-20 w-20 rounded-full"
-                            } border-4 border-white shadow-md bg-brand-50 grid place-items-center flex-shrink-0 overflow-hidden`}
-                          >
+                          <div className="h-32 w-32 rounded-md border-4 border-white shadow-md bg-brand-50 grid place-items-center overflow-hidden">
                             <span className="font-semibold text-brand-600 text-lg">
                               {getInitials(profile.name)}
                             </span>
@@ -2469,6 +2468,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
               >
                 <ShieldBan size={16} />
                 <span>{isUnblock ? "Unblock user" : "Block user"}</span>
+
               </button>}
 
                 <button
@@ -2477,15 +2477,16 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                   aria-label="Report user"
                   title="Report user"
                 >
-                  <Flag size={16} />
-                  <span>Report user</span>
+
+                  <Flag size={16}/>
+                  <span>Report user</span> 
                 </button>
+
               </div>
 
 
-
               {/* Actions */}
-              <div className={`flex gap-3 mt-6 relative ${isUnblock ? 'hidden':''}`}>
+              <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-6 relative ${isUnblock ? 'hidden':''}`}>
 
               {/* Share Menu */}
               {shareOpen && <ShareMenu profile={profile} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
@@ -2497,10 +2498,10 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                   e.stopPropagation();
                   setShareOpen((s) => !s);
                 }}
-                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
+                className="col-span-1 inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
               >
-                <Share2 size={18} />
-                Share
+                <Share2 size={16} />
+                <span>Share</span>
               </button>
 
               <button
@@ -2512,19 +2513,19 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                   onClose();
                   navigate(`/profile/${userId}`);
                 }}
-                className="flex-1 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
+                className="col-span-1 rounded-lg px-3 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
               >
                 View Full Profile
               </button>
               {renderConnectButton()}
              {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) &&  <button
                   onClick={openMR}
-                  className="flex-1 inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium border border-brand-200 bg-white text-brand-700 hover:border-brand-500 hover:text-brand-700 transition-colors"
+                  className="col-span-1 inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium border border-brand-200 bg-white text-brand-700 hover:border-brand-500 hover:text-brand-700 transition-colors"
                 >
-                  <CalendarDays size={18} className="mr-2" />
+                  <CalendarDays size={16} className="mr-1" />
                   Request Meeting
               </button>}
-              
+
 
                 <button
                   onClick={() => {
@@ -2536,7 +2537,7 @@ export default function ProfileModal({ userId, isOpen, onClose, onSent }) {
                     navigate(`/messages?userId=${userId}`);
                     toast.success("Starting conversation with " + profile.name);
                   }}
-                  className="flex-1 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
+                  className="col-span-1 rounded-lg px-3 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
                 >
                   Message
                 </button>

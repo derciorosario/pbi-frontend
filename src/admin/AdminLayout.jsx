@@ -8,11 +8,12 @@ import { useEffect } from "react";
 
 
 const nav = [
-  { to: "/admin", label: "Dashboard", icon: "grid" },
-  { to: "/admin/users", label: "User Management", icon: "users" },
-  { to: "/admin/content-moderation", label: "Content Moderation", icon: "flag" },
-//  { to: "/admin/notification", label: "Notifications", icon: "bell" },
-];
+   { to: "/admin", label: "Dashboard", icon: "grid" },
+   { to: "/admin/users", label: "User Management", icon: "users" },
+   { to: "/admin/contacts", label: "Contact Management", icon: "mail" },
+   { to: "/admin/content-moderation", label: "Content Moderation", icon: "flag" },
+ //  { to: "/admin/notification", label: "Notifications", icon: "bell" },
+ ];
 
 const I = {
   logo: () => (
@@ -57,6 +58,11 @@ const I = {
     <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <circle cx="11" cy="11" r="7" />
       <path d="M21 21l-3.5-3.5" />
+    </svg>
+  ),
+  mail: () => (
+    <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
     </svg>
   ),
 };

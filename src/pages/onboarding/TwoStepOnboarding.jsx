@@ -46,8 +46,7 @@ export default function FourStepOnboarding() {
 
   // flow
   const [step, setStep] = useState(1);
-
-
+  const progress = useMemo(() => [0, 16.67, 33.33, 50, 66.67, 83.33, 100][step] ?? 100, [step]);
 
   // ⬇️ NEW: always scroll to top when the step changes
   useEffect(() => {
@@ -59,18 +58,6 @@ export default function FourStepOnboarding() {
   const [error, setError] = useState("");
   const [identities, setIdentities] = useState([]);
   const [userAccountType, setUserAccountType] = useState(null);
-
-    // Calculate progress based on account type and current step
-  const progress = useMemo(() => {
-    if (userAccountType === "company") {
-      // For companies: Step 1, 2, 5 (skip 3, 4)
-      const companyProgressMap = { 1: 0, 2: 33.33, 5: 100 };
-      return companyProgressMap[step] ?? 100;
-    } else {
-      // For individuals: Step 1, 2, 3, 4, 5
-      return [0, 16.67, 33.33, 50, 66.67, 83.33, 100][step] ?? 100;
-    }
-  }, [step, userAccountType]);
 
   // selections (what user DOES)
   const [identityIds, setIdentityIds] = useState([]);
@@ -112,16 +99,8 @@ export default function FourStepOnboarding() {
         const userAccountType = userResponse.data?.accountType;
         setUserAccountType(userAccountType);
 
-        // For company accounts, clear interest arrays (steps 3 and 4)
-        if (userAccountType === "company") {
-          setInterestIdentityIds([]);
-          setInterestCategoryIds([]);
-          setInterestSubcategoryIds([]);
-          setInterestSubsubCategoryIds([]);
-        }
-
         // gets identities + canonical IDs for categories/subcats/subsubs + goals WITH ids
-        const { data } = await client.get("/public/identities");
+        const { data } = await client.get("/public/identities?type=all");
         setIdentities(Array.isArray(data?.identities) ? data.identities : []);
 
         // Load industry categories
@@ -646,16 +625,65 @@ export default function FourStepOnboarding() {
     });
   };
 
-  // build per-track handlers (DOES)
-  const toggleIdentityDoes = makeToggleIdentity({
-    pickIds: identityIds,
-    setPickIds: setIdentityIds,
-    setCats: setCategoryIds,
-    setSubs: setSubcategoryIds,
-    setSubsubs: setSubsubCategoryIds,
-    setOpenCats: setOpenCatsDoes,
-    setOpenSubs: setOpenSubsDoes,
-  });
+  // build per-track handlers (DOES) - modified to allow only one selection for step 1
+  const toggleIdentityDoes = (identityKey) => {
+    setIdentityIds(prev => {
+      const currentlySelected = prev.includes(identityKey);
+      if (currentlySelected) {
+        // If clicking the already selected item, deselect it
+        return [];
+      } else {
+        // If clicking a new item, select only this one (replace any existing selection)
+        return [identityKey];
+      }
+    });
+
+    // Also handle category/subcategory cleanup when selection changes
+    setSubsubCategoryIds(prev => {
+      const stillCovered = (ownersMap, id) => {
+        const owners = ownersMap[id];
+        if (!owners) return false;
+        return [identityKey].some((ik) => owners.has(ik));
+      };
+      return prev.filter((xid) => stillCovered(subsubToIdentityKeys, xid));
+    });
+
+    setSubcategoryIds(prev => {
+      const stillCovered = (ownersMap, id) => {
+        const owners = ownersMap[id];
+        if (!owners) return false;
+        return [identityKey].some((ik) => owners.has(ik));
+      };
+      return prev.filter((sid) => stillCovered(subToIdentityKeys, sid));
+    });
+
+    setCategoryIds(prev => {
+      const stillCovered = (ownersMap, id) => {
+        const owners = ownersMap[id];
+        if (!owners) return false;
+        return [identityKey].some((ik) => owners.has(ik));
+      };
+      return prev.filter((cid) => stillCovered(catToIdentityKeys, cid));
+    });
+
+    setOpenCatsDoes(prev => {
+      const next = new Set([...prev]);
+      for (const cid of [...prev]) {
+        const owners = catToIdentityKeys[cid];
+        if (!owners || ![identityKey].some((ik) => owners.has(ik))) next.delete(cid);
+      }
+      return next;
+    });
+
+    setOpenSubsDoes(prev => {
+      const next = new Set([...prev]);
+      for (const sid of [...prev]) {
+        const owners = subToIdentityKeys[sid];
+        if (!owners || ![identityKey].some((ik) => owners.has(ik))) next.delete(sid);
+      }
+      return next;
+    });
+  };
   const toggleCategoryDoes = makeToggleCategory({
     catIds: categoryIds,
     setCatIds: setCategoryIds,
@@ -767,10 +795,12 @@ export default function FourStepOnboarding() {
         <main className="max-w-3xl mx-auto mt-6">
           <div className="bg-white rounded-2xl shadow-soft p-6">
             <p className="text-gray-500 mb-5 text-[18px]">
-              Choose one or more{typeof limit === "number" ? ` (up to ${limit}).` : "."}
+              {typeof limit === "number" && limit === 1
+                ? "Choose one."
+                : `Choose one or more${typeof limit === "number" ? ` (up to ${limit}).` : "."}`}
             </p>
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {identitiesToShow.map((iden, i) => {
+              {identitiesToShow.filter(i=>i.type==userAccountType || step!=1).map((iden, i) => {
                 const key = getIdentityKey(iden);
                 const active = picked.includes(key);
                 const disabled = !active && reached; // can't add more
@@ -1263,13 +1293,14 @@ export default function FourStepOnboarding() {
           title={userAccountType === "company" ? "Tell us about your company" : "Tell us who you are"}
           subtitle={
             userAccountType === "company"
-              ? "Choose the identities that best represent what your company does."
-              : "Choose the identities that best represent what you do."
+              ? "Choose the identity that best represents what your company does."
+              : "Choose the identity that best represents what you do."
           }
           picked={identityIds}
           onToggle={toggleIdentityDoes}
           next={() => setStep(2)}
           canNext={canContinue1}
+          limit={1}
         />
       )}
 
@@ -1295,7 +1326,7 @@ export default function FourStepOnboarding() {
           toggleSubOpen={toggleSubOpenDoes}
           prev={() => setStep(1)}
           nextLabel="Continue"
-          onNext={() => setStep(userAccountType === "company" ? 5 : 3)}
+          onNext={() => setStep(3)}
           canNext={canContinue2}
         />
       )}
@@ -1369,7 +1400,7 @@ export default function FourStepOnboarding() {
           onToggleIndustrySubsub={toggleIndustrySubsub}
           onToggleIndustryCatOpen={handleIndustryCatOpen}
           toggleIndustrySubOpen={toggleIndustrySubOpen}
-          prev={() => setStep(userAccountType === "company" ? 2 : 4)}
+          prev={() => setStep(4)}
           nextLabel="Save & Finish"
           onNext={async () => {
             if (!canFinish) return;

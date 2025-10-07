@@ -26,6 +26,19 @@ function Header({ page }) {
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [connectionRequestCount, setConnectionRequestCount] = useState(0); // socket-driven
   const [meetingRequestCount, setMeetingRequestCount] = useState(0);       // socket-driven
+  const [jobApplicationCount, setJobApplicationCount] = useState(0);       // socket-driven
+  const [eventRegistrationCount, setEventRegistrationCount] = useState(0); // socket-driven
+  const [companyInvitationCount, setCompanyInvitationCount] = useState(0); // socket-driven
+
+  // Badge counts state for all notification types including messages
+  const [badgeCounts, setBadgeCounts] = useState({
+    connectionsPending: 0,
+    meetingsPending: 0,
+    messagesPending: 0,
+    jobApplicationsPending: 0,
+    eventRegistrationsPending: 0,
+    companyInvitationsPending: 0
+  });
 
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [loginDialogOpenForSignUp, setLoginDialogOpenForSignUp] = useState(false);
@@ -208,6 +221,25 @@ function Header({ page }) {
       setMeetingRequestCount(
         Number.isFinite(counts.meetingsPending) ? counts.meetingsPending : 0
       );
+      setJobApplicationCount(
+        Number.isFinite(counts.jobApplicationsPending) ? counts.jobApplicationsPending : 0
+      );
+      setEventRegistrationCount(
+        Number.isFinite(counts.eventRegistrationsPending) ? counts.eventRegistrationsPending : 0
+      );
+      setCompanyInvitationCount(
+        Number.isFinite(counts.companyInvitationsPending) ? counts.companyInvitationsPending : 0
+      );
+
+      // Update badge counts state with backend data including messages
+      setBadgeCounts({
+        connectionsPending: Number.isFinite(counts.connectionsPending) ? counts.connectionsPending : 0,
+        meetingsPending: Number.isFinite(counts.meetingsPending) ? counts.meetingsPending : 0,
+        messagesPending: Number.isFinite(counts.messagesPending) ? counts.messagesPending : 0,
+        jobApplicationsPending: Number.isFinite(counts.jobApplicationsPending) ? counts.jobApplicationsPending : 0,
+        eventRegistrationsPending: Number.isFinite(counts.eventRegistrationsPending) ? counts.eventRegistrationsPending : 0,
+        companyInvitationsPending: Number.isFinite(counts.companyInvitationsPending) ? counts.companyInvitationsPending : 0
+      });
     };
 
     const handlePush = (payload) => applyCounts(payload);
@@ -277,7 +309,13 @@ function Header({ page }) {
   const anyMoreActive = moreNav.some(isActive);
   const notifBadgeCount = Math.min(
     99,
-    (connectionRequestCount || 0) + (meetingRequestCount || 0)
+    (connectionRequestCount || 0) + (meetingRequestCount || 0) + (jobApplicationCount || 0) + (eventRegistrationCount || 0) + (companyInvitationCount || 0)
+  );
+
+  // Calculate total badge count including message notifications from backend
+  const totalBadgeCount = Math.min(
+    99,
+    notifBadgeCount + (badgeCounts.messagesPending || 0)
   );
 
   const NavButton = ({ item, onClick }) => {
@@ -407,9 +445,9 @@ function Header({ page }) {
                   className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
                   aria-label="Notifications"
                 >
-                  {notifBadgeCount > 0 && (
+                  {totalBadgeCount > 0 && (
                     <span className="absolute -top-1 -right-1 grid h-4 w-4 place-items-center rounded-full bg-red-500 text-white text-[10px] font-medium">
-                      {notifBadgeCount > 9 ? "9+" : notifBadgeCount}
+                      {totalBadgeCount > 9 ? "9+" : totalBadgeCount}
                     </span>
                   )}
                   <svg className="text-gray-600 h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -695,9 +733,9 @@ function Header({ page }) {
                     >
                       <I.bell />
                       <span>Notifications</span>
-                      {notifBadgeCount > 0 && (
+                      {totalBadgeCount > 0 && (
                         <span className="absolute -top-1 -right-1 grid h-5 w-5 place-items-center rounded-full bg-red-500 text-white text-[11px] font-medium">
-                          {notifBadgeCount > 9 ? "9+" : notifBadgeCount}
+                          {totalBadgeCount > 9 ? "9+" : totalBadgeCount}
                         </span>
                       )}
                     </button>

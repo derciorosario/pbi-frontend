@@ -122,10 +122,13 @@ const CURRENCY_OPTIONS = [
 ];
 
 // Create country options for SearchableSelect
-const countryOptions = COUNTRIES.map(country => ({
-  value: country,
-  label: country
-}));
+const countryOptions = [
+  { value: "All countries", label: "All countries" },
+  ...COUNTRIES.map(country => ({
+    value: country,
+    label: country
+  }))
+];
 
 // Create city options for SearchableSelect (limit to reasonable number)
 const allCityOptions = CITIES.slice(0, 10000).map(city => ({
@@ -136,7 +139,7 @@ const allCityOptions = CITIES.slice(0, 10000).map(city => ({
 
 // Get filtered cities for a specific country
 const getCitiesForCountry = (country) => {
-  if (!country) return [];
+  if (!country || country === "All countries") return [];
   return allCityOptions.filter((c) => c.country?.toLowerCase() === country.toLowerCase());
 };
 
@@ -148,7 +151,11 @@ const CountryCitySelector = ({ value, onChange, error }) => {
 
   const handleAddCountryCity = () => {
     if (newCountry) {
-      const newPair = { country: newCountry, city: newCity || "" };
+      // When "All countries" is selected, set city to null and make it not selectable
+      const newPair = {
+        country: newCountry,
+        city: newCountry === "All countries" ? null : (newCity || "")
+      };
       onChange([...value, newPair]);
       setNewCountry("");
       setNewCity("");
@@ -163,7 +170,7 @@ const CountryCitySelector = ({ value, onChange, error }) => {
 
   const handleCityChange = (index, city) => {
     const updated = value.map((item, i) =>
-      i === index ? { ...item, city } : item
+      i === index ? { ...item, city: item.country === "All countries" ? null : city } : item
     );
     onChange(updated);
   };
@@ -171,7 +178,7 @@ const CountryCitySelector = ({ value, onChange, error }) => {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-gray-700">
-        Countries and cities <span className="text-gray-400 font-normal">(City optional)</span>
+        Countries and cities <span className="text-gray-400 font-normal">(optional)</span>
       </label>
 
       {/* Display selected country-city pairs */}
@@ -181,15 +188,21 @@ const CountryCitySelector = ({ value, onChange, error }) => {
             <div key={index} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
               <div className="flex-1">
                 <div className="font-medium text-sm">{item.country}</div>
-                {item.city && <div className="text-xs text-gray-500">City: {item.city}</div>}
+                {item.city && item.country !== "All countries" && <div className="text-xs text-gray-500">City: {item.city}</div>}
               </div>
-              <SearchableSelect
-                options={getCitiesForCountry(item.country)}
-                value={item.city}
-                onChange={(city) => handleCityChange(index, city)}
-                placeholder="Select city"
-                className="w-48"
-              />
+              {item.country !== "All countries" ? (
+                <SearchableSelect
+                  options={getCitiesForCountry(item.country)}
+                  value={item.city}
+                  onChange={(city) => handleCityChange(index, city)}
+                  placeholder="Select city"
+                  className="w-48"
+                />
+              ) : (
+                <div className="w-48 p-2 text-sm text-gray-500 italic">
+                  City not applicable
+                </div>
+              )}
               <button
                 type="button"
                 onClick={() => handleRemoveCountryCity(index)}
@@ -220,7 +233,7 @@ const CountryCitySelector = ({ value, onChange, error }) => {
               value={newCity}
               onChange={setNewCity}
               placeholder="Select city (optional)"
-              disabled={!newCountry}
+              disabled={!newCountry || newCountry === "All countries"}
             />
           </div>
           <div className="flex gap-2">
@@ -1225,10 +1238,6 @@ export default function CreateJobOpportunity() {
       next.country = "Country is required.";
     }*/
 
-    if(form.countries.length==0){
-       next.country = "Select at least one country.";
-    }
-
 
     if (!form.description.trim()) {
       next.description = "Job description is required.";
@@ -1790,8 +1799,7 @@ export default function CreateJobOpportunity() {
             </div>
 
             <div className="mt-3"><Label>Application Instructions</Label><Textarea name="applicationInstructions" value={form.applicationInstructions} onChange={onChange} rows={3} placeholder="Provide specific instructions for applicants…"/></div>
-            <div className="mt-3"><Label>Contact Email</Label><Input name="contactEmail" type="email" value={form.contactEmail} onChange={onChange} placeholder="hr@company.com"/></div>
-
+          
             {/* ===== Cover Image (optional) ===== */}
             <hr className="my-5 border-gray-200" />
             <div className="flex items-center gap-2"><I.doc /><h3 className="font-semibold">Cover Image</h3></div>

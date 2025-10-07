@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { X, Send } from "lucide-react";
 import client from "../api/client";
 import { toast } from "../lib/toast";
+import { useAuth } from "../contexts/AuthContext";
 
 const REASONS = [
   "Partnership / Collaboration",
@@ -27,6 +28,7 @@ export default function ConnectionRequestModal({ open, onClose, toUserId, toName
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const {user} = useAuth()
 
   useEffect(() => {
     setMessage("");
@@ -75,7 +77,7 @@ export default function ConnectionRequestModal({ open, onClose, toUserId, toName
               : "Please select the reason and optionally write a message."}
           </p>
 
-          <div>
+          {user?.accountType != "company" && <div>
             <label className="text-xs text-gray-500">Reason (optional)</label>
             <select
               className="mt-1 w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
@@ -89,7 +91,7 @@ export default function ConnectionRequestModal({ open, onClose, toUserId, toName
                 </option>
               ))}
             </select>
-          </div>
+          </div>}
 
           <div>
             <label className="text-xs text-gray-500">Message (optional)</label>

@@ -319,3 +319,125 @@ export const getRecentActivity = (limit = 10) => {
 export const getUserGrowthData = (days = 30) => {
   return client.get("/admin/dashboard/growth", { params: { days } });
 };
+
+/**
+ * Get all contact form submissions
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number
+ * @param {number} params.limit - Number of items per page
+ * @param {string} params.status - Filter by status (new, in_progress, responded, closed)
+ * @param {string} params.contactReason - Filter by contact reason
+ * @param {string} params.search - Search term for name or email
+ * @param {string} params.sortBy - Field to sort by
+ * @param {string} params.sortOrder - Sort order (ASC or DESC)
+ * @returns {Promise} - Promise with contacts data
+ */
+export const getAllContacts = (params = {}) => {
+  return client.get("/admin/contacts", { params });
+};
+
+/**
+ * Get a single contact by ID
+ * @param {string} id - Contact ID
+ * @returns {Promise} - Promise with contact data
+ */
+export const getContactById = (id) => {
+  return client.get(`/admin/contacts/${id}`);
+};
+
+/**
+ * Update contact status
+ * @param {string} id - Contact ID
+ * @param {string} status - New status (new, in_progress, responded, closed)
+ * @param {string} notes - Optional notes
+ * @returns {Promise} - Promise with update result
+ */
+export const updateContactStatus = (id, status, notes = "") => {
+  return client.patch(`/admin/contacts/${id}/status`, { status, notes });
+};
+
+/**
+ * Delete a contact
+ * @param {string} id - Contact ID
+ * @returns {Promise} - Promise with delete result
+ */
+export const deleteContact = (id) => {
+  return client.delete(`/admin/contacts/${id}`);
+};
+
+/**
+ * Export contacts data
+ * @param {Object} params - Query parameters
+ * @param {string} params.format - Export format (json or csv)
+ * @param {Object} params.filters - Filters to apply
+ * @returns {Promise} - Promise with exported data
+ */
+export const exportContacts = (params = {}) => {
+  return client.get("/admin/contacts/export", {
+    params,
+    responseType: ['csv', 'excel'].includes(params.format) ? 'blob' : 'json'
+  });
+};
+
+/**
+ * Download contacts data as Excel directly from frontend
+ * @param {Array} contacts - Array of contact objects to export
+ * @returns {Promise} - Promise that resolves when download starts
+ */
+export const downloadContactsDataAsExcel = async (contacts) => {
+  try {
+    // Format the data for Excel export
+    const formattedData = contacts.map(contact => ({
+      'ID': contact.id,
+      'Name': contact.fullName,
+      'Email': contact.email,
+      'Phone': contact.phone || '',
+      'Contact Reason': contact.contactReason,
+      'Company': contact.companyName || '',
+      'Website': contact.website || '',
+      'Status': contact.status,
+      'Message': contact.message?.substring(0, 100) + (contact.message?.length > 100 ? '...' : ''),
+      'Submitted At': new Date(contact.createdAt).toLocaleString(),
+      'Responded At': contact.respondedAt ? new Date(contact.respondedAt).toLocaleString() : '',
+      'Notes': contact.notes || ''
+    }));
+
+    // Create a worksheet
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+    // Autosize columns
+    const cols = Object.keys(formattedData[0] || {}).map((k) => ({
+      wch: Math.max(k.length, ...formattedData.map(r => String(r[k] ?? '').length)) + 2
+    }));
+    worksheet['!cols'] = cols;
+
+    // Create a workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Contacts');
+
+    // Generate XLSX file
+    const xlsxData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+    // Create a blob from the XLSX data
+    const blob = new Blob([xlsxData], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    // Create a link element and trigger download
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `contacts-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+
+    // Clean up
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+
+    return true;
+  } catch (error) {
+    console.error('Error creating Excel file:', error);
+    throw error;
+  }
+};

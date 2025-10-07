@@ -8,6 +8,7 @@ import client from "../../api/client.js";
 import { toast } from "../../lib/toast";
 import GoogleCustomBtn from "../../components/GoogleBtn.jsx";
 import Logo from '../../assets/logo.png'
+import { Helmet } from "react-helmet-async";
 
 
 const emailOK = (v) =>
@@ -83,6 +84,14 @@ export default function Login() {
 
   return (
     <div className="min-h-screen grid md:grid-cols-2">
+
+      <Helmet>
+        <title>Login - 54Links</title>
+        <meta property="og:title" content="Login - 54Links" />
+        <meta property="og:description" content="Sign in to your 54Links account to manage and share your professional links." />
+        <meta property="og:url" content="https://panafricanbi.vercel.app/login" />
+        <meta property="og:type" content="website" />
+      </Helmet>
      
        {/* Home button at top-left */}
      
@@ -96,8 +105,6 @@ export default function Login() {
         
         <div className="w-full max-w-md">
           
-        
-
           {/* Dynamic header based on token presence */}
           {hasToken ? (
             <>

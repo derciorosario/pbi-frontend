@@ -26,6 +26,7 @@ function timeAgo(d) {
   return `${day} day${day > 1 ? "s" : ""} ago`;
 }
 
+
 export default function NotificationsPage() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("All");
@@ -39,8 +40,9 @@ export default function NotificationsPage() {
 
   const [loadingNotifications, setLoadingNotifications] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [allNotifications, setAllNotifications] = useState([]); // Keep all notifications for badge counts
   const [errorNotifications, setErrorNotifications] = useState("");
-  
+
   const [loadingMeetings, setLoadingMeetings] = useState(false);
   const [meetingRequests, setMeetingRequests] = useState([]);
   const [errorMeetings, setErrorMeetings] = useState("");
@@ -49,6 +51,9 @@ export default function NotificationsPage() {
   const [badgeCounts, setBadgeCounts] = useState({
     connectionsPending: 0,
     meetingsPending: 0,
+    messagesPending: 0,
+    jobApplicationsPending: 0,
+    eventRegistrationsPending: 0,
     notificationsUnread: 0
   });
 
@@ -59,12 +64,7 @@ export default function NotificationsPage() {
     // Handle new notifications in real-time
     const handleNewNotification = (data) => {
       setNotifications(prev => [data.notification, ...prev]);
-      
-      // Update badge counts
-      setBadgeCounts(prev => ({
-        ...prev,
-        notificationsUnread: prev.notificationsUnread + 1
-      }));
+      setAllNotifications(prev => [data.notification, ...prev]);
     };
 
     // Handle badge count updates
@@ -90,6 +90,7 @@ export default function NotificationsPage() {
       socket.off("new_notification", handleNewNotification);
       socket.off("header_badge_counts", handleBadgeCounts);
     };
+
   }, [connected, socket, user?.id]);
 
   // Mark header badges as seen when page loads
@@ -101,8 +102,10 @@ export default function NotificationsPage() {
 
   // Load data functions
   const loadConnections = async () => {
+
     setLoadingConn(true);
     setErrorConn("");
+
     try {
       if (connected && socket) {
         // Use socket for real-time data
@@ -115,6 +118,7 @@ export default function NotificationsPage() {
           }
           setLoadingConn(false);
         });
+
       } else {
         // Fallback to HTTP API
         const { data } = await client.get("/connections/requests");
@@ -123,8 +127,10 @@ export default function NotificationsPage() {
         setLoadingConn(false);
       }
     } catch (e) {
+
       setErrorConn(e?.response?.data?.message || "Failed to load connection requests");
       setLoadingConn(false);
+
     }
   };
 
@@ -137,10 +143,12 @@ export default function NotificationsPage() {
 
         let t=filter.toLowerCase()
 
-      
-        socket.emit("qa_fetch_notifications", { type: filter === "All" ? "all" : t=="meetings" ? 'meeting' : t=="connections" ? 'connection' : filter.toLowerCase() }, (response) => {
+
+        socket.emit("qa_fetch_notifications", { type: filter === "All" ? "all" : t=="meetings" ? 'meeting' : t=="connections" ? 'connection' : t=="messages" ? 'message' : t=="jobs" ? 'job' : t=="events" ? 'event' : t=="invitations" ? 'invitation' : filter.toLowerCase() }, (response) => {
+          console.log(`Loading notifications for filter: ${filter}, type: ${t=="jobs" ? 'job' : filter.toLowerCase()}, response:`, response);
           if (response?.ok) {
             setNotifications(response.data.notifications || []);
+            console.log(`Loaded ${response.data.notifications?.length || 0} notifications`);
           } else {
             setErrorNotifications(response?.error || "Failed to load notifications");
           }
@@ -155,6 +163,24 @@ export default function NotificationsPage() {
     } catch (e) {
       setErrorNotifications(e?.response?.data?.message || "Failed to load notifications");
       setLoadingNotifications(false);
+    }
+  };
+
+  // Load all notifications for badge counts when component mounts or socket connects
+  const loadAllNotificationsForBadges = async () => {
+    if (connected && socket) {
+      socket.emit("qa_fetch_notifications", { type: "all" }, (response) => {
+        if (response?.ok) {
+          setAllNotifications(response.data.notifications || []);
+        }
+      });
+    } else {
+      try {
+        const { data } = await client.get("/notifications");
+        setAllNotifications(data || []);
+      } catch (e) {
+        console.error("Failed to load notifications for badges:", e);
+      }
     }
   };
 
@@ -191,7 +217,14 @@ export default function NotificationsPage() {
     loadConnections();
     loadMeetingRequests();
     loadNotifications(); // Load notifications for all tabs since they're now categorized by type
-  }, [filter]);
+  }, [filter, connected, socket]);
+
+  // Load all notifications for badge counts when component mounts or socket connects
+  useEffect(() => {
+    if (connected && socket) {
+      loadAllNotificationsForBadges();
+    }
+  }, [connected, socket]);
 
   // Socket-based action handlers
   const handleRespond = async (id, action) => {
@@ -269,12 +302,18 @@ export default function NotificationsPage() {
             setNotifications(prev => prev.map(n =>
               n.id === notificationId ? { ...n, readAt: new Date() } : n
             ));
+            setAllNotifications(prev => prev.map(n =>
+              n.id === notificationId ? { ...n, readAt: new Date() } : n
+            ));
           }
         });
       } else {
         let r=await client.post(`/notifications/${notificationId}/read`);
         console.log(r)
         setNotifications(prev => prev.map(n =>
+          n.id === notificationId ? { ...n, readAt: new Date() } : n
+        ));
+        setAllNotifications(prev => prev.map(n =>
           n.id === notificationId ? { ...n, readAt: new Date() } : n
         ));
       }
@@ -286,12 +325,23 @@ export default function NotificationsPage() {
   const markAllAsRead = async () => {
     try {
       const toastId = toast.loading("Marking all notifications as read...");
-      
+
       if (connected && socket) {
         socket.emit("qa_mark_all_notifications_read", (response) => {
           if (response?.ok) {
             toast.success("All notifications marked as read", { id: toastId });
             setNotifications(prev => prev.map(n => ({ ...n, readAt: new Date() })));
+            setAllNotifications(prev => prev.map(n => ({ ...n, readAt: new Date() })));
+            // Update badge counts
+            setBadgeCounts(prev => ({
+              ...prev,
+              notificationsUnread: 0,
+              connectionsPending: 0,
+              meetingsPending: 0,
+              messagesPending: 0,
+              jobApplicationsPending: 0,
+              eventRegistrationsPending: 0
+            }));
           } else {
             toast.error(response?.error || "Failed to mark notifications as read", { id: toastId });
           }
@@ -300,6 +350,17 @@ export default function NotificationsPage() {
         await client.post("/notifications/mark-all-read");
         toast.success("All notifications marked as read", { id: toastId });
         setNotifications(prev => prev.map(n => ({ ...n, readAt: new Date() })));
+        setAllNotifications(prev => prev.map(n => ({ ...n, readAt: new Date() })));
+        // Update badge counts
+        setBadgeCounts(prev => ({
+          ...prev,
+          notificationsUnread: 0,
+          connectionsPending: 0,
+          meetingsPending: 0,
+          messagesPending: 0,
+          jobApplicationsPending: 0,
+          eventRegistrationsPending: 0
+        }));
       }
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to mark notifications as read");
@@ -312,12 +373,14 @@ export default function NotificationsPage() {
         socket.emit("qa_delete_notification", { notificationId }, (response) => {
           if (response?.ok) {
             setNotifications(prev => prev.filter(n => n.id !== notificationId));
+            setAllNotifications(prev => prev.filter(n => n.id !== notificationId));
             toast.success("Notification deleted");
           }
         });
       } else {
         await client.delete(`/notifications/${notificationId}`);
         setNotifications(prev => prev.filter(n => n.id !== notificationId));
+        setAllNotifications(prev => prev.filter(n => n.id !== notificationId));
         toast.success("Notification deleted");
       }
     } catch (e) {
@@ -327,10 +390,14 @@ export default function NotificationsPage() {
 
   // Badge calculations
   const connBadge = badgeCounts.connectionsPending ?? incoming.length;
-  const meetBadge = badgeCounts.meetingsPending ?? meetingRequests.filter(m => 
+  const meetBadge = badgeCounts.meetingsPending ?? meetingRequests.filter(m =>
     m.status === "pending" && m.requester?.id !== user?.id
   ).length;
-  const systemBadge = badgeCounts.notificationsUnread ?? notifications.filter(n => !n.readAt && n.type === "system").length;
+  const messageBadge = badgeCounts.messagesPending ?? allNotifications.filter(n => !n.readAt && n.type === "message.new").length;
+  const jobBadge = badgeCounts.jobApplicationsPending ?? allNotifications.filter(n => !n.readAt && n.type.startsWith("job.application.")).length;
+  const eventBadge = badgeCounts.eventRegistrationsPending ?? allNotifications.filter(n => !n.readAt && n.type.startsWith("event.registration.")).length;
+  const invitationBadge = allNotifications.filter(n => !n.readAt && (n.type.startsWith("company.") || n.type.startsWith("organization."))).length;
+  const systemBadge = badgeCounts.notificationsUnread ?? allNotifications.filter(n => !n.readAt && n.type === "system").length;
 
 
   console.log({meetingRequests})
@@ -401,6 +468,8 @@ export default function NotificationsPage() {
     let title = "";
     let message = "";
     let meta = ""
+
+    console.log({type:n.type})
     
   switch (n.type) {
     case "connection.request":
@@ -453,6 +522,107 @@ export default function NotificationsPage() {
       message = `${n.user?.name || "Someone"} cancelled the meeting: "${n.payload?.title || "Untitled"}"`;
       break;
 
+    case "message.new":
+      title = "New Message";
+      message = `${n.payload?.senderName || "Someone"} sent you a message`;
+      if (n.payload?.content) {
+        message += `: "${n.payload.content.length > 50 ? n.payload.content.substring(0, 50) + '...' : n.payload.content}"`;
+      }
+      break;
+
+    case "job.application.received":
+      title = "New Job Application";
+      message = `${n.payload?.applicantName || "Someone"} applied for your job: "${n.payload?.jobTitle || "Untitled"}"`;
+      break;
+
+    case "job.application.accepted":
+      title = "Job Application Accepted";
+      message = `Your application for "${n.payload?.jobTitle || "the job"}" was accepted`;
+      break;
+
+    case "job.application.rejected":
+      title = "Job Application Rejected";
+      message = `Your application for "${n.payload?.jobTitle || "the job"}" was rejected`;
+      break;
+
+    case "job.application.reviewed":
+      title = "Job Application Reviewed";
+      message = `Your application for "${n.payload?.jobTitle || "the job"}" has been reviewed`;
+      break;
+
+    case "event.registration.received":
+      title = "New Event Registration";
+      message = `${n.payload?.registrantName || "Someone"} registered for your event: "${n.payload?.eventTitle || "Untitled"}"`;
+      break;
+
+    case "event.registration.confirmed":
+      title = "Event Registration Confirmed";
+      message = `Your registration for "${n.payload?.eventTitle || "the event"}" has been confirmed`;
+      break;
+
+    case "event.registration.cancelled":
+      title = "Event Registration Cancelled";
+      message = `Your registration for "${n.payload?.eventTitle || "the event"}" has been cancelled`;
+      break;
+
+    case "company.staff.accepted":
+      title = "Staff Invitation Accepted";
+      message = `${n.payload?.staffName || "Someone"} accepted your staff invitation for the role of ${n.payload?.role || "staff"}`;
+      break;
+
+    case "company.staff.rejected":
+      title = "Staff Invitation Declined";
+      message = `${n.payload?.staffName || "Someone"} declined your staff invitation for the role of ${n.payload?.role || "staff"}`;
+      break;
+
+    case "company.staff.removed":
+      title = "Removed from Company Staff";
+      message = `You have been removed from the staff of ${n.payload?.companyName || "the company"}`;
+      break;
+
+    case "company.representative.revoked":
+      title = "Representative Authorization Revoked";
+      message = `Your representative authorization for ${n.payload?.companyName || "the company"} has been revoked`;
+      break;
+
+    case "company.representative.invitation":
+      title = "Company Representative Invitation";
+      message = `${n.payload?.companyName || "A company"} has invited you to be their representative`;
+      break;
+
+    case "company.representative.authorized":
+      title = "Representative Authorization Confirmed";
+      message = `${n.payload?.representativeName || "Someone"} has authorized as your company representative`;
+      break;
+
+    case "company.staff.invitation":
+      title = "Company Staff Invitation";
+      message = `${n.payload?.companyName || "A company"} has invited you to join their staff as ${n.payload?.role || "a staff member"}`;
+      break;
+
+    case "company.staff.left":
+      title = "Staff Member Left";
+      message = `${n.payload?.staffName || "Someone"} has left your organization`;
+      break;
+
+    case "organization.join.request":
+      title = "New Organization Join Request";
+      message = `${n.payload?.userName || "Someone"} wants to join your organization`;
+      if (n.payload?.message) {
+        message += `. Message: "${n.payload.message}"`;
+      }
+      break;
+
+    case "organization.join.approved":
+      title = "Organization Join Request Approved";
+      message = `Your join request for ${n.payload?.organizationName || "the organization"} has been approved`;
+      break;
+
+    case "organization.join.rejected":
+      title = "Organization Join Request Rejected";
+      message = `Your join request for ${n.payload?.organizationName || "the organization"} has been rejected`;
+      break;
+
     default:
       // Fallback to stored title/message if available
       title = n.title || "Notification";
@@ -467,10 +637,35 @@ export default function NotificationsPage() {
     notificationType = "connection";
   } else if (n.type.startsWith("meeting_")) {
     notificationType = "meeting";
+  } else if (n.type === "message.new") {
+    notificationType = "message";
+  } else if (n.type.startsWith("job.application.")) {
+    notificationType = "job";
+  } else if (n.type.startsWith("event.registration.")) {
+    notificationType = "event";
+  } else if (n.type.startsWith("company.") || n.type.startsWith("organization.")) {
+    notificationType = "invitation";
   }
 
   // Check if this notification has actionable buttons (accept/reject)
   const hasActions = n.type === "connection.request" || n.type === "meeting_request";
+
+  // Handle navigation for job application notifications
+  const handleViewJobApplication = (applicationId) => {
+    window.location.href = `/profile?jobApplication=${applicationId}`;
+  };
+
+  // Handle navigation for event registration notifications
+  const handleViewEventRegistration = (registrationId) => {
+    window.location.href = `/profile?eventRegistration=${registrationId}`;
+  };
+
+  // Handle navigation for company invitation notifications
+  const handleViewCompanyInvitation = (actionLink) => {
+    if (actionLink) {
+      window.location.href = actionLink;
+    }
+  };
 
 
   const connectedNot=[...connectionItems,...meetingItems].filter(i=>i.id==n?.payload?.item_id)?.[0]
@@ -483,7 +678,7 @@ export default function NotificationsPage() {
     title: title,
     payload:n.payload,
     meta,
-    tab:notificationType=="connection" ? "Connections":"Meetings",
+    tab:notificationType=="connection" ? "Connections":notificationType=="meeting" ? "Meetings":notificationType=="message" ? "Messages":notificationType=="job" ? "Jobs":notificationType=="event" ? "Events":notificationType=="invitation" ? "Invitations":"System",
     desc: message,
     isNotification:true,
     time: timeAgo(n.createdAt),
@@ -491,17 +686,61 @@ export default function NotificationsPage() {
     readAt: n.readAt,
     hasActions: hasActions,
     actions: (
-      <div className="mt-2 flex gap-2 text-sm">
-        {!n.readAt && (
-          <button onClick={() => markNotificationAsRead(n.id)} className={styles.outline}>
-            Mark Read
+      <div className="mt-2 flex justify-between items-center text-sm">
+        <div className="flex gap-2">
+          {!n.readAt && (
+            <button onClick={() => markNotificationAsRead(n.id)} className={styles.outline}>
+              Mark Read
+            </button>
+          )}
+          <button title="Respond to delete"  onClick={() => {
+            if(!connectedNot)  deleteNotification(n.id)
+          }} className={`${styles.danger} ${connectedNot ? 'opacity-50 cursor-not-allowed':''} `}>
+            Delete
           </button>
-        )}
-        <button title="Respond to delete"  onClick={() => {
-          if(!connectedNot)  deleteNotification(n.id)
-        }} className={`${styles.danger} ${connectedNot ? 'opacity-50 cursor-not-allowed':''} `}>
-          Delete
-        </button>
+        </div>
+        <div className="flex gap-2">
+          {n.type.startsWith("job.application.") && n.payload?.applicationId && (
+            <button
+              onClick={() => handleViewJobApplication(n.payload.applicationId)}
+              className={styles.primary}
+            >
+              View
+            </button>
+          )}
+          {n.type.startsWith("event.registration.") && n.payload?.registrationId && (
+            <button
+              onClick={() => handleViewEventRegistration(n.payload.registrationId)}
+              className={styles.primary}
+            >
+              View
+            </button>
+          )}
+          {n.type.startsWith("company.") && n.payload?.actionLink && (
+            <button
+              onClick={() => handleViewCompanyInvitation(n.payload.actionLink)}
+              className={styles.primary}
+            >
+              View
+            </button>
+          )}
+          {n.type.startsWith("organization.") && n.payload?.actionLink && (
+            <button
+              onClick={() => handleViewCompanyInvitation(n.payload.actionLink)}
+              className={styles.primary}
+            >
+              View
+            </button>
+          )}
+          {n.type === "message.new" && n.payload?.senderId && (
+            <button
+              onClick={() => window.location.href = `/messages?userId=${n.payload.senderId}`}
+              className={styles.primary}
+            >
+              View
+            </button>
+          )}
+        </div>
       </div>
     ),
   };
@@ -515,14 +754,23 @@ export default function NotificationsPage() {
 
   const filteredItems = useMemo(() => {
   if (filter === "All") return allItems;
-  
+
   const typeMap = {
     "Connections": "connection",
-    "Meetings": "meeting", 
+    "Meetings": "meeting",
+    "Messages": "message",
+    "Jobs": "job",
+    "Events": "event",
+    "Invitations": "invitation",
     "System": "system"
   };
-  
-  return allItems.filter(item => item.type === typeMap[filter]);
+
+  const filtered = allItems.filter(item => item.type === typeMap[filter]);
+
+  // Debug logging
+  console.log(`Filter: ${filter}, Type: ${typeMap[filter]}, Items found:`, filtered.length, filtered.map(i => ({ type: i.type, title: i.title })));
+
+  return filtered;
 }, [allItems, filter]);
 
 
@@ -545,14 +793,18 @@ export default function NotificationsPage() {
         {/* Filter Tabs */}
         <div className="mt-6 flex items-center justify-between">
           <div className="flex gap-2 flex-wrap">
-            {["All", "Connections", "Meetings", "System"].map((tab) => {
+            {["All", "Connections", "Meetings", "Messages", "Jobs", "Events", "Invitations", "System"].map((tab) => {
               const isActive = filter === tab;
               let badgeCount = 0;
-              
+
               if (tab === "Connections") badgeCount = connBadge;
               else if (tab === "Meetings") badgeCount = meetBadge;
+              else if (tab === "Messages") badgeCount = messageBadge;
+              else if (tab === "Jobs") badgeCount = jobBadge;
+              else if (tab === "Events") badgeCount = eventBadge;
+              else if (tab === "Invitations") badgeCount = invitationBadge;
               else if (tab === "System") badgeCount = systemBadge;
-              else if (tab === "All") badgeCount = connBadge + meetBadge + systemBadge;
+              else if (tab === "All") badgeCount = connBadge + meetBadge + messageBadge + jobBadge + eventBadge + invitationBadge + systemBadge;
 
               return (
                 <button
@@ -570,6 +822,7 @@ export default function NotificationsPage() {
                       {badgeCount > 9 ? "9+" : badgeCount}
                     </span>
                   )}
+                  
                 </button>
               );
             })}
@@ -615,8 +868,10 @@ export default function NotificationsPage() {
                                 </div>
                                 <p className="text-sm text-gray-600 mt-1">{connectedNotMessage || item.desc}</p>
                                 {item.meta && <p className="text-xs text-gray-500 mt-1">{item.meta}</p>}
-                                <div className="flex items-center justify-between gap-x-5 gap-y-1 flex-wrap">
-                                   {item.actions}
+                                <div className="flex items-center justify-between gap-x-5 gap-y-1">
+                                   <div className="flex-1">
+                                     {item.actions}
+                                   </div>
                                    {connectedNotActions}
                                 </div>
                               </div>

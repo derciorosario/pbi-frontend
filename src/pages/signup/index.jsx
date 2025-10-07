@@ -15,7 +15,7 @@ import WhiteLogo from '../../assets/logo-white.png'
 
 
 const emailOK = (v) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || "").toLowerCase());
+   /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(String(v || "").toLowerCase());
 
 // City options for SearchableSelect (limit to reasonable number)
 const allCityOptions = CITIES.slice(0, 10000).map(city => ({

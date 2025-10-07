@@ -417,7 +417,7 @@ export default function CreateNeedPage() {
     budget: "",
     urgency: "Medium",
     location: "",
-    country: "",
+    country: "All countries",
     city: "",
     criteria: [], // array of strings
     relatedEntityType: "", // job | product | service | event | funding | information
@@ -442,10 +442,13 @@ export default function CreateNeedPage() {
   });
 
   // Create country options for SearchableSelect
-  const countryOptions = COUNTRIES.map(country => ({
-    value: country,
-    label: country
-  }));
+  const countryOptions = [
+    { value: "All countries", label: "All countries" },
+    ...COUNTRIES.map(country => ({
+      value: country,
+      label: country
+    }))
+  ];
 
   // Create city options for SearchableSelect (limit to reasonable number)
   const allCityOptions = CITIES.slice(0, 10000).map(city => ({
@@ -465,7 +468,7 @@ export default function CreateNeedPage() {
 
   // Filtered cities for dropdown based on selected countries
   const cityOptions = useMemo(() => {
-    if (selectedCountries.length === 0) return allCityOptions;
+    if (selectedCountries.length === 0 || selectedCountries.includes("all countries")) return [];
     const setLC = new Set(selectedCountries);
     return allCityOptions.filter((c) => setLC.has(c.country.toLowerCase()));
   }, [selectedCountries, allCityOptions]);
@@ -643,7 +646,13 @@ export default function CreateNeedPage() {
   /* ---------- Handlers ---------- */
 
   function setField(name, value) {
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((f) => {
+      const next = { ...f, [name]: value };
+      if (name === "country" && value === "All countries") {
+        next.city = ""; // Clear city when "All countries" is selected
+      }
+      return next;
+    });
   }
 
   function addCriteria() {
@@ -747,7 +756,7 @@ export default function CreateNeedPage() {
         urgency: form.urgency,
         location: form.location || undefined,
         country: form.country || undefined,
-        city: form.city || undefined,
+        city: (form.country === "All countries") ? undefined : (form.city || undefined),
         criteria: form.criteria,
         attachments, // Already contains {name: '', base64: ''} where base64 is uploaded filename
 
@@ -953,6 +962,7 @@ export default function CreateNeedPage() {
                   onChange={(value) => setField("city", value)}
                   options={cityOptions}
                   placeholder="Search and select city..."
+                  disabled={form.country === "All countries"}
                 />
               </div>
             </div>

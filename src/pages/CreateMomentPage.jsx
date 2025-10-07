@@ -367,7 +367,7 @@ export default function CreateMomentPage() {
     type: "Achievement", // ENUM: Achievement | Milestone | Learning | Challenge | Opportunity
     date: "", // yyyy-mm-dd
     location: "",
-    country: "",
+    country: "All countries",
     city: "",
     relatedEntityType: "", // job | event | product | service | tourism | funding
     relatedEntityId: "",
@@ -401,10 +401,13 @@ export default function CreateMomentPage() {
   });
 
   // Create country options for SearchableSelect
-  const countryOptions = COUNTRIES.map(country => ({
-    value: country,
-    label: country
-  }));
+  const countryOptions = [
+    { value: "All countries", label: "All countries" },
+    ...COUNTRIES.map(country => ({
+      value: country,
+      label: country
+    }))
+  ];
 
   // Create city options for SearchableSelect (limit to reasonable number)
   const allCityOptions = CITIES.slice(0, 10000).map(city => ({
@@ -424,7 +427,7 @@ export default function CreateMomentPage() {
 
   // Filtered cities for dropdown based on selected countries
   const cityOptions = useMemo(() => {
-    if (selectedCountries.length === 0) return allCityOptions;
+    if (selectedCountries.length === 0 || selectedCountries.includes("all countries")) return [];
     const setLC = new Set(selectedCountries);
     return allCityOptions.filter((c) => setLC.has(c.country.toLowerCase()));
   }, [selectedCountries, allCityOptions]);
@@ -607,7 +610,13 @@ export default function CreateMomentPage() {
   /* -------- helpers -------- */
   function setField(name, value) {
     if (readOnly) return;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((f) => {
+      const next = { ...f, [name]: value };
+      if (name === "country" && value === "All countries") {
+        next.city = ""; // Clear city when "All countries" is selected
+      }
+      return next;
+    });
   }
   
   function addTag() {
@@ -761,7 +770,7 @@ export default function CreateMomentPage() {
         date: form.date || null,
         location: form.location || undefined,
         country: form.country || undefined,
-        city: form.city || undefined,
+        city: (form.country === "All countries") ? undefined : (form.city || undefined),
         tags: tags,
         images, // Already contains {base64url: filename, title: ''}
         attachments, // Keep attachments as base64 for now
@@ -1105,6 +1114,7 @@ export default function CreateMomentPage() {
                   onChange={(value) => setField("city", value)}
                   options={cityOptions}
                   placeholder="Search and select city..."
+                  disabled={form.country === "All countries"}
                 />
               </div>
             </div>

@@ -138,7 +138,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
             </div>
 
             {/* Expected Salary */}
-            <div>
+            <div className="hidden">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Expected Salary / Rate <span className="text-gray-500">(optional)</span>
               </label>
@@ -169,6 +169,7 @@ export default function JobApplicationDialog({ open, onClose, job }) {
               {availability === 'specific' && (
                 <input
                   type="date"
+                  min={new Date().toISOString().split('T')[0]}
                   value={availabilityDate}
                   onChange={(e) => setAvailabilityDate(e.target.value)}
                   className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"

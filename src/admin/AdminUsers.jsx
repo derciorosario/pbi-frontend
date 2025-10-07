@@ -112,7 +112,7 @@ export default function AdminUsers() {
       });
       
       setUsers(data.users);
-      setPagination(data.pagination);
+      if(data.pagination)  setPagination(data.pagination);
       
       // Update stats
       if (data.pagination && data.pagination.total) {

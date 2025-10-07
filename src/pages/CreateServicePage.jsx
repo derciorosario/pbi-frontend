@@ -320,7 +320,7 @@ export default function CreateServicePage() {
     deliveryTime: "1 Week",
     locationType: "Remote", // Remote | On-site
     experienceLevel: "Intermediate",
-    country: "",
+    country: "All countries",
     city: "",
     skills: [], // array of strings
   });
@@ -436,8 +436,11 @@ export default function CreateServicePage() {
       const next = { ...f, [name]: value };
       // Clear country/city if Remote
       if (name === "locationType" && value === "Remote") {
-        next.country = "";
+        // Don't clear country when switching to Remote, keep "All countries" as default
         next.city = "";
+      }
+      if (name === "country" && value === "All countries") {
+        next.city = ""; // Clear city when "All countries" is selected
       }
       return next;
     });
@@ -532,10 +535,13 @@ export default function CreateServicePage() {
   });
   
   // Create country options for SearchableSelect
-  const countryOptions = COUNTRIES.map(country => ({
-    value: country,
-    label: country
-  }));
+  const countryOptions = [
+    { value: "All countries", label: "All countries" },
+    ...COUNTRIES.map(country => ({
+      value: country,
+      label: country
+    }))
+  ];
   
   // Create city options for SearchableSelect (limit to reasonable number)
   const allCityOptions = CITIES.slice(0, 10000).map(city => ({
@@ -555,7 +561,7 @@ export default function CreateServicePage() {
 
   // Filtered cities for dropdown based on selected countries
   const cityOptions = useMemo(() => {
-    if (selectedCountries.length === 0) return allCityOptions;
+    if (selectedCountries.length === 0 || selectedCountries.includes("all countries")) return [];
     const setLC = new Set(selectedCountries);
     return allCityOptions.filter((c) => setLC.has(c.country.toLowerCase()));
   }, [selectedCountries, allCityOptions]);
@@ -1061,6 +1067,7 @@ export default function CreateServicePage() {
                     onChange={(value) => setField("city", value)}
                     options={cityOptions}
                     placeholder="Search and select city..."
+                    disabled={form.country === "All countries"}
                   />
                 </div>
               </div>

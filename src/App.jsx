@@ -57,6 +57,7 @@ import CreateNeedPage from './pages/CreateNeedPage.jsx';
 import AuthorizeRepresentative from './pages/AuthorizeRepresentative.jsx';
  import ConfirmStaffInvitation from './pages/ConfirmStaffInvitation.jsx';
  import OrganizationJoinRequests from './pages/OrganizationJoinRequests.jsx';
+import AdminContacts from './admin/AdminContacts.jsx';
 
 
 
@@ -116,6 +117,7 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="content-moderation" element={<AdminModeration/>} />
+          <Route path="contacts" element={<AdminContacts/>} />
           <Route path="user-profile/:id" element={<ProfilePage />} />
         </Route>
 

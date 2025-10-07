@@ -584,12 +584,11 @@ export default function PeopleFeedPage() {
    
    <DefaultLayout>
      <Header />
-
       <main className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
-            <div className="_sticky top-0 z-10 _bg-white">
+          <div className="_sticky top-0 z-10 _bg-white">
               <FiltersCard    selectedFilters={selectedFilters} {...filtersProps} from="jobs"/>
           </div>
            <QuickActions title="Quick Actions" items={[
@@ -598,7 +597,7 @@ export default function PeopleFeedPage() {
               { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
               { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
             ]} />
-          <ProfileCard />
+           <ProfileCard />
         </aside>
 
     

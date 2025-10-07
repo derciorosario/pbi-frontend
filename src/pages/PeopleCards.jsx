@@ -13,6 +13,7 @@ import { toast } from "../lib/toast.js";
 
 // Import MeetingRequestModal from ProfileModal.jsx
 const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => {
+  
   const defaultTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const [form, setForm] = useState({
     date: "",
@@ -25,6 +26,7 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
     agenda: "",
     timezone: defaultTz,
   });
+
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -471,18 +473,32 @@ export default function PeopleProfileCard({
        
       
        
-       <div className="relative translate-x-3 -mt-8 z-10 flex justify-between">
-  <div className="relative">
+       <div className="flex items-center gap-4 pt-1 pb-4 pl-4 pr-4">
+  <div className="relative flex-shrink-0 -mt-4">
     {avatarUrl ? (
-      <div className={`${isCompany ? 'w-20 h-20 rounded-md' : 'w-16 h-16 rounded-full'} border-4 ${isCompany ? 'border-blue-50' : 'border-white'} overflow-hidden shadow-md`}>
+      <div
+        className={`flex bg-white items-center justify-center w-24 h-24 rounded-md shadow-md ${isCompany ? 'border-2 border-blue-100' : 'border-2 border-gray-100'} overflow-hidden cursor-pointer`}
+        onClick={() => {
+          setOpenId(id);
+          data._showPopUp?.("profile");
+        }}
+        title={`View ${name}'s profile`}
+      >
         <img
           src={avatarUrl}
           alt={name}
-          className="w-full h-full object-cover"
+          className="w-full"
         />
       </div>
     ) : (
-      <div className={`${isCompany ? 'w-20 h-20 rounded-md' : 'w-16 h-16 rounded-full'} border-4 ${isCompany ? 'border-blue-50' : 'border-white'} ${isCompany ? 'bg-blue-100' : 'bg-brand-100'} flex items-center justify-center shadow-md`}>
+      <div
+        className={`w-24 h-24 rounded-md shadow-md ${isCompany ? 'border-2 border-blue-100' : 'border-2 border-gray-100'} ${isCompany ? 'bg-blue-100' : 'bg-brand-100'} flex items-center justify-center cursor-pointer`}
+        onClick={() => {
+          setOpenId(id);
+          data._showPopUp?.("profile");
+        }}
+        title={`View ${name}'s profile`}
+      >
         <span className={`${isCompany ? 'text-blue-600' : 'text-brand-600'} font-medium text-lg`}>
           {getInitials(name)}
         </span>
@@ -501,7 +517,7 @@ export default function PeopleProfileCard({
                 key={membership.companyId}
                 src={membership.company.avatarUrl}
                 alt={membership.company.name}
-                className={`h-7 w-7 rounded-full border-2 border-white shadow-sm object-cover ${
+                className={`h-7 w-7 rounded-full border-2 border-white shadow-md object-cover ${
                   membership.isMain ? 'ring-2 ring-brand-400' : ''
                 }`}
                 title={`${membership.company.name} (${membership.role})`}
@@ -509,7 +525,7 @@ export default function PeopleProfileCard({
             ) : (
               <div
                 key={membership.companyId}
-                className={`h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 ${
+                className={`h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 ${
                   membership.isMain ? 'ring-2 ring-brand-400' : ''
                 }`}
                 title={`${membership.company.name} (${membership.role})`}
@@ -519,7 +535,7 @@ export default function PeopleProfileCard({
             )
           ))}
         {companyMemberships.length > 3 && (
-          <div className="h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 z-10">
+          <div className="h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 z-10">
             +{companyMemberships.length - 3}
           </div>
         )}
@@ -527,58 +543,42 @@ export default function PeopleProfileCard({
     )}
   </div>
 
-  {/* View profile button */}
-  <button
+  {/* Name, role and location - clickable to open profile */}
+  <div
+    className="flex-1 min-w-0 cursor-pointer"
     onClick={() => {
       setOpenId(id);
       data._showPopUp?.("profile");
     }}
-    className="h-10 w-10 translate-y-10 mr-6 flex-shrink-0 grid place-items-center rounded-xl border-2 border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
-    aria-label="View profile"
+    title={`View ${name}'s profile`}
   >
-    <Eye size={16} />
-  </button>
+    <div className={`${isCompany ? 'text-[17px]' : 'text-[15px]'} font-semibold ${isCompany ? 'text-blue-900' : 'text-gray-900'} hover:underline transition-colors truncate`} title={name}>
+      {name}
+    </div>
+    {role && (
+      <div className={`text-sm ${isCompany ? 'font-medium text-blue-700' : 'text-gray-600'} truncate`} title={role}>
+        {isCompany ? `${role || 'Company'}` : role}
+      </div>
+    )}
+
+    {(location || computedTime) && (
+      <div className="mt-0.5 flex items-center text-xs text-gray-500 min-w-0">
+        <span className="flex items-center gap-1.5" title={location}>
+          {location && (
+            <>
+              <MapPin size={14} />
+              <span className="max-w-[220px]" title={location}>{location}</span>
+            </>
+          )}
+        </span>
+      </div>
+    )}
+  </div>
 </div>
       
 
       {/* CONTENT */}
-      <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
-        {/* Header row */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div
-              className={`${isCompany ? 'text-[17px]' : 'text-[15px]'} font-semibold ${isCompany ? 'text-blue-900' : 'text-gray-900'} truncate hover:underline cursor-pointer group-hover:text-brand-600 transition-colors`}
-              onClick={() => {
-                setOpenId(id);
-                data._showPopUp?.("profile");
-              }}
-            >
-              {name}
-            </div>
-            {role && (
-              <div className={`text-sm ${isCompany ? 'font-medium text-blue-700' : 'text-gray-600'} truncate`}>
-                {isCompany ? `${role || 'Company'}` : role}
-              </div>
-            )}
-
-            {(location || computedTime) && (
-              <div className="mt-0.5 flex items-center justify-between text-xs text-gray-500">
-                <span className="flex items-center gap-1.5">
-                  {location && (
-                    <>
-                      <MapPin size={14} />
-                      {location}
-                    </>
-                  )}
-                </span>
-              
-              </div>
-            )}
-          </div>
-
-          {/* Dot/menu -> open profile */}
-          
-        </div>
+      <div className={`${isList ? "pb-4 pl-4 pr-4 md:pb-5 md:pl-5 md:pr-5" : "pb-5 pl-5 pr-5"} flex flex-col flex-1`}>
 
           {/* Tags: show 2 + tooltip */}
         {!!visibleTags.length && (
@@ -627,7 +627,7 @@ export default function PeopleProfileCard({
 
         {/* About */}
         {about && (
-          <p className={`mt-3 text-[15px] leading-relaxed text-gray-700 ${isList ? "line-clamp-3 md:line-clamp-6" : "line-clamp-6"}`}>
+          <p className={`mt-0 text-[15px] leading-relaxed text-gray-700 ${isList ? "line-clamp-3 md:line-clamp-6" : "line-clamp-6"}`}>
             {displayedAbout}
           </p>
         )}

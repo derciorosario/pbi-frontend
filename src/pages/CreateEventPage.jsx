@@ -251,10 +251,13 @@ function SearchableSelect({
 }
 
 // Create country options for SearchableSelect
-const countryOptions = COUNTRIES.map(country => ({
-value: country,
-label: country
-}));
+const countryOptions = [
+  { value: "All countries", label: "All countries" },
+  ...COUNTRIES.map(country => ({
+    value: country,
+    label: country
+  }))
+];
 
 // Create city options for SearchableSelect (limit to reasonable number)
 const allCityOptions = CITIES.slice(0, 10000).map(city => ({
@@ -454,7 +457,7 @@ export default function CreateEventPage() {
     endTime: "",
     timezone: "Africa/Lagos",
     locationType: "In-Person",
-    country: "",
+    country: "All countries",
     city: "",
     address: "",
     onlineUrl: "",
@@ -482,7 +485,7 @@ export default function CreateEventPage() {
 
   // Filtered cities for dropdown based on selected countries
   const cityOptions = useMemo(() => {
-    if (selectedCountries.length === 0) return allCityOptions;
+    if (selectedCountries.length === 0 || selectedCountries.includes("all countries")) return [];
     const setLC = new Set(selectedCountries);
     return allCityOptions.filter((c) => setLC.has(c.country.toLowerCase()));
   }, [selectedCountries, allCityOptions]);
@@ -647,11 +650,17 @@ export default function CreateEventPage() {
       const next = { ...f, [name]: value };
       if (name === "categoryId") next.subcategoryId = "";
       if (name === "registrationType" && value === "Free") next.price = "";
+      if (name === "country") {
+        // When "All countries" is selected, clear the city field
+        if (value === "All countries") {
+          next.city = "";
+        }
+      }
       if (name === "locationType") {
         if (value === "Virtual") {
           next.address = "";
           next.city = "";
-          next.country = "";
+          // Don't clear country when switching to Virtual, keep "All countries" as default
         } else {
           next.onlineUrl = "";
         }
@@ -744,6 +753,10 @@ export default function CreateEventPage() {
         delete payload.country;
       } else {
         delete payload.onlineUrl;
+        // When country is "All countries", ensure city is not sent
+        if (payload.country === "All countries") {
+          delete payload.city;
+        }
       }
 
       if (isEditMode) {
@@ -979,6 +992,7 @@ export default function CreateEventPage() {
                         onChange={(value) => setField("city", value)}
                         options={cityOptions}
                         placeholder="Search and select city..."
+                        disabled={form.country === "All countries"}
                       />
                     </div>
                   </div>

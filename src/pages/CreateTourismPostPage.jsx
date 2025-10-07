@@ -210,13 +210,13 @@ export default function CreateTourismPostPage() {
   // Form
   const [form, setForm] = useState({
     title: "",
-    country: "",
+    country: "All countries",
     location: "",
     description: "",
     season: "",
     budgetRange: "",
     tagsInput: "",
-    tags: [],  
+    tags: [],
   });
 
   const [tagInput, setTagInput] = useState("");
@@ -344,7 +344,13 @@ export default function CreateTourismPostPage() {
 
   function setField(name, value) {
     if (readOnly) return;
-    setForm((f) => ({ ...f, [name]: value }));
+    setForm((f) => {
+      const next = { ...f, [name]: value };
+      if (name === "country" && value === "All countries") {
+        next.location = ""; // Clear location when "All countries" is selected
+      }
+      return next;
+    });
   }
 
   function parsedTags() {
@@ -424,10 +430,13 @@ export default function CreateTourismPostPage() {
   });
   
   // Create country options for SearchableSelect
-  const countryOptions = COUNTRIES.map(country => ({
-    value: country,
-    label: country
-  }));
+  const countryOptions = [
+    { value: "All countries", label: "All countries" },
+    ...COUNTRIES.map(country => ({
+      value: country,
+      label: country
+    }))
+  ];
   
   // Create city options for SearchableSelect (limit to reasonable number)
   const cityOptions = CITIES.slice(0, 1000).map(city => ({
@@ -811,6 +820,7 @@ export default function CreateTourismPostPage() {
                     onChange={(value) => setField("location", value)}
                     options={locationOptions}
                     placeholder="Search and select location..."
+                    disabled={form.country === "All countries"}
                   />
                 </div>
               </div>

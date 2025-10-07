@@ -1,6 +1,6 @@
 // src/pages/Profile.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "../lib/toast";
 
 import {
@@ -31,6 +31,7 @@ import UserSelectionModal from "../components/UserSelectionModal";
   import OrganizationSelectionModal from "../components/OrganizationSelectionModal";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { Download } from "lucide-react";
+import ProfileModal from "../components/ProfileModal.jsx";
 
 const Tab = {
   PERSONAL: "personal",
@@ -53,13 +54,17 @@ export default function ProfilePage() {
   const { id: userId } = useParams();
   const location = useLocation();
   const isAdminEditing = location.pathname.includes('/admin/user-profile/');
-  const {user,profile, setProfile} = useAuth() 
+  const {user,profile, setProfile,setUser} = useAuth() 
+  const navigate=useNavigate()
   
   const [active, setActive]   = useState(Tab.PERSONAL);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [me, setMe]           = useState(null);
   const [identities, setIdentities] = useState([]);
+
+  // Determine if this is a company account
+  const isCompany = me?.user?.accountType === "company";
 
   useEffect(()=>{
 
@@ -70,9 +75,111 @@ export default function ProfilePage() {
     }
 
   },[user,me])
-  
-  // Determine if this is a company account
-  const isCompany = me?.user?.accountType === "company";
+
+  // Handle URL parameters for highlighting specific applications/registrations
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    const jobApplicationId = urlParams.get('jobApplication');
+    const eventRegistrationId = urlParams.get('eventRegistration');
+
+    if (jobApplicationId && me?.user?.id) {
+      setLoading(true);
+
+      if (isCompany) {
+        // Company viewing job applications
+        setActive(Tab.JOB_APPLICATIONS);
+        loadJobApplications().then(() => {
+          setTimeout(() => {
+            const element = document.querySelector(`[data-application-id="${jobApplicationId}"]`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.classList.add('ring-2', 'ring-brand-500', 'ring-offset-2');
+              setTimeout(() => {
+                element.classList.remove('ring-2', 'ring-brand-500', 'ring-offset-2');
+              }, 3000);
+            } else {
+              toast.error('Job application not found or access denied');
+            }
+            setLoading(false);
+          }, 500);
+        }).catch((error) => {
+          console.error('Failed to load job applications:', error);
+          toast.error('Failed to load job applications');
+          setLoading(false);
+        });
+      } else {
+        // Individual viewing their own job applications
+        setActive(Tab.APPLICATIONS);
+        loadMyApplications().then(() => {
+          setTimeout(() => {
+            const element = document.querySelector(`[data-application-id="${jobApplicationId}"]`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.classList.add('ring-2', 'ring-brand-500', 'ring-offset-2');
+              setTimeout(() => {
+                element.classList.remove('ring-2', 'ring-brand-500', 'ring-offset-2');
+              }, 3000);
+            } else {
+              toast.error('Job application not found');
+            }
+            setLoading(false);
+          }, 500);
+        }).catch((error) => {
+          console.error('Failed to load job applications:', error);
+          toast.error('Failed to load job applications');
+          setLoading(false);
+        });
+      }
+    } else if (eventRegistrationId && me?.user?.id) {
+      setLoading(true);
+
+      if (isCompany) {
+        // Company viewing event registrations
+        setActive(Tab.EVENT_REGISTRATIONS);
+        loadEventRegistrations().then(() => {
+          setTimeout(() => {
+            const element = document.querySelector(`[data-registration-id="${eventRegistrationId}"]`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.classList.add('ring-2', 'ring-brand-500', 'ring-offset-2');
+              setTimeout(() => {
+                element.classList.remove('ring-2', 'ring-brand-500', 'ring-offset-2');
+              }, 3000);
+            } else {
+              toast.error('Event registration not found or access denied');
+            }
+            setLoading(false);
+          }, 500);
+        }).catch((error) => {
+          console.error('Failed to load event registrations:', error);
+          toast.error('Failed to load event registrations');
+          setLoading(false);
+        });
+      } else {
+        // Individual viewing their own event registrations
+        setActive(Tab.EVENTS);
+        loadMyEventRegistrations().then(() => {
+          setTimeout(() => {
+            const element = document.querySelector(`[data-registration-id="${eventRegistrationId}"]`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              element.classList.add('ring-2', 'ring-brand-500', 'ring-offset-2');
+              setTimeout(() => {
+                element.classList.remove('ring-2', 'ring-brand-500', 'ring-offset-2');
+              }, 3000);
+            } else {
+              toast.error('Event registration not found');
+            }
+            setLoading(false);
+          }, 500);
+        }).catch((error) => {
+          console.error('Failed to load event registrations:', error);
+          toast.error('Failed to load event registrations');
+          setLoading(false);
+        });
+      }
+    }
+  }, [location.search, me, isCompany]);
 
   // Personal
    const [personal, setPersonal] = useState({
@@ -201,7 +308,11 @@ export default function ProfilePage() {
      const [selectedEventFilter, setSelectedEventFilter] = useState('all');
 
      // Search state
-     const [searchQuery, setSearchQuery] = useState('');
+        const [searchQuery, setSearchQuery] = useState('');
+  
+     // Profile modal state
+     const [profileModalOpen, setProfileModalOpen] = useState(false);
+     const [selectedProfileUserId, setSelectedProfileUserId] = useState(null);
  
    // City options for SearchableSelect (limit to reasonable number)
    const allCityOptions = CITIES.slice(0, 10000).map(city => ({
@@ -422,6 +533,28 @@ export default function ProfilePage() {
         loadMyEventRegistrations();
       }
     }, [!isCompany, me?.user?.id, active]);
+
+    // Load company data for Representative tab
+    useEffect(() => {
+      if (isCompany && me?.user?.id && active === Tab.REPRESENTATIVE) {
+        loadCompanyData();
+      }
+    }, [isCompany, me?.user?.id, active]);
+
+    // Load organization join requests for Join Requests tab
+    useEffect(() => {
+      if (isCompany && me?.user?.id && active === Tab.JOIN_REQUESTS) {
+        loadOrganizationJoinRequests();
+        loadPendingRequestsCount();
+      }
+    }, [isCompany, me?.user?.id, active]);
+
+    // Load company staff data for Staff tab
+    useEffect(() => {
+      if (isCompany && me?.user?.id && active === Tab.STAFF) {
+        loadCompanyData();
+      }
+    }, [isCompany, me?.user?.id, active]);
 
     // Helper function to truncate HTML content while preserving tags
     const truncateHtml = (html, maxLength = 150) => {
@@ -865,7 +998,6 @@ export default function ProfilePage() {
 
    // Handle organization join request success
    async function handleOrganizationJoinSuccess(request) {
-     toast.success('Organization join request sent successfully!');
      // Reload membership status to show any updates
      loadMembershipStatus();
    }
@@ -1791,10 +1923,47 @@ const companyStages = ["Startup", "Small business", "Medium business", "Large en
   }
 
   /* ---------- DOES ---------- */
-  const toggleIdentityDo = makeToggleIdentity({
-    pickIds: doIdentityIds, setPickIds: setDoIdentityIds,
-    setCats: setDoCategoryIds, setSubs: setDoSubcategoryIds, setX: setDoSubsubCategoryIds,
-  });
+  // Modified to allow only one identity selection for DO section
+  const toggleIdentityDo = (identityKey) => {
+    setDoIdentityIds(prev => {
+      const currentlySelected = prev.includes(identityKey);
+      if (currentlySelected) {
+        // If clicking the already selected item, deselect it
+        return [];
+      } else {
+        // If clicking a new item, select only this one (replace any existing selection)
+        return [identityKey];
+      }
+    });
+
+    // Also handle category/subcategory cleanup when selection changes
+    setDoSubsubCategoryIds(prev => {
+      const stillCovered = (ownersMap, id) => {
+        const owners = ownersMap[id];
+        if (!owners) return false;
+        return [identityKey].some((ik) => owners.has(ik));
+      };
+      return prev.filter((xid) => stillCovered(subsubToIdentityKeys, xid));
+    });
+
+    setDoSubcategoryIds(prev => {
+      const stillCovered = (ownersMap, id) => {
+        const owners = ownersMap[id];
+        if (!owners) return false;
+        return [identityKey].some((ik) => owners.has(ik));
+      };
+      return prev.filter((sid) => stillCovered(subToIdentityKeys, sid));
+    });
+
+    setDoCategoryIds(prev => {
+      const stillCovered = (ownersMap, id) => {
+        const owners = ownersMap[id];
+        if (!owners) return false;
+        return [identityKey].some((ik) => owners.has(ik));
+      };
+      return prev.filter((cid) => stillCovered(catToIdentityKeys, cid));
+    });
+  };
   const toggleCategoryDo = makeToggleCategory({
     catIds: doCategoryIds, setCatIds: setDoCategoryIds,
     setSubIds: setDoSubcategoryIds, setXIds: setDoSubsubCategoryIds,
@@ -2032,7 +2201,7 @@ const toggleIdentityWant = (identityKey) => {
     const reached = typeof limit === "number" && picked.length >= limit;
     return (
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
-        {identities.map((iden, i) => {
+        {identities.filter(i=>i.type==user?.accountType || active!=Tab.DO).map((iden, i) => {
           const key = getIdentityKey(iden);
           const active = picked.includes(key);
           const disabled = !active && reached;
@@ -2493,12 +2662,12 @@ const toggleIdentityWant = (identityKey) => {
                  Representative
                </button>
                <button className={`px-4 py-2 rounded-lg border ${active===Tab.STAFF ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.STAFF)}>
-                 Staff
-                 {staff.length > 0 && (
-                   <span className="ml-1 text-xs bg-green-500 text-white rounded-full px-1.5 py-0.5">
-                     {staff.length}
+                 <label> Staff </label>
+                 {/** {staff.length > 0 && (
+                   <span>  
+                     ({staff.length})
                    </span>
-                 )}
+                 )} */}
                </button>
                <button className={`px-4 py-2 rounded-lg border ${active===Tab.JOB_APPLICATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.JOB_APPLICATIONS)}>
                  Job Applications
@@ -2535,7 +2704,10 @@ const toggleIdentityWant = (identityKey) => {
           {/* PERSONAL */}
           {active === Tab.PERSONAL && (
             <div className="space-y-4">
-              <ProfilePhoto onChange={(base64)=>setPersonal({ ...personal, avatarUrl: base64 })} avatarUrl={personal.avatarUrl}/>
+              <ProfilePhoto onChange={(base64)=>{
+                setPersonal({ ...personal, avatarUrl: base64 })
+                setUser({...user, avatarUrl: base64})
+              }} avatarUrl={personal.avatarUrl}/>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
@@ -3384,9 +3556,14 @@ const toggleIdentityWant = (identityKey) => {
             <div className="space-y-6">
               <div>
                 <h3 className="font-semibold mb-2">
-                  {isCompany ? "Company identities (what we DO)" : "Identities (what you DO)"}
+                  {isCompany ? "Company identity (what we DO)" : "Identity (what you DO)"}
                 </h3>
-                <IdentityGrid picked={doIdentityIds} onToggle={toggleIdentityDo} />
+                <p className="text-gray-600 mb-4">
+                  {isCompany
+                    ? "Choose the identity that best represents what your company does."
+                    : "Choose the identity that best represents what you do."}
+                </p>
+                <IdentityGrid picked={doIdentityIds} onToggle={toggleIdentityDo} limit={1} />
               </div>
               <div>
                 <h3 className="font-semibold mb-2">
@@ -3945,7 +4122,7 @@ const toggleIdentityWant = (identityKey) => {
                 ) : (
                   <div className="space-y-4">
                     {getFilteredApplications(jobApplications).map((application, index) => (
-                      <div key={application.id} className="border rounded-lg p-4 bg-white">
+                      <div key={application.id} className="border rounded-lg p-4 bg-white" data-application-id={application.id}>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
@@ -4096,13 +4273,48 @@ const toggleIdentityWant = (identityKey) => {
                             </div>
                           </div>
                         )}
+
+                        {/* Prominent CV Download Section */}
+                        {application.cvBase64?.base64 && (
+                          <div className="mb-4 p-4 border border-gray-300 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-12 bg-red-600 text-white flex items-center justify-center rounded">
+                                  PDF
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-gray-900">
+                                    {application.cvBase64.title || application.cvBase64.original_filename}
+                                  </h4>
+                                  <p className="text-sm text-gray-600">
+                                    {Math.round((application.cvBase64.base64.length * 3) / 4 / 1024)} KB • Uploaded {new Date(application.cvBase64.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <a
+                                  href={application.cvBase64.base64}
+                                  download={application.cvBase64.original_filename}
+                                  className="text-gray-500 hover:text-gray-700 p-1"
+                                  title="Download"
+                                >
+                                  <Download size={18}/>
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between">
                           <div className="text-xs text-gray-500">
                             Applied {new Date(application.createdAt).toLocaleDateString()}
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => window.open(`/profile/${application.applicant.id}`, '_blank')}
+                              onClick={() => {
+                                setSelectedProfileUserId(application.applicant.id);
+                                setProfileModalOpen(true);
+                              }}
                               className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
                             >
                               View Profile
@@ -4113,13 +4325,6 @@ const toggleIdentityWant = (identityKey) => {
                             >
                               Message
                             </button>
-                             {application.cvBase64?.base64 && <a
-                              href={application.cvBase64?.base64}
-                              download={application.cvBase64?.original_filename}
-                              className="px-3 py-1 bg-brand-600 flex items-center gap-x-1 text-white rounded-lg text-sm hover:bg-brand-700"
-                            >
-                             <Download size={15}/> CV
-                            </a>}
                           </div>
                         </div>
                       </div>
@@ -4200,7 +4405,7 @@ const toggleIdentityWant = (identityKey) => {
                 ) : (
                   <div className="space-y-4">
                     {getFilteredEventRegistrations(eventRegistrations).map((registration, index) => (
-                      <div key={registration.id} className="border rounded-lg p-4 bg-white">
+                      <div key={registration.id} className="border rounded-lg p-4 bg-white" data-registration-id={registration.id}>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
@@ -4287,7 +4492,10 @@ const toggleIdentityWant = (identityKey) => {
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => window.open(`/profile/${registration.registrant.id}`, '_blank')}
+                              onClick={() => {
+                                setSelectedProfileUserId(registration.registrant.id);
+                                setProfileModalOpen(true);
+                              }}
                               className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
                             >
                               View Profile
@@ -4483,7 +4691,7 @@ const toggleIdentityWant = (identityKey) => {
                 ) : (
                   <div className="space-y-4">
                     {getFilteredApplications(myJobApplications).map((application, index) => (
-                      <div key={application.id} className="border rounded-lg p-4 bg-white">
+                      <div key={application.id} className="border rounded-lg p-4 bg-white" data-application-id={application.id}>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
@@ -4619,13 +4827,48 @@ const toggleIdentityWant = (identityKey) => {
                             </div>
                           </div>
                         )}
+
+                        {/* Prominent CV Download Section */}
+                        {application.cvBase64?.base64 && (
+                          <div className="mb-4 p-4 border border-gray-300 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-12 bg-red-600 text-white flex items-center justify-center rounded">
+                                  PDF
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-gray-900">
+                                    {application.cvBase64.title || application.cvBase64.original_filename}
+                                  </h4>
+                                  <p className="text-sm text-gray-600">
+                                    {Math.round((application.cvBase64.base64.length * 3) / 4 / 1024)} KB • Uploaded {new Date(application.cvBase64.created_at).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <a
+                                  href={application.cvBase64.base64}
+                                  download={application.cvBase64.original_filename}
+                                  className="text-gray-500 hover:text-gray-700 p-1"
+                                  title="Download"
+                                >
+                                  <Download size={18}/>
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex items-center justify-between">
                           <div className="text-xs text-gray-500">
                             Applied {new Date(application.createdAt).toLocaleDateString()}
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => window.open(`/profile/${application.job.postedBy.id}`, '_blank')}
+                              onClick={() => {
+                                setSelectedProfileUserId(application.job.postedBy.id);
+                                setProfileModalOpen(true);
+                              }}
                               className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
                             >
                               View Company
@@ -4636,14 +4879,6 @@ const toggleIdentityWant = (identityKey) => {
                             >
                               Message
                             </button>
-
-                            {application.cvBase64?.base64 && <a
-                              href={application.cvBase64?.base64}
-                              download={application.cvBase64?.original_filename}
-                              className="px-3 py-1 bg-brand-600 flex items-center gap-x-1 text-white rounded-lg text-sm hover:bg-brand-700"
-                            >
-                             <Download size={15}/> CV
-                            </a>}
                           </div>
                         </div>
                       </div>
@@ -4724,7 +4959,7 @@ const toggleIdentityWant = (identityKey) => {
                 ) : (
                   <div className="space-y-4">
                     {getFilteredEventRegistrations(myEventRegistrations).map((registration, index) => (
-                      <div key={registration.id} className="border rounded-lg p-4 bg-white">
+                      <div key={registration.id} className="border rounded-lg p-4 bg-white" data-registration-id={registration.id}>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
@@ -4794,7 +5029,10 @@ const toggleIdentityWant = (identityKey) => {
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => window.open(`/profile/${registration.event.organizer.id}`, '_blank')}
+                              onClick={() => {
+                                setSelectedProfileUserId(registration.event.organizer.id);
+                                setProfileModalOpen(true);
+                              }}
                               className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
                             >
                               View Organizer
@@ -4980,6 +5218,16 @@ const toggleIdentityWant = (identityKey) => {
            description="Select an organization you'd like to join and send a request for approval."
          />
        )}
+
+       {/* Profile Modal */}
+       <ProfileModal
+         userId={selectedProfileUserId}
+         isOpen={profileModalOpen}
+         onClose={() => {
+           setProfileModalOpen(false);
+           setSelectedProfileUserId(null);
+         }}
+       />
     </div>
   );
 }

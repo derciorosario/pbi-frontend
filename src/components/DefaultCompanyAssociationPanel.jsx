@@ -247,20 +247,20 @@ export default function CompanyAssociationPanel() {
             >
               {companies.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name}
+                  {(c.name.length > 15 ? c.name.substring(0, 15) + "..." : c.name)}
                 </option>
               ))}
             </select>
           ) : (
             <div className="flex items-center gap-1">
-              <h3 className="truncate font-semibold text-white">
+              <h3 className="font-semibold text-white">
                 {company.name}
               </h3>
               <ShieldCheck className="h-4 w-4 text-[#0a66c2]" />
             </div>
           )}
           {company.tagline && (
-            <p className="text-sm text-slate-600 truncate">{company.tagline}</p>
+            <p className="text-sm text-slate-600">{company.tagline}</p>
           )}
         </div>
 
@@ -287,7 +287,7 @@ export default function CompanyAssociationPanel() {
      
      {/* actions */}
 <div className="px-4 pb-4 flex flex-col gap-2 relative">
-  <ActionButton label="Manage Page" onClick={company.onManage} primary />
+  <ActionButton label="Manage company" onClick={company.onManage} primary />
 
   {showMore && (
     <>

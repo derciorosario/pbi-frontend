@@ -306,7 +306,7 @@ export default function CrowdfundForm() {
   const [form, setForm] = useState({
     title: "",
     categoryId: "",
-    country: "",
+    country: "All countries",
     city: "",
     goal: "",
     raised: "",
@@ -328,7 +328,13 @@ export default function CrowdfundForm() {
 
   const change = (e) => {
     if (readOnly) return;
-    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+    setForm((f) => {
+      const next = { ...f, [e.target.name]: e.target.value };
+      if (e.target.name === "country" && e.target.value === "All countries") {
+        next.city = ""; // Clear city when "All countries" is selected
+      }
+      return next;
+    });
   };
   const chooseFiles = () => { if (!readOnly) fileRef.current?.click(); };
 
@@ -557,10 +563,13 @@ function removeTag(idx) {
   });
   
   // Create country options for SearchableSelect
-  const countryOptions = COUNTRIES.map(country => ({
-    value: country,
-    label: country
-  }));
+  const countryOptions = [
+    { value: "All countries", label: "All countries" },
+    ...COUNTRIES.map(country => ({
+      value: country,
+      label: country
+    }))
+  ];
   
   // Create city options for SearchableSelect (limit to reasonable number)
   const cityOptions = CITIES.slice(0, 1000).map(city => ({
@@ -806,7 +815,7 @@ function removeTag(idx) {
         title: form.title,
         categoryId: form.categoryId || undefined,
         country: form.country,
-        city: form.city || undefined,
+        city: (form.country === "All countries") ? undefined : (form.city || undefined),
         goal: Number(form.goal),
         raised: form.raised ? Number(form.raised) : 0,
         currency: form.currency,
@@ -925,6 +934,7 @@ function removeTag(idx) {
                   onChange={(value) => setForm({ ...form, city: value })}
                   options={cityOptions}
                   placeholder="Search and select city..."
+                  disabled={form.country === "All countries"}
                 />
               </div>
             </div>

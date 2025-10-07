@@ -109,6 +109,7 @@ export function AuthProvider({ children }) {
       refreshAuth: fetchMe,
       signOut,
       hasRole,
+      setUser,
       settings,
       setSettings,
       isAuthed: Boolean(user && token),
