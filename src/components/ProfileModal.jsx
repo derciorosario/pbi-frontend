@@ -1099,7 +1099,7 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
 
 // Share data and components
 const ShareMenu = ({ profile, shareMenuRef, setShareOpen }) => {
-  const shareUrl = 'https://54links.com/login' // `https://54links.com/profile/${profile?.id}`;
+  const shareUrl =  `https://54links.com/profile/${profile?.id}`;
   const shareTitle = `${profile?.name || "Profile"} on 54Links`;
   const shareDescription = profile?.about || `Check out ${profile?.name || "this profile"} on 54Links`;
   const shareQuote = shareDescription.slice(0, 160) + (shareDescription.length > 160 ? "…" : "");
@@ -1115,11 +1115,7 @@ const ShareMenu = ({ profile, shareMenuRef, setShareOpen }) => {
       role="dialog"
       aria-label="Share options"
     >
-      <div className="text-xs font-medium text-gray-500 px-1 pb-2" onClick={()=>{
-        const shareUrl = 'https://panafricanbi.vercel.app/login';
-const facebookShareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-window.open(facebookShareLink, '_blank', 'width=600,height=400');
-      }}>
+      <div className="text-xs font-medium text-gray-500 px-1 pb-2">
         Share this profile
       </div>
 

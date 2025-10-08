@@ -828,6 +828,7 @@ export default function ProfilePage() {
        toast.loading('Sending staff invitation...', { id: 'staff-invite' });
 
        // The invitation is already sent by the modal, just reload data
+       toast.dismiss()
        toast.success('Staff invitation sent successfully', { id: 'staff-invite' });
 
        // Reload company data to show new invitation

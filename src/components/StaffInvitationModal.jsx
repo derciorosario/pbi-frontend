@@ -27,7 +27,8 @@ const StaffInvitationModal = ({ isOpen, onClose, onSuccess, companyId, companyNa
       });
 
       console.log('Staff invitation response:', response.data);
-      toast.success('Staff invitation sent successfully');
+     // toast.success('Staff invitation sent successfully');
+      toast.dismiss()
       console.log('Toast success called for staff invitation');
       onSuccess && onSuccess(response.data.invitation);
       handleClose();
