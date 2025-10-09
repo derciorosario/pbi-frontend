@@ -33,7 +33,9 @@ export default function SettingsPage() {
     emailFrequency: "daily", // "daily", "weekly", "monthly", "auto"
     hideMainFeed: false,
     connectionsOnly: false,
-    contentType: "all" // "all", "text", "images"
+    contentType: "all", // "all", "text", "images"
+    bidirectionalMatch: true, // Enable/disable bidirectional matching
+    bidirectionalMatchFormula: "reciprocal" // "simple" or "reciprocal"
   });
 
   // Fetch user settings
@@ -44,11 +46,30 @@ export default function SettingsPage() {
         const { data } = await getSettings();
         if (data) {
           // Parse notifications if it's a string
+          const parsedNotifications = typeof data.notifications === 'string'
+            ? JSON.parse(data.notifications)
+            : data.notifications;
+
+          // Merge with defaults, ensuring all required properties exist
           const parsedData = {
+            // Default structure
+            notifications: {
+              jobOpportunities: { email: true },
+              connectionInvitations: { email: true },
+              connectionRecommendations: { email: true },
+              connectionUpdates: { email: true },
+              messages: { email: true },
+              meetingRequests: { email: true }
+            },
+            emailFrequency: "daily",
+            hideMainFeed: false,
+            connectionsOnly: false,
+            contentType: "all",
+            bidirectionalMatch: true,
+            bidirectionalMatchFormula: "reciprocal",
+            // Override with user's saved data
             ...data,
-            notifications: typeof data.notifications === 'string'
-              ? JSON.parse(data.notifications)
-              : data.notifications
+            notifications: parsedNotifications || parsedData.notifications
           };
           setSettings(parsedData);
         }
@@ -133,6 +154,22 @@ export default function SettingsPage() {
     setSettings(prev => ({
       ...prev,
       contentType: contentType
+    }));
+  };
+
+  // Toggle bidirectional matching
+  const toggleBidirectionalMatch = () => {
+    setSettings(prev => ({
+      ...prev,
+      bidirectionalMatch: !prev.bidirectionalMatch
+    }));
+  };
+
+  // Set bidirectional match formula
+  const setBidirectionalMatchFormula = (formula) => {
+    setSettings(prev => ({
+      ...prev,
+      bidirectionalMatchFormula: formula
     }));
   };
 
@@ -427,7 +464,7 @@ export default function SettingsPage() {
                   </div>
 
                   {/* Content Type */}
-                  <div>
+                  <div className="border-b pb-4">
                     <div className="mb-2">
                       <h3 className="font-medium">Content type preference</h3>
                       <p className="text-sm text-gray-500">Choose what type of content you want to see in your feed</p>
@@ -464,6 +501,82 @@ export default function SettingsPage() {
                         <span className="ml-2 text-sm">Images only</span>
                       </label> */}
                     </div>
+                  </div>
+
+                  {/* Bidirectional Matching */}
+                  <div className="border-b pb-4">
+                    <div className="mb-2">
+                      <h3 className="font-medium">Connection matching preferences</h3>
+                      <p className="text-sm text-gray-500">Control how the platform matches you with potential connections</p>
+                    </div>
+
+                    {/* Enable/Disable Bidirectional Matching */}
+                    <div className="mt-3 mb-4">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={settings.bidirectionalMatch}
+                          onChange={toggleBidirectionalMatch}
+                        />
+                        <span className="ml-2 text-sm">Enable bidirectional matching</span>
+                      </label>
+                      <p className="text-xs text-gray-400 mt-1 ml-7">
+                        When enabled, the system considers both your interests and what others are looking for, creating more balanced matches
+                      </p>
+                    </div>
+
+                    {/* Matching Formula Selection */}
+                    {settings.bidirectionalMatch && (
+                      <div className="mt-4">
+                        <div className="mb-2">
+                          <h4 className="font-medium text-sm">Matching formula</h4>
+                          <p className="text-xs text-gray-500">Choose how to combine your match score with others' perspectives</p>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="bidirectionalFormula"
+                              className="h-5 w-5 text-brand-600 focus:ring-brand-500"
+                              checked={settings.bidirectionalMatchFormula === "simple"}
+                              onChange={() => setBidirectionalMatchFormula("simple")}
+                            />
+                            <div className="ml-2">
+                              <span className="text-sm font-medium">Simple Average</span>
+                              <p className="text-xs text-gray-400">
+                                Calculates the average of both match directions. Example: If you match them 80% but they match you 60%, the final score is 70%. <span className="text-gray-600">(80% + 60%) / 2 = 70%</span>.
+                              </p>
+                            </div>
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="bidirectionalFormula"
+                              className="h-5 w-5 text-brand-600 focus:ring-brand-500"
+                              checked={settings.bidirectionalMatchFormula === "reciprocal"}
+                              onChange={() => setBidirectionalMatchFormula("reciprocal")}
+                            />
+                            <div className="ml-2">
+                              <span className="text-sm font-medium">Weighted Reciprocal</span>
+                              <p className="text-xs text-gray-400">
+                                Prioritizes your own assessment (70%) while considering their perspective (30%). Example: If you match them 80% but they match you 60%, the final score is 74%. <span className="text-gray-600">(80%×0.7 + 60%×0.3) = 74%</span>.
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+
+                        {/* Formula Explanation Box */}
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <h5 className="font-medium text-sm text-blue-900 mb-2">How Matching Works</h5>
+                          <div className="text-xs text-blue-800 space-y-1">
+                            <p><strong>Unidirectional (one-way):</strong> Only considers if others match what you're looking for</p>
+                            <p><strong>Bidirectional (two-way):</strong> Considers both directions - if you match their needs AND they match yours</p>
+                            <p><strong>Why it matters:</strong> Bidirectional matching helps ensure mutual interest and reduces unwanted connection requests</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
