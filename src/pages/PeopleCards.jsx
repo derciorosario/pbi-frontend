@@ -374,7 +374,7 @@ export default function PeopleProfileCard({
   const visibleTags = allTags.slice(0, 2);
   const extraCount = Math.max(0, allTags.length - visibleTags.length);
 
-  const MAX_CHARS = 250;
+  const MAX_CHARS = 300;
   const isLong = !!about && about.length > MAX_CHARS;
   const displayedAbout = !about ? "" : isLong ? `${about.slice(0, MAX_CHARS)}...` : about;
 
@@ -471,8 +471,6 @@ export default function PeopleProfileCard({
       {/* Profile Image (circular) - only when there's no heroUrl */}
 
        
-      
-       
        <div className="flex items-center gap-4 pt-1 pb-4 pl-4 pr-4">
   <div className="relative flex-shrink-0 -mt-4">
     {avatarUrl ? (
@@ -560,14 +558,19 @@ export default function PeopleProfileCard({
         {isCompany ? `${role || 'Company'}` : role}
       </div>
     )}
+    {cats && cats.length > 0 && (
+      <div className={`text-sm ${isCompany ? 'font-medium text-brand-600' : 'text-brand-600'} truncate`} title={cats.join(", ")}>
+        {cats.join(", ")}
+      </div>
+    )}
 
     {(location || computedTime) && (
-      <div className="mt-0.5 flex items-center text-xs text-gray-500 min-w-0">
-        <span className="flex items-center gap-1.5" title={location}>
+      <div className="mt-0.5 flex items-center text-xs text-gray-500 min-w-0 w-full">
+        <span className="flex items-center gap-1.5 min-w-0 flex-1" title={location}>
           {location && (
             <>
               <MapPin size={14} />
-              <span className="max-w-[220px]" title={location}>{location}</span>
+              <span className="truncate" title={location}>{location}</span>
             </>
           )}
         </span>
@@ -581,7 +584,7 @@ export default function PeopleProfileCard({
       <div className={`${isList ? "pb-4 pl-4 pr-4 md:pb-5 md:pl-5 md:pr-5" : "pb-5 pl-5 pr-5"} flex flex-col flex-1`}>
 
           {/* Tags: show 2 + tooltip */}
-        {!!visibleTags.length && (
+        {!!visibleTags.length && (0==1) && (
           <div className="mt-4 mb-4 flex flex-wrap gap-2">
             {visibleTags.map((t) => (
               <span key={t} className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${isCompany ? 'bg-blue-50 text-blue-600 border border-blue-200/50' : 'bg-brand-50 text-brand-600 border border-brand-200/50'}`}>
@@ -627,7 +630,7 @@ export default function PeopleProfileCard({
 
         {/* About */}
         {about && (
-          <p className={`mt-0 text-[15px] leading-relaxed text-gray-700 ${isList ? "line-clamp-3 md:line-clamp-6" : "line-clamp-6"}`}>
+          <p title={about} className={`mt-0 text-[15px] leading-relaxed text-gray-700 ${isList ? "line-clamp-4 md:line-clamp-6" : "line-clamp-6"}`}>
             {displayedAbout}
           </p>
         )}

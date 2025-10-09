@@ -30,6 +30,11 @@ export default function ConnectionRequestModal({ open, onClose, toUserId, toName
   const [error, setError] = useState("");
   const {user} = useAuth()
 
+  // Filter out "Seeking Mentorship" for company accounts
+  const filteredReasons = REASONS.filter(reason =>
+    !(user?.accountType === "company" && reason === "Seeking Mentorship")
+  );
+
   useEffect(() => {
     setMessage("");
     setReason("");
@@ -77,7 +82,7 @@ export default function ConnectionRequestModal({ open, onClose, toUserId, toName
               : "Please select the reason and optionally write a message."}
           </p>
 
-          {user?.accountType != "company" && <div>
+          <div>
             <label className="text-xs text-gray-500">Reason (optional)</label>
             <select
               className="mt-1 w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
@@ -85,13 +90,13 @@ export default function ConnectionRequestModal({ open, onClose, toUserId, toName
               onChange={(e) => setReason(e.target.value)}
             >
               <option value="">Select reason</option>
-              {REASONS.map((r) => (
+              {filteredReasons.map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>
               ))}
             </select>
-          </div>}
+          </div>
 
           <div>
             <label className="text-xs text-gray-500">Message (optional)</label>
