@@ -27,8 +27,8 @@ import COUNTRIES from "../constants/countries.js";
 import CITIES from "../constants/cities.json";
 import Header from "../components/Header.jsx";
 import UserSelectionModal from "../components/UserSelectionModal";
-  import StaffInvitationModal from "../components/StaffInvitationModal";
-  import OrganizationSelectionModal from "../components/OrganizationSelectionModal";
+import StaffInvitationModal from "../components/StaffInvitationModal";
+import OrganizationSelectionModal from "../components/OrganizationSelectionModal";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { Download } from "lucide-react";
 import ProfileModal from "../components/ProfileModal.jsx";
@@ -233,6 +233,7 @@ export default function ProfilePage() {
   const [doCategoryIds, setDoCategoryIds] = useState([]);
   const [doSubcategoryIds, setDoSubcategoryIds] = useState([]);
   const [doSubsubCategoryIds, setDoSubsubCategoryIds] = useState([]);
+  const [activeIdentityTab, setActiveIdentityTab] = useState(null);
 
   // WANTS (what I’m looking for) + limits
   const MAX_WANT_IDENTITIES = 3;
@@ -241,6 +242,7 @@ export default function ProfilePage() {
   const [wantCategoryIds, setWantCategoryIds] = useState([]);
   const [wantSubcategoryIds, setWantSubcategoryIds] = useState([]);
   const [wantSubsubCategoryIds, setWantSubsubCategoryIds] = useState([]);
+  const [activeInterestIdentityTab, setActiveInterestIdentityTab] = useState(null);
 
   // INDUSTRIES
   const [industries, setIndustries] = useState([]);
@@ -1879,12 +1881,14 @@ const companyStages = ["Startup", "Small business", "Medium business", "Large en
       if (!catId) return;
       const has = catIds.includes(catId);
       if (has) {
+        // Deselect category and all its children
         const subs = catToAllSubIds[catId] || [];
         const xIds = subs.flatMap(sid => subToAllSubsubIds[sid] || []);
         setCatIds(prev => prev.filter(x => x !== catId));
         setSubIds(prev => prev.filter(s => !subs.includes(s)));
         setXIds(prev => prev.filter(x => !xIds.includes(x)));
       } else {
+        // Select only the category (no auto-selection of children)
         setCatIds(prev => [...prev, catId]);
       }
     };
@@ -1896,10 +1900,12 @@ const companyStages = ["Startup", "Small business", "Medium business", "Large en
       const parentCatId = subToCat[subId];
       const has = subIds.includes(subId);
       if (has) {
+        // Deselect subcategory and all its children
         const xIds = subToAllSubsubIds[subId] || [];
         setSubIds(prev => prev.filter(x => x !== subId));
         setXIds(prev => prev.filter(x => !xIds.includes(x)));
       } else {
+        // Select only the subcategory (no auto-selection of children)
         if (parentCatId) {
           setCatIds(prev => (prev.includes(parentCatId) ? prev : [...prev, parentCatId]));
         }
@@ -1913,57 +1919,46 @@ const companyStages = ["Startup", "Small business", "Medium business", "Large en
       if (!xId) return;
       const parentSubId = subsubToSub[xId];
       const parentCatId = parentSubId ? subToCat[parentSubId] : null;
+
+      // Check if subsubcategory is currently selected
       setXIds(prev => {
-        const has = prev.includes(xId);
-        if (has) return prev.filter(x => x !== xId);
-        if (parentSubId && !subIds.includes(parentSubId)) setSubIds(p => [...p, parentSubId]);
-        if (parentCatId) setCatIds(p => (p.includes(parentCatId) ? p : [...p, parentCatId]));
-        return [...prev, xId];
+        const hasX = prev.includes(xId);
+        if (hasX) {
+          // Deselect subsubcategory - don't remove parents as other subsubcategories might be selected
+          return prev.filter(x => x !== xId);
+        } else {
+          // Select only the subsubcategory (no auto-selection of parents)
+          return [...prev, xId];
+        }
       });
     };
   }
 
   /* ---------- DOES ---------- */
-  // Modified to allow only one identity selection for DO section
+  // Modified to allow only one identity selection for DO section with tab functionality
   const toggleIdentityDo = (identityKey) => {
-    setDoIdentityIds(prev => {
-      const currentlySelected = prev.includes(identityKey);
-      if (currentlySelected) {
-        // If clicking the already selected item, deselect it
-        return [];
-      } else {
-        // If clicking a new item, select only this one (replace any existing selection)
-        return [identityKey];
-      }
-    });
+    // Calculate the new identity state first
+    const currentIdentityIds = doIdentityIds;
+    const currentlySelected = currentIdentityIds.includes(identityKey);
+    const newIdentityIds = currentlySelected ? [] : [identityKey];
 
-    // Also handle category/subcategory cleanup when selection changes
-    setDoSubsubCategoryIds(prev => {
-      const stillCovered = (ownersMap, id) => {
-        const owners = ownersMap[id];
-        if (!owners) return false;
-        return [identityKey].some((ik) => owners.has(ik));
-      };
-      return prev.filter((xid) => stillCovered(subsubToIdentityKeys, xid));
-    });
+    // Update identity selection
+    setDoIdentityIds(newIdentityIds);
 
-    setDoSubcategoryIds(prev => {
-      const stillCovered = (ownersMap, id) => {
-        const owners = ownersMap[id];
-        if (!owners) return false;
-        return [identityKey].some((ik) => owners.has(ik));
-      };
-      return prev.filter((sid) => stillCovered(subToIdentityKeys, sid));
-    });
+    // Set active tab to the selected identity or null if deselected
+    setActiveIdentityTab(currentlySelected ? null : identityKey);
 
-    setDoCategoryIds(prev => {
-      const stillCovered = (ownersMap, id) => {
-        const owners = ownersMap[id];
-        if (!owners) return false;
-        return [identityKey].some((ik) => owners.has(ik));
-      };
-      return prev.filter((cid) => stillCovered(catToIdentityKeys, cid));
-    });
+    // Helper function to check if an item should still be selected
+    const stillCovered = (ownersMap, id) => {
+      const owners = ownersMap[id];
+      if (!owners) return false;
+      return newIdentityIds.some((ik) => owners.has(ik));
+    };
+
+    // Clean up categories, subcategories, and subsubcategories that are no longer covered
+    setDoSubsubCategoryIds(prev => prev.filter((xid) => stillCovered(subsubToIdentityKeys, xid)));
+    setDoSubcategoryIds(prev => prev.filter((sid) => stillCovered(subToIdentityKeys, sid)));
+    setDoCategoryIds(prev => prev.filter((cid) => stillCovered(catToIdentityKeys, cid)));
   };
   const toggleCategoryDo = makeToggleCategory({
     catIds: doCategoryIds, setCatIds: setDoCategoryIds,
@@ -1992,6 +1987,15 @@ const toggleIdentityWant = (identityKey) => {
 
     const picked = removing ? prev.filter((x) => x !== identityKey) : [...prev, identityKey];
 
+    // Set active tab to the newly selected identity
+    if (adding) {
+      setActiveInterestIdentityTab(identityKey);
+    } else if (removing && activeInterestIdentityTab === identityKey) {
+      // If the currently active tab is being removed, set to the last remaining identity
+      const newActiveTab = picked.length > 0 ? picked[picked.length - 1] : null;
+      setActiveInterestIdentityTab(newActiveTab);
+    }
+
     // Helper: keep an id only if at least one picked identity owns it
     const stillCovered = (map, id) => {
       const owners = map[id];
@@ -2012,13 +2016,14 @@ const toggleIdentityWant = (identityKey) => {
     setWantCategoryIds(prev => {
       const has = prev.includes(catId);
       if (has) {
+        // Deselect category and all its children
         const subs = catToAllSubIds[catId] || [];
         const xs = subs.flatMap(sid => subToAllSubsubIds[sid] || []);
         setWantSubcategoryIds(p => p.filter(id => !subs.includes(id)));
         setWantSubsubCategoryIds(p => p.filter(id => !xs.includes(id)));
         return prev.filter(id => id !== catId);
       } else {
-        if (prev.length >= MAX_WANT_CATEGORIES) return prev; // limit
+        // Select only the category (no auto-selection of children)
         return [...prev, catId];
       }
     });
@@ -2028,12 +2033,18 @@ const toggleIdentityWant = (identityKey) => {
     const parentCatId = subToCat[subId];
     setWantSubcategoryIds(prev => {
       const has = prev.includes(subId);
-      if (has) return prev.filter(x => x !== subId);
-      if (parentCatId && !wantCategoryIds.includes(parentCatId)) {
-        if (wantCategoryIds.length >= MAX_WANT_CATEGORIES) return prev; // limit
-        setWantCategoryIds(p => [...p, parentCatId]);
+      if (has) {
+        // Deselect subcategory and all its children
+        const xIds = subToAllSubsubIds[subId] || [];
+        setWantSubsubCategoryIds(p => p.filter(id => !xIds.includes(id)));
+        return prev.filter(x => x !== subId);
+      } else {
+        // Select only the subcategory (no auto-selection of children)
+        if (parentCatId && !wantCategoryIds.includes(parentCatId)) {
+          setWantCategoryIds(p => [...p, parentCatId]);
+        }
+        return [...prev, subId];
       }
-      return [...prev, subId];
     });
   };
 
@@ -2047,7 +2058,6 @@ const toggleIdentityWant = (identityKey) => {
         setWantSubcategoryIds(p => [...p, parentSubId]);
       }
       if (parentCatId && !wantCategoryIds.includes(parentCatId)) {
-        if (wantCategoryIds.length >= MAX_WANT_CATEGORIES) return prev; // limit
         setWantCategoryIds(p => [...p, parentCatId]);
       }
       return [...prev, xId];
@@ -2155,7 +2165,7 @@ const toggleIdentityWant = (identityKey) => {
     return { cats, subs };
   };
 
-  // Open “DO” sets on entering the DO tab or when selections change
+  // Open "DO" sets on entering the DO tab or when selections change
   useEffect(() => {
     if (active !== Tab.DO) return;
     const { cats, subs } = computeOpenFromSelections(
@@ -2165,7 +2175,14 @@ const toggleIdentityWant = (identityKey) => {
     setOpenSubsDo(subs);
   }, [active, doCategoryIds, doSubcategoryIds, doSubsubCategoryIds, subToCat, subsubToSub]);
 
-  // Open “WANTS” sets on entering the INTERESTS tab or when selections change
+  // Set active identity tab when DO tab is entered and there's a selected identity
+  useEffect(() => {
+    if (active === Tab.DO && doIdentityIds.length > 0 && !activeIdentityTab) {
+      setActiveIdentityTab(doIdentityIds[doIdentityIds.length - 1]);
+    }
+  }, [active, doIdentityIds, activeIdentityTab]);
+
+  // Open "WANTS" sets on entering the INTERESTS tab or when selections change
   useEffect(() => {
     if (active !== Tab.INTERESTS) return;
     const { cats, subs } = computeOpenFromSelections(
@@ -2174,6 +2191,13 @@ const toggleIdentityWant = (identityKey) => {
     setOpenCatsWant(cats);
     setOpenSubsWant(subs);
   }, [active, wantCategoryIds, wantSubcategoryIds, wantSubsubCategoryIds, subToCat, subsubToSub]);
+
+  // Set active interest identity tab when entering the INTERESTS tab and there's a selected identity
+  useEffect(() => {
+    if (active === Tab.INTERESTS && wantIdentityIds.length > 0 && !activeInterestIdentityTab) {
+      setActiveInterestIdentityTab(wantIdentityIds[wantIdentityIds.length - 1]);
+    }
+  }, [active, wantIdentityIds, activeInterestIdentityTab]);
 
   // Open “INDUSTRIES” sets on entering the INDUSTRIES tab or when selections change
   useEffect(() => {
@@ -2217,12 +2241,86 @@ const toggleIdentityWant = (identityKey) => {
             >
               <div>
                 <div className="font-medium">{iden.name}</div>
-                <div className="text-xs text-gray-500">{(iden.categories || []).length} categories</div>
               </div>
               <input type="checkbox" className="h-4 w-4 pointer-events-none" checked={active} readOnly />
             </button>
           );
         })}
+      </div>
+    );
+  }
+
+  function IdentityTabs({ picked, onToggle, activeTab, onTabSwitch, limit }) {
+    const reached = typeof limit === "number" && picked.length >= limit;
+
+    // Get the identity objects for selected identities
+    const selectedIdentities = useMemo(() => {
+      const pickedSet = new Set(picked);
+      return identities.filter(iden => pickedSet.has(getIdentityKey(iden)));
+    }, [picked, identities]);
+
+    return (
+      <div className="space-y-4">
+        {/* Available identities for selection */}
+        <div>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Available Identities</h4>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
+            {identities.filter(i=>i.type==user?.accountType || active!=Tab.DO).map((iden, i) => {
+              const key = getIdentityKey(iden);
+              const isSelected = picked.includes(key);
+              const disabled = !isSelected && reached;
+              return (
+                <button
+                  key={`${i}-${iden.name}`}
+                  onClick={() => !disabled && onToggle(key)}
+                  disabled={disabled}
+                  className={`rounded-xl flex items-center justify-between border px-4 py-3 text-left hover:shadow-soft transition-all ${
+                    isSelected ? "border-brand-700 bg-brand-50 ring-2 ring-brand-500" : "border-gray-200"
+                  } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  <div>
+                    <div className="font-medium">{iden.name}</div>
+                  </div>
+                  <div className={`w-4 h-4 rounded-full border-2 ${
+                    isSelected ? "bg-brand-600 border-brand-600" : "border-gray-300"
+                  }`}>
+                    {isSelected && (
+                      <svg className="w-3 h-3 text-white mx-auto mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Selected identities as tabs */}
+        {selectedIdentities.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Identities</h4>
+            <div className="flex flex-wrap gap-2">
+              {selectedIdentities.map((iden, i) => {
+                const key = getIdentityKey(iden);
+                const isActive = activeTab === key;
+                return (
+                  <button
+                    key={`${i}-${iden.name}`}
+                    onClick={() => onTabSwitch(key)}
+                    className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                      isActive
+                        ? "bg-brand-700 text-white border-brand-700"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {iden.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -2239,7 +2337,7 @@ const toggleIdentityWant = (identityKey) => {
   }) {
     const hasSubs = (cat) => Array.isArray(cat?.subcategories) && cat.subcategories.length > 0;
     const hasSubsubs = (sc) => Array.isArray(sc?.subsubs) && sc.subsubs.length > 0;
-    const reachedCatLimit = typeof catLimit === "number" && catIds.length >= catLimit;
+    const reachedCatLimit = false; // Remove category limit restriction
 
     const selectedIdentities = useMemo(() => {
       const keys = new Set(selectedIdentitiesKeys);
@@ -2275,9 +2373,6 @@ const toggleIdentityWant = (identityKey) => {
           <div key={`iden-${iIdx}`} className="rounded-xl border">
             <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-xl">
               <div className="font-semibold">{iden.name}</div>
-              <span className="text-xs text-gray-500">
-                {(iden.categories || []).length} categories
-              </span>
             </div>
 
             <div className="px-4 py-4 space-y-3">
@@ -2285,7 +2380,7 @@ const toggleIdentityWant = (identityKey) => {
                 const _hasSubs = hasSubs(cat);
                 const catOpen = !!cat.id && openCats.has(cat.id);
                 const catSelected = !!cat.id && catIds.includes(cat.id);
-                const catDisabled = !!cat.id && !catSelected && reachedCatLimit;
+                const catDisabled = false; // Remove category limit restriction
 
                 return (
                   <div key={`cat-${iIdx}-${cIdx}`} className="border rounded-lg">
@@ -2314,7 +2409,7 @@ const toggleIdentityWant = (identityKey) => {
                             }
                           }}
                           disabled={!cat.id || catDisabled}
-                          title={!cat.id ? "Category not found in DB" : (catDisabled ? "Category limit reached" : "")}
+                          title={!cat.id ? "Category not found in DB" : ""}
                         />
                         <span className="font-medium">{cat.name}</span>
                       </label>
@@ -2332,7 +2427,7 @@ const toggleIdentityWant = (identityKey) => {
                           const isSelected = !!sc.id && subIds.includes(sc.id);
 
                           const parentSelected = !!cat.id && catIds.includes(cat.id);
-                          const subDisabled = !isSelected && !parentSelected && reachedCatLimit;
+                          const subDisabled = false; // Remove subcategory limit restriction
 
                           return (
                             <div key={`sub-${iIdx}-${cIdx}-${sIdx}`} className="border rounded-lg">
@@ -2360,7 +2455,7 @@ const toggleIdentityWant = (identityKey) => {
                                       }
                                     }}
                                     disabled={!sc.id || subDisabled}
-                                    title={!sc.id ? "Subcategory not found in DB" : (subDisabled ? "Category limit reached" : "")}
+                                    title={!sc.id ? "Subcategory not found in DB" : ""}
                                   />
                                   <span className="font-medium">{sc.name}</span>
                                 </label>
@@ -2376,7 +2471,7 @@ const toggleIdentityWant = (identityKey) => {
                                     {sc.subsubs.map((ss, ssIdx) => {
                                       const parentCatSelected = !!cat.id && catIds.includes(cat.id);
                                       const ssSelected = !!ss.id && xIds.includes(ss.id);
-                                      const ssDisabled = !ssSelected && !parentCatSelected && reachedCatLimit;
+                                      const ssDisabled = false; // Remove subsubcategory limit restriction
                                       return (
                                         <label
                                           key={`ss-${iIdx}-${cIdx}-${sIdx}-${ssIdx}`}
@@ -2390,7 +2485,7 @@ const toggleIdentityWant = (identityKey) => {
                                               onToggleSubsub(ss.id);
                                             }}
                                             disabled={!ss.id || ssDisabled}
-                                            title={!ss.id ? "Level-3 not found in DB" : (ssDisabled ? "Category limit reached" : "")}
+                                            title={!ss.id ? "Level-3 not found in DB" : ""}
                                           />
                                           <span>{ss.name}</span>
                                         </label>
@@ -3564,32 +3659,56 @@ const toggleIdentityWant = (identityKey) => {
                     ? "Choose the identity that best represents what your company does."
                     : "Choose the identity that best represents what you do."}
                 </p>
-                <IdentityGrid picked={doIdentityIds} onToggle={toggleIdentityDo} limit={1} />
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">
-                  {isCompany ? "Categories (what we DO)" : "Categories (what you DO)"}
-                </h3>
-                <CategoryTree
-                  selectedIdentitiesKeys={doIdentityIds}
-                  catIds={doCategoryIds}
-                  subIds={doSubcategoryIds}
-                  xIds={doSubsubCategoryIds}
-                  openCats={openCatsDo}
-                  openSubs={openSubsDo}
-                  onToggleCat={(id) => {
-                    toggleCategoryDo(id);
-                    setOpenCatsDo(prev => new Set(prev).add(id));
-                  }}
-                  onToggleSub={(id) => {
-                    toggleSubDo(id);
-                    setOpenSubsDo(prev => new Set(prev).add(id));
-                  }}
-                  onToggleSubsub={toggleSubsubDo}
-                  setOpenCats={setOpenCatsDo}
-                  setOpenSubs={setOpenSubsDo}
+                <IdentityTabs
+                  picked={doIdentityIds}
+                  onToggle={toggleIdentityDo}
+                  activeTab={activeIdentityTab}
+                  onTabSwitch={setActiveIdentityTab}
+                  limit={1}
                 />
               </div>
+
+              {/* Show categories only for the active identity tab */}
+              {activeIdentityTab && (
+                <div>
+                  <h3 className="font-semibold mb-2">
+                    {isCompany ? "Categories (what we DO)" : "Categories (what you DO)"}
+                  </h3>
+                  <CategoryTree
+                    selectedIdentitiesKeys={[activeIdentityTab]}
+                    catIds={doCategoryIds}
+                    subIds={doSubcategoryIds}
+                    xIds={doSubsubCategoryIds}
+                    openCats={openCatsDo}
+                    openSubs={openSubsDo}
+                    onToggleCat={(id) => {
+                      toggleCategoryDo(id);
+                      setOpenCatsDo(prev => new Set(prev).add(id));
+                    }}
+                    onToggleSub={(id) => {
+                      toggleSubDo(id);
+                      setOpenSubsDo(prev => new Set(prev).add(id));
+                    }}
+                    onToggleSubsub={toggleSubsubDo}
+                    setOpenCats={setOpenCatsDo}
+                    setOpenSubs={setOpenSubsDo}
+                  />
+                </div>
+              )}
+
+              {/* Show message when no identity is selected */}
+              {!activeIdentityTab && doIdentityIds.length === 0 && (
+                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">Select an identity to continue</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Choose an identity above to see and select relevant categories.
+                  </p>
+                </div>
+              )}
+
               <div className="flex justify-end gap-3">
                 <button disabled={saving} onClick={saveDo} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
               </div>
@@ -3605,34 +3724,57 @@ const toggleIdentityWant = (identityKey) => {
                 </h3>
                 <span className="text-sm text-gray-500">Selected {wantIdentityIds.length}/{MAX_WANT_IDENTITIES}</span>
               </div>
-              <IdentityGrid picked={wantIdentityIds} onToggle={toggleIdentityWant} limit={MAX_WANT_IDENTITIES}/>
-
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold mb-2">
-                  {isCompany ? "Categories (what we're LOOKING FOR)" : "Categories (what you're LOOKING FOR)"}
-                </h3>
-                <span className="text-sm text-gray-500">Selected {wantCategoryIds.length}/{MAX_WANT_CATEGORIES}</span>
-              </div>
-              <CategoryTree
-                selectedIdentitiesKeys={wantIdentityIds}
-                catIds={wantCategoryIds}
-                subIds={wantSubcategoryIds}
-                xIds={wantSubsubCategoryIds}
-                openCats={openCatsWant}
-                openSubs={openSubsWant}
-                onToggleCat={(id) => {
-                  toggleCategoryWant(id);
-                  setOpenCatsWant(prev => new Set(prev).add(id));
-                }}
-                onToggleSub={(id) => {
-                  toggleSubWant(id);
-                  setOpenSubsWant(prev => new Set(prev).add(id));
-                }}
-                onToggleSubsub={toggleSubsubWant}
-                setOpenCats={setOpenCatsWant}
-                setOpenSubs={setOpenSubsWant}
-                catLimit={MAX_WANT_CATEGORIES}
+              <IdentityTabs
+                picked={wantIdentityIds}
+                onToggle={toggleIdentityWant}
+                activeTab={activeInterestIdentityTab}
+                onTabSwitch={setActiveInterestIdentityTab}
+                limit={MAX_WANT_IDENTITIES}
               />
+
+              {/* Show categories only for the active interest identity tab */}
+              {activeInterestIdentityTab && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold mb-2">
+                      {isCompany ? "Categories (what we're LOOKING FOR)" : "Categories (what you're LOOKING FOR)"}
+                    </h3>
+                    <span className="text-sm text-gray-500">Selected {wantCategoryIds.length}</span>
+                  </div>
+                  <CategoryTree
+                    selectedIdentitiesKeys={[activeInterestIdentityTab]}
+                    catIds={wantCategoryIds}
+                    subIds={wantSubcategoryIds}
+                    xIds={wantSubsubCategoryIds}
+                    openCats={openCatsWant}
+                    openSubs={openSubsWant}
+                    onToggleCat={(id) => {
+                      toggleCategoryWant(id);
+                      setOpenCatsWant(prev => new Set(prev).add(id));
+                    }}
+                    onToggleSub={(id) => {
+                      toggleSubWant(id);
+                      setOpenSubsWant(prev => new Set(prev).add(id));
+                    }}
+                    onToggleSubsub={toggleSubsubWant}
+                    setOpenCats={setOpenCatsWant}
+                    setOpenSubs={setOpenSubsWant}
+                  />
+                </>
+              )}
+
+              {/* Show message when no interest identity is selected */}
+              {!activeInterestIdentityTab && wantIdentityIds.length === 0 && (
+                <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">Select identities to continue</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Choose identities above to see and select relevant categories for what you're looking for.
+                  </p>
+                </div>
+              )}
 
               <div className="flex justify-end gap-3">
                 <button disabled={saving} onClick={saveInterests} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>

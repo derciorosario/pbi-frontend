@@ -1725,7 +1725,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                Need Help or Have <span className="text-brand-600">Questions?</span>
              </h2>
              <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
-               Get in touch with our team. We're here to help you succeed.
+               Get in touch with our team. We're here to help you growth.
              </p>
              <button
                onClick={() => setContactDialogOpen(true)}

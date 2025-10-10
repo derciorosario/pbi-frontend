@@ -605,6 +605,7 @@ function removeTag(idx) {
     const [activeIndex, setActiveIndex] = useState(0);
     const rootRef = useRef(null);
     const inputRef = useRef(null);
+    const [focused, setFocused] = useState(false);
   
     const selected = useMemo(() => options.find((o) => String(o.value) === String(value)) || null, [options, value]);
     const filtered = useMemo(() => {
@@ -618,8 +619,9 @@ function removeTag(idx) {
         .slice(0, 100);
     }, [query, options]);
 
-    // Show selected value or placeholder
-    const displayValue = selected && !query ? selected.label : query;
+    // Show query while editing; only show selected label when not editing
+    const isEditing = focused || open || query !== "";
+    const displayValue = isEditing ? query : (selected?.label || "");
   
     useEffect(() => {
       function onDocClick(e) {
@@ -654,7 +656,20 @@ function removeTag(idx) {
         setOpen(true);
         return;
       }
-      if (!open) return;
+      if (!open) {
+        if (e.key === "Backspace") {
+          e.preventDefault();
+          if (selected && !query) {
+            // Start editing from the selected label and remove last character
+            setQuery((selected.label || "").slice(0, -1));
+          } else {
+            // Remove last character from current query
+            setQuery((query || "").slice(0, -1));
+          }
+          setOpen(true);
+        }
+        return;
+      }
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
@@ -681,11 +696,11 @@ function removeTag(idx) {
               disabled={disabled}
               placeholder={placeholder}
               onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-              onFocus={() => !disabled && setOpen(true)}
+              onFocus={() => { if (!disabled) { setFocused(true); setOpen(true); } }}
+              onBlur={() => setFocused(false)}
               onKeyDown={onKeyDown}
               aria-autocomplete="list"
-              aria-expanded={open}
-              aria-controls="ss-results"
+              aria-expanded={open} aria-controls="ss-results"
               aria-label={ariaLabel || placeholder}
               role="combobox"
               autoComplete="off"
