@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { toast } from "../lib/toast";
 import * as socialApi from "../api/social";
-import client,{API_URL} from "../api/client";
+import client, { API_URL } from "../api/client";
 import {
   Edit,
   Eye,
@@ -20,6 +20,7 @@ import {
   Copy as CopyIcon,
   MoreVertical,
   Trash2,
+  Globe,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -43,7 +44,7 @@ import JobDetails from "./JobDetails";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import JobApplicationDialog from "./JobApplicationDialog";
-import LogoGray from '../assets/logo.png'
+import LogoGray from "../assets/logo.png";
 
 function computeTimeAgo(explicit, createdAt) {
   if (explicit) return explicit;
@@ -61,63 +62,48 @@ export default function JobCard({
   job,
   onEdit,
   onDelete,
-  type = "grid", // "grid" | "list"
-  matchPercentage = 0, // show % chip
+  type = "grid",
+  matchPercentage = 0,
 }) {
+  if (job?.id == "45d43faa-f907-4361-b25b-c43222a1a636") return;
 
-
-  if(job?.id=="45d43faa-f907-4361-b25b-c43222a1a636") return
-  
-  const { user,settings,profile } = useAuth();
+  const { user, settings, profile } = useAuth();
   const navigate = useNavigate();
   const data = useData();
 
-  const [isHovered, setIsHovered] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false); // connect modal
-  const [openId, setOpenId] = useState(null); // profile modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [openId, setOpenId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState(
     job?.connectionStatus || "none"
   );
   const [applicationStatus, setApplicationStatus] = useState(
     job?.applicationStatus || "not_applied"
   );
-  const [jobDetailsOpen, setJobDetailsOpen] = useState(false); // job details modal
+  const [jobDetailsOpen, setJobDetailsOpen] = useState(false);
 
- 
   // Social state
   const [liked, setLiked] = useState(!!job?.liked);
   const [likeCount, setLikeCount] = useState(Number(job?.likes || 0));
   const [commentCount, setCommentCount] = useState(
-    Array.isArray(job?.comments) ? job.comments.length : Number(job?.commentsCount || 0)
+    Array.isArray(job?.comments)
+      ? job.comments.length
+      : Number(job?.commentsCount || 0)
   );
 
-  // Report dialog
   const [reportOpen, setReportOpen] = useState(false);
-
-  // Share popover
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
-  const cardRef = useRef(null);
-
-  // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
-
-  // Job application dialog
   const [applicationDialogOpen, setApplicationDialogOpen] = useState(false);
-
-  // Options menu
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
   const optionsMenuRef = useRef(null);
 
-  // Close menus on outside click / Esc
   useEffect(() => {
     function onDown(e) {
-      if (
-        shareMenuRef.current &&
-        !shareMenuRef.current.contains(e.target)
-      ) {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
         setShareOpen(false);
       }
       if (
@@ -143,7 +129,6 @@ export default function JobCard({
     };
   }, []);
 
-  // Initial fetch for like & comments count (optional)
   useEffect(() => {
     if (!job?.id) return;
     socialApi
@@ -164,29 +149,34 @@ export default function JobCard({
 
   const isOwner =
     user?.id && job?.postedByUserId && user.id === job.postedByUserId;
-  const isList = type === "list";
+
+  // Use user avatar, not post image
+  const userAvatarUrl = job?.postedByUserAvatarUrl || null;
+
   let imageUrl = job?.coverImage || job?.image || null;
+  imageUrl =
+    imageUrl &&
+    (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
+      ? imageUrl
+      : imageUrl
+      ? `${API_URL}/uploads/${imageUrl}`
+      : null;
 
   imageUrl =
-  imageUrl && (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
-    ? imageUrl
-    : imageUrl
-    ? `${API_URL}/uploads/${imageUrl}`
-    : null; 
-
-
-  imageUrl = !imageUrl && !job?.make_company_name_private ? job?.company?.avatarUrl : imageUrl
+    !imageUrl && !job?.make_company_name_private
+      ? job?.company?.avatarUrl
+      : imageUrl;
 
   const allTags = [
-    'Job Offer',
-    ...(Array.isArray(job?.audienceCategories) ? job?.audienceCategories.map(i=>i.name) : []),
+    "Job Offer",
+    ...(Array.isArray(job?.audienceCategories)
+      ? job?.audienceCategories.map((i) => i.name)
+      : []),
     job?.jobType,
     job?.workMode,
     job?.categoryName,
     job?.subcategoryName,
-   ].filter(Boolean);
-  const visibleTags = allTags.slice(0, 2);
-  const extraCount = Math.max(0, allTags.length - visibleTags.length);
+  ].filter(Boolean);
 
   const salaryText =
     job?.salaryMin != null || job?.salaryMax != null
@@ -206,37 +196,16 @@ export default function JobCard({
     setConnectionStatus("pending_outgoing");
   }
 
+  const cleanText = (htmlContent) => {
+    if (!htmlContent) return "";
+    const contentWithPeriods = htmlContent.replace(/<br\s*\/?>/gi, ". ");
+    const div = document.createElement("div");
+    div.innerHTML = contentWithPeriods;
+    let textContent = div.textContent || div.innerText || "";
+    textContent = textContent.replace(/\s+/g, " ").trim();
+    return textContent;
+  };
 
-
-
-const cleanText = (htmlContent) => {
-  if (!htmlContent) return '';
-
-  // Replace <br>, <br/>, or <br /> with a period
-  const contentWithPeriods = htmlContent.replace(/<br\s*\/?>/gi, '. ');
-  
-  // Create a temporary div to parse HTML and extract text
-  const div = document.createElement('div');
-  div.innerHTML = contentWithPeriods;
-  
-  // Get text content
-  let textContent = div.textContent || div.innerText || '';
-  
-  // Clean up spacing: replace multiple whitespaces with a single space, and trim
-  textContent = textContent.replace(/\s+/g, ' ').trim();
-  
-  return textContent;
-};
-
-  const containerBase =
-    "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
-  const containerLayout = isList
-    ? (settings?.contentType === 'text'
-        ? "flex flex-col" // Full width for text mode in list
-        : "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch")
-    : "flex flex-col";
-
-  /* ----------------------- Like handler ----------------------- */
   const toggleLike = async () => {
     if (!user?.id) {
       data._showPopUp?.("login_prompt");
@@ -254,7 +223,6 @@ const cleanText = (htmlContent) => {
     }
   };
 
-  /* ----------------------- Report handler ----------------------- */
   const reportJob = async (description) => {
     try {
       await socialApi.reportContent("job", job.id, "other", description);
@@ -264,15 +232,13 @@ const cleanText = (htmlContent) => {
     }
   };
 
-  /* ----------------------- Share data ----------------------- */
   const shareUrl = `${window.location.origin}/job/${job?.id}`;
   const shareTitle = job?.title || "Opportunity on 54Links";
   const shareQuote =
     (job?.description || "").slice(0, 160) +
     ((job?.description || "").length > 160 ? "…" : "");
   const shareHashtags = ["54Links", "Jobs", "Opportunities"].filter(Boolean);
-  const messengerAppId =
-    import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined; // optional
+  const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
 
   const CopyLinkButton = () => (
     <button
@@ -295,14 +261,13 @@ const cleanText = (htmlContent) => {
   const ShareMenu = () => (
     <div
       ref={shareMenuRef}
-      className="absolute z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl top-12 right-3"
+      className="absolute z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl bottom-0 right-3"
       role="dialog"
       aria-label="Share options"
     >
       <div className="text-xs font-medium text-gray-500 px-1 pb-2">
         Share this job
       </div>
-
       <div className="grid grid-cols-3 gap-2">
         <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
@@ -310,43 +275,53 @@ const cleanText = (htmlContent) => {
             <span className="text-xs text-gray-700">WhatsApp</span>
           </div>
         </WhatsappShareButton>
-
-        <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
+        <FacebookShareButton
+          url={shareUrl}
+          quote={shareQuote}
+          hashtag="#54Links"
+        >
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
             <FacebookIcon size={40} round />
             <span className="text-xs text-gray-700">Facebook</span>
           </div>
         </FacebookShareButton>
-
-        <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
+        <LinkedinShareButton
+          url={shareUrl}
+          title={shareTitle}
+          summary={shareQuote}
+          source="54Links"
+        >
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
             <LinkedinIcon size={40} round />
             <span className="text-xs text-gray-700">LinkedIn</span>
           </div>
         </LinkedinShareButton>
-
-        <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
+        <TwitterShareButton
+          url={shareUrl}
+          title={shareTitle}
+          hashtags={shareHashtags}
+        >
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
             <TwitterIcon size={40} round />
             <span className="text-xs text-gray-700">X / Twitter</span>
           </div>
         </TwitterShareButton>
-
         <TelegramShareButton url={shareUrl} title={shareTitle}>
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
             <TelegramIcon size={40} round />
             <span className="text-xs text-gray-700">Telegram</span>
           </div>
         </TelegramShareButton>
-
-        <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
+        <EmailShareButton
+          url={shareUrl}
+          subject={shareTitle}
+          body={shareQuote + "\n\n" + shareUrl}
+        >
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
             <EmailIcon size={40} round />
             <span className="text-xs text-gray-700">Email</span>
           </div>
         </EmailShareButton>
-
-        {/* Messenger requires an appId; only show if provided */}
         {messengerAppId && (
           <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
             <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
@@ -356,7 +331,6 @@ const cleanText = (htmlContent) => {
           </FacebookMessengerShareButton>
         )}
       </div>
-
       <div className="mt-2">
         <CopyLinkButton />
       </div>
@@ -371,7 +345,6 @@ const cleanText = (htmlContent) => {
       aria-label="Options menu"
     >
       {showDeleteConfirm ? (
-        // Confirmation mode
         <>
           <div className="px-3 py-2 text-sm font-medium text-gray-900 border-b border-gray-200 mb-2">
             Delete this job?
@@ -381,13 +354,15 @@ const cleanText = (htmlContent) => {
               try {
                 await client.delete(`/jobs/${job.id}`);
                 toast.success("Job deleted successfully");
-                setIsDeleted(true); // Hide the card
+                setIsDeleted(true);
                 if (onDelete) {
                   onDelete(job);
                 }
               } catch (error) {
                 console.error("Failed to delete job:", error);
-                toast.error(error?.response?.data?.message || "Failed to delete job");
+                toast.error(
+                  error?.response?.data?.message || "Failed to delete job"
+                );
               }
               setOptionsMenuOpen(false);
               setShowDeleteConfirm(false);
@@ -405,169 +380,71 @@ const cleanText = (htmlContent) => {
           </button>
         </>
       ) : (
-        // Initial menu
-        <button
-          onClick={() => setShowDeleteConfirm(true)}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-        >
-          <Trash2 size={16} />
-          Delete
-        </button>
+        <>
+          <button
+            onClick={() => {
+              navigate(`/job/${job.id}`);
+              setOptionsMenuOpen(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+          >
+            <Edit size={16} />
+            Edit
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <Trash2 size={16} />
+            Delete
+          </button>
+        </>
       )}
     </div>
   );
 
-  /* -------------------------------------------------------------- */
-
   return (
     <>
       <div
-        ref={cardRef}
-        className={`${containerBase} ${containerLayout} ${
-          !isList && isHovered ? "transform -translate-y-1" : ""
-        } ${isDeleted ? "hidden" : ""}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${
+          isDeleted ? "hidden" : ""
+        }`}
       >
-
-        {/* IMAGE SIDE */}
-        {isList ? (
-          // Only show image side in list view if not text mode
-          settings?.contentType !== 'text' && (
-            <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-              {imageUrl ? (
-                <>
-                  <img
-                    src={imageUrl}
-                    alt={job?.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  {/* audience on IMAGE when there IS image */}
-                 
-                      <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                         <div
-                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (job?.postedByUserId) {
-                    setOpenId(job.postedByUserId);
-                    data._showPopUp?.("profile");
-                  }
-                }}
-              >
-                {job?.postedByUserAvatarUrl ? (
-                  <img
-                    src={job.postedByUserAvatarUrl}
-                    alt={job?.postedByUserName || "User"}
-                    className="w-7 h-7 rounded-full  object-cover shadow-lg"
-                  />
-                ) : (
-                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                    <UserIcon size={12} className="text-brand-600" />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span    className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                       >
-                    {job?.postedByUserName || "User"}
-                  </span>
-                </div>
-                       </div>
-
-                      </div>
-                  
-                </>
+        {/* HEADER - Company/User Info */}
+        <div className="px-4 pt-3 pb-2 flex items-start justify-between">
+          <div className="flex items-start gap-3 flex-1">
+            {/* Avatar */}
+            <div
+              className="cursor-pointer flex-shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (job?.postedByUserId) {
+                  setOpenId(job.postedByUserId);
+                  data._showPopUp?.("profile");
+                }
+              }}
+            >
+              {userAvatarUrl ? (
+                <img
+                  src={userAvatarUrl}
+                  alt={job?.postedByUserName || "User"}
+                  className={`w-12 h-12 object-cover ${
+                    job?.postedBy?.accountType === "company" ? "" : "rounded"
+                  }`}
+                />
               ) : (
-                <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
-                  <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
-                  {/* Organizer name and logo positioned absolutely when no image */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    <div
-                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (job?.postedByUserId) {
-                          setOpenId(job.postedByUserId);
-                          data._showPopUp?.("profile");
-                        }
-                      }}
-                    >
-                      {job?.postedByUserAvatarUrl ? (
-                        <img
-                          src={job.postedByUserAvatarUrl}
-                          alt={job?.postedByUserName || "User"}
-                          className="w-7 h-7 rounded-full shadow-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                          <UserIcon size={12} className="text-brand-600" />
-                        </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                          {job?.postedByUserName || "User"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                <div className={`w-12 h-12 bg-gray-200 flex items-center justify-center ${
+                  job?.postedBy?.accountType === "company" ? "" : "rounded"
+                }`}>
+                  <UserIcon size={20} className="text-gray-400" />
                 </div>
               )}
-
-              {/* Quick actions on image */}
-              <div className="absolute top-3 right-3 flex gap-2">
-               
-                <button
-                  onClick={() => {
-                    if (isOwner) navigate(`/job/${job.id}`);
-                    else setJobDetailsOpen(true);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                  aria-label={isOwner ? "Edit job" : "View job"}
-                >
-                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-                </button>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                  aria-label="Share job"
-                >
-                  <Share2 size={16} className="text-gray-600" />
-                </button>
-
-                 {isOwner && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOptionsMenuOpen((s) => !s);
-                    }}
-                    className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                    aria-label="More options"
-                  >
-                    <MoreVertical size={16} className="text-gray-600" />
-                  </button>
-                )}
-              </div>
             </div>
-          )
-        ) : (
-          // GRID IMAGE
-          <div className="relative overflow-hidden">
-            {settings?.contentType === 'text' ? null : imageUrl ? (
-              <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt={job?.title}
-                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-             <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                         <div
-                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+
+            {/* Company/User Name and Meta */}
+            <div className="flex-1 min-w-0">
+              <div
+                className="font-semibold text-sm text-gray-900 hover:underline cursor-pointer"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (job?.postedByUserId) {
@@ -576,351 +453,98 @@ const cleanText = (htmlContent) => {
                   }
                 }}
               >
-                {job?.postedByUserAvatarUrl ? (
-                  <img
-                    src={job.postedByUserAvatarUrl}
-                    alt={job?.postedByUserName || "User"}
-                    className="w-7 h-7 rounded-full shadow-lg object-cover"
-                  />
-                ) : (
-                  <div className="w-7 h-7 bg-white rounded-full shadow-lg grid place-items-center">
-                    <UserIcon size={12} className="text-brand-600" />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span    className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                       >
-                    {job?.postedByUserName || "User"}
-                  </span>
-                </div>
-                       </div>
-                    </div>
-                 
+                {job?.postedByUserName || "User"}
               </div>
-            ) : (
-              <div className="w-full h-48 bg-gray-200 flex justify-center items-center">
-                <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
-                {/* Organizer name and logo positioned absolutely when no image */}
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                  <div
-                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (job?.postedByUserId) {
-                        setOpenId(job.postedByUserId);
-                        data._showPopUp?.("profile");
-                      }
-                    }}
-                  >
-                    {job?.postedByUserAvatarUrl ? (
-                      <img
-                        src={job.postedByUserAvatarUrl}
-                        alt={job?.postedByUserName || "User"}
-                        className="w-7 h-7 rounded-full shadow-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                        <UserIcon size={12} className="text-brand-600" />
-                      </div>
-                    )}
-                    <div className="flex flex-col">
-                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                        {job?.postedByUserName || "User"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+              <div className="text-xs text-gray-500 mt-0.5">
+                {!job?.make_company_name_private && job?.companyName
+                  ? job?.companyName
+                  : job?.company?.followersCount
+                  ? `${job.company.followersCount.toLocaleString()} followers`
+                  : ""}
 
-            {/* View & Share - only show when not text mode */}
-            {settings?.contentType !== 'text' && (
-              <div className="absolute top-4 right-4 flex gap-2">
-              
-                <button
-                  onClick={() => {
-                    if (isOwner) navigate(`/job/${job.id}`);
-                    else setJobDetailsOpen(true);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                  aria-label={isOwner ? "Edit job" : "View job"}
-                >
-                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
-                  aria-label="Share job"
-                >
-                  <Share2
-                    size={16}
-                    className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200"
-                  />
-                </button>
-
-                  {isOwner && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOptionsMenuOpen((s) => !s);
-                    }}
-                    className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                    aria-label="More options"
-                  >
-                    <MoreVertical size={16} className="text-gray-600" />
-                  </button>
-                )}
+                {((!job?.make_company_name_private && job?.companyName) ||
+                  (job?.company?.followersCount)) &&
+                  job?.profile?.professionalTitle && " | "}
+                {job?.profile?.professionalTitle}
               </div>
-            )}
+              <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                <span>{timeAgo}</span>
+                <span>•</span>
+                <Globe size={12} />
+              </div>
+            </div>
           </div>
-        )}
 
-        {/* SHARE MENU (common absolute anchor on the card) */}
-        {shareOpen && <ShareMenu />}
-
-        {/* OPTIONS MENU */}
-        {optionsMenuOpen && <OptionsMenu />}
-
-        {/* CONTENT SIDE */}
-        <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
-          {/* Text mode: Buttons and audience categories at top */}
-          {settings?.contentType === 'text' && (
-            <div className={`${!isList ? 'flex-col gap-y-2':'items-center justify-between gap-2'} flex  mb-3`}>
-              <div className="flex gap-2">
-               
-                <button
-                  onClick={() => {
-                    if (isOwner) navigate(`/job/${job.id}`);
-                    else setJobDetailsOpen(true);
-                  }}
-                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                  aria-label={isOwner ? "Edit job" : "View job"}
-                >
-                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                  aria-label="Share job"
-                >
-                  <Share2 size={16} className="text-gray-600" />
-                </button>
-
-                 {isOwner && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOptionsMenuOpen((s) => !s);
-                    }}
-                    className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                    aria-label="More options"
-                  >
-                    <MoreVertical size={16} className="text-gray-600" />
-                  </button>
-                )}
-
-              </div>
-                    <div
-                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+          {/* Options Menu Toggle */}
+          <div className="relative flex-shrink-0">
+            {isOwner && (
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (job?.postedByUserId) {
-                    setOpenId(job.postedByUserId);
-                    data._showPopUp?.("profile");
-                  }
+                  setOptionsMenuOpen((s) => !s);
                 }}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="More options"
               >
-                {job?.postedByUserAvatarUrl ? (
-                  <img
-                    src={job.postedByUserAvatarUrl}
-                    alt={job?.postedByUserName || "User"}
-                    className="w-7 h-7 rounded-full shadow-lg object-cover"
-                  />
-                ) : (
-                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                    <UserIcon size={12} className="text-brand-600" />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span    className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg"
-                       >
-                    {job?.postedByUserName || "User"}
-                  </span>
-                </div>
-                       </div>
-            </div>
-          )}
-
-          {/* Title + company */}
-          <div>
-            <h3 className="font-semibold text-lg text-gray-900  mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
-              {job?.title}
-            </h3>
-
-            {!job?.make_company_name_private && (
-              <p className="text-sm text-gray-600 font-medium">
-                {job?.companyName}
-              </p>
+                <MoreVertical size={20} className="text-gray-600" />
+              </button>
             )}
-
+            {optionsMenuOpen && <OptionsMenu />}
           </div>
+        </div>
+
+        {/* POST CONTENT */}
+        <div className="px-4 pb-3">
+          {/* Job Title */}
+          <h3
+            className="font-semibold text-base text-gray-900 mb-1 hover:text-brand-600 cursor-pointer transition-colors"
+            onClick={() => {
+              if (isOwner) navigate(`/job/${job.id}`);
+              else setJobDetailsOpen(true);
+            }}
+          >
+            {job?.title}
+          </h3>
 
           {/* Description */}
-
-          {/**  <div
-            className={`mt-2 text-sm text-gray-600 leading-relaxed ${
-              isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"
-            }`}
-            dangerouslySetInnerHTML={{
-              __html: job?.description || ''
-            }}
-          /> */}
-
-           <div
-            className={`mt-2 text-sm text-gray-600 leading-relaxed ${
-              isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"
-            }`}
-          > 
-          {cleanText(job?.description)}
-          </div>
-
-       
-
-          {/* Salary */}
-          {salaryText && (
-            <div className={`${isList ? "mt-2 mb-2" : "mt-2 mb-3"}`}>
-              <span className="text-2xl font-bold text-gray-700">
-                {salaryText}
-              </span>
+          <div className="text-sm text-gray-700 mb-2">
+            <div className={showFullDescription ? "" : "line-clamp-3"}>
+              {cleanText(job?.description)}
             </div>
-          )}
-
-          {/* Meta */}
-          <div className={`${isList ? "mb-2" : "mb-3"} space-y-2`}>
-            <div className="flex items-center justify-between my-2">
-            
-              {matchPercentage !== undefined && matchPercentage !== null && (
-                <div className="flex items-center gap-1">
-                  <div
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      matchPercentage >= 80
-                        ? "bg-green-100 text-green-700 border border-green-200"
-                        : matchPercentage >= 60
-                        ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                        : "bg-gray-100 text-gray-600 border border-gray-200"
-                    }`}
-                  >
-                    {matchPercentage}% match
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <Clock size={12} />
-                {timeAgo}
-              </span>
-              <span className="flex items-center gap-1">
-                <MapPin size={12} />
-                {(() => {
-                  // Priority: use countries array if available, fallback to single country/city
-                  const countriesArray = job?.countries || [];
-                  const singleCountry = job?.country;
-                  const singleCity = job?.city;
-
-                  // If countries array exists and has items, use it
-                  if (countriesArray.length > 0) {
-                    if (countriesArray.length === 1) {
-                      // Single location from array
-                      const location = countriesArray[0];
-                      return (
-                        <span>
-                          {location.city ? `${location.city}, ` : ""}
-                          {location.country || "-"}
-                        </span>
-                      );
-                    } else {
-                      // Multiple locations - show first + count
-                      const firstLocation = countriesArray[0];
-                      const remainingCount = countriesArray.length - 1;
-
-                      return (
-                        <div className="relative group/location">
-                          <span className="cursor-help">
-                            {firstLocation.country}
-                            {firstLocation.city ? `, ${firstLocation.city}` : ""}
-                            {" +"}
-                            {remainingCount}
-                          </span>
-
-                          {/* Tooltip with all locations */}
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/location:opacity-100 group-hover/location:visible z-10 whitespace-nowrap max-w-xs">
-                            <div className="space-y-1">
-                              {countriesArray.map((location, index) => (
-                                <div key={index} className="text-left">
-                                  {location.city ? `${location.city}, ` : ""}
-                                  {location.country}
-                                </div>
-                              ))}
-                            </div>
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
-                          </div>
-                        </div>
-                      );
-                    }
-                  }
-
-                  // Fallback to single country/city fields
-                  return (
-                    <span>
-                      {singleCity ? `${singleCity}, ` : ""}
-                      {singleCountry || "-"}
-                    </span>
-                  );
-                })()}
-              </span>
-            </div>
+            {job?.description && cleanText(job?.description).length > 150 && (
+              <button
+                onClick={() => setShowFullDescription(!showFullDescription)}
+                className="text-gray-500 hover:text-brand-600 font-medium mt-1"
+              >
+                {showFullDescription ? "Show less" : "...more"}
+              </button>
+            )}
           </div>
 
           {/* Tags */}
-          {!!visibleTags.length && (
-            <div className={`${isList ? "mb-3" : "mb-4"} flex flex-wrap gap-2`}>
-              {visibleTags.map((t) => (
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {allTags.slice(0, 3).map((tag, idx) => (
                 <span
-                  key={t}
-                  className="inline-flex items-center rounded-full bg-gradient-to-r from-brand-50 to-brand-100 text-brand-700 px-3 py-1 text-xs font-medium border border-brand-200/50"
+                  key={idx}
+                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700"
                 >
-                  {t}
+                  #{tag.replace(/\s+/g, "")}
                 </span>
               ))}
-
-              {extraCount > 0 && (
-                <div className="relative inline-block group/tagmore">
-                  <span
-                    className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-3 py-1 text-xs font-medium cursor-default hover:bg-gray-200 transition-colors duration-200"
-                    aria-describedby={`job-tags-more-${job.id}`}
-                    tabIndex={0}
-                  >
-                    +{extraCount} more
+              {allTags.length > 3 && (
+                <div className="relative inline-block group/tags">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-600 bg-gray-100 cursor-help">
+                    +{allTags.length - 3} more
                   </span>
 
-                  <div
-                    id={`job-tags-more-${job.id}`}
-                    role="tooltip"
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tagmore:opacity-100 group-hover/tagmore:visible focus-within:opacity-100 focus-within:visible z-10 whitespace-nowrap"
-                  >
-                    <div className="flex flex-wrap gap-1 max-w-xs">
-                      {allTags.slice(2).map((tag, i) => (
+                  {/* Tooltip with remaining tags */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tags:opacity-100 group-hover/tags:visible z-10 whitespace-nowrap max-w-xs">
+                    <div className="flex flex-wrap gap-1">
+                      {allTags.slice(3).map((tag, i) => (
                         <span key={i} className="inline-block">
-                          {tag}
-                          {i < allTags.length - 3 ? "," : ""}
+                          #{tag.replace(/\s+/g, "")}
+                          {i < allTags.length - 4 ? "," : ""}
                         </span>
                       ))}
                     </div>
@@ -928,142 +552,231 @@ const cleanText = (htmlContent) => {
                   </div>
                 </div>
               )}
+
+              {/* Match Percentage Badge */}
+              {matchPercentage > 0 && (
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ml-auto ${
+                    matchPercentage >= 80
+                      ? "bg-green-100 text-green-700 border border-green-200"
+                      : matchPercentage >= 60
+                      ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                      : "bg-gray-100 text-gray-600 border border-gray-200"
+                  }`}
+                >
+                  {matchPercentage}% match
+                </span>
+              )}
             </div>
           )}
+        </div>
 
-          {/* NEW: social row (like / comment / report) hidden for now */}
-          <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600">
-            <button
-              onClick={toggleLike}
-              className="inline-flex _login_prompt items-center gap-1 hover:text-brand-700"
-              title={liked ? "Unlike" : "Like"}
-            >
-              <Heart
-                size={16}
-                className={liked ? "fill-brand-500 text-brand-500" : ""}
-              />
-              <span>{likeCount}</span>
-            </button>
-
-
-            <button
-              onClick={() => {
-
-               
-                setCommentsDialogOpen(true)
-
-              }}
-              className="inline-flex items-center gap-1 hover:text-brand-700"
-              title="Comments"
-            >
-              <MessageCircle size={16} />
-              <span>{commentCount}</span>
-            </button>
-
-            <button
-              onClick={() =>{
-                 if (!user?.id) {
-                  data._showPopUp?.("login_prompt");
-                  return;
-                }else{
-                  setReportOpen(true)
-                }
-              } }
-              className="inline-flex _login_prompt items-center gap-1 hover:text-rose-700"
-              title="Report this job"
-            >
-              <Flag size={16} />
-              <span>Report</span>
-            </button>
+        {/* IMAGE (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && imageUrl && (
+          <div className="relative">
+            <img
+              src={imageUrl}
+              alt={job?.title}
+              className="w-full max-h-96 object-cover cursor-pointer"
+              onClick={() => setJobDetailsOpen(true)}
+            />
           </div>
-
-          {/* Actions (existing) */}
-          <div
-            className={`flex items-center gap-2 mt-auto pt-2 ${
-              isList ? "justify-end md:justify-start" : ""
-            }`}
-          >
-            <button
-              onClick={() => {
-                if (isOwner) navigate(`/job/${job.id}`);
-                else setJobDetailsOpen(true);
-              }}
-              className="flex items-center hidden justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
-              aria-label={isOwner ? "Edit job" : "View job"}
-            >
-              {isOwner ? (
-                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-              ) : (
-                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-              )}
-            </button>
-
-            
-        
-
-          {/* Application Status Buttons - Show different buttons based on status */}
-            
-            {!isOwner && (
-          <>
-            {/* Applied Status - Show checkmark when already applied */}
-            {applicationStatus === 'applied' && (
-              <button
-                className={`${
-                  type === "grid" ? "flex-1" : ""
-                } rounded-xl _login_prompt px-4 py-2.5 text-sm font-medium bg-green-100 text-green-700 cursor-default flex items-center justify-center gap-2`}
-                disabled
-              >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span>Applied</span>
-              </button>
-            )}
-
-            {/* Not Applied - Show regular Apply button */}
-            {applicationStatus === 'not_applied' && (
-              <button
-                onClick={() => {
-                  if (!user?.id) {
-                    data._showPopUp("login_prompt");
-                    return;
-                  }
-                  setApplicationDialogOpen(true);
-                }}
-                className={`${
-                  type === "grid" ? "flex-1" : ""
-                } rounded-xl px-4 _login_prompt py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
-              >
-                <span>Apply</span>
-              </button>
-            )}
-
-            {/* Unauthenticated - Show Apply button that prompts login */}
-            {(!applicationStatus || applicationStatus === 'unauthenticated') && (
-              <button
-                onClick={() => data._showPopUp("login_prompt")}
-                className={`${
-                  type === "grid" ? "flex-1" : ""
-                } rounded-xl px-4 _login_prompt py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
-              >
-                <span>Apply</span>
-              </button>
-            )}
-          </>
         )}
 
+        {/* ENGAGEMENT BAR - Like/Comment counts */}
+        <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+          <div className="flex items-center gap-1">
+            {likeCount > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="flex -space-x-1">
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                    <Heart size={10} className="text-white fill-white" />
+                  </div>
+                </div>
+                <span>
+                  {job?.postedByUserName && likeCount > 0
+                    ? `${job.postedByUserName} and ${likeCount} others`
+                    : `${likeCount}`}
+                </span>
+              </div>
+            )}
+          </div>
 
+           <div className="flex items-center gap-3">
+            {commentCount > 0 && (
+              <button
+                onClick={() => setCommentsDialogOpen(true)}
+                className="hover:underline"
+              >
+                {commentCount} comment{commentCount !== 1 ? "s" : ""}
+              </button>
+            )}
+          
+          </div>
+       
+        </div>
 
-            {(!isOwner && connectionStatus!="connected") && renderConnectButton()}
+        {/* ACTION BUTTONS */}
+        <div className="px-2 py-1 border-t border-gray-100 grid grid-cols-4 gap-1">
+          <button
+            onClick={toggleLike}
+            className={`flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium ${
+              liked ? "text-blue-600" : "text-gray-600"
+            }`}
+          >
+            <Heart
+              size={20}
+              className={liked ? "fill-blue-600" : ""}
+            />
+            <span className="max-sm:hidden">Like</span>
+          </button>
+
+          <button
+            onClick={() => setCommentsDialogOpen(true)}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+          >
+            <MessageCircle size={20} />
+            <span className="max-sm:hidden">Comment</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (!user?.id) {
+                data._showPopUp?.("login_prompt");
+                return;
+              } else {
+                setReportOpen(true);
+              }
+            }}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+          >
+            <Flag size={20} />
+            <span className="max-sm:hidden">Report</span>
+          </button>
+
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShareOpen((s) => !s);
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+            >
+              <Share2 size={20} />
+              <span className="max-sm:hidden">Share</span>
+            </button>
+            {shareOpen && <ShareMenu />}
           </div>
         </div>
 
-        {!isList && (
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-50" />
+        {/* APPLICATION SECTION - Below actions */}
+        {!isOwner && (
+          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-3">
+              {/* Salary */}
+              {salaryText && (
+                <div className="text-sm font-semibold text-gray-900">
+                  {salaryText}
+                </div>
+              )}
+
+              {/* Location */}
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <MapPin size={14} />
+                <span>
+                  {(() => {
+                    const countriesArray = job?.countries || [];
+                    const singleCountry = job?.country;
+                    const singleCity = job?.city;
+
+                    if (countriesArray.length > 0) {
+                      if (countriesArray.length === 1) {
+                        const location = countriesArray[0];
+                        return `${location.city ? `${location.city}, ` : ""}${
+                          location.country || "-"
+                        }`;
+                      } else {
+                        return `${countriesArray[0].country} +${
+                          countriesArray.length - 1
+                        }`;
+                      }
+                    }
+                    return `${singleCity ? `${singleCity}, ` : ""}${
+                      singleCountry || "-"
+                    }`;
+                  })()}
+                </span>
+              </div>
+
+          
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 mt-3">
+              {applicationStatus === "applied" ? (
+                <button className="flex-1 px-4 py-2 rounded-full bg-green-100 text-green-700 font-medium text-sm flex items-center justify-center gap-2">
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Applied
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    if (!user?.id) {
+                      data._showPopUp("login_prompt");
+                      return;
+                    }
+                    setApplicationDialogOpen(true);
+                  }}
+                  className="flex-1 px-4 py-2 rounded-full bg-brand-600 text-white font-medium text-sm hover:bg-brand-700 transition-colors"
+                >
+                  Apply
+                </button>
+              )}
+
+              {connectionStatus !== "connected" && (
+                <button
+                  onClick={() => {
+                    if (!user?.id) {
+                      data._showPopUp("login_prompt");
+                      return;
+                    }
+                    setModalOpen(true);
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-full font-medium text-sm transition-colors ${
+                    connectionStatus === "pending_outgoing" ||
+                    connectionStatus === "outgoing_pending"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : connectionStatus === "pending_incoming" ||
+                        connectionStatus === "incoming_pending"
+                      ? "bg-brand-100 text-brand-600 hover:bg-brand-200"
+                      : "border-2 border-brand-600 text-brand-600 hover:bg-brand-50"
+                  }`}
+                >
+                  {connectionStatus === "pending_outgoing" ||
+                  connectionStatus === "outgoing_pending"
+                    ? "Pending"
+                    : connectionStatus === "pending_incoming" ||
+                      connectionStatus === "incoming_pending"
+                    ? "Respond"
+                    : "Connect"}
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Modals already present */}
+      {/* Modals */}
       <ConnectionRequestModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -1079,9 +792,12 @@ const cleanText = (htmlContent) => {
         onSent={onSent}
       />
 
-      <JobDetails jobId={job?.id} isOpen={jobDetailsOpen} onClose={() => setJobDetailsOpen(false)} />
+      <JobDetails
+        jobId={job?.id}
+        isOpen={jobDetailsOpen}
+        onClose={() => setJobDetailsOpen(false)}
+      />
 
-      {/* Report dialog */}
       <ConfirmDialog
         open={reportOpen}
         onClose={() => setReportOpen(false)}
@@ -1097,7 +813,6 @@ const cleanText = (htmlContent) => {
         onConfirm={reportJob}
       />
 
-      {/* Comments Dialog */}
       <CommentsDialog
         open={commentsDialogOpen}
         onClose={() => setCommentsDialogOpen(false)}
@@ -1107,65 +822,17 @@ const cleanText = (htmlContent) => {
         onCountChange={(n) => setCommentCount(n)}
       />
 
-      {/* Job Application Dialog */}
       <JobApplicationDialog
         open={applicationDialogOpen}
         onClose={(sent) => {
-          if(sent=="applied"){
-            setApplicationStatus('applied')
+          if (sent == "applied") {
+            setApplicationStatus("applied");
           }
-          setApplicationDialogOpen(false)
+          setApplicationDialogOpen(false);
         }}
         job={job}
         profile={profile}
       />
     </>
   );
-
-  function renderConnectButton() {
-    const status = connectionStatus || job?.connectionStatus || "none";
-
-    if (status === "connected") {
-      return (
-        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-green-100 text-green-700 cursor-default">
-          Connected
-        </button>
-      );
-    }
-    if (status === "pending_outgoing" || status === "outgoing_pending") {
-      return (
-        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-yellow-100 text-yellow-700 cursor-default">
-          Pending
-        </button>
-      );
-    }
-    if (status === "pending_incoming" || status === "incoming_pending") {
-      return (
-        <button
-          onClick={() => navigate("/notifications")}
-          className="rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-100 text-brand-600 hover:bg-brand-200"
-        >
-          Respond
-        </button>
-      );
-    }
-    if (!user?.id) {
-      return (
-        <button
-          onClick={() => data._showPopUp("login_prompt")}
-          className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
-        >
-          Connect
-        </button>
-      );
-    }
-    return (
-      <button
-        onClick={() => setModalOpen(true)}
-        className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
-      >
-        Connect
-      </button>
-    );
-  }
 }

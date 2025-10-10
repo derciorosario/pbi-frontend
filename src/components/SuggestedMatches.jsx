@@ -104,7 +104,7 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
     <>
       <div className="space-y-4">
         {/* Matches */}
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-soft p-4">
+        <div className="rounded-lg bg-white border border-gray-100 shadow p-4">
           <h3 className="font-semibold">
             Connection Suggestions ({matches.length})
           </h3>
@@ -118,7 +118,7 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
                 >
                     {pct !== null && (
                         <span
-                          className="inline-flex mb-1 items-center rounded-full bg-brand-50 text-brand-700 px-2 py-0.5 text-[11px] font-semibold border border-brand-100"
+                          className="inline-flex mb-1 items-center bg-gray-100 rounded-full text-gray-600  border border-gray-200 px-2 py-0.5 text-[11px] font-semibold "
                           title={`${pct}% match`}
                         >
                           {pct}% match
@@ -161,14 +161,14 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
                             </>
                           ) : null}
                         </div>
-                        {s.tag ? (
+                        {/**s.tag ? (
                           <div
                             className="text-[11px] text-brand-500 truncate max-w-[200px]"
                             title={s.tag}
                           >
                             Looking for: {s.tag}
                           </div>
-                        ) : null}
+                        ) : null**/}
                       </div>
                     </div>
 
@@ -246,7 +246,7 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
         </div>
 
         {/* Nearby */}
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-soft p-4">
+        <div className="rounded-lg bg-white border border-gray-100 shadow p-4">
           <h3 className="font-semibold">Nearby Professionals</h3>
           <div className="mt-3 space-y-3">
             {nearby.map((p, idx) => {
@@ -259,7 +259,7 @@ export default function SuggestedMatches({ matches = [], nearby = [] }) {
                   <div>
                     {pct !== null && (
                         <span
-                          className="inline-flex mb-2 items-center rounded-full bg-brand-50 text-brand-700 px-2 py-0.5 text-[11px] font-semibold border border-brand-100"
+                          className="inline-flex mb-2 items-center rounded-full bg-gray-100  text-gray-600  border border-gray-200 px-2 py-0.5 text-[11px] font-semibold"
                           title={`${pct}% match`}
                         >
                           {pct}% match

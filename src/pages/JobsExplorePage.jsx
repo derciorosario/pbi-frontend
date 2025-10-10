@@ -38,7 +38,7 @@ export default function PeopleFeedPage() {
   const tabs = useMemo(() => ["Posts", "Job Seeker","Job Offers"], []);
   let view_types=['grid','list']
   const navigate=useNavigate()
-  const [view,setView]=useState('grid')
+  const [view,setView]=useState('list')
   const data=useData()
   const {user}=useAuth()
 
@@ -220,7 +220,7 @@ export default function PeopleFeedPage() {
         date: date || undefined,
         registrationType: registrationType || undefined,
 
-        limit: 20,
+        limit: 40,
         offset: 0,
       };
       const { data } = await client.get("/feed", { params });
@@ -390,7 +390,7 @@ export default function PeopleFeedPage() {
           subcategoryId: subcategoryId || undefined,
           goalId: goalId || undefined,
           industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
-          limit: 10,
+          limit: 40,
         };
         const { data } = await client.get("/feed/suggestions", { params });
         setMatches(data.matches || []);
@@ -505,7 +505,7 @@ export default function PeopleFeedPage() {
       <>
         {loadingFeed && (
           <div className="min-h-[160px] grid  text-gray-600">
-             <CardSkeletonLoader/>
+             <CardSkeletonLoader columns={1}/>
           </div>
         )}
 
@@ -522,7 +522,7 @@ export default function PeopleFeedPage() {
         {!loadingFeed && (
         <div
           className={`grid grid-cols-1 ${
-            view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
+            view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"
           } gap-6`}
         >
           {items?.map((item) => {
@@ -532,44 +532,9 @@ export default function PeopleFeedPage() {
                   type={view}
                   key={`job-${item.id}`}
                   job={item}
-                  matchPercentage={item.matchPercentage}
+                  matchPercentage={10}
                 />
               );
-            }
-            if (item.kind === "need") {
-              return (
-                <NeedCard
-                  type={view}
-                  key={`need-${item.id}`}
-                  matchPercentage={item.matchPercentage}
-                  need={{
-                    ...item,
-                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
-                    subcategoryName: categories
-                      .find((c) => String(c.id) === String(item.categoryId))
-                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
-                  }}
-                />
-              );
-            }
-            if (item.kind === "moment") {
-              return (
-                <MomentCard
-                  type={view}
-                  key={`moment-${item.id}`}
-                  matchPercentage={item.matchPercentage}
-                  moment={{
-                    ...item,
-                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
-                    subcategoryName: categories
-                      .find((c) => String(c.id) === String(item.categoryId))
-                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
-                  }}
-                />
-              );
-            }
-            if (item.kind === "event") {
-              return <EventCard key={`event-${item.id}`} e={item} />;
             }
             return null;
           })}
@@ -601,22 +566,22 @@ export default function PeopleFeedPage() {
         </aside>
 
     
-        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
-          <section className="lg:col-span-4 space-y-4 mt-4 overflow-hidden">
-              <TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
+        <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
+
+          <div className="lg:col-span-3 flex items-center flex-wrap">
+ 
+            <div className="flex-1  overflow-hidden">
+                <TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
                                     buttons={
                                    [
                                       "Executives",
                                       "Professionals",
                                       "Freelancers",
                                       "Students"
-                                   ]}/>
-            <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              
-              <h3 className="font-semibold text-2xl mt-1 hidden">Find Your Next Opportunity</h3>
-              
-              <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
-
+                ]}/>
+             
+            </div>
+            <div className="">
               <TabsAndAdd
                tabs={[]}
                items={[
@@ -626,10 +591,17 @@ export default function PeopleFeedPage() {
                 ]}
               activeTab={activeTab} setActiveTab={setActiveTab} />
             </div>
+
+          </div>
+
+
+
+          <section className="lg:col-span-2 space-y-4  overflow-hidden">
+           
             {renderMiddle()}
           </section>
 
-          {/**<aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+          <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
             {loadingSuggestions ? (
               <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
                 Loading suggestions…
@@ -637,7 +609,7 @@ export default function PeopleFeedPage() {
             ) : (
               <SuggestedMatches matches={matches} nearby={nearby} />
             )}
-          </aside> */}
+          </aside>
         </div>
       </main>
 
