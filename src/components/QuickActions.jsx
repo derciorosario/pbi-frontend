@@ -9,7 +9,7 @@ export default function QuickActions({ title = "Quick Actions", items = [] }) {
   return (
     <>
       <div
-        className={`rounded-2xl ${!user ? "hidden" : ""} bg-white border border-gray-100 shadow-soft p-4`}
+        className={`rounded-2xl ${!user ? "hidden" : ""} hidden bg-white border border-gray-100 shadow-soft p-4`}
       >
         <h3 className="font-semibold text-brand-600">{title}</h3>
         <ul className="mt-3 space-y-2 text-sm text-gray-700">

@@ -651,7 +651,7 @@ export default function NeedCard({
         </div>
 
         {/* BOTTOM SECTION - Message and Connect */}
-        {!isOwner && (
+       
           <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
             <div className="flex items-center gap-3">
               {/* Location */}
@@ -664,6 +664,7 @@ export default function NeedCard({
             </div>
 
             {/* Action buttons */}
+             {!isOwner && (
             <div className="flex items-center gap-2 mt-3">
               <button
                 onClick={() => {
@@ -683,9 +684,10 @@ export default function NeedCard({
               </button>
 
               {connectionStatus !== "connected" && renderConnectButton()}
-            </div>
+            </div> )}
+
           </div>
-        )}
+       
       </div>
 
       {/* Modals */}

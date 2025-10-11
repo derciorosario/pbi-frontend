@@ -871,6 +871,18 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
 }
 
 /* ------------------------------ Página ---------------------------------- */
+
+// Loading component similar to Profile.jsx
+const Loading = () => (
+  <div className="min-h-screen grid place-items-center text-brand-700">
+    <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"/>
+    </svg>
+    <span className="ml-2">Loading…</span>
+  </div>
+);
+
 export default function PublicProfilePage() {
   const { userId } = useParams();
   const [loading, setLoading] = useState(false);
@@ -1228,7 +1240,7 @@ export default function PublicProfilePage() {
       <Header/>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {loading && <div className="text-sm text-gray-600">Loading profile…</div>}
+        {loading && <Loading />}
         {error && <div className="text-sm text-red-600">{error}</div>}
 
         {!loading && !error && profile && (
@@ -1249,7 +1261,8 @@ export default function PublicProfilePage() {
                           <img
                             src={profile.avatarUrl}
                             alt={profile.name}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full"
+                            style={{ objectFit: profile.accountType === "company" ? 'contain' : 'cover' }}
                           />
                         </div>
                       ) : (
@@ -1301,7 +1314,7 @@ export default function PublicProfilePage() {
                     {/* Profile Info - Name on gradient, title on white background */}
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <h1 className={`${profile.accountType === "company" ? "text-3xl" : "text-2xl"} font-bold text-white`}>
+                        <h1 className={`${profile.accountType === "company" ? "text-3xl" : "text-2xl"} font-bold text-white max-md:text-black`}>
                           {profile.name}
                         </h1>
                         {profile.accountType && (
@@ -1351,6 +1364,23 @@ export default function PublicProfilePage() {
                   {/* Action Buttons */}
                   <div className="flex gap-3 mt-4 md:mt-0">
                     {renderConnectButton()}
+
+                    {/* Share Button */}
+                    <div className="relative">
+                      <button
+                        ref={shareButtonRef}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShareOpen((s) => !s);
+                        }}
+                        className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
+                      >
+                        <Share2 size={16} />
+                        
+                      </button>
+                      {shareOpen && <ShareMenu profile={profile} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
+                    </div>
+
                     <button
                       onClick={() => {
                         if (!user) {
@@ -1360,11 +1390,20 @@ export default function PublicProfilePage() {
                         navigate(`/messages?userId=${userId}`);
                         toast.success("Starting conversation with " + profile.name);
                       }}
-                      className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg flex items-center gap-2 transition font-medium"
+                      className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
                     >
                       <MessageCircle size={16} />
-                      Message
                     </button>
+
+                    {/* Request Meeting Button - only show when connected */}
+                    {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
+                      <button
+                        onClick={openMR}
+                        className="border border-brand-200 hover:bg-brand-50 text-brand-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
+                      >
+                        <CalendarDays size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1393,6 +1432,155 @@ export default function PublicProfilePage() {
                 </div>
               </div>
             )}
+
+            {/* Looking For & Identities - Combined Modern Card */}
+            {(Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0) ||
+             (Array.isArray(profile.identities) && profile.identities.length > 0) ? (
+              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Looking For */}
+                  {Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Target size={18} className="text-brand-600" />
+                        Looking For
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.lookingFor.map((g, i) => (
+                          <span key={`${g}-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                            {g}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Identities */}
+                  {Array.isArray(profile.identities) && profile.identities.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <User2 size={18} className="text-brand-600" />
+                        {profile.accountType === "company" ? "Company Identity" : "Identities"}
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.identities.map((idn, i) => (
+                          <span key={`ident-${i}`} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                            {idn}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Interests - Modern Card Design */}
+            {profile.interests && (
+              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  {profile.accountType === "company" ? "Company Interests" : "Identity Interests"}
+                </h2>
+                <div className="space-y-4">
+                  {/* Identity Interests */}
+                  {(profile.interests.identities && profile.interests.identities.length > 0) ||
+                   (Array.isArray(profile.identityInterests) && profile.identityInterests.length > 0) ? (
+                    <div>
+                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Identity Interests</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.interests.identities && profile.interests.identities.length > 0 ? (
+                          profile.interests.identities.map((idn, i) => (
+                            <span key={`ident-int-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                              {idn}
+                            </span>
+                          ))
+                        ) : Array.isArray(profile.identityInterests) && profile.identityInterests.length > 0 ? (
+                          profile.identityInterests.map((idn, i) => (
+                            <span key={`old-ident-int-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                              {idn}
+                            </span>
+                          ))
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Category Interests */}
+                  {profile.interests.categories && profile.interests.categories.length > 0 && (
+                    <div>
+                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Category Interests</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.interests.categories.map((cat, i) => (
+                          <span key={`cat-int-${i}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
+                            {cat}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Subcategory Interests */}
+                  {profile.interests.subcategories && profile.interests.subcategories.length > 0 && (
+                    <div>
+                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Subcategory Interests</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.interests.subcategories.map((sub, i) => (
+                          <span key={`sub-int-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                            {sub}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Expertise & Interests - Modern Card Design */}
+            {(profile.cats?.length || profile.subs?.length) || (Array.isArray(profile.subsubs) && profile.subsubs.length > 0) ? (
+              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Expertise & Interests */}
+                  {(profile.cats?.length || profile.subs?.length) && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Layers size={18} className="text-brand-600" />
+                        Expertise & Interests
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {(profile.cats || []).map((c) => (
+                          <span key={`cat-${c}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
+                            {c}
+                          </span>
+                        ))}
+                        {(profile.subs || []).map((s) => (
+                          <span key={`sub-${s}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Specialties */}
+                  {Array.isArray(profile.subsubs) && profile.subsubs.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <Hash size={18} className="text-brand-600" />
+                        Specialties
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.subsubs.map((s3, i) => (
+                          <span key={`s3-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                            {s3}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
 
             {/* Work Samples - Enhanced Modern Card Design */}
             {Array.isArray(profile.workSamples) && profile.workSamples.length > 0 && (
@@ -1583,47 +1771,49 @@ export default function PublicProfilePage() {
               </div>
             )}
 
-            {/* Looking For & Identities - Combined Modern Card */}
-            {(Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0) ||
-             (Array.isArray(profile.identities) && profile.identities.length > 0) ? (
+            {/* CV/Resume Section - Modern Card Design */}
+            {Array.isArray(profile.cvBase64) && profile.cvBase64.length > 0 && (
               <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Looking For */}
-                  {Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Target size={18} className="text-brand-600" />
-                        Looking For
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.lookingFor.map((g, i) => (
-                          <span key={`${g}-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                            {g}
-                          </span>
-                        ))}
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  CV/Resume
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {profile.cvBase64.map((cv, index) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-12 bg-red-600 text-white flex items-center justify-center rounded font-bold text-sm">
+                            PDF
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-gray-900 truncate">
+                              {cv.title || cv.original_filename}
+                            </h4>
+                            <p className="text-sm text-gray-600">
+                              {Math.round((cv.base64.length * 3) / 4 / 1024)} KB • Uploaded {new Date(cv.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <a
+                          href={cv.base64}
+                          download={cv.original_filename}
+                          className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
+                          title="Download CV"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Download
+                        </a>
                       </div>
                     </div>
-                  )}
-
-                  {/* Identities */}
-                  {Array.isArray(profile.identities) && profile.identities.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <User2 size={18} className="text-brand-600" />
-                        {profile.accountType === "company" ? "Company Identity" : "Identities"}
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.identities.map((idn, i) => (
-                          <span key={`ident-${i}`} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                            {idn}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
-            ) : null}
+            )}
 
             {/* Posts and activities - Modern Card Design */}
             {feedItems.length > 0 && (
@@ -1665,113 +1855,6 @@ export default function PublicProfilePage() {
                 </div>
               </div>
             )}
-
-            {/* Interests - Modern Card Design */}
-            {profile.interests && (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                  {profile.accountType === "company" ? "Company Interests" : "Identity Interests"}
-                </h2>
-                <div className="space-y-4">
-                  {/* Identity Interests */}
-                  {(profile.interests.identities && profile.interests.identities.length > 0) ||
-                   (Array.isArray(profile.identityInterests) && profile.identityInterests.length > 0) ? (
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Identity Interests</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.identities && profile.interests.identities.length > 0 ? (
-                          profile.interests.identities.map((idn, i) => (
-                            <span key={`ident-int-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                              {idn}
-                            </span>
-                          ))
-                        ) : Array.isArray(profile.identityInterests) && profile.identityInterests.length > 0 ? (
-                          profile.identityInterests.map((idn, i) => (
-                            <span key={`old-ident-int-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                              {idn}
-                            </span>
-                          ))
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {/* Category Interests */}
-                  {profile.interests.categories && profile.interests.categories.length > 0 && (
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Category Interests</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.categories.map((cat, i) => (
-                          <span key={`cat-int-${i}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
-                            {cat}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Subcategory Interests */}
-                  {profile.interests.subcategories && profile.interests.subcategories.length > 0 && (
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Subcategory Interests</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.subcategories.map((sub, i) => (
-                          <span key={`sub-int-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                            {sub}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Expertise & Interests - Modern Card Design */}
-            {(profile.cats?.length || profile.subs?.length) || (Array.isArray(profile.subsubs) && profile.subsubs.length > 0) ? (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Expertise & Interests */}
-                  {(profile.cats?.length || profile.subs?.length) && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Layers size={18} className="text-brand-600" />
-                        Expertise & Interests
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {(profile.cats || []).map((c) => (
-                          <span key={`cat-${c}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
-                            {c}
-                          </span>
-                        ))}
-                        {(profile.subs || []).map((s) => (
-                          <span key={`sub-${s}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Specialties */}
-                  {Array.isArray(profile.subsubs) && profile.subsubs.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Hash size={18} className="text-brand-600" />
-                        Specialties
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.subsubs.map((s3, i) => (
-                          <span key={`s3-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                            {s3}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
 
             {/* Skills & Languages - Modern Card Design */}
             {(Array.isArray(profile.skills) && profile.skills.length > 0) || languages.length > 0 ? (
@@ -2004,10 +2087,21 @@ export default function PublicProfilePage() {
 
             {/* Meetings - Modern Card Design */}
             <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <CalendarDays size={20} className="text-brand-600" />
-                Meetings
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <CalendarDays size={20} className="text-brand-600" />
+                  Meetings
+                </h2>
+                {(profile?.connectionStatus=="connected" && (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
+                  <button
+                    onClick={openMR}
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
+                  >
+                    <CalendarDays size={16} />
+                    Request Meeting
+                  </button>
+                )}
+              </div>
 
               {profile.meetings && profile.meetings.length > 0 ? (
                 <div className="space-y-3">
@@ -2092,7 +2186,16 @@ export default function PublicProfilePage() {
                   })}
                 </div>
               ) : meetings.length === 0 ? (
-                <div className="text-sm text-gray-600">No meetings yet. Create one from the button below.</div>
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-600 mb-3">No meetings yet.</p>
+                  <button
+                    onClick={openMR}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
+                  >
+                    <CalendarDays size={16} />
+                    Request Meeting
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {meetings.map((m) => {
@@ -2197,62 +2300,7 @@ export default function PublicProfilePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className={`grid grid-cols-2 md:grid-cols-4 gap-3 ${isUnblock ? 'hidden':''}`}>
-                {/* Share Menu */}
-                {shareOpen && <ShareMenu profile={profile} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
-
-                {/* Share */}
-                <button
-                  ref={shareButtonRef}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
-                >
-                  <Share2 size={16} />
-                  <span>Share</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      data._showPopUp("login_prompt");
-                      return;
-                    }
-                    navigate(`/profile/${userId}`);
-                  }}
-                  className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
-                >
-                  View Full Profile
-                </button>
-
-                {renderConnectButton()}
-
-                {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
-                  <button
-                    onClick={openMR}
-                    className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium border border-brand-200 bg-white text-brand-700 hover:border-brand-500 hover:text-brand-700 transition-colors"
-                  >
-                    <CalendarDays size={16} className="mr-2" />
-                    Request Meeting
-                  </button>
-                )}
-
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      data._showPopUp("login_prompt");
-                      return;
-                    }
-                    navigate(`/messages?userId=${userId}`);
-                    toast.success("Starting conversation with " + profile.name);
-                  }}
-                  className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
-                >
-                  Message
-                </button>
-              </div>
+             
             </div>
           </>
         )}

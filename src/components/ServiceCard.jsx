@@ -543,7 +543,7 @@ export default function ServiceCard({
             {hasMultipleImages ? (
               <div className="relative overflow-hidden">
                 <div
-                  className="flex w-full transition-transform duration-300 ease-in-out"
+                  className="flex w-full max-h-96 transition-transform duration-300 ease-in-out"
                   style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
                 >
                   {validImages.map((img, index) => (
@@ -551,7 +551,7 @@ export default function ServiceCard({
                       key={index}
                       src={img}
                       alt={`${item?.title} - ${index + 1}`}
-                      className="flex-shrink-0 w-full object-cover"
+                      className="flex-shrink-0 w-full max-h-96 object-cover"
                     />
                   ))}
                 </div>

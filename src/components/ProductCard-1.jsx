@@ -703,7 +703,7 @@ export default function ProductCard({
         </div>
 
         {/* PRODUCT SECTION - Below actions */}
-        {!isOwner && (
+      
           <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
             <div className="flex items-center gap-3">
               {/* Price */}
@@ -717,12 +717,14 @@ export default function ProductCard({
               {item?.country && (
                 <div className="flex items-center gap-1 text-sm text-gray-600">
                   <MapPin size={14} />
-                  <span>{item.country}</span>
+                  <span>{item?.city ? `${item.city}, ` : ""}
+                  {item?.country || "—"}</span>
                 </div>
               )}
             </div>
 
             {/* Action buttons */}
+              {!isOwner && (
             <div className="flex items-center gap-2 mt-3">
               <button
                 onClick={() => {
@@ -765,9 +767,9 @@ export default function ProductCard({
                     : "Connect"}
                 </button>
               )}
-            </div>
+            </div> )}
           </div>
-        )}
+       
       </div>
 
       {/* Modals */}

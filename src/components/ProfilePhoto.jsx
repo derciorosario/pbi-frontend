@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { toast } from "../lib/toast"; // ✅ import your toast
 import { updateAvatarUrl } from "../api/profile"; // ✅ import the new API function
 
-export default function ProfilePhoto({ avatarUrl, onChange }) {
+export default function ProfilePhoto({ avatarUrl, onChange, accountType = "individual" }) {
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false); // ✅ loading state for upload
   const [isRemoving, setIsRemoving] = useState(false); // ✅ loading state for removal
@@ -156,3 +156,4 @@ export default function ProfilePhoto({ avatarUrl, onChange }) {
     </div>
   );
 }
+

@@ -566,6 +566,7 @@ export default function PeopleFeedPage() {
               selectedFilters={selectedFilters}
               {...filtersProps}
               from={"people"}
+              showAudienceFilters={true}
             />
           </div>
 

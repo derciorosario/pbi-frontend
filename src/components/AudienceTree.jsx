@@ -460,6 +460,30 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     if (value) bucket.add(id);
     else bucket.delete(id);
 
+    // Handle cascading deselection when an identity is deselected
+    if (type === "identityIds" && !value) {
+      // Find the identity in filteredTree to get all its child items
+      const identity = filteredTree.find(identity => identity.id === id);
+      if (identity && identity.categories) {
+        // Remove all categories belonging to this identity (similar to onCategoryCheck pattern)
+        identity.categories.forEach((cat) => {
+          next.categoryIds.delete(cat.id);
+          // Remove all subcategories belonging to these categories
+          if (cat.subcategories) {
+            cat.subcategories.forEach((sc) => {
+              next.subcategoryIds.delete(sc.id);
+              // Remove all subsubcategories belonging to these subcategories
+              if (sc.subsubs) {
+                sc.subsubs.forEach((ss) => {
+                  next.subsubCategoryIds.delete(ss.id);
+                });
+              }
+            });
+          }
+        });
+      }
+    }
+
     // Validate hierarchy before sending to parent
     const validated = validateHierarchy(next);
     onChange(validated);

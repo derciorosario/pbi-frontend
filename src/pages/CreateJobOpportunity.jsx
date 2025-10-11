@@ -799,7 +799,7 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
               <div>Department: {form.department || "—"}</div>
               <div>Experience: {form.experienceLevel || "—"}</div>
               <div>Type: {form.jobType || "—"}</div>
-              <div>Work Mode: {form.workMode || "—"}</div>
+              <div>Work Location: {form.workLocation || "—"}</div>
             </div>
           </div>
 
@@ -967,7 +967,7 @@ export default function CreateJobOpportunity() {
     categoryId: "", subcategoryId: "",
     jobType: "", workLocation: "", workSchedule: "",
     careerLevel: "", paymentType: "",
-    workMode: "", description: "", requiredSkills: "",
+    workLocation: "", description: "", requiredSkills: "",
     country:"", city: "",
     countries: [], // New field for multiple countries/cities
   });
@@ -1060,7 +1060,7 @@ export default function CreateJobOpportunity() {
           department: job.department || "",
           experienceLevel: job.experienceLevel || "",
           jobType: job.jobType || "",
-          workMode: job.workMode || "",
+          workLocation: job.workLocation || "",
           description: processedDescription,
           //requiredSkills: Array.isArray(job.requiredSkills) ? job.requiredSkills.join(", ") : job.requiredSkills || "",
           requiredSkills: Array.isArray(job.requiredSkills)
@@ -1526,8 +1526,8 @@ export default function CreateJobOpportunity() {
     <Label required>Work Location</Label>
     <Select  name="workLocation" value={form.workLocation} onChange={onChange} required>
       <option value="">Select location</option>
-      <option>On-Site</option><option>Remote</option>
-      <option>Hybrid</option><option>Field-Based</option>
+      <option>Office</option><option>Field</option>
+      <option>Home</option><option>Client Site</option>
     </Select>
   </div>
 

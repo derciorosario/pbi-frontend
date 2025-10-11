@@ -626,7 +626,7 @@ export default function PeopleProfileCard({
 
           
           {(matchPercentage != 0) && (
-            <div className=" absolute top-0 right-0 -translate-y-[100%]">
+            <div className=" absolute top-0 right-0 -translate-y-[140%]">
               <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-sm text-gray-700 shadow-sm border border-gray-200">
                 {matchPercentage}% match
               </span>

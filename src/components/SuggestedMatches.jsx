@@ -173,7 +173,7 @@ export default function SuggestedMatches({
     <>
       <div className="space-y-4">
         {/* Matches */}
-        <div className="rounded-lg bg-white border border-gray-100 shadow p-4">
+        <div className={`rounded-lg bg-white border border-gray-100 shadow p-4 ${!user ? 'hidden':''}`}>
           <h3 className="font-semibold">
             Connection Suggestions ({loading ? "..." : matches.length})
           </h3>

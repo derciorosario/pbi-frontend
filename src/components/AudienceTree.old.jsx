@@ -12,14 +12,87 @@ const Icons = {
       <path d="M7 14l5-5 5 5z" />
     </svg>
   ),
+  search: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  ),
+  clear: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    </svg>
+  ),
 };
 
-
 function AudienceTree({ tree, selected, onChange, shown = [], from }) {
-  const [open, setOpen] = useState({}); // { 'id-..': bool, 'cat-..': bool, 'sc-..': bool }
+  const [open, setOpen] = useState({});
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredTree, setFilteredTree] = useState(tree);
 
+  // Filter tree based on search term
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredTree(tree);
+      return;
+    }
 
-    const selectAll = (select) => {
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = tree.map(identity => {
+      // Check if identity matches
+      const identityMatches = identity.name.toLowerCase().includes(term);
+      
+      // Filter categories
+      const filteredCategories = (identity.categories || []).map(cat => {
+        const catMatches = cat.name.toLowerCase().includes(term);
+        
+        // Filter subcategories
+        const filteredSubcategories = (cat.subcategories || []).map(sc => {
+          const scMatches = sc.name.toLowerCase().includes(term);
+          
+          // Filter subsubcategories
+          const filteredSubsubs = (sc.subsubs || []).filter(ss => 
+            ss.name.toLowerCase().includes(term)
+          );
+
+          // Keep subcategory if it matches or any of its children match
+          return scMatches || filteredSubsubs.length > 0 ? { ...sc, subsubs: filteredSubsubs } : null;
+        }).filter(Boolean);
+
+        // Keep category if it matches or any of its children match
+        return catMatches || filteredSubcategories.length > 0 ? { ...cat, subcategories: filteredSubcategories } : null;
+      }).filter(Boolean);
+
+      // Keep identity if it matches or any of its children match
+      return identityMatches || filteredCategories.length > 0 ? { ...identity, categories: filteredCategories } : null;
+    }).filter(Boolean);
+
+    setFilteredTree(filtered);
+
+    // Auto-open matching items
+    if (searchTerm.trim()) {
+      const newOpen = { ...open };
+      
+      filtered.forEach(identity => {
+        const identityKey = `id-${identity.id}`;
+        newOpen[identityKey] = true;
+
+        identity.categories?.forEach(cat => {
+          const catKey = `cat-${cat.id}`;
+          newOpen[catKey] = true;
+
+          cat.subcategories?.forEach(sc => {
+            const scKey = `sc-${sc.id}`;
+            newOpen[scKey] = true;
+          });
+        });
+      });
+
+      setOpen(newOpen);
+    }
+  }, [searchTerm, tree]);
+
+  const selectAll = (select) => {
     const next = {
       identityIds: new Set(),
       categoryIds: new Set(),
@@ -28,8 +101,8 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     };
 
     if (select) {
-      // Recursively add all items
-      tree.forEach((identity) => {
+      // Recursively add all items from filtered tree while maintaining hierarchy
+      filteredTree.forEach((identity) => {
         next.identityIds.add(identity.id);
         (identity.categories || []).forEach((cat) => {
           next.categoryIds.add(cat.id);
@@ -43,17 +116,19 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       });
     }
 
-    onChange(next);
+    // Validate hierarchy before sending to parent
+    const validated = validateHierarchy(next);
+    onChange(validated);
   };
 
-  // Check if everything is selected
+  // Check if everything in filtered tree is selected
   const isAllSelected = () => {
-    if (!tree.length) return false;
+    if (!filteredTree.length) return false;
     
     let totalItems = 0;
     let selectedItems = 0;
 
-    tree.forEach((identity) => {
+    filteredTree.forEach((identity) => {
       totalItems++;
       if (S(selected.identityIds).has(identity.id)) selectedItems++;
       
@@ -77,7 +152,7 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
   };
 
   const isPartiallySelected = () => {
-    if (!tree.length) return false;
+    if (!filteredTree.length) return false;
     
     const totalSelected = 
       S(selected.identityIds).size +
@@ -88,19 +163,290 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     return totalSelected > 0 && !isAllSelected();
   };
 
+  // ----- Select All for Categories -----
+  const selectAllCategories = (identityId, select) => {
+    const next = {
+      identityIds: new Set(S(selected.identityIds)),
+      categoryIds: new Set(S(selected.categoryIds)),
+      subcategoryIds: new Set(S(selected.subcategoryIds)),
+      subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
+    };
+
+    const identity = filteredTree.find(id => id.id === identityId);
+    if (!identity) return;
+
+    if (select) {
+      next.identityIds.add(identityId);
+      (identity.categories || []).forEach((cat) => {
+        next.categoryIds.add(cat.id);
+        (cat.subcategories || []).forEach((sc) => {
+          next.subcategoryIds.add(sc.id);
+          (sc.subsubs || []).forEach((ss) => {
+            next.subsubCategoryIds.add(ss.id);
+          });
+        });
+      });
+    } else {
+      // When deselecting categories, also remove their subcategories and subsubcategories
+      (identity.categories || []).forEach((cat) => {
+        next.categoryIds.delete(cat.id);
+        (cat.subcategories || []).forEach((sc) => {
+          next.subcategoryIds.delete(sc.id);
+          (sc.subsubs || []).forEach((ss) => {
+            next.subsubCategoryIds.delete(ss.id);
+          });
+        });
+      });
+    }
+
+    // Validate hierarchy before sending to parent
+    const validated = validateHierarchy(next);
+    onChange(validated);
+  };
+
+  // ----- Select All for Subcategories -----
+  const selectAllSubcategories = (identityId, categoryId, select) => {
+    const next = {
+      identityIds: new Set(S(selected.identityIds)),
+      categoryIds: new Set(S(selected.categoryIds)),
+      subcategoryIds: new Set(S(selected.subcategoryIds)),
+      subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
+    };
+
+    const identity = filteredTree.find(id => id.id === identityId);
+    if (!identity) return;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    if (select) {
+      next.identityIds.add(identityId);
+      next.categoryIds.add(categoryId);
+      (category.subcategories || []).forEach((sc) => {
+        next.subcategoryIds.add(sc.id);
+        (sc.subsubs || []).forEach((ss) => {
+          next.subsubCategoryIds.add(ss.id);
+        });
+      });
+    } else {
+      (category.subcategories || []).forEach((sc) => {
+        next.subcategoryIds.delete(sc.id);
+        (sc.subsubs || []).forEach((ss) => {
+          next.subsubCategoryIds.delete(ss.id);
+        });
+      });
+    }
+
+    // Validate hierarchy before sending to parent
+    const validated = validateHierarchy(next);
+    onChange(validated);
+  };
+
+  // ----- Select All for Subsubcategories -----
+  const selectAllSubsubcategories = (identityId, categoryId, subcategoryId, select) => {
+    const next = {
+      identityIds: new Set(S(selected.identityIds)),
+      categoryIds: new Set(S(selected.categoryIds)),
+      subcategoryIds: new Set(S(selected.subcategoryIds)),
+      subsubCategoryIds: new Set(S(selected.subsubCategoryIds)),
+    };
+
+    const identity = filteredTree.find(id => id.id === identityId);
+    if (!identity) return;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    const subcategory = category.subcategories?.find(sc => sc.id === subcategoryId);
+    if (!subcategory) return;
+
+    if (select) {
+      next.identityIds.add(identityId);
+      next.categoryIds.add(categoryId);
+      next.subcategoryIds.add(subcategoryId);
+      (subcategory.subsubs || []).forEach((ss) => {
+        next.subsubCategoryIds.add(ss.id);
+      });
+    } else {
+      (subcategory.subsubs || []).forEach((ss) => {
+        next.subsubCategoryIds.delete(ss.id);
+      });
+    }
+
+    // Validate hierarchy before sending to parent
+    const validated = validateHierarchy(next);
+    onChange(validated);
+  };
+
+  // ----- Check if all categories in identity are selected -----
+  const areAllCategoriesSelected = (identityId) => {
+    const identity = filteredTree.find(id => id.id === identityId);
+    if (!identity || !identity.categories?.length) return false;
+
+    const selectedCatIds = S(selected.categoryIds);
+    return identity.categories.every(cat => selectedCatIds.has(cat.id));
+  };
+
+  // ----- Check if all subcategories in category are selected -----
+  const areAllSubcategoriesSelected = (identityId, categoryId) => {
+    const identity = filteredTree.find(id => id.id === identityId);
+    if (!identity) return false;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category || !category.subcategories?.length) return false;
+
+    const selectedSubcatIds = S(selected.subcategoryIds);
+    return category.subcategories.every(sc => selectedSubcatIds.has(sc.id));
+  };
+
+  // ----- Check if all subsubcategories in subcategory are selected -----
+  const areAllSubsubcategoriesSelected = (identityId, categoryId, subcategoryId) => {
+    const identity = filteredTree.find(id => id.id === identityId);
+    if (!identity) return false;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category) return false;
+
+    const subcategory = category.subcategories?.find(sc => sc.id === subcategoryId);
+    if (!subcategory || !subcategory.subsubs?.length) return false;
+
+    const selectedSubsubIds = S(selected.subsubCategoryIds);
+    return subcategory.subsubs.every(ss => selectedSubsubIds.has(ss.id));
+  };
+
+  // ----- Check if partially selected for categories -----
+  const areCategoriesPartiallySelected = (identityId) => {
+    const identity = filteredTree.find(id => id.id === identityId);
+    if (!identity || !identity.categories?.length) return false;
+
+    const selectedCatIds = S(selected.categoryIds);
+    const selectedCount = identity.categories.filter(cat => selectedCatIds.has(cat.id)).length;
+    
+    return selectedCount > 0 && selectedCount < identity.categories.length;
+  };
+
+  // ----- Check if partially selected for subcategories -----
+  const areSubcategoriesPartiallySelected = (identityId, categoryId) => {
+    const identity = filteredTree.find(id => id.id === identityId);
+    if (!identity) return false;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category || !category.subcategories?.length) return false;
+
+    const selectedSubcatIds = S(selected.subcategoryIds);
+    const selectedCount = category.subcategories.filter(sc => selectedSubcatIds.has(sc.id)).length;
+    
+    return selectedCount > 0 && selectedCount < category.subcategories.length;
+  };
+
+  // ----- Check if partially selected for subsubcategories -----
+  const areSubsubcategoriesPartiallySelected = (identityId, categoryId, subcategoryId) => {
+    const identity = filteredTree.find(id => id.id === identityId);
+    if (!identity) return false;
+
+    const category = identity.categories?.find(cat => cat.id === categoryId);
+    if (!category) return false;
+
+    const subcategory = category.subcategories?.find(sc => sc.id === subcategoryId);
+    if (!subcategory || !subcategory.subsubs?.length) return false;
+
+    const selectedSubsubIds = S(selected.subsubCategoryIds);
+    const selectedCount = subcategory.subsubs.filter(ss => selectedSubsubIds.has(ss.id)).length;
+    
+    return selectedCount > 0 && selectedCount < subcategory.subsubs.length;
+  };
 
   // ----- utils -----
   const stop = (e) => e.stopPropagation();
   const S = (v) => (v instanceof Set ? v : new Set(v || []));
   const isChecked = (type, id) => S(selected?.[type]).has(id);
 
+  // Validate and fix hierarchical relationships
+  const validateHierarchy = (selection) => {
+    const next = {
+      identityIds: new Set(S(selection.identityIds)),
+      categoryIds: new Set(S(selection.categoryIds)),
+      subcategoryIds: new Set(S(selection.subcategoryIds)),
+      subsubCategoryIds: new Set(S(selection.subsubCategoryIds)),
+    };
+
+    // Build lookup maps for efficient checking
+    const categoryToSubcategories = new Map();
+    const subcategoryToSubsubcategories = new Map();
+
+    filteredTree.forEach(identity => {
+      (identity.categories || []).forEach(cat => {
+        if (!categoryToSubcategories.has(cat.id)) {
+          categoryToSubcategories.set(cat.id, new Set());
+        }
+        (cat.subcategories || []).forEach(sc => {
+          categoryToSubcategories.get(cat.id).add(sc.id);
+
+          if (!subcategoryToSubsubcategories.has(sc.id)) {
+            subcategoryToSubsubcategories.set(sc.id, new Set());
+          }
+          (sc.subsubs || []).forEach(ss => {
+            subcategoryToSubsubcategories.get(sc.id).add(ss.id);
+          });
+        });
+      });
+    });
+
+    // Remove subcategories that don't have their parent categories selected
+    for (const subcategoryId of next.subcategoryIds) {
+      const parentCategoryIds = new Set();
+      for (const [catId, subIds] of categoryToSubcategories) {
+        if (subIds.has(subcategoryId)) {
+          parentCategoryIds.add(catId);
+        }
+      }
+
+      // If no parent category is selected, remove this subcategory
+      const hasParentCategory = Array.from(parentCategoryIds).some(catId => next.categoryIds.has(catId));
+      if (!hasParentCategory) {
+        next.subcategoryIds.delete(subcategoryId);
+        // Also remove all subsubcategories of this subcategory
+        const subsubIds = subcategoryToSubsubcategories.get(subcategoryId);
+        if (subsubIds) {
+          for (const ssId of subsubIds) {
+            next.subsubCategoryIds.delete(ssId);
+          }
+        }
+      }
+    }
+
+    // Remove subsubcategories that don't have their parent subcategories selected
+    for (const subsubId of next.subsubCategoryIds) {
+      const parentSubcategoryIds = new Set();
+      for (const [scId, ssIds] of subcategoryToSubsubcategories) {
+        if (ssIds.has(subsubId)) {
+          parentSubcategoryIds.add(scId);
+        }
+      }
+
+      // If no parent subcategory is selected, remove this subsubcategory
+      const hasParentSubcategory = Array.from(parentSubcategoryIds).some(scId => next.subcategoryIds.has(scId));
+      if (!hasParentSubcategory) {
+        next.subsubCategoryIds.delete(subsubId);
+      }
+    }
+
+    return next;
+  };
+
   const clearAll = () => {
-    onChange({
+    // Validate hierarchy before sending to parent (though not strictly necessary for clear)
+    const validated = validateHierarchy({
       identityIds: new Set(),
       categoryIds: new Set(),
       subcategoryIds: new Set(),
       subsubCategoryIds: new Set(),
     });
+    onChange(validated);
+  };
+
+  const closeAll = () => {
+    setOpen({});
   };
 
   const setChecked = (type, id, value) => {
@@ -113,7 +459,10 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     const bucket = next[type];
     if (value) bucket.add(id);
     else bucket.delete(id);
-    onChange(next);
+
+    // Validate hierarchy before sending to parent
+    const validated = validateHierarchy(next);
+    onChange(validated);
   };
 
   // Exclusive open: category (closes siblings & their subcats)
@@ -174,7 +523,10 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
         (sc.subsubs || []).forEach((ss) => next.subsubCategoryIds.delete(ss.id));
       });
     }
-    onChange(next);
+
+    // Validate hierarchy before sending to parent
+    const validated = validateHierarchy(next);
+    onChange(validated);
   };
 
   const onSubcategoryCheck = (identityId, categoryId, sc) => (e) => {
@@ -194,7 +546,10 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
       next.subcategoryIds.delete(sc.id);
       (sc.subsubs || []).forEach((ss) => next.subsubCategoryIds.delete(ss.id));
     }
-    onChange(next);
+
+    // Validate hierarchy before sending to parent
+    const validated = validateHierarchy(next);
+    onChange(validated);
   };
 
   const onSubsubCheck = (identityId, categoryId, subcategoryId, ss) => (e) => {
@@ -213,7 +568,10 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     } else {
       next.subsubCategoryIds.delete(ss.id);
     }
-    onChange(next);
+
+    // Validate hierarchy before sending to parent
+    const validated = validateHierarchy(next);
+    onChange(validated);
   };
 
   // ----- counters (IMMEDIATE children only) -----
@@ -257,13 +615,12 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
     // If there are shown filters, open all identities
     const allOpen = {};
-    tree.forEach((identity) => {
+    filteredTree.forEach((identity) => {
       const identityId = identity.id;
       const idKey = `id-${identityId}`;
       allOpen[idKey] = true;
     });
 
-    console.log({allOpen})
     setOpen(allOpen);
 
     // fresh selection
@@ -275,15 +632,48 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
     };
 
     onChange(next);
-  }, [shown, tree, from]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shown, filteredTree, from]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
 
   // ----- render -----
   return (
     <div className="rounded-xl border border-gray-200">
-      
-       {!shown?.length && (
+      {/* Search Bar */}
+      <div className="p-3 border-b bg-white">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Icons.search />
+          </div>
+          <input
+            type="text"
+            placeholder="Search identities, categories, subcategories..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+          />
+          {searchTerm && (
+            <button
+              onClick={clearSearch}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+            >
+              <Icons.clear />
+            </button>
+          )}
+        </div>
+        {searchTerm && (
+          <div className="mt-2 text-xs text-gray-500">
+            Showing {filteredTree.length} result{filteredTree.length !== 1 ? 's' : ''} for "{searchTerm}"
+          </div>
+        )}
+      </div>
+
+      {!shown?.length && (
         <div className="flex justify-between items-center p-2 border-b bg-white">
-          <label className="flex items-center gap-2 cursor-pointer">
+         {/**  <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
               className="h-4 w-4 accent-brand-600"
@@ -298,19 +688,28 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
             <span className="text-sm text-gray-700 font-medium">
               {isAllSelected() ? 'Deselect All' : 'Select All'}
             </span>
-          </label>
+          </label> */}
           
-          <button
-            type="button"
-            onClick={clearAll}
-            className="text-xs px-2 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            Clear
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={closeAll}
+              className="text-xs px-2 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Close All
+            </button>
+            <button
+              type="button"
+              onClick={clearAll}
+              className="text-xs px-2 py-1 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Clear
+            </button>
+          </div>
         </div>
       )}
 
-      {tree.map((identity) => {
+      {filteredTree.map((identity) => {
         const identityId = identity.id;
         const idKey = `id-${identityId}`;
         const openId = !!open[idKey];
@@ -320,11 +719,9 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
         return (
           <div
             key={idKey}
-           
             className={`border-b last:border-b-0 ${
               shown.length && !shown.some(s => s.toLowerCase() === identity.name.toLowerCase() || identity.name.toLowerCase() === s.toLowerCase()) ? "hidden" : ""
             }`}
-
           >
             <div
               role={hasCategories ? "button" : undefined}
@@ -361,6 +758,28 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
             <div className={`${shown.length ? '':'px-4'}`}>
                {openId && hasCategories && (
               <div className="bg-slate-50/80 px-4 py-3 space-y-3">
+                {/* Select All for Categories */}
+                {identity.categories && identity.categories.length > 0 && (
+                  <div className="flex justify-between items-center px-3 py-2 bg-slate-200 rounded-lg">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-brand-600"
+                        checked={areAllCategoriesSelected(identityId)}
+                        ref={(input) => {
+                          if (input) {
+                            input.indeterminate = areCategoriesPartiallySelected(identityId);
+                          }
+                        }}
+                        onChange={(e) => selectAllCategories(identityId, e.target.checked)}
+                      />
+                      <span className="text-sm font-medium text-slate-800">
+                        {areAllCategoriesSelected(identityId) ? 'Deselect All Categories' : 'Select All Categories'}
+                      </span>
+                    </label>
+                  </div>
+                )}
+
                 {(identity.categories || []).map((cat) => {
                   const cKey = `cat-${cat.id}`;
                   const openCat = !!open[cKey];
@@ -405,6 +824,28 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
                       {openCat && hasSubs && (
                         <div className="px-3 py-2 space-y-2 bg-sky-50 border-l-2 border-sky-200">
+                          {/* Select All for Subcategories */}
+                          {cat.subcategories && cat.subcategories.length > 0 && (
+                            <div className="flex justify-between items-center px-3 py-2 bg-sky-100 rounded-md">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 accent-brand-600"
+                                  checked={areAllSubcategoriesSelected(identityId, cat.id)}
+                                  ref={(input) => {
+                                    if (input) {
+                                      input.indeterminate = areSubcategoriesPartiallySelected(identityId, cat.id);
+                                    }
+                                  }}
+                                  onChange={(e) => selectAllSubcategories(identityId, cat.id, e.target.checked)}
+                                />
+                                <span className="text-sm font-medium text-sky-900">
+                                  {areAllSubcategoriesSelected(identityId, cat.id) ? 'Deselect All Subcategories' : 'Select All Subcategories'}
+                                </span>
+                              </label>
+                            </div>
+                          )}
+
                           {(cat.subcategories || []).map((sc) => {
                             const scKey = `sc-${sc.id}`;
                             const openSc = !!open[scKey];
@@ -449,6 +890,28 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
 
                                 {openSc && hasSubsubs && (
                                   <div className="px-3 py-2 bg-[#f0f9ff] border-l-2 border-sky-200 grid gap-2">
+                                    {/* Select All for Subsubcategories */}
+                                    {sc.subsubs && sc.subsubs.length > 0 && (
+                                      <div className="flex justify-between items-center px-3 py-2 bg-indigo-100 rounded-sm">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            className="h-4 w-4 accent-brand-600"
+                                            checked={areAllSubsubcategoriesSelected(identityId, cat.id, sc.id)}
+                                            ref={(input) => {
+                                              if (input) {
+                                                input.indeterminate = areSubsubcategoriesPartiallySelected(identityId, cat.id, sc.id);
+                                              }
+                                            }}
+                                            onChange={(e) => selectAllSubsubcategories(identityId, cat.id, sc.id, e.target.checked)}
+                                          />
+                                          <span className="text-xs font-medium text-indigo-900">
+                                            {areAllSubsubcategoriesSelected(identityId, cat.id, sc.id) ? 'Deselect All Subsubcategories' : 'Select All Subsubcategories'}
+                                          </span>
+                                        </label>
+                                      </div>
+                                    )}
+
                                     {sc.subsubs.map((ss) => (
                                       <label key={ss.id} className="flex items-center gap-2">
                                         <input
@@ -476,6 +939,12 @@ function AudienceTree({ tree, selected, onChange, shown = [], from }) {
           </div>
         );
       })}
+
+      {filteredTree.length === 0 && searchTerm && (
+        <div className="p-4 text-center text-gray-500">
+          No results found for "{searchTerm}"
+        </div>
+      )}
     </div>
   );
 }

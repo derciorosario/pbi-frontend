@@ -436,7 +436,7 @@ export default function TourismPage() {
                >
                  {!loadingFeed && items.map((item) => {
                    if (item.kind === "tourism") {
-                     return <ExperienceCard matchPercentage={30} type={view} key={item.id} item={item} />;
+                     return <ExperienceCard matchPercentage={item.matchPercentage} type={view} key={item.id} item={item} />;
                    }
                    if (item.kind === "need") {
                      return (

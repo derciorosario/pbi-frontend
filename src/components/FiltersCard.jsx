@@ -17,6 +17,7 @@ export default function FiltersCard({
   setShowTotalCount,
   selectedFilters = [],
   setSelectedFilters,
+  showAudienceFilters,
   from,
   query,
   setQuery,
@@ -1681,7 +1682,7 @@ export default function FiltersCard({
       )}
 
       {/* Audience Tree */}
-      {Array.isArray(audienceTree) && audienceTree.length > 0 && selectedFilters.length > 0 && (
+      {Array.isArray(audienceTree) && audienceTree.length > 0 && selectedFilters.length > 0 && showAudienceFilters && (
         <div className="mt-4">
           <label className="text-xs text-gray-500 mb-2 block">
             Audience Interests
@@ -1796,12 +1797,12 @@ export default function FiltersCard({
             label="Job Type"
           />
 
-          <MultiSelect
+        {/**  <MultiSelect
             value={workMode || ""}
             onChange={setWorkMode}
-            options={["On-site", "Remote", "Hybrid"]}
+            options={["On-site", "Remote", "Hybrid","Field-Based"]}
             label="Work Mode"
-          />
+          /> */}
 
           <MultiSelect
             value={workLocation || ""}
@@ -1813,24 +1814,25 @@ export default function FiltersCard({
           <MultiSelect
             value={workSchedule || ""}
             onChange={setWorkSchedule}
-            options={["Regular Hours", "Flexible Hours", "Shifts", "Weekends"]}
+            options={["Regular Hours", "Flexible Hours", "Shifts", "Weekends","Overtime","On-Call"]}
             label="Work Schedule"
           />
 
           <MultiSelect
             value={careerLevel || ""}
             onChange={setCareerLevel}
-            options={["Entry Level", "Mid Level", "Senior Level", "Executive"]}
+            options={["Entry Level", "Mid Level", "Senior Level", "Executive","Volunteer / Community Work"]}
             label="Career Level"
           />
 
           <MultiSelect
             value={paymentType || ""}
             onChange={setPaymentType}
-            options={["Hourly", "Monthly", "Project-based", "Commission"]}
+            options={["Hourly Jobs", "Salaried Jobs", "Commission-Based", "Stipend-Based","Equity / Profit-Sharing Roles"]}
             label="Payment Type"
           />
         </>
+        
       )}
 
       {/* Country (uses ExperienceLevelSelector) */}

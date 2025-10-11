@@ -533,7 +533,7 @@ export default function PeopleFeedPage() {
                   type={view}
                   key={`job-${item.id}`}
                   job={item}
-                  matchPercentage={10}
+                  matchPercentage={item.matchPercentage}
                 />
               );
             }
@@ -591,7 +591,7 @@ export default function PeopleFeedPage() {
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
           <div className="_sticky top-0 z-10 _bg-white">
-              <FiltersCard    selectedFilters={selectedFilters} {...filtersProps} from="jobs"/>
+              <FiltersCard  showAudienceFilters={true}   selectedFilters={selectedFilters} {...filtersProps} from="jobs"/>
           </div>
            <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },

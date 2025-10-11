@@ -669,7 +669,7 @@ export default function JobCard({
         </div>
 
         {/* APPLICATION SECTION - Below actions */}
-        {!isOwner && (
+       
           <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
             <div className="flex items-center gap-3">
               {/* Salary */}
@@ -684,25 +684,60 @@ export default function JobCard({
                 <MapPin size={14} />
                 <span>
                   {(() => {
+                    // Priority: use countries array if available, fallback to single country/city
                     const countriesArray = job?.countries || [];
                     const singleCountry = job?.country;
                     const singleCity = job?.city;
 
+                    // If countries array exists and has items, use it
                     if (countriesArray.length > 0) {
                       if (countriesArray.length === 1) {
+                        // Single location from array
                         const location = countriesArray[0];
-                        return `${location.city ? `${location.city}, ` : ""}${
-                          location.country || "-"
-                        }`;
+                        return (
+                          <span>
+                            {location.city ? `${location.city}, ` : ""}
+                            {location.country || "-"}
+                          </span>
+                        );
                       } else {
-                        return `${countriesArray[0].country} +${
-                          countriesArray.length - 1
-                        }`;
+                        // Multiple locations - show first + count
+                        const firstLocation = countriesArray[0];
+                        const remainingCount = countriesArray.length - 1;
+
+                        return (
+                          <div className="relative group/location">
+                            <span className="cursor-help">
+                              {firstLocation.country}
+                              {firstLocation.city ? `, ${firstLocation.city}` : ""}
+                              {" +"}
+                              {remainingCount}
+                            </span>
+
+                            {/* Tooltip with all locations */}
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/location:opacity-100 group-hover/location:visible z-10 whitespace-nowrap max-w-xs">
+                              <div className="space-y-1">
+                                {countriesArray.map((location, index) => (
+                                  <div key={index} className="text-left">
+                                    {location.city ? `${location.city}, ` : ""}
+                                    {location.country}
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
+                            </div>
+                          </div>
+                        );
                       }
                     }
-                    return `${singleCity ? `${singleCity}, ` : ""}${
-                      singleCountry || "-"
-                    }`;
+
+                    // Fallback to single country/city fields
+                    return (
+                      <span>
+                        {singleCity ? `${singleCity}, ` : ""}
+                        {singleCountry || "-"}
+                      </span>
+                    );
                   })()}
                 </span>
               </div>
@@ -711,7 +746,7 @@ export default function JobCard({
             </div>
 
             {/* Action buttons */}
-            <div className="flex items-center gap-2 mt-3">
+            {!isOwner && ( <div className="flex items-center gap-2 mt-3">
               {applicationStatus === "applied" ? (
                 <button className="flex-1 px-4 py-2 rounded-full bg-green-100 text-green-700 font-medium text-sm flex items-center justify-center gap-2">
                   <svg
@@ -770,9 +805,9 @@ export default function JobCard({
                     : "Connect"}
                 </button>
               )}
-            </div>
+            </div>)}
           </div>
-        )}
+        
       </div>
 
       {/* Modals */}

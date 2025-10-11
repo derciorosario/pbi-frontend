@@ -279,7 +279,7 @@ export default function FeedPage() {
             
 
               <div className="_sticky top-0 z-10 _bg-white">
-                <CompanyAssociationPanel/>
+                {/***<CompanyAssociationPanel/> */}
                 <FiltersCard {...filtersProps} />
               </div>
 
