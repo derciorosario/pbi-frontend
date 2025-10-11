@@ -526,6 +526,7 @@ export default function PeopleFeedPage() {
           } gap-6`}
         >
           {items?.map((item) => {
+
             if (item.kind === "job") {
               return (
                 <JobCard
@@ -536,8 +537,44 @@ export default function PeopleFeedPage() {
                 />
               );
             }
+
+            if (item.kind === "need") {
+                return (
+                  <NeedCard
+                    type={view}
+                    key={`need-${item.id}`}
+                    matchPercentage={item.matchPercentage}
+                    need={{
+                      ...item,
+                      categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                      subcategoryName: categories
+                        .find((c) => String(c.id) === String(item.categoryId))
+                        ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                    }}
+                  />
+                );
+              }
+              if (item.kind === "moment") {
+                return (
+                  <MomentCard
+                    type={view}
+                    key={`moment-${item.id}`}
+                    matchPercentage={item.matchPercentage}
+                    moment={{
+                      ...item,
+                      categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                      subcategoryName: categories
+                        .find((c) => String(c.id) === String(item.categoryId))
+                        ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                    }}
+                  />
+                );
+            }
             return null;
           })}
+
+          
+
         </div>
       )}
 
@@ -568,9 +605,9 @@ export default function PeopleFeedPage() {
     
         <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
 
-          <div className="lg:col-span-3 flex items-center flex-wrap">
+          <div className="lg:col-span-3 flex items-center flex-wrap w-full justify-between">
  
-            <div className="flex-1  overflow-hidden">
+            <div className="w-[70%]">
                 <TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
                                     buttons={
                                    [
@@ -597,18 +634,11 @@ export default function PeopleFeedPage() {
 
 
           <section className="lg:col-span-2 space-y-4  overflow-hidden">
-           
             {renderMiddle()}
           </section>
 
           <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
-            {loadingSuggestions ? (
-              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
-                Loading suggestions…
-              </div>
-            ) : (
-              <SuggestedMatches matches={matches} nearby={nearby} />
-            )}
+            <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
           </aside>
         </div>
       </main>

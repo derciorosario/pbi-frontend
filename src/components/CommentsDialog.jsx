@@ -208,7 +208,7 @@ export default function CommentsDialog({
         {/* Composer */}
         <div className="px-4 sm:px-5 pt-3">
           <div className="flex items-start gap-3">
-            <img
+           {currentUser?.avatarUrl && <img
               src={
                 currentUser?.avatarUrl ||
                 (currentUser?.id
@@ -219,7 +219,7 @@ export default function CommentsDialog({
               }
               alt=""
               className="h-9 w-9 rounded-full object-cover"
-            />
+            />}
             <div className="flex-1">
               <textarea
                 ref={textareaRef}

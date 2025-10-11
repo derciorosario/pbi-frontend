@@ -39,7 +39,7 @@ export default function TourismPage() {
   const navigate=useNavigate()
   const data=useData()
   const {user}=useAuth()
-  const [view,setView]=useState('grid')
+  const [view,setView]=useState('list')
   let view_types=['grid','list']
   const from = "tourism"; // Define the 'from' variable
 
@@ -417,7 +417,7 @@ export default function TourismPage() {
       <>
        {loadingFeed && (
                <div className="min-h-[160px] grid text-gray-600">
-                                      <CardSkeletonLoader/>
+                                      <CardSkeletonLoader columns={1}/>
                                    </div>
               )}
 
@@ -431,12 +431,12 @@ export default function TourismPage() {
        
                <div
                  className={`grid grid-cols-1 ${
-                   view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
+                   view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"
                  } gap-6`}
                >
                  {!loadingFeed && items.map((item) => {
                    if (item.kind === "tourism") {
-                     return <ExperienceCard matchPercentage={item.matchPercentage} type={view} key={item.id} item={item} />;
+                     return <ExperienceCard matchPercentage={30} type={view} key={item.id} item={item} />;
                    }
                    if (item.kind === "need") {
                      return (
@@ -515,35 +515,40 @@ export default function TourismPage() {
          
         </aside>
 
-        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
-          <section className="lg:col-span-4 space-y-4 mt-5 overflow-hidden">
-              <TopFilterButtons
-               loading={loadingFeed}
-                selected={selectedFilters}
-                setSelected={setSelectedFilters}
-                buttons={filterOptions}
-                buttonLabels={categoryIdToNameMap}
-                from={from}
-              />
-           <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              <h3 className="font-semibold text-2xl mt-1 hidden">Explore Africa’s Rich Culture & Tourism</h3>
-             <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>  
+        <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
 
-          
-            <TabsAndAdd 
-            tabs={[]}  
-            items={[
-              { label: "Share Tourism Experience", Icon: PlusCircle, onClick: () => navigate('/experiences/create'),hide:user?.accountType=="company" },
-              { label: "Ask About Tourism", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create"),hide:user?.accountType=="company" },
-            ]}
-            activeTab={activeTab} 
-            setActiveTab={setActiveTab}  
-          />
+          <div className="lg:col-span-3 flex items-center flex-wrap w-full justify-between">
 
-            
-            </div>
-              {renderMiddle()}
+            <div className="w-[80%]">
+                <TopFilterButtons
+                  loading={loadingFeed}
+                  selected={selectedFilters}
+                  setSelected={setSelectedFilters}
+                  buttons={filterOptions}
+                  buttonLabels={categoryIdToNameMap}
+                  from={from}
+                />
+              </div>
+              <div className="">
+                <TabsAndAdd
+                  tabs={[]}
+                  items={[
+                    { label: "Share Tourism Experience", Icon: PlusCircle, onClick: () => navigate('/experiences/create'),hide:user?.accountType=="company" },
+                    { label: "Ask About Tourism", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create"),hide:user?.accountType=="company" },
+                  ]}
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                />
+              </div>
+          </div>
+
+          <section className="lg:col-span-2 space-y-4  overflow-hidden">
+            {renderMiddle()}
           </section>
+
+          <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+            <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
+          </aside>
 
         </div>
       </main>

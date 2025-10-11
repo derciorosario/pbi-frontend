@@ -1,4 +1,4 @@
-// src/components/PeopleProfileCard.jsx
+// src/pages/PeopleCards.jsx
 import React, { useMemo, useState } from "react";
 import I from "../lib/icons.jsx";
 import ProfileModal from "../components/ProfileModal.jsx";
@@ -407,7 +407,12 @@ export default function PeopleProfileCard({
         <div className="relative h-full w-full min-h-[160px] md:min-h-[176px] overflow-hidden">
           {avatarUrl ? (
             <>
-              <img src={avatarUrl} alt={name} className="absolute inset-0 w-full h-full object-cover" />
+              <img
+                src={avatarUrl}
+                alt={name}
+                className="absolute inset-0 w-full h-full"
+                style={{ objectFit: isCompany ? 'contain' : 'cover' }}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </>
           ) : (
@@ -423,8 +428,8 @@ export default function PeopleProfileCard({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                setOpenId(id);
-                data._showPopUp?.("profile");
+                navigate(`/profile/${id}`)
+                 
               }}
               className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
               aria-label="View profile"
@@ -439,149 +444,138 @@ export default function PeopleProfileCard({
             )}
           </div>
         </div>
-      ) : (
-        <div className="relative overflow-hidden w-full">
-    <div className="relative">
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt={name}
-          className={`w-full ${isCompany ? 'h-[60px]' : 'h-[45px]'} blur-sm opacity-80 object-cover transition-transform duration-500 group-hover:scale-105`}
-        />
-      ) : (
-        <div className={`w-full ${isCompany ? 'bg-blue-50' : 'bg-brand-50'} ${isCompany ? 'h-[60px]' : 'h-[45px]'} flex items-center justify-center`}>
-          <span className={`text-lg font-semibold ${isCompany ? 'text-blue-600' : 'text-brand-600'}`}>
-            {getInitials(name)}
-          </span>
-        </div>
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" /> <div className="absolute top-3 right-3 flex items-center gap-2">
-                {(matchPercentage!=0) && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-                    {matchPercentage}% match
-                  </span>
-                )} 
-              </div>
-              
-            </div>
+     ) : (
+        /* Header Section - Elegant gradient banner with profile info */
+        <div className={`relative w-full px-6 pt-6 pb-8 ${isCompany ? 'bg-gradient-to-br from-blue-50 via-blue-50/50 to-white' : 'bg-gradient-to-br from-brand-50 via-brand-50/30 to-white'}`}>
+          {/* Match percentage badge - top right */}
         
+
+          {/* Profile Layout */}
+          <div className="flex items-start gap-5">
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              {avatarUrl ? (
+                <div
+                  className={`flex bg-white items-center justify-center w-20 h-20 shadow-lg ${isCompany ? 'border-2 border-blue-100 rounded-xl' : 'border-2 border-gray-100 rounded-xl'} overflow-hidden cursor-pointer hover:shadow-xl transition-shadow`}
+                  onClick={() => {
+                    navigate(`/profile/${id}`)
+                  }}
+                  title={`View ${name}'s profile`}
+                >
+                  <img
+                    src={avatarUrl}
+                    alt={name}
+                    className="w-full h-full"
+                    style={{ objectFit: isCompany ? 'contain' : 'cover' }}
+                  />
+                </div>
+              ) : (
+                <div
+                  className={`w-20 h-20 rounded-xl shadow-lg ${isCompany ? 'border-2 border-blue-200 bg-blue-100' : 'border-2 border-brand-200 bg-brand-100'} flex items-center justify-center cursor-pointer hover:shadow-xl transition-shadow`}
+                  onClick={() => {
+                    navigate(`/profile/${id}`)
+                  }}
+                  title={`View ${name}'s profile`}
+                >
+                  <span className={`${isCompany ? 'text-blue-600' : 'text-brand-600'} font-semibold text-2xl`}>
+                    {getInitials(name)}
+                  </span>
+                </div>
+              )}
+
+              {/* Company logos for approved staff members */}
+              {companyMemberships && companyMemberships.length > 0 && (
+                <div className="absolute -bottom-1 -right-1 flex -space-x-1.5">
+                  {[...companyMemberships]
+                    .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
+                    .slice(0, 3)
+                    .map((membership, index) => (
+                      membership.company.avatarUrl ? (
+                        <img
+                          key={membership.companyId}
+                          src={membership.company.avatarUrl}
+                          alt={membership.company.name}
+                          className={`h-6 w-6 rounded-full border-2 border-white shadow-md object-cover ${
+                            membership.isMain ? 'ring-2 ring-brand-400' : ''
+                          }`}
+                          title={`${membership.company.name} (${membership.role})`}
+                        />
+                      ) : (
+                        <div
+                          key={membership.companyId}
+                          className={`h-6 w-6 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-600 ${
+                            membership.isMain ? 'ring-2 ring-brand-400' : ''
+                          }`}
+                          title={`${membership.company.name} (${membership.role})`}
+                        >
+                          {getInitials(membership.company.name)}
+                        </div>
+                      )
+                    ))}
+                  {companyMemberships.length > 3 && (
+                    <div className="h-6 w-6 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-600 z-10">
+                      +{companyMemberships.length - 3}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Name, role, category, and location info */}
+            <div
+              className="flex-1 min-w-0 cursor-pointer pt-1"
+              onClick={() => {
+                navigate(`/profile/${id}`)
+              }}
+              title={`View ${name}'s profile`}
+            >
+              {/* Name */}
+              <h3 className={`font-bold text-[15px] ${isCompany ? 'text-blue-900' : 'text-gray-900'} hover:text-brand-600 transition-colors truncate leading-tight`} title={name}>
+                {name || "Anonymous User"}
+              </h3>
+
+              {/* Role */}
+              {role ? (
+                <div className={`mt-1 text-sm ${isCompany ? 'font-semibold text-blue-700' : 'font-medium text-gray-700'} truncate`} title={role}>
+                  {isCompany ? `${role || 'Company'}` : role}
+                </div>
+              ) : (
+                <div className="mt-1 text-sm font-medium text-gray-500 italic">
+                  {isCompany ? 'Company Profile' : 'Professional'}
+                </div>
+              )}
+
+              {/* Categories */}
+              {cats && cats.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {cats.slice(0, 2).map((cat, idx) => (
+                    <span key={idx} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-brand-50 text-brand-500`}>
+                      {cat}
+                    </span>
+                  ))}
+                  {cats.length > 2 && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
+                      +{cats.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Location */}
+              {location && (
+                <div className="mt-2 flex items-center text-sm text-gray-600 gap-1.5">
+                  <MapPin size={15} className="text-gray-400 flex-shrink-0" />
+                  <span className="truncate" title={location}>{location}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
-
-      {/* Profile Image (circular) - only when there's no heroUrl */}
-
-       
-       <div className="flex items-center gap-4 pt-1 pb-4 pl-4 pr-4">
-  <div className="relative flex-shrink-0 -mt-4">
-    {avatarUrl ? (
-      <div
-        className={`flex bg-white items-center justify-center w-24 h-24 rounded-md shadow-md ${isCompany ? 'border-2 border-blue-100' : 'border-2 border-gray-100'} overflow-hidden cursor-pointer`}
-        onClick={() => {
-          setOpenId(id);
-          data._showPopUp?.("profile");
-        }}
-        title={`View ${name}'s profile`}
-      >
-        <img
-          src={avatarUrl}
-          alt={name}
-          className="w-full"
-        />
-      </div>
-    ) : (
-      <div
-        className={`w-24 h-24 rounded-md shadow-md ${isCompany ? 'border-2 border-blue-100' : 'border-2 border-gray-100'} ${isCompany ? 'bg-blue-100' : 'bg-brand-100'} flex items-center justify-center cursor-pointer`}
-        onClick={() => {
-          setOpenId(id);
-          data._showPopUp?.("profile");
-        }}
-        title={`View ${name}'s profile`}
-      >
-        <span className={`${isCompany ? 'text-blue-600' : 'text-brand-600'} font-medium text-lg`}>
-          {getInitials(name)}
-        </span>
-      </div>
-    )}
-
-    {/* Company logos for approved staff members */}
-    {companyMemberships && companyMemberships.length > 0 && (
-      <div className="absolute -bottom-2 -right-2 flex -space-x-2">
-        {[...companyMemberships]
-          .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
-          .slice(0, 3)
-          .map((membership, index) => (
-            membership.company.avatarUrl ? (
-              <img
-                key={membership.companyId}
-                src={membership.company.avatarUrl}
-                alt={membership.company.name}
-                className={`h-7 w-7 rounded-full border-2 border-white shadow-md object-cover ${
-                  membership.isMain ? 'ring-2 ring-brand-400' : ''
-                }`}
-                title={`${membership.company.name} (${membership.role})`}
-              />
-            ) : (
-              <div
-                key={membership.companyId}
-                className={`h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 ${
-                  membership.isMain ? 'ring-2 ring-brand-400' : ''
-                }`}
-                title={`${membership.company.name} (${membership.role})`}
-              >
-                {getInitials(membership.company.name)}
-              </div>
-            )
-          ))}
-        {companyMemberships.length > 3 && (
-          <div className="h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 z-10">
-            +{companyMemberships.length - 3}
-          </div>
-        )}
-      </div>
-    )}
-  </div>
-
-  {/* Name, role and location - clickable to open profile */}
-  <div
-    className="flex-1 min-w-0 cursor-pointer"
-    onClick={() => {
-      setOpenId(id);
-      data._showPopUp?.("profile");
-    }}
-    title={`View ${name}'s profile`}
-  >
-    <div className={`${isCompany ? 'text-[17px]' : 'text-[15px]'} font-semibold ${isCompany ? 'text-blue-900' : 'text-gray-900'} hover:underline transition-colors truncate`} title={name}>
-      {name}
-    </div>
-    {role && (
-      <div className={`text-sm ${isCompany ? 'font-medium text-blue-700' : 'text-gray-600'} truncate`} title={role}>
-        {isCompany ? `${role || 'Company'}` : role}
-      </div>
-    )}
-    {cats && cats.length > 0 && (
-      <div className={`text-sm ${isCompany ? 'font-medium text-brand-600' : 'text-brand-600'} truncate`} title={cats.join(", ")}>
-        {cats.join(", ")}
-      </div>
-    )}
-
-    {(location || computedTime) && (
-      <div className="mt-0.5 flex items-center text-xs text-gray-500 min-w-0 w-full">
-        <span className="flex items-center gap-1.5 min-w-0 flex-1" title={location}>
-          {location && (
-            <>
-              <MapPin size={14} />
-              <span className="truncate" title={location}>{location}</span>
-            </>
-          )}
-        </span>
-      </div>
-    )}
-  </div>
-</div>
       
 
       {/* CONTENT */}
-      <div className={`${isList ? "pb-4 pl-4 pr-4 md:pb-5 md:pl-5 md:pr-5" : "pb-5 pl-5 pr-5"} flex flex-col flex-1`}>
+      <div className={`${isList ? "pb-4 pl-4 pr-4 md:pb-5 md:pl-5 md:pr-5" : "pb-5 pl-5 pr-5"} mt-5 flex flex-col flex-1`}>
 
           {/* Tags: show 2 + tooltip */}
         {!!visibleTags.length && (0==1) && (
@@ -628,9 +622,23 @@ export default function PeopleProfileCard({
           </div>
         )}
 
+        <div className=" relative">
+
+          
+          {(matchPercentage != 0) && (
+            <div className=" absolute top-0 right-0 -translate-y-[100%]">
+              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-sm text-gray-700 shadow-sm border border-gray-200">
+                {matchPercentage}% match
+              </span>
+            </div>
+          )}
+
+        </div>
+
+
         {/* About */}
         {about && (
-          <p title={about} className={`mt-0 text-[15px] leading-relaxed text-gray-700 ${isList ? "line-clamp-4 md:line-clamp-6" : "line-clamp-6"}`}>
+          <p title={about} className={`mt-1 text-[14px] leading-relaxed text-gray-700 ${isList ? "line-clamp-4 md:line-clamp-6" : "line-clamp-6"}`}>
             {displayedAbout}
           </p>
         )}
@@ -646,8 +654,6 @@ export default function PeopleProfileCard({
 
         {/* Actions */}
         <div className="mt-auto pt-2 flex items-center gap-2">
-
-
           {/* Message */}
           {user?.id!=id && <button
             onClick={() => {
@@ -658,7 +664,7 @@ export default function PeopleProfileCard({
               if (onMessage) onMessage(id);
               else navigate(`/messages?userId=${id}`);
             }}
-            className={`rounded-xl _login_prompt px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 transition-all duration-200 shadow-sm hover:shadow-md ${
+            className={`rounded-[10px] _login_prompt px-2 py-2 text-sm font-medium bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 transition-all duration-200 shadow-sm hover:shadow-md ${
               type === "grid" ? "flex-1" : ""
             }`}
           >
@@ -738,7 +744,7 @@ export default function PeopleProfileCard({
           onClick={() => setOpenConfirmRemove(true)}
           title="Connected — click to remove"
           aria-label="Connected. Click to remove connection"
-          className="group/conn rounded-xl px-2.5 py-2 text-sm font-semibold w-full
+          className="group/conn rounded-xl px-2 py-2 text-sm font-semibold w-full
                     bg-green-100 text-green-700 border-2 border-green-200
                     hover:bg-red-50 hover:text-red-700 hover:border-red-300
                     focus:outline-none focus:ring-2 focus:ring-red-500/30
@@ -771,7 +777,7 @@ export default function PeopleProfileCard({
 
     if (status === "pending_outgoing" || status === "outgoing_pending" || status === "pending") {
       return (
-        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-yellow-100 text-yellow-700 cursor-default">
+        <button className="rounded-xl px-4 py-2 text-sm font-medium bg-yellow-100 text-yellow-700 cursor-default">
           Pending
         </button>
       );
@@ -780,7 +786,7 @@ export default function PeopleProfileCard({
       return (
         <button
           onClick={() => navigate("/notifications")}
-          className="rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-100 text-brand-600 hover:bg-brand-200"
+          className="rounded-xl px-4 py-2 text-sm font-medium bg-brand-100 text-brand-600 hover:bg-brand-200"
         >
          
           Respond
@@ -791,7 +797,7 @@ export default function PeopleProfileCard({
       return (
         <button
           onClick={() => data._showPopUp("login_prompt")}
-          className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 transition-colors"
+          className="rounded-xl px-4 py-2 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 transition-colors"
         >
           Connect
         </button>
@@ -800,7 +806,7 @@ export default function PeopleProfileCard({
     return (
       <button
         onClick={() => setModalOpen(true)}
-        className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 transition-colors"
+        className="rounded-xl px-4 py-2 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 transition-colors"
       >
         Connect
       </button>

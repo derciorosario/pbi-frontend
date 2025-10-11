@@ -1,0 +1,975 @@
+// src/components/CrowdfundCard.jsx
+import React, { useMemo, useState, useEffect, useRef } from "react";
+import { useData } from "../contexts/DataContext.jsx";
+import { useAuth } from "../contexts/AuthContext.jsx";
+import { useNavigate } from "react-router-dom";
+import ConnectionRequestModal from "./ConnectionRequestModal";
+import ProfileModal from "./ProfileModal";
+import { toast } from "../lib/toast";
+import * as socialApi from "../api/social";
+import ConfirmDialog from "./ConfirmDialog";
+import CommentsDialog from "./CommentsDialog";
+import {
+  Eye,
+  Edit,
+  Share2,
+  MapPin,
+   Heart,
+    MessageCircle,
+    Flag,
+  Clock,
+  User as UserIcon,
+  Copy as CopyIcon,
+} from "lucide-react";
+import {
+  FacebookShareButton,
+  FacebookIcon,
+  LinkedinShareButton,
+  LinkedinIcon,
+  TwitterShareButton,
+  TwitterIcon,
+  WhatsappShareButton,
+  WhatsappIcon,
+  TelegramShareButton,
+  TelegramIcon,
+  EmailShareButton,
+  EmailIcon,
+  FacebookMessengerShareButton,
+  FacebookMessengerIcon,
+} from "react-share";
+import CrowdfundDetails from "./CrowdfundDetails.jsx";
+
+const BRAND = "#034ea2";
+
+const Progress = ({ value }) => (
+  <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
+    <div
+      className="h-full rounded-full"
+      style={{ width: `${Math.min(100, value)}%`, background: BRAND }}
+    />
+  </div>
+);
+
+const Tag = ({ children }) => (
+  <span className="inline-flex items-center rounded-full bg-gradient-to-r from-brand-50 to-brand-100 text-brand-700 px-3 py-1 text-xs font-medium border border-brand-200/50">
+    {children}
+  </span>
+);
+
+export default function CrowdfundCard({
+  item,
+  matchPercentage = 20, // optional match chip
+  type = "grid", // "grid" | "list"
+}) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(item?.connectionStatus || "none");
+  const [openId, setOpenId] = useState(null);
+  const [crowdfundDetailsOpen, setCrowdfundDetailsOpen] = useState(false);
+
+  // Social state
+  const [liked, setLiked] = useState(!!item?.liked);
+  const [likeCount, setLikeCount] = useState(Number(item?.likes || 0));
+  const [commentCount, setCommentCount] = useState(
+    Array.isArray(item?.comments) ? item.comments.length : Number(item?.commentsCount || 0)
+  );
+
+  // Report dialog
+  const [reportOpen, setReportOpen] = useState(false);
+
+  // Comments dialog
+  const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+
+  // Image slider state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Share popover
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareMenuRef = useRef(null);
+  const cardRef = useRef(null);
+  const { user, settings } = useAuth();
+  const data = useData();
+  const navigate = useNavigate();
+
+  // Close share menu on outside click / Esc
+  useEffect(() => {
+    function onDown(e) {
+      if (
+        shareMenuRef.current &&
+        !shareMenuRef.current.contains(e.target) &&
+        !cardRef.current?.contains(e.target)
+      ) {
+        setShareOpen(false);
+      }
+    }
+    function onEsc(e) {
+      if (e.key === "Escape") setShareOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
+
+  // Get all valid images for slider
+  const getValidImages = () => {
+    const validImages = [];
+
+    if (item?.images?.length > 0) {
+      for (const img of item.images) {
+        if (img?.base64url &&
+            (img.base64url.startsWith("data:image") ||
+             img.base64url.startsWith("http://") ||
+             img.base64url.startsWith("https://"))) {
+          validImages.push(img.base64url);
+        } else if (typeof img === "string" &&
+                   (img.startsWith("data:image") ||
+                    img.startsWith("http://") ||
+                    img.startsWith("https://"))) {
+          validImages.push(img);
+        }
+      }
+    }
+
+    return validImages;
+  };
+
+  const validImages = getValidImages();
+  const hasMultipleImages = validImages.length > 1;
+
+  // Raised/goal/progress
+  const raised = parseFloat(item?.raised || 0);
+  const goal = parseFloat(item?.goal || 0);
+  const progress = goal > 0 ? Math.min(100, (raised / goal) * 100) : 0;
+
+  const daysLeft = useMemo(() => {
+    if (!item?.deadline) return null;
+    const now = new Date();
+    const deadline = new Date(item.deadline);
+    const diff = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
+  }, [item?.deadline]);
+
+  // Tags (exactly 2)
+  const allTags = [
+    ...(Array.isArray(item?.audienceCategories) ? item?.audienceCategories.map(i=>i.name) : []),
+    ...(Array.isArray(item?.tags) ? item.tags.filter(Boolean) : [])
+  ];
+  const visibleTags = allTags.slice(0, 2);
+  const extraCount = Math.max(0, allTags.length - visibleTags.length);
+
+  const timeAgo = useMemo(() => {
+    if (item?.timeAgo) return item.timeAgo;
+    if (!item?.createdAt) return "";
+    const diff = Date.now() - new Date(item.createdAt).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins} min${mins !== 1 ? "s" : ""} ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} hour${hrs !== 1 ? "s" : ""} ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days} day${days !== 1 ? "s" : ""} ago`;
+  }, [item?.timeAgo, item?.createdAt]);
+
+  const isOwner = !!user?.id && user.id === item?.creatorUserId;
+
+  // Initial fetch for like & comments count (optional)
+  useEffect(() => {
+    if (!item?.id) return;
+    socialApi
+      .getLikeStatus("funding", item.id)
+      .then(({ data }) => {
+        setLiked(data.liked);
+        setLikeCount(data.count);
+      })
+      .catch(() => {});
+    socialApi
+      .getComments("funding", item.id)
+      .then(({ data }) => {
+        const len = Array.isArray(data) ? data.length : 0;
+        setCommentCount(len);
+      })
+      .catch(() => {});
+  }, [item?.id]);
+
+  // Share data
+  const shareUrl = `${window.location.origin}/funding/${item?.id}`;
+  const shareTitle = item?.title || "Crowdfunding project on 54Links";
+  const shareQuote = (item?.pitch || "").slice(0, 160) + ((item?.pitch || "").length > 160 ? "…" : "");
+  const shareHashtags = ["54Links", "Crowdfunding", "Support"].filter(Boolean);
+  const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
+
+  const CopyLinkButton = () => (
+    <button
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          toast.success("Link copied");
+          setShareOpen(false);
+        } catch {
+          toast.error("Failed to copy link");
+        }
+      }}
+      className="flex items-center gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm hover:bg-gray-50"
+    >
+      <CopyIcon size={16} />
+      Copy link
+    </button>
+  );
+
+  const ShareMenu = () => (
+    <div
+      ref={shareMenuRef}
+      className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      role="dialog"
+      aria-label="Share options"
+    >
+      <div className="text-xs font-medium text-gray-500 px-1 pb-2">
+        Share this project
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <WhatsappIcon size={40} round />
+            <span className="text-xs text-gray-700">WhatsApp</span>
+          </div>
+        </WhatsappShareButton>
+
+        <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <FacebookIcon size={40} round />
+            <span className="text-xs text-gray-700">Facebook</span>
+          </div>
+        </FacebookShareButton>
+
+        <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <LinkedinIcon size={40} round />
+            <span className="text-xs text-gray-700">LinkedIn</span>
+          </div>
+        </LinkedinShareButton>
+
+        <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <TwitterIcon size={40} round />
+            <span className="text-xs text-gray-700">X / Twitter</span>
+          </div>
+        </TwitterShareButton>
+
+        <TelegramShareButton url={shareUrl} title={shareTitle}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <TelegramIcon size={40} round />
+            <span className="text-xs text-gray-700">Telegram</span>
+          </div>
+        </TelegramShareButton>
+
+        <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
+          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+            <EmailIcon size={40} round />
+            <span className="text-xs text-gray-700">Email</span>
+          </div>
+        </EmailShareButton>
+
+        {messengerAppId && (
+          <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
+            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
+              <FacebookMessengerIcon size={40} round />
+              <span className="text-xs text-gray-700">Messenger</span>
+            </div>
+          </FacebookMessengerShareButton>
+        )}
+      </div>
+
+      <div className="mt-2">
+        <CopyLinkButton />
+      </div>
+    </div>
+  );
+
+  function onSent() {
+    toast.success("Connection request sent");
+    setModalOpen(false);
+    setConnectionStatus("pending_outgoing");
+  }
+
+  // Determine if we're in list mode
+  const isList = type === "list";
+
+  // Container classes based on layout type
+  const containerBase = "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
+  const containerLayout = isList
+    ? (settings?.contentType === 'text'
+        ? "flex flex-col" // Full width for text mode in list
+        : "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch")
+    : "flex flex-col";
+
+  /* ----------------------- Like handler ----------------------- */
+  const toggleLike = async () => {
+    if (!user?.id) {
+      data._showPopUp?.("login_prompt");
+      return;
+    }
+    setLiked((p) => !p);
+    setLikeCount((n) => (liked ? Math.max(0, n - 1) : n + 1));
+    try {
+      const { data } = await socialApi.toggleLike("funding", item.id);
+      setLiked(data.liked);
+      setLikeCount(data.count);
+    } catch (error) {
+      setLiked((p) => !p);
+      setLikeCount((n) => (liked ? n + 1 : Math.max(0, n - 1)));
+    }
+  };
+
+  /* ----------------------- Report handler ----------------------- */
+  const reportCrowdfund = async (description) => {
+    try {
+      await socialApi.reportContent("funding", item.id, "other", description);
+      toast.success("Report submitted. Thank you.");
+    } catch (e) {
+      toast.success("Report submitted. Thank you.");
+    }
+  };
+
+  return (
+    <>
+      <div ref={cardRef} className={`${containerBase} ${containerLayout}`}>
+        {/* IMAGE */}
+        {isList ? (
+          // Only show image side in list view if not text mode
+          settings?.contentType !== 'text' && (
+            <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
+              {validImages.length > 0 ? (
+                <>
+                  {/* Image Slider */}
+                  <div className="relative w-full h-full overflow-hidden">
+                    {hasMultipleImages ? (
+                      <div
+                        className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                        style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                      >
+                        {validImages.map((img, index) => (
+                          <img
+                            key={index}
+                            src={img}
+                            alt={`${item?.title} - ${index + 1}`}
+                            className="flex-shrink-0 w-full h-full object-cover"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <img src={validImages[0]} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
+                    )}
+                  </div>
+
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                  {/* Creator name and logo on image */}
+                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                    <div
+                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        if (item?.creatorUserId) {
+                          setOpenId(item.creatorUserId);
+                          data._showPopUp?.("profile");
+                        }
+                      }}
+                    >
+                      {item?.avatarUrl ? (
+                        <img
+                          src={item.avatarUrl}
+                          alt={item?.creatorUserName || "User"}
+                          className="w-7 h-7 rounded-full shadow-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                          <UserIcon size={12} className="text-brand-600" />
+                        </div>
+                      )}
+                      <div className="flex flex-col">
+                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                          {item?.creatorUserName || "User"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Slider Dots */}
+                  {hasMultipleImages && (
+                    <div className="absolute bottom-3 right-3 flex gap-1">
+                      {validImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCurrentImageIndex(index);
+                          }}
+                          className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                          }`}
+                          aria-label={`Go to image ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                // clean placeholder (no text)
+                <div className="absolute inset-0 w-full h-full bg-gray-100" />
+              )}
+
+              {/* Quick actions on image */}
+              <div className="absolute top-3 right-3 flex gap-2">
+
+                <button
+                onClick={() => {
+                  if (isOwner) navigate(`/funding/${item.id}`);
+                  else setCrowdfundDetailsOpen(true);
+                }}
+               className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label={isOwner ? "Edit" : "View"}
+              >
+                {isOwner ? (
+                  <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+                ) : (
+                  <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+                )}
+              </button>
+
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label="Share"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
+              </div>
+            </div>
+          )
+        ) : (
+          <div className="relative overflow-hidden">
+            {settings?.contentType === 'text' ? null : validImages.length > 0 ? (
+              <div className="relative">
+                {/* Image Slider */}
+                <div className="relative w-full h-48 overflow-hidden">
+                  {hasMultipleImages ? (
+                    <div
+                      className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                      style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                    >
+                      {validImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={img}
+                          alt={`${item?.title} - ${index + 1}`}
+                          className="flex-shrink-0 w-full h-full object-cover transition-transform duration-500 "
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <img
+                      src={validImages[0]}
+                      alt={item?.title}
+                      className="w-full h-48 object-cover transition-transform duration-500 "
+                    />
+                  )}
+                </div>
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Creator name and logo on image */}
+                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
+                  <div
+                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      if (item?.creatorUserId) {
+                        setOpenId(item.creatorUserId);
+                        data._showPopUp?.("profile");
+                      }
+                    }}
+                  >
+                    {item?.avatarUrl ? (
+                      <img
+                        src={item.avatarUrl}
+                        alt={item?.creatorUserName || "User"}
+                        className="w-7 h-7 rounded-full shadow-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                        <UserIcon size={12} className="text-brand-600" />
+                      </div>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                        {item?.creatorUserName || "User"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slider Dots */}
+                {hasMultipleImages && (
+                  <div className="absolute bottom-3 right-3 flex gap-1">
+                    {validImages.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCurrentImageIndex(index);
+                        }}
+                        className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                        aria-label={`Go to image ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              // clean placeholder (no text)
+              <div className="w-full h-48 bg-gray-100" />
+            )}
+
+            {/* Quick actions on image - only show when not text mode */}
+            {settings?.contentType !== 'text' && (
+              <div className="absolute top-4 right-4 flex gap-2">
+
+                   <button
+                onClick={() => {
+                  if (isOwner) navigate(`/funding/${item.id}`);
+                  else setCrowdfundDetailsOpen(true);
+                }}
+               className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label={isOwner ? "Edit" : "View"}
+              >
+                {isOwner ? (
+                  <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+                ) : (
+                  <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+                )}
+              </button>
+
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
+                  aria-label="Share"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* CONTENT */}
+        <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
+          {/* Text mode: Buttons and audience categories at top */}
+          {settings?.contentType === 'text' && (
+            <div className={`${!isList ? 'flex-col gap-y-2':'items-center justify-between gap-2'} flex  mb-3`}>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (isOwner) navigate(`/funding/${item.id}`);
+                    else setCrowdfundDetailsOpen(true);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label={isOwner ? "Edit project" : "View project"}
+                >
+                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShareOpen((s) => !s);
+                  }}
+                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
+                  aria-label="Share project"
+                >
+                  <Share2 size={16} className="text-gray-600" />
+                </button>
+              </div>
+              <div
+                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  if (item?.creatorUserId) {
+                    setOpenId(item.creatorUserId);
+                    data._showPopUp?.("profile");
+                  }
+                }}
+              >
+                {item?.avatarUrl ? (
+                  <img
+                    src={item.avatarUrl}
+                    alt={item?.creatorUserName || "User"}
+                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                  />
+                ) : (
+                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                    <UserIcon size={12} className="text-brand-600" />
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                    {item?.creatorUserName || "User"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Title */}
+          <h3 className="text-[17px] font-semibold text-gray-900 group-hover:text-brand-600 transition-colors duration-200">
+            {item?.title}
+          </h3>
+
+          {/* Creator display when there's no image */}
+          {validImages.length === 0 && (
+            <div
+              className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer mt-2"
+              onClick={(ev) => {
+                ev.stopPropagation();
+                if (item?.creatorUserId) {
+                  setOpenId(item.creatorUserId);
+                  data._showPopUp?.("profile");
+                }
+              }}
+            >
+              {item?.avatarUrl ? (
+                <img
+                  src={item.avatarUrl}
+                  alt={item?.creatorUserName || "User"}
+                  className="w-7 h-7 rounded-full shadow-lg object-cover"
+                />
+              ) : (
+                <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
+                  <UserIcon size={12} className="text-brand-600" />
+                </div>
+              )}
+              <div className="flex flex-col">
+                <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
+                  {item?.creatorUserName || "User"}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Pitch */}
+          <p className="mt-2 text-[15px] text-gray-700 line-clamp-3">{item?.pitch}</p>
+
+          {/* Meta row (creator + match + time + location) */}
+          <div className="mt-3 space-y-2">
+            <div className="flex items-center justify-between pb-1">
+              {/* Creator display removed - now shown prominently above */}
+            
+              {/* Match % chip */}
+              {matchPercentage !== undefined && matchPercentage !== null && (
+                <div
+                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    matchPercentage >= 80
+                      ? "bg-green-100 text-green-700 border border-green-200"
+                      : matchPercentage >= 60
+                      ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                      : "bg-gray-100 text-gray-600 border border-gray-200"
+                  }`}
+                >
+                  {matchPercentage}% match
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span className="flex items-center gap-1">
+                <Clock size={12} />
+                {timeAgo}
+              </span>
+              <span className="flex items-center gap-1">
+                <MapPin size={12} />
+                {item?.city ? `${item.city}, ` : ""}
+                {item?.country || "—"}
+              </span>
+            </div>
+          </div>
+
+          {/* Funding progress */}
+          <div className="mt-4 space-y-2">
+            <Progress value={progress} />
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div>
+                <span className="font-semibold">
+                  {item?.currency} {Number.isFinite(raised) ? raised.toLocaleString() : "0"}
+                </span>{" "}
+                raised
+              </div>
+              <div>
+                of{" "}
+                <span className="font-semibold">
+                  {item?.currency} {Number.isFinite(goal) ? goal.toLocaleString() : "0"}
+                </span>{" "}
+                goal
+              </div>
+              {daysLeft !== null && <div className="text-gray-500">· {daysLeft} days left</div>}
+            </div>
+          </div>
+
+          {/* Tags — show 2 + tooltip for extras */}
+          {!!visibleTags.length && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {visibleTags.map((t) => (
+                <Tag key={t}>{t}</Tag>
+              ))}
+              {extraCount > 0 && (
+                <div className="relative inline-block group/tagmore">
+                  <span
+                    className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-3 py-1 text-xs font-medium cursor-default hover:bg-gray-200 transition-colors duration-200"
+                    aria-describedby={`fund-tags-more-${item.id}`}
+                    tabIndex={0}
+                  >
+                    +{extraCount} more
+                  </span>
+
+                  <div
+                    id={`fund-tags-more-${item.id}`}
+                    role="tooltip"
+                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg
+                    opacity-0 invisible transition-opacity duration-200
+                    group-hover/tagmore:opacity-100 group-hover/tagmore:visible
+                    focus-within:opacity-100 focus-within:visible z-10 whitespace-nowrap"
+                  >
+                    <div className="flex flex-wrap gap-1 max-w-xs">
+                      {allTags.slice(2).map((tag, i) => (
+                        <span key={i} className="inline-block">
+                          {tag}
+                          {i < allTags.length - 3 ? "," : ""}
+                        </span>
+                      ))}
+                    </div>
+                    <div
+                      className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
+                      border-l-4 border-r-4 border-t-4
+                      border-l-transparent border-r-transparent border-t-gray-900"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* NEW: social row (like / comment / report) hidden for now */}
+          <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600">
+            <button
+              onClick={toggleLike}
+              className="inline-flex items-center gap-1 hover:text-brand-700"
+              title={liked ? "Unlike" : "Like"}
+            >
+              <Heart
+                size={16}
+                className={liked ? "fill-brand-500 text-brand-500" : ""}
+              />
+              <span>{likeCount}</span>
+            </button>
+
+            <button
+              onClick={() => setCommentsDialogOpen(true)}
+              className="inline-flex items-center gap-1 hover:text-brand-700"
+              title="Comments"
+            >
+              <MessageCircle size={16} />
+              <span>{commentCount}</span>
+            </button>
+
+            <button
+              onClick={() =>{
+                 if (!user?.id) {
+                  data._showPopUp?.("login_prompt");
+                  return;
+                }else{
+                  setReportOpen(true)
+                }
+              } }
+              className="inline-flex _login_prompt items-center gap-1 hover:text-rose-700"
+              title="Report this project"
+            >
+              <Flag size={16} />
+              <span>Report</span>
+            </button>
+          </div>
+
+          {/* Actions */}
+          <div className={`${isList ? "mt-3" : "mt-5"} flex items-center gap-2 ${isList ? "justify-end md:justify-start" : ""}`}>
+            {/* Keep your Support button logic as-is (owner-only per your original code) */}
+            {item.creatorUserId == user?.id && (
+              <button
+                onClick={() => {
+                  if (!user) {
+                    data._showPopUp("login_prompt");
+                    return;
+                  }
+                  navigate(`/messages?userId=${item.creatorUserId}`);
+                }}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-white"
+                style={{ background: BRAND }}
+              >
+                Support Project
+              </button>
+            )}
+
+            {/* View/Edit (mirrors the image quick action) */}
+            <button
+              onClick={() => {
+                if (isOwner) navigate(`/funding/${item.id}`);
+                else setCrowdfundDetailsOpen(true);
+              }}
+              className="flex items-center hidden justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
+              aria-label={isOwner ? "Edit" : "View"}
+            >
+              {isOwner ? (
+                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              ) : (
+                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
+              )}
+            </button>
+
+            {/* Message */}
+           {!isOwner && <button
+              onClick={() => {
+                if (!user?.id) {
+                  data._showPopUp("login_prompt");
+                  return;
+                }
+                navigate(`/messages?userId=${item.creatorUserId}`);
+                toast.success("Starting conversation with " + (item.creatorUserName || "project creator"));
+              }}
+              className={`${
+                type === "grid" ? "flex-1" : ""
+              } rounded-xl px-4 py-2.5 text-sm _login_prompt font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 transition-all duration-200 shadow-sm hover:shadow-md`}
+            >
+              Message
+            </button>}
+
+            {/* Connect like the others */}
+             <div className="_login_prompt">
+               {(!isOwner && connectionStatus!="connected") && renderConnectButton()}
+             </div>
+          </div>
+        {/* SHARE MENU */}
+        {shareOpen && <ShareMenu />}
+
+        </div>
+      </div>
+
+      {/* Connection Request Modal */}
+      <ConnectionRequestModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        toUserId={item?.creatorUserId}
+        toName={item?.creatorUserName || item?.creatorName || "Project Creator"}
+        onSent={onSent}
+      />
+
+      {/* Profile Modal */}
+      <ProfileModal
+        userId={openId}
+        isOpen={!!openId}
+        onClose={() => setOpenId(null)}
+        onSent={onSent}
+      />
+
+      {/* Crowdfund Details Modal */}
+      <CrowdfundDetails
+        crowdfundId={item?.id}
+        isOpen={crowdfundDetailsOpen}
+        onClose={() => setCrowdfundDetailsOpen(false)}
+      />
+
+      {/* Report dialog */}
+      <ConfirmDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Report this project?"
+        text="Tell us what's happening. Our team will review."
+        confirmText="Submit report"
+        cancelText="Cancel"
+        withInput
+        inputType="textarea"
+        inputLabel="Report details"
+        inputPlaceholder="Describe the issue (spam, scam, offensive, etc.)"
+        requireValue
+        onConfirm={reportCrowdfund}
+      />
+
+      {/* Comments Dialog */}
+      <CommentsDialog
+        open={commentsDialogOpen}
+        onClose={() => setCommentsDialogOpen(false)}
+        entityType="funding"
+        entityId={item?.id}
+        currentUser={user}
+        onCountChange={(n) => setCommentCount(n)}
+      />
+    </>
+  );
+
+  // --- helpers ---
+  function renderConnectButton() {
+    if (item.creatorUserId == user?.id) return null;
+
+    const status = (connectionStatus || "none").toLowerCase();
+
+    if (status === "connected") {
+      return (
+        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-green-100 text-green-700 cursor-default">
+          Connected
+        </button>
+      );
+    }
+    if (status === "pending_outgoing" || status === "outgoing_pending" || status === "pending") {
+      return (
+        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-yellow-100 text-yellow-700 cursor-default">
+          Pending
+        </button>
+      );
+    }
+    if (status === "pending_incoming" || status === "incoming_pending") {
+      return (
+        <button
+          onClick={() => navigate("/notifications")}
+          className="rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-100 text-brand-600 hover:bg-brand-200"
+        >
+          Respond
+        </button>
+      );
+    }
+    if (!user?.id) {
+      return (
+        <button
+          onClick={() => data._showPopUp("login_prompt")}
+          className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
+          title="Sign in to send a request"
+        >
+          Connect
+        </button>
+      );
+    }
+    return (
+      <button
+        onClick={() => setModalOpen(true)}
+        className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
+      >
+        Connect
+      </button>
+    );
+  }
+}

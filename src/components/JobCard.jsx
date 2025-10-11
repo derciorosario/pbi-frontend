@@ -412,31 +412,33 @@ export default function JobCard({
       >
         {/* HEADER - Company/User Info */}
         <div className="px-4 pt-3 pb-2 flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
+          <div className="flex items-center gap-3 flex-1">
             {/* Avatar */}
             <div
               className="cursor-pointer flex-shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
                 if (job?.postedByUserId) {
-                  setOpenId(job.postedByUserId);
-                  data._showPopUp?.("profile");
+                  navigate(`/profile/${job.postedByUserId}`);
                 }
               }}
             >
               {userAvatarUrl ? (
-                <img
-                  src={userAvatarUrl}
-                  alt={job?.postedByUserName || "User"}
-                  className={`w-12 h-12 object-cover ${
-                    job?.postedBy?.accountType === "company" ? "" : "rounded"
-                  }`}
-                />
+                <div className={`flex bg-white items-center  justify-center w-20 h-20 ${
+                  job?.postedBy?.accountType === "company" ? " rounded" : "rounded-full"
+                } border border-gray-300  overflow-hidden`}>
+                  <img
+                    src={userAvatarUrl}
+                    alt={job?.postedByUserName || "User"}
+                    className="w-full h-full"
+                    style={{ objectFit: 'contain' }}
+                  />
+                </div>
               ) : (
-                <div className={`w-12 h-12 bg-gray-200 flex items-center justify-center ${
-                  job?.postedBy?.accountType === "company" ? "" : "rounded"
-                }`}>
-                  <UserIcon size={20} className="text-gray-400" />
+                <div className={`w-20  h-20 bg-gray-200 flex items-center justify-center ${
+                  job?.postedBy?.accountType === "company" ? "rounded" : "rounded-full"
+                } border border-gray-100`}>
+                  <UserIcon size={24} className="text-gray-400" />
                 </div>
               )}
             </div>
@@ -448,8 +450,7 @@ export default function JobCard({
                 onClick={(e) => {
                   e.stopPropagation();
                   if (job?.postedByUserId) {
-                    setOpenId(job.postedByUserId);
-                    data._showPopUp?.("profile");
+                    navigate(`/profile/${job.postedByUserId}`);
                   }
                 }}
               >
@@ -527,7 +528,7 @@ export default function JobCard({
               {allTags.slice(0, 3).map((tag, idx) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700"
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-brand-500"
                 >
                   #{tag.replace(/\s+/g, "")}
                 </span>
@@ -556,7 +557,7 @@ export default function JobCard({
               {/* Match Percentage Badge */}
               {matchPercentage > 0 && (
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ml-auto ${
+                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ml-auto ${
                     matchPercentage >= 80
                       ? "bg-green-100 text-green-700 border border-green-200"
                       : matchPercentage >= 60
@@ -594,9 +595,7 @@ export default function JobCard({
                   </div>
                 </div>
                 <span>
-                  {job?.postedByUserName && likeCount > 0
-                    ? `${job.postedByUserName} and ${likeCount} others`
-                    : `${likeCount}`}
+                  {likeCount}
                 </span>
               </div>
             )}

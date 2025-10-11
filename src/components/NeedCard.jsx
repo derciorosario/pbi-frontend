@@ -16,6 +16,9 @@ import {
   Flag,
   User as UserIcon,
   Copy as CopyIcon,
+  MoreVertical,
+  Trash2,
+  Globe,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -56,20 +59,19 @@ export default function NeedCard({
   need,
   onEdit,
   onDelete,
-  type = "grid", // "grid" | "list"
-  matchPercentage = 20, // show % chip
+  type = "grid",
+  matchPercentage = 0,
 }) {
   const { user, settings } = useAuth();
   const navigate = useNavigate();
   const data = useData();
 
-  const [isHovered, setIsHovered] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false); // connect modal
-  const [openId, setOpenId] = useState(null); // profile modal
+  const [modalOpen, setModalOpen] = useState(false);
+  const [openId, setOpenId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState(
     need?.connectionStatus || "none"
   );
-  const [needDetailsOpen, setNeedDetailsOpen] = useState(false); // need details modal
+  const [needDetailsOpen, setNeedDetailsOpen] = useState(false);
 
   // Social state
   const [liked, setLiked] = useState(!!need?.liked);
@@ -78,33 +80,35 @@ export default function NeedCard({
     Array.isArray(need?.comments) ? need.comments.length : Number(need?.commentsCount || 0)
   );
 
-  // Report dialog
   const [reportOpen, setReportOpen] = useState(false);
-
-  // Share popover
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
-  const cardRef = useRef(null);
-
-  // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+  const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
+  const optionsMenuRef = useRef(null);
 
-  // Image slider state
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-  // Close share menu on outside click / Esc
   useEffect(() => {
     function onDown(e) {
-      if (
-        shareMenuRef.current &&
-        !shareMenuRef.current.contains(e.target) &&
-        !cardRef.current?.contains(e.target)
-      ) {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
         setShareOpen(false);
+      }
+      if (
+        optionsMenuRef.current &&
+        !optionsMenuRef.current.contains(e.target)
+      ) {
+        setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
       }
     }
     function onEsc(e) {
-      if (e.key === "Escape") setShareOpen(false);
+      if (e.key === "Escape") {
+        setShareOpen(false);
+        setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
+      }
     }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onEsc);
@@ -114,7 +118,6 @@ export default function NeedCard({
     };
   }, []);
 
-  // Initial fetch for like & comments count (optional)
   useEffect(() => {
     if (!need?.id) return;
     socialApi
@@ -135,7 +138,7 @@ export default function NeedCard({
 
   const isOwner =
     user?.id && need?.userId && user.id === need.userId;
-  const isList = type === "list";
+
   // Get all valid images for slider
   const getValidImages = () => {
     const validImages = [];
@@ -175,24 +178,20 @@ export default function NeedCard({
       ...constructedTags.slice(1)
     ])].filter(Boolean);
   }, [need?.audienceCategories, need?.tags, need?.relatedEntityType, need?.urgency, need?.categoryName, need?.subcategoryName]);
-  const visibleTags = allTags.slice(0, 2);
-  const extraCount = Math.max(0, allTags.length - visibleTags.length);
 
   const timeAgo = useMemo(
     () => computeTimeAgo(need?.timeAgo, need?.createdAt),
     [need?.timeAgo, need?.createdAt]
   );
 
-  
-    const locationLabel = useMemo(() => {
-        const city = need?.city?.trim();
-        const country = need?.country?.trim();
-        if (city && country) return `${city}, ${country}`;
-        if (country) return country;
-        if (city) return city;
-        return "";
-    }, [need?.city, need?.country]);
-    
+  const locationLabel = useMemo(() => {
+    const city = need?.city?.trim();
+    const country = need?.country?.trim();
+    if (city && country) return `${city}, ${country}`;
+    if (country) return country;
+    if (city) return city;
+    return "";
+  }, [need?.city, need?.country]);
 
   function onSent() {
     toast.success("Connection request sent");
@@ -200,15 +199,16 @@ export default function NeedCard({
     setConnectionStatus("pending_outgoing");
   }
 
-  const containerBase =
-    "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
-  const containerLayout = isList
-    ? (settings?.contentType === 'text'
-        ? "flex flex-col" // Full width for text mode in list
-        : "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch")
-    : "flex flex-col";
+  const cleanText = (htmlContent) => {
+    if (!htmlContent) return "";
+    const contentWithPeriods = htmlContent.replace(/<br\s*\/?>/gi, ". ");
+    const div = document.createElement("div");
+    div.innerHTML = contentWithPeriods;
+    let textContent = div.textContent || div.innerText || "";
+    textContent = textContent.replace(/\s+/g, " ").trim();
+    return textContent;
+  };
 
-  /* ----------------------- Like handler ----------------------- */
   const toggleLike = async () => {
     if (!user?.id) {
       data._showPopUp?.("login_prompt");
@@ -226,7 +226,6 @@ export default function NeedCard({
     }
   };
 
-  /* ----------------------- Report handler ----------------------- */
   const reportNeed = async (description) => {
     try {
       await socialApi.reportContent("need", need.id, "other", description);
@@ -236,15 +235,13 @@ export default function NeedCard({
     }
   };
 
-  /* ----------------------- Share data ----------------------- */
   const shareUrl = `${window.location.origin}/need/${need?.id}`;
   const shareTitle = need?.title || "Need on 54Links";
   const shareQuote =
     (need?.description || "").slice(0, 160) +
     ((need?.description || "").length > 160 ? "…" : "");
   const shareHashtags = ["54Links", "Needs", "Help"].filter(Boolean);
-  const messengerAppId =
-    import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined; // optional
+  const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
 
   const CopyLinkButton = () => (
     <button
@@ -267,14 +264,13 @@ export default function NeedCard({
   const ShareMenu = () => (
     <div
       ref={shareMenuRef}
-      className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      className="absolute z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl bottom-0 right-3"
       role="dialog"
       aria-label="Share options"
     >
       <div className="text-xs font-medium text-gray-500 px-1 pb-2">
         Share this need
       </div>
-
       <div className="grid grid-cols-3 gap-2">
         <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
@@ -282,43 +278,36 @@ export default function NeedCard({
             <span className="text-xs text-gray-700">WhatsApp</span>
           </div>
         </WhatsappShareButton>
-
         <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
             <FacebookIcon size={40} round />
             <span className="text-xs text-gray-700">Facebook</span>
           </div>
         </FacebookShareButton>
-
         <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
             <LinkedinIcon size={40} round />
             <span className="text-xs text-gray-700">LinkedIn</span>
           </div>
         </LinkedinShareButton>
-
         <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
             <TwitterIcon size={40} round />
             <span className="text-xs text-gray-700">X / Twitter</span>
           </div>
         </TwitterShareButton>
-
         <TelegramShareButton url={shareUrl} title={shareTitle}>
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
             <TelegramIcon size={40} round />
             <span className="text-xs text-gray-700">Telegram</span>
           </div>
         </TelegramShareButton>
-
         <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
           <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
             <EmailIcon size={40} round />
             <span className="text-xs text-gray-700">Email</span>
           </div>
         </EmailShareButton>
-
-        {/* Messenger requires an appId; only show if provided */}
         {messengerAppId && (
           <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
             <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
@@ -328,467 +317,219 @@ export default function NeedCard({
           </FacebookMessengerShareButton>
         )}
       </div>
-
       <div className="mt-2">
         <CopyLinkButton />
       </div>
     </div>
   );
 
-  /* -------------------------------------------------------------- */
+  const OptionsMenu = () => (
+    <div
+      ref={optionsMenuRef}
+      className="absolute z-30 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-xl top-12 right-3"
+      role="dialog"
+      aria-label="Options menu"
+    >
+      {showDeleteConfirm ? (
+        <>
+          <div className="px-3 py-2 text-sm font-medium text-gray-900 border-b border-gray-200 mb-2">
+            Delete this need?
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                await socialApi.deleteNeed(need.id);
+                toast.success("Need deleted successfully");
+                setIsDeleted(true);
+                if (onDelete) {
+                  onDelete(need);
+                }
+              } catch (error) {
+                console.error("Failed to delete need:", error);
+                toast.error(
+                  error?.response?.data?.message || "Failed to delete need"
+                );
+              }
+              setOptionsMenuOpen(false);
+              setShowDeleteConfirm(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mb-1"
+          >
+            <Trash2 size={16} />
+            Confirm Delete
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(false)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            onClick={() => {
+              navigate(`/need/${need.id}`);
+              setOptionsMenuOpen(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+          >
+            <Edit size={16} />
+            Edit
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <Trash2 size={16} />
+            Delete
+          </button>
+        </>
+      )}
+    </div>
+  );
 
   return (
     <>
       <div
-        ref={cardRef}
-        className={`${containerBase} ${containerLayout} ${
-          !isList && isHovered ? "transform -translate-y-1" : ""
+        className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${
+          isDeleted ? "hidden" : ""
         }`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
-        {/* IMAGE SIDE */}
-        {isList ? (
-          // Only show image side in list view if not text mode
-          settings?.contentType !== 'text' && (
-            <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-              {validImages.length > 0 ? (
-                <>
-                  {/* Image Slider */}
-                  <div className="relative w-full h-full overflow-hidden">
-                    {hasMultipleImages ? (
-                      <div
-                        className="flex w-full h-full transition-transform duration-300 ease-in-out"
-                        style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
-                      >
-                        {validImages.map((img, index) => (
-                          <img
-                            key={index}
-                            src={img}
-                            alt={`${need?.title} - ${index + 1}`}
-                            className="flex-shrink-0 w-full h-full object-cover"
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <img src={validImages[0]} alt={need?.title} className="absolute inset-0 w-full h-full object-cover" />
-                    )}
-                  </div>
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                  {/* User name and logo on image */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    <div
-                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        if (need?.userId) {
-                          setOpenId(need.userId);
-                          data._showPopUp?.("profile");
-                        }
-                      }}
-                    >
-                      {need?.userAvatarUrl ? (
-                        <img
-                          src={need.userAvatarUrl}
-                          alt={need?.userName || "User"}
-                          className="w-7 h-7 rounded-full shadow-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                          <UserIcon size={12} className="text-brand-600" />
-                        </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                          {need?.userName || "User"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Slider Dots */}
-                  {hasMultipleImages && (
-                    <div className="absolute bottom-3 right-3 flex gap-1">
-                      {validImages.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCurrentImageIndex(index);
-                          }}
-                          className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
-                            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                          }`}
-                          aria-label={`Go to image ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
-                  <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
-                  {/* User name and logo positioned absolutely when no image */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    <div
-                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        if (need?.userId) {
-                          setOpenId(need.userId);
-                          data._showPopUp?.("profile");
-                        }
-                      }}
-                    >
-                      {need?.userAvatarUrl ? (
-                        <img
-                          src={need.userAvatarUrl}
-                          alt={need?.userName || "User"}
-                          className="w-7 h-7 rounded-full shadow-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                          <UserIcon size={12} className="text-brand-600" />
-                        </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                          {need?.userName || "User"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Quick actions on image */}
-              <div className="absolute top-3 right-3 flex gap-2">
-                <button
-                  onClick={() => {
-                    if (isOwner) navigate(`/need/${need.id}`);
-                    else setNeedDetailsOpen(true);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                  aria-label={isOwner ? "Edit need" : "View need"}
-                >
-                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-                </button>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                  aria-label="Share need"
-                >
-                  <Share2 size={16} className="text-gray-600" />
-                </button>
-              </div>
-            </div>
-          )
-        ) : (
-          // GRID IMAGE
-          <div className="relative overflow-hidden">
-            {settings?.contentType === 'text' ? null : validImages.length > 0 ? (
-              <div className="relative">
-                {/* Image Slider */}
-                <div className="relative w-full h-48 overflow-hidden">
-                  {hasMultipleImages ? (
-                    <div
-                      className="flex w-full h-full transition-transform duration-300 ease-in-out"
-                      style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
-                    >
-                      {validImages.map((img, index) => (
-                        <img
-                          key={index}
-                          src={img}
-                          alt={`${need?.title} - ${index + 1}`}
-                          className="flex-shrink-0 w-full h-full object-cover transition-transform duration-500 "
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <img
-                      src={validImages[0]}
-                      alt={need?.title}
-                      className="w-full h-48 object-cover transition-transform duration-500 "
-                    />
-                  )}
-                </div>
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                {/* User name and logo on image */}
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                  <div
-                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      if (need?.userId) {
-                        setOpenId(need.userId);
-                        data._showPopUp?.("profile");
-                      }
-                    }}
-                  >
-                    {need?.userAvatarUrl ? (
-                      <img
-                        src={need.userAvatarUrl}
-                        alt={need?.userName || "User"}
-                        className="w-7 h-7 rounded-full shadow-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                        <UserIcon size={12} className="text-brand-600" />
-                      </div>
-                    )}
-                    <div className="flex flex-col">
-                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                        {need?.userName || "User"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slider Dots */}
-                {hasMultipleImages && (
-                  <div className="absolute bottom-3 right-3 flex gap-1">
-                    {validImages.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCurrentImageIndex(index);
-                        }}
-                        className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
-                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                        }`}
-                        aria-label={`Go to image ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="w-full h-48 bg-gray-200 flex justify-center items-center">
-                <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
-                {/* User name and logo positioned absolutely when no image */}
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                  <div
-                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      if (need?.userId) {
-                        setOpenId(need.userId);
-                        data._showPopUp?.("profile");
-                      }
-                    }}
-                  >
-                    {need?.userAvatarUrl ? (
-                      <img
-                        src={need.userAvatarUrl}
-                        alt={need?.userName || "User"}
-                        className="w-7 h-7 rounded-full shadow-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                        <UserIcon size={12} className="text-brand-600" />
-                      </div>
-                    )}
-                    <div className="flex flex-col">
-                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                        {need?.userName || "User"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* View & Share - only show when not text mode */}
-            {settings?.contentType !== 'text' && (
-              <div className="absolute top-4 right-4 flex gap-2">
-                <button
-                  onClick={() => {
-                    if (isOwner) navigate(`/need/${need.id}`);
-                    else setNeedDetailsOpen(true);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                  aria-label={isOwner ? "Edit need" : "View need"}
-                >
-                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
-                  aria-label="Share need"
-                >
-                  <Share2
-                    size={16}
-                    className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200"
-                  />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* SHARE MENU (common absolute anchor on the card) */}
-        {shareOpen && <ShareMenu />}
-
-        {/* CONTENT SIDE */}
-        <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
-          {/* Text mode: Buttons and audience categories at top */}
-          {settings?.contentType === 'text' && (
-            <div className={`${!isList ? 'flex-col gap-y-2':'items-center justify-between gap-2'} flex  mb-3`}>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    if (isOwner) navigate(`/need/${need.id}`);
-                    else setNeedDetailsOpen(true);
-                  }}
-                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                  aria-label={isOwner ? "Edit need" : "View need"}
-                >
-                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                  aria-label="Share need"
-                >
-                  <Share2 size={16} className="text-gray-600" />
-                </button>
-              </div>
-              <div
-                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  if (need?.userId) {
-                    setOpenId(need.userId);
-                    data._showPopUp?.("profile");
-                  }
-                }}
-              >
-                {need?.userAvatarUrl ? (
+        {/* HEADER - User Info */}
+        <div className="px-4 pt-3 pb-2 flex items-start justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            {/* Avatar */}
+            <div
+              className="cursor-pointer flex-shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (need?.userId) {
+                  navigate(`/profile/${need.userId}`);
+                }
+              }}
+            >
+              {need?.userAvatarUrl ? (
+                <div className="flex bg-white items-center justify-center w-20 h-20 rounded-full border border-gray-300 overflow-hidden">
                   <img
                     src={need.userAvatarUrl}
                     alt={need?.userName || "User"}
-                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                    className="w-full h-full"
+                    style={{ objectFit: 'contain' }}
                   />
-                ) : (
-                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                    <UserIcon size={12} className="text-brand-600" />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                    {need?.userName || "User"}
-                  </span>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Title */}
-          <h3 className="font-semibold text-lg text-gray-900 mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
-            {need?.title}
-          </h3>
-
-
-          {/* Description */}
-          <p
-            className={`mt-2 text-sm text-gray-600 leading-relaxed ${
-              isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"
-            }`}
-          >
-            {need?.description}
-          </p>
-
-          {/* Budget */}
-          {need?.budget && (
-            <div className={`${isList ? "mt-2 mb-2" : "mt-2 mb-3"}`}>
-              <span className="text-sm font-bold text-gray-700">
-                {need.budget}
-              </span>
-            </div>
-          )}
-
-          {/* Meta */}
-          <div className={`${isList ? "mb-2" : "mb-3"} space-y-2`}>
-            <div className="flex items-center justify-between pb-1">
-              {/* User display removed - now shown prominently above */}
-             
-              {matchPercentage !== undefined && matchPercentage !== null && (
-                <div className="flex items-center gap-1">
-                  <div
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      matchPercentage >= 80
-                        ? "bg-green-100 text-green-700 border border-green-200"
-                        : matchPercentage >= 60
-                        ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                        : "bg-gray-100 text-gray-600 border border-gray-200"
-                    }`}
-                  >
-                    {matchPercentage}% match
-                  </div>
+              ) : (
+                <div className="w-20 h-20 bg-gray-200 flex items-center justify-center rounded-full border border-gray-100">
+                  <UserIcon size={24} className="text-gray-400" />
                 </div>
               )}
             </div>
 
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <Clock size={12} />
-                {timeAgo}
-              </span>
-              {locationLabel && <span className="flex items-center gap-1">
-                <MapPin size={12} />
-                {locationLabel}
-              </span>}
+            {/* User Name and Meta */}
+            <div className="flex-1 min-w-0">
+              <div
+                className="font-semibold text-sm text-gray-900 hover:underline cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (need?.userId) {
+                    navigate(`/profile/${need.userId}`);
+                  }
+                }}
+              >
+                {need?.userName || "User"}
+              </div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                {need?.profile?.professionalTitle || "Need Poster"}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                <span>{timeAgo}</span>
+                <span>•</span>
+                <Globe size={12} />
+              </div>
             </div>
           </div>
 
+          {/* Options Menu Toggle */}
+          <div className="relative flex-shrink-0">
+            {isOwner && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOptionsMenuOpen((s) => !s);
+                }}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="More options"
+              >
+                <MoreVertical size={20} className="text-gray-600" />
+              </button>
+            )}
+            {optionsMenuOpen && <OptionsMenu />}
+          </div>
+        </div>
+
+        {/* POST CONTENT */}
+        <div className="px-4 pb-3">
+          {/* Need Title */}
+          <h3
+            className="font-semibold text-base text-gray-900 mb-1 hover:text-brand-600 cursor-pointer transition-colors"
+            onClick={() => {
+              if (isOwner) navigate(`/need/${need.id}`);
+              else setNeedDetailsOpen(true);
+            }}
+          >
+            {need?.title}
+          </h3>
+
+          {/* Description */}
+          <div className="text-sm text-gray-700 mb-2">
+            <div className={showFullDescription ? "" : "line-clamp-3"}>
+              {cleanText(need?.description)}
+            </div>
+            {need?.description && cleanText(need?.description).length > 250 && (
+              <button
+                onClick={() => setShowFullDescription(!showFullDescription)}
+                className="text-gray-500 hover:text-brand-600 font-medium mt-1"
+              >
+                {showFullDescription ? "Show less" : "...more"}
+              </button>
+            )}
+          </div>
+
+          {/* Budget */}
+          {need?.budget && (
+            <div className="text-sm font-semibold text-gray-900 mb-2">
+              {need.budget}
+            </div>
+          )}
+
           {/* Tags */}
-          {!!visibleTags.length && (
-            <div className={`${isList ? "mb-3" : "mb-4"} flex flex-wrap gap-2`}>
-              {visibleTags.map((t) => (
+          {(allTags.length > 0 || true) && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {/* "Looking for" badge */}
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600 border border-green-200">
+                Looking for
+              </span>
+              {allTags.slice(0, 3).map((tag, idx) => (
                 <span
-                  key={t}
-                  className="inline-flex items-center rounded-full bg-gradient-to-r from-brand-50 to-brand-100 text-brand-700 px-3 py-1 text-xs font-medium border border-brand-200/50"
+                  key={idx}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-brand-500"
                 >
-                  {t}
+                  #{tag.replace(/\s+/g, "")}
                 </span>
               ))}
-
-              {extraCount > 0 && (
-                <div className="relative inline-block group/tagmore">
-                  <span
-                    className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-3 py-1 text-xs font-medium cursor-default hover:bg-gray-200 transition-colors duration-200"
-                    aria-describedby={`need-tags-more-${need.id}`}
-                    tabIndex={0}
-                  >
-                    +{extraCount} more
+              {allTags.length > 3 && (
+                <div className="relative inline-block group/tags">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-600 bg-gray-100 cursor-help">
+                    +{allTags.length - 3} more
                   </span>
 
-                  <div
-                    id={`need-tags-more-${need.id}`}
-                    role="tooltip"
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tagmore:opacity-100 group-hover/tagmore:visible focus-within:opacity-100 focus-within:visible z-10 whitespace-nowrap"
-                    aria-describedby={`need-tags-more-${need.id}`}
-                  >
-                    <div className="flex flex-wrap gap-1 max-w-xs">
-                      {allTags.slice(2).map((tag, i) => (
+                  {/* Tooltip with remaining tags */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tags:opacity-100 group-hover/tags:visible z-10 whitespace-nowrap max-w-xs">
+                    <div className="flex flex-wrap gap-1">
+                      {allTags.slice(3).map((tag, i) => (
                         <span key={i} className="inline-block">
-                          {tag}
-                          {i < allTags.length - 3 ? "," : ""}
+                          #{tag.replace(/\s+/g, "")}
+                          {i < allTags.length - 4 ? "," : ""}
                         </span>
                       ))}
                     </div>
@@ -796,88 +537,154 @@ export default function NeedCard({
                   </div>
                 </div>
               )}
+
+              {/* Match Percentage Badge */}
+              {matchPercentage > 0 && (
+                <span
+                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ml-auto ${
+                    matchPercentage >= 80
+                      ? "bg-green-100 text-green-700 border border-green-200"
+                      : matchPercentage >= 60
+                      ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                      : "bg-gray-100 text-gray-600 border border-gray-200"
+                  }`}
+                >
+                  {matchPercentage}% match
+                </span>
+              )}
             </div>
           )}
+        </div>
 
-          {/* NEW: social row (like / comment / report) hidden for now */}
-          <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600">
-            <button
-              onClick={toggleLike}
-              className="inline-flex items-center gap-1 hover:text-brand-700"
-              title={liked ? "Unlike" : "Like"}
-            >
-              <Heart
-                size={16}
-                className={liked ? "fill-brand-500 text-brand-500" : ""}
-              />
-              <span>{likeCount}</span>
-            </button>
+        {/* IMAGE (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && validImages.length > 0 && (
+          <div className="relative">
+            <img
+              src={validImages[0]}
+              alt={need?.title}
+              className="w-full max-h-96 object-cover cursor-pointer"
+              onClick={() => setNeedDetailsOpen(true)}
+            />
+          </div>
+        )}
 
-            <button
-              onClick={() => setCommentsDialogOpen(true)}
-              className="inline-flex items-center gap-1 hover:text-brand-700"
-              title="Comments"
-            >
-              <MessageCircle size={16} />
-              <span>{commentCount}</span>
-            </button>
-
-            <button
-              onClick={() => setReportOpen(true)}
-              className="inline-flex items-center gap-1 hover:text-rose-700"
-              title="Report this need"
-            >
-              <Flag size={16} />
-              <span>Report</span>
-            </button>
+        {/* ENGAGEMENT BAR - Like/Comment counts */}
+        <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+          <div className="flex items-center gap-1">
+            {likeCount > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="flex -space-x-1">
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                    <Heart size={10} className="text-white fill-white" />
+                  </div>
+                </div>
+                <span>
+                 {likeCount}
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Actions */}
-          <div
-            className={`flex items-center gap-2 mt-auto pt-2 ${
-              isList ? "justify-end md:justify-start" : ""
-            }`}
-          >
-            <button
-              onClick={() => {
-                if (isOwner) navigate(`/need/${need.id}`);
-                else setNeedDetailsOpen(true);
-              }}
-              className="flex items-center hidden justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
-              aria-label={isOwner ? "Edit need" : "View need"}
-            >
-              {isOwner ? (
-                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-              ) : (
-                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-              )}
-            </button>
-
-            <button
-              onClick={() => {
-                if (!user?.id) {
-                  data._showPopUp("login_prompt");
-                  return;
-                }
-                navigate(`/messages?userId=${need.userId}`);
-                toast.success(
-                  "Starting conversation with " +
-                    (need.userName || "user")
-                );
-              }}
-              className={`${
-                type === "grid" ? "flex-1" : ""
-              } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
-            >
-              <span>Message</span>
-            </button>
-
-            {(!isOwner && connectionStatus!="connected") && renderConnectButton()}
+          <div className="flex items-center gap-3">
+            {commentCount > 0 && (
+              <button
+                onClick={() => setCommentsDialogOpen(true)}
+                className="hover:underline"
+              >
+                {commentCount} comment{commentCount !== 1 ? "s" : ""}
+              </button>
+            )}
           </div>
         </div>
 
-        {!isList && (
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-50" />
+        {/* ACTION BUTTONS */}
+        <div className="px-2 py-1 border-t border-gray-100 grid grid-cols-4 gap-1">
+          <button
+            onClick={toggleLike}
+            className={`flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium ${
+              liked ? "text-blue-600" : "text-gray-600"
+            }`}
+          >
+            <Heart
+              size={20}
+              className={liked ? "fill-blue-600" : ""}
+            />
+            <span className="max-sm:hidden">Like</span>
+          </button>
+
+          <button
+            onClick={() => setCommentsDialogOpen(true)}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+          >
+            <MessageCircle size={20} />
+            <span className="max-sm:hidden">Comment</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (!user?.id) {
+                data._showPopUp?.("login_prompt");
+                return;
+              } else {
+                setReportOpen(true);
+              }
+            }}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+          >
+            <Flag size={20} />
+            <span className="max-sm:hidden">Report</span>
+          </button>
+
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShareOpen((s) => !s);
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+            >
+              <Share2 size={20} />
+              <span className="max-sm:hidden">Share</span>
+            </button>
+            {shareOpen && <ShareMenu />}
+          </div>
+        </div>
+
+        {/* BOTTOM SECTION - Message and Connect */}
+        {!isOwner && (
+          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-3">
+              {/* Location */}
+              {locationLabel && (
+                <div className="flex items-center gap-1 text-sm text-gray-600">
+                  <MapPin size={14} />
+                  <span>{locationLabel}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 mt-3">
+              <button
+                onClick={() => {
+                  if (!user?.id) {
+                    data._showPopUp("login_prompt");
+                    return;
+                  }
+                  navigate(`/messages?userId=${need.userId}`);
+                  toast.success(
+                    "Starting conversation with " +
+                      (need.userName || "user")
+                  );
+                }}
+                className="flex-1 px-4 py-2 rounded-full bg-brand-600 text-white font-medium text-sm hover:bg-brand-700 transition-colors"
+              >
+                Message
+              </button>
+
+              {connectionStatus !== "connected" && renderConnectButton()}
+            </div>
+          </div>
         )}
       </div>
 
@@ -899,7 +706,6 @@ export default function NeedCard({
 
       <NeedDetails needId={need?.id} isOpen={needDetailsOpen} onClose={() => setNeedDetailsOpen(false)} />
 
-      {/* Report dialog */}
       <ConfirmDialog
         open={reportOpen}
         onClose={() => setReportOpen(false)}
@@ -915,7 +721,6 @@ export default function NeedCard({
         onConfirm={reportNeed}
       />
 
-      {/* Comments Dialog */}
       <CommentsDialog
         open={commentsDialogOpen}
         onClose={() => setCommentsDialogOpen(false)}
@@ -932,14 +737,14 @@ export default function NeedCard({
 
     if (status === "connected") {
       return (
-        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-green-100 text-green-700 cursor-default">
+        <button className="flex-1 px-4 py-2 rounded-full bg-green-100 text-green-700 font-medium text-sm">
           Connected
         </button>
       );
     }
     if (status === "pending_outgoing" || status === "outgoing_pending") {
       return (
-        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-yellow-100 text-yellow-700 cursor-default">
+        <button className="flex-1 px-4 py-2 rounded-full bg-yellow-100 text-yellow-700 font-medium text-sm">
           Pending
         </button>
       );
@@ -948,7 +753,7 @@ export default function NeedCard({
       return (
         <button
           onClick={() => navigate("/notifications")}
-          className="rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-100 text-brand-600 hover:bg-brand-200"
+          className="flex-1 px-4 py-2 rounded-full bg-brand-100 text-brand-600 hover:bg-brand-200 font-medium text-sm transition-colors"
         >
           Respond
         </button>
@@ -958,7 +763,7 @@ export default function NeedCard({
       return (
         <button
           onClick={() => data._showPopUp("login_prompt")}
-          className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
+          className="flex-1 px-4 py-2 rounded-full font-medium text-sm transition-colors border-2 border-brand-600 text-brand-600 hover:bg-brand-50"
         >
           Connect
         </button>
@@ -967,7 +772,7 @@ export default function NeedCard({
     return (
       <button
         onClick={() => setModalOpen(true)}
-        className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
+        className="flex-1 px-4 py-2 rounded-full font-medium text-sm transition-colors border-2 border-brand-600 text-brand-600 hover:bg-brand-50"
       >
         Connect
       </button>

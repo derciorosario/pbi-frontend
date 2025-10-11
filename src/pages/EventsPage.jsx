@@ -51,7 +51,7 @@ export default function EventsPage() {
   const [subcategoryId, setSubcategoryId] = useState();
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
-  const [view,setView]=useState('grid')
+  const [view,setView]=useState('list')
   let view_types=['grid','list']
   const from = "events"; // Define the 'from' variable
 
@@ -420,7 +420,7 @@ export default function EventsPage() {
       <>
         {loadingFeed && (
           <div className="min-h-[160px] grid text-gray-600">
-             <CardSkeletonLoader/>
+             <CardSkeletonLoader columns={1}/>
           </div>
         )}
 
@@ -439,7 +439,7 @@ export default function EventsPage() {
           {!loadingFeed && (
                <div
                  className={`grid grid-cols-1 ${
-                   view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
+                   view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"
                  } gap-6`}
                >
                  {items?.map((item) => {
@@ -520,36 +520,38 @@ export default function EventsPage() {
          
         </aside>
 
-        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
-          <section className="lg:col-span-4 space-y-4 mt-5 overflow-hidden">
-           <TopFilterButtons
-             selected={selectedFilters}
-             setSelected={setSelectedFilters}
-             buttons={filterOptions}
-             buttonLabels={categoryIdToNameMap}
-             from={from}
+        <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-3 flex items-center flex-wrap w-full justify-between">
+
+        <div className="w-[80%]">
+            <TopFilterButtons
+              selected={selectedFilters}
+              setSelected={setSelectedFilters}
+              buttons={filterOptions}
+              buttonLabels={categoryIdToNameMap}
+              from={from}
             loading={loadingFeed}
-           />
-           <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              <h3 className="font-semibold text-2xl mt-1 hidden hidden">Your Path to Knowledge</h3>
-            
-
-             <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
-             
-            <TabsAndAdd tabs={[]}
-            
+            />
+          </div>
+          <div className="">
+            <TabsAndAdd
+            tabs={[]}
             items={[
-              { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
-              { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
-              { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
-            ]}
-            
-
-            
+                  { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
+                  { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
+                  { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
+              ]}
             activeTab={activeTab} setActiveTab={setActiveTab} />
-            </div>
-              {renderMiddle()}
-          </section>
+          </div>
+      </div>
+
+      <section className="lg:col-span-2 space-y-4  overflow-hidden">
+        {renderMiddle()}
+      </section>
+
+      <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+        <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
+      </aside>
 
          
         </div>

@@ -230,7 +230,7 @@ export default function CompanyAssociationPanel() {
   return (
     <div
       ref={cardRef}
-      className={`rounded-2xl ${(!user?.representativeOf || !user?.representativeOf?.length) ? 'hidden':''} border border-slate-200 bg-white shadow-sm overflow-hidden mb-4 relative`}
+      className={`rounded-2xl ${(!user?.representativeOf || !user?.representativeOf?.length) ? 'hidden':'mb-4'} border border-slate-200 bg-white shadow-sm overflow-hidden  relative`}
     >
       {/* cover */}
       <div className="bg-gradient-to-r from-[#004182] to-[#0a66c2] h-16" />
@@ -243,10 +243,24 @@ export default function CompanyAssociationPanel() {
             <select
               value={selectedCompanyId}
               onChange={(e) => setSelectedCompanyId(e.target.value)}
-              className="text-sm font-semibold text-slate-900 bg-transparent border border-slate-300 rounded-lg px-2 py-1 focus:ring-2 focus:ring-[#0a66c2]"
+              disabled={switching}
+              className={`text-sm font-semibold rounded-lg px-2 py-1 -translate-y-2 ${
+                switching
+                  ? "text-white bg-slate-400 cursor-not-allowed opacity-75"
+                  : "text-white bg-transparent"
+              }`}
+              style={{
+                color: 'white',
+                backgroundColor: switching ? '#94a3b8' : 'transparent'
+              }}
             >
               {companies.map((c) => (
-                <option key={c.id} value={c.id}>
+                <option
+                  key={c.id}
+                  value={c.id}
+                  className="text-slate-900 bg-white"
+                  style={{ color: '#0f172a', backgroundColor: 'white' }}
+                >
                   {(c.name.length > 15 ? c.name.substring(0, 15) + "..." : c.name)}
                 </option>
               ))}
@@ -264,22 +278,34 @@ export default function CompanyAssociationPanel() {
           )}
         </div>
 
-        {/* top-right share button */}
-        <button
-          onClick={() => setShareOpen((s) => !s)}
-          className="p-2 rounded-full bg-white/90 shadow hover:bg-white transition-all"
-          aria-label="Share company"
-        >
-          <Share2 size={16} className="text-gray-600" />
-        </button>
       </div>
 
       {/* metrics */}
-      <div className="px-4 pt-4 grid grid-cols-2 gap-2">
-        <Metric label="Connections" value={company.profileVisitors} hideIcon={true} Icon={Eye} />
-        <Metric label="Messages" value={company.newMessages} Icon={MessageSquare} />
-        <Metric label="Requests" value={company.connectionRequests} Icon={UserPlus} />
-        <Metric label="Meetings" value={company.upcomingMeetings} Icon={CalendarDays} />
+      <div className="px-4 pt-4 flex items-center gap-3 justify-center">
+        <div className="flex items-center gap-1" title="Profile Visitors">
+          <Eye className="h-4 w-4 text-[#0a66c2]" />
+          <span className="text-sm font-semibold text-slate-900">
+            {Intl.NumberFormat().format(company.profileVisitors || 0)}
+          </span>
+        </div>
+        <div className="flex items-center gap-1" title="New Messages">
+          <MessageSquare className="h-4 w-4 text-[#0a66c2]" />
+          <span className="text-sm font-semibold text-slate-900">
+            {Intl.NumberFormat().format(company.newMessages || 0)}
+          </span>
+        </div>
+        <div className="flex items-center gap-1" title="Connection Requests">
+          <UserPlus className="h-4 w-4 text-[#0a66c2]" />
+          <span className="text-sm font-semibold text-slate-900">
+            {Intl.NumberFormat().format(company.connectionRequests || 0)}
+          </span>
+        </div>
+        <div className="flex items-center gap-1" title="Upcoming Meetings">
+          <CalendarDays className="h-4 w-4 text-[#0a66c2]" />
+          <span className="text-sm font-semibold text-slate-900">
+            {Intl.NumberFormat().format(company.upcomingMeetings || 0)}
+          </span>
+        </div>
       </div>
 
       <div className="my-4 border-t border-slate-200" />
@@ -379,19 +405,6 @@ function LogoBadge({ name = "", logoUrl }) {
   );
 }
 
-function Metric({ label, value, Icon }) {
-  return (
-    <div className="rounded-xl border border-slate-200 px-3 py-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-500">{label}</span>
-        {Icon && <Icon className="h-4 w-4 text-[#0a66c2]" />}
-      </div>
-      <div className="mt-1 text-lg font-semibold text-slate-900">
-        {Intl.NumberFormat().format(value)}
-      </div>
-    </div>
-  );
-}
 
 function ActionButton({ label, onClick, icon: Icon, primary }) {
   return (

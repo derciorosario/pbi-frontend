@@ -18,6 +18,9 @@ import {
   Flag,
   User as UserIcon,
   Copy as CopyIcon,
+  MoreVertical,
+  Trash2,
+  Globe,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -36,7 +39,6 @@ import {
   FacebookMessengerIcon,
 } from "react-share";
 import ConnectionRequestModal from "./ConnectionRequestModal";
-import ProfileModal from "./ProfileModal";
 import ExperienceDetails from "./ExperienceDetails";
 
 function computeTimeAgo(explicit, createdAt) {
@@ -61,9 +63,7 @@ export default function ExperienceCard({
   const { user, settings } = useAuth();
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [openId, setOpenId] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState(item?.connectionStatus || "none");
-  const [isHovered, setIsHovered] = useState(false);
   const [experienceDetailsOpen, setExperienceDetailsOpen] = useState(false);
 
   // Social state
@@ -86,8 +86,12 @@ export default function ExperienceCard({
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
   const cardRef = useRef(null);
+
+  // Options menu
+  const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
+  const optionsMenuRef = useRef(null);
   
-  // Close share menu on outside click / Esc
+  // Close share menu and options menu on outside click / Esc
   useEffect(() => {
     function onDown(e) {
       if (
@@ -97,9 +101,18 @@ export default function ExperienceCard({
       ) {
         setShareOpen(false);
       }
+      if (
+        optionsMenuRef.current &&
+        !optionsMenuRef.current.contains(e.target)
+      ) {
+        setOptionsMenuOpen(false);
+      }
     }
     function onEsc(e) {
-      if (e.key === "Escape") setShareOpen(false);
+      if (e.key === "Escape") {
+        setShareOpen(false);
+        setOptionsMenuOpen(false);
+      }
     }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onEsc);
@@ -151,6 +164,7 @@ export default function ExperienceCard({
 
   // Exactly 2 tags (use the provided tags array)
   const allTags = [
+    "Tourism",
     ...(Array.isArray(item?.audienceCategories) ? item?.audienceCategories.map(i=>i.name) : []),
     ...(Array.isArray(item?.tags) ? item.tags.filter(Boolean) : [])
   ];
@@ -206,363 +220,121 @@ export default function ExperienceCard({
 
   return (
     <>
-      <article
-        ref={cardRef}
-        className={`${containerBase} ${containerLayout} ${!isList && isHovered ? "transform -translate-y-1" : ""}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        {/* IMAGE SIDE */}
-        {isList ? (
-          // Only show image side in list view if not text mode
-          settings?.contentType !== 'text' && (
-            <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-              {validImages.length > 0 ? (
-                <>
-                  {/* Image Slider */}
-                  <div className="relative w-full h-full overflow-hidden">
-                    {hasMultipleImages ? (
-                      <div
-                        className="flex w-full h-full transition-transform duration-300 ease-in-out"
-                        style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
-                      >
-                        {validImages.map((img, index) => (
-                          <img
-                            key={index}
-                            src={img}
-                            alt={`${item?.title} - ${index + 1}`}
-                            className="flex-shrink-0 w-full h-full object-cover"
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <img src={validImages[0]} alt={item?.title} className="absolute inset-0 w-full h-full object-cover" />
-                    )}
-                  </div>
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                
-
-                  {/* Slider Dots */}
-                  {hasMultipleImages && (
-                    <div className="absolute bottom-3 right-3 flex gap-1">
-                      {validImages.map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCurrentImageIndex(index);
-                          }}
-                          className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
-                            index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                          }`}
-                          aria-label={`Go to image ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                // clean placeholder (no text/icon)
-                <div className="absolute inset-0 w-full h-full bg-gray-100" />
-              )}
-
-              {/* Quick actions on image */}
-              <div className="absolute top-3 right-3 flex gap-2">
-                {/* View / Edit */}
-
-
-                {/* Share */}
-                 <button
-                onClick={() => {
-                  if (isOwner) navigate(`/experience/${item.id}`);
-                  else setExperienceDetailsOpen(true);
-                }}
-               className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                    aria-label={isOwner ? "Edit experience" : "View experience"}
-              >
-                {isOwner ? (
-                  <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-                ) : (
-                  <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-                )}
-              </button>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                  aria-label="Share experience"
-                >
-                  <Share2 size={16} className="text-gray-600" />
-                </button>
-              </div>
-
-                {/* Author name and logo on image */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    <div
-                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        if (item?.authorUserId) {
-                          setOpenId(item.authorUserId);
-                          data._showPopUp?.("profile");
-                        }
-                      }}
-                    >
-                      {item?.avatarUrl ? (
-                        <img
-                          src={item.avatarUrl}
-                          alt={item?.authorUserName || "User"}
-                          className="w-7 h-7 rounded-full shadow-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                          <UserIcon size={12} className="text-brand-600" />
-                        </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                          {item?.authorUserName || "User"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-            </div>
-          )
-        ) : (
-          // GRID IMAGE
-          <div className="relative overflow-hidden">
-            {settings?.contentType === 'text' ? null : validImages.length > 0 ? (
-              <div className="relative">
-                {/* Image Slider */}
-                <div className="relative w-full h-48 overflow-hidden">
-                  {hasMultipleImages ? (
-                    <div
-                      className="flex w-full h-full transition-transform duration-300 ease-in-out"
-                      style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
-                    >
-                      {validImages.map((img, index) => (
-                        <img
-                          key={index}
-                          src={img}
-                          alt={`${item?.title} - ${index + 1}`}
-                          className="flex-shrink-0 w-full h-full object-cover transition-transform duration-500 "
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <img
-                      src={validImages[0]}
-                      alt={item?.title}
-                      className="w-full h-48 object-cover transition-transform duration-500 "
-                    />
-                  )}
-                </div>
-
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                {/* Author name and logo on image */}
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                  <div
-                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      if (item?.authorUserId) {
-                        setOpenId(item.authorUserId);
-                        data._showPopUp?.("profile");
-                      }
-                    }}
-                  >
-                    {item?.avatarUrl ? (
-                      <img
-                        src={item.avatarUrl}
-                        alt={item?.authorUserName || "User"}
-                        className="w-7 h-7 rounded-full shadow-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                        <UserIcon size={12} className="text-brand-600" />
-                      </div>
-                    )}
-                    <div className="flex flex-col">
-                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                        {item?.authorUserName || "User"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Slider Dots */}
-                {hasMultipleImages && (
-                  <div className="absolute bottom-3 right-3 flex gap-1">
-                    {validImages.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCurrentImageIndex(index);
-                        }}
-                        className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
-                          index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                        }`}
-                        aria-label={`Go to image ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              // clean placeholder (no text/icon)
-              <div className="w-full h-48 bg-gray-500 relative">
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                  <div
-                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      if (item?.authorUserId) {
-                        setOpenId(item.authorUserId);
-                        data._showPopUp?.("profile");
-                      }
-                    }}
-                  >
-                    {item?.avatarUrl ? (
-                      <img
-                        src={item.avatarUrl}
-                        alt={item?.authorUserName || "User"}
-                        className="w-7 h-7 rounded-full shadow-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                        <UserIcon size={12} className="text-brand-600" />
-                      </div>
-                    )}
-                    <div className="flex flex-col">
-                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                        {item?.authorUserName || "User"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* View & Share - only show when not text mode */}
-            {settings?.contentType !== 'text' && (
-              <div className="absolute top-4 right-4 flex gap-2">
-
-                 <button
-                onClick={() => {
-                  if (isOwner) navigate(`/experience/${item.id}`);
-                  else setExperienceDetailsOpen(true);
-                }}
-               className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                     aria-label={isOwner ? "Edit experience" : "View experience"}
-              >
-                {isOwner ? (
-                  <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-                ) : (
-                  <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-                )}
-              </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
-                  aria-label="Share experience"
-                >
-                  <Share2 size={16} className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200" />
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* CONTENT SIDE */}
-        <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
-          {/* Text mode: Buttons and audience categories at top */}
-          {settings?.contentType === 'text' && (
-            <div className={`${!isList ? 'flex-col gap-y-2':'items-center justify-between gap-2'} flex  mb-3`}>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    if (isOwner) navigate(`/experience/${item.id}`);
-                    else setExperienceDetailsOpen(true);
-                  }}
-                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                  aria-label={isOwner ? "Edit experience" : "View experience"}
-                >
-                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                  aria-label="Share experience"
-                >
-                  <Share2 size={16} className="text-gray-600" />
-                </button>
-              </div>
-              <div
-                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  if (item?.authorUserId) {
-                    setOpenId(item.authorUserId);
-                    data._showPopUp?.("profile");
-                  }
-                }}
-              >
-                {item?.avatarUrl ? (
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {/* HEADER - Author/User Info */}
+        <div className="px-4 pt-3 pb-2 flex items-start justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            {/* Avatar */}
+            <div
+              className="cursor-pointer flex-shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (item?.authorUserId) {
+                  navigate(`/profile/${item.authorUserId}`);
+                }
+              }}
+            >
+              {item?.avatarUrl ? (
+                <div className={`flex bg-white items-center justify-center w-20 h-20 ${
+                  item?.author?.accountType === "company" ? "rounded" : "rounded-full"
+                } border border-gray-300 overflow-hidden`}>
                   <img
                     src={item.avatarUrl}
                     alt={item?.authorUserName || "User"}
-                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                    className="w-full h-full"
+                    style={{ objectFit: 'contain' }}
                   />
-                ) : (
-                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                    <UserIcon size={12} className="text-brand-600" />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                    {item?.authorUserName || "User"}
-                  </span>
                 </div>
+              ) : (
+                <div className={`w-20 h-20 bg-gray-200 flex items-center justify-center ${
+                  item?.author?.accountType === "company" ? "rounded" : "rounded-full"
+                } border border-gray-100`}>
+                  <UserIcon size={24} className="text-gray-400" />
+                </div>
+              )}
+            </div>
+
+            {/* Author/User Name and Meta */}
+            <div className="flex-1 min-w-0">
+              <div
+                className="font-semibold text-sm text-gray-900 hover:underline cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (item?.authorUserId) {
+                    navigate(`/profile/${item.authorUserId}`);
+                  }
+                }}
+              >
+                {item?.authorUserName || "User"}
+              </div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                {item?.profile?.professionalTitle || "Experience Author"}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                <span>{timeAgo}</span>
+                <span>•</span>
+                <Globe size={12} />
               </div>
             </div>
-          )}
-
-          {/* Author + time */}
-          <div className="text-xs text-gray-500">
-            {item?.authorUserName} • {timeAgo}
           </div>
+        </div>
 
-          {/* Title */}
-          <h3 className="mt-1 font-semibold text-gray-900 text-lg">{item?.title}</h3>
-
-         
+        {/* POST CONTENT */}
+        <div className="px-4 pb-3">
+          {/* Experience Title */}
+          <h3
+            className="font-semibold text-base text-gray-900 mb-1 hover:text-brand-600 cursor-pointer transition-colors"
+            onClick={() => {
+              if (isOwner) navigate(`/experience/${item.id}`);
+              else setExperienceDetailsOpen(true);
+            }}
+          >
+            {item?.title}
+          </h3>
 
           {/* Description */}
-          <p className={`text-sm text-gray-600 mt-2 leading-relaxed ${type=="list" ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"}`}>
-            {item?.description}
-          </p>
+          <div className="text-sm text-gray-700 mb-2">
+            <div className="line-clamp-3">
+              {item?.description}
+            </div>
+          </div>
 
-           {/* Meta row: match + time (author display moved to top) */}
-          <div className="mt-3 flex items-center justify-between text-xs text-gray-500 pb-1">
-           
-            {/* Match % chip */}
-            {matchPercentage !== undefined && matchPercentage !== null && (
-              <div className="flex items-center gap-1">
-                <div
-                  className={`px-2 py-1 rounded-full text-xs font-semibold ${
+          {/* Tags */}
+          {!!visibleTags.length && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {visibleTags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-brand-500"
+                >
+                  #{tag.replace(/\s+/g, "")}
+                </span>
+              ))}
+              {extraCount > 0 && (
+                <div className="relative inline-block group/tags">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-600 bg-gray-100 cursor-help">
+                    +{extraCount} more
+                  </span>
+
+                  {/* Tooltip with remaining tags */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tags:opacity-100 group-hover/tags:visible z-10 whitespace-nowrap max-w-xs">
+                    <div className="flex flex-wrap gap-1">
+                      {allTags.slice(2).map((tag, i) => (
+                        <span key={i} className="inline-block">
+                          #{tag.replace(/\s+/g, "")}
+                          {i < allTags.length - 3 ? "," : ""}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
+                  </div>
+                </div>
+              )}
+
+              {/* Match Percentage Badge */}
+              {matchPercentage > 0 && (
+                <span
+                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ml-auto ${
                     matchPercentage >= 80
                       ? "bg-green-100 text-green-700 border border-green-200"
                       : matchPercentage >= 60
@@ -571,159 +343,189 @@ export default function ExperienceCard({
                   }`}
                 >
                   {matchPercentage}% match
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* IMAGE (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && validImages.length > 0 && (
+          <div className="relative">
+            {/* Image Slider */}
+            <div className="relative w-full max-h-96 overflow-hidden">
+              {hasMultipleImages ? (
+                <div
+                  className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                  style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                >
+                  {validImages.map((img, index) => (
+                    <img
+                      key={index}
+                      src={img}
+                      alt={`${item?.title} - ${index + 1}`}
+                      className="flex-shrink-0 w-full max-h-96 object-cover"
+                    />
+                  ))}
                 </div>
+              ) : (
+                <img
+                  src={validImages[0]}
+                  alt={item?.title}
+                  className="w-full max-h-96 object-cover"
+                />
+              )}
+            </div>
+
+            {/* Slider Dots */}
+            {hasMultipleImages && (
+              <div className="absolute bottom-3 right-3 flex gap-1">
+                {validImages.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentImageIndex(index);
+                    }}
+                    className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                      index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                    }`}
+                    aria-label={`Go to image ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ENGAGEMENT BAR - Like/Comment counts */}
+        <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+          <div className="flex items-center gap-1">
+            {likeCount > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="flex -space-x-1">
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                    <Heart size={10} className="text-white fill-white" />
+                  </div>
+                </div>
+                <span>
+                 {likeCount}
+                </span>
               </div>
             )}
           </div>
 
-          {/* Optional fields (season / budget) */}
-          <div className="mt-2 text-sm text-gray-700 space-y-1">
-            {item?.season && <div><span className="font-medium">Best season:</span> {item.season}</div>}
-            {item?.budgetRange && <div><span className="font-medium">Budget:</span> {item.budgetRange}</div>}
+          <div className="flex items-center gap-3">
+            {commentCount > 0 && (
+              <button
+                onClick={() => setCommentsDialogOpen(true)}
+                className="hover:underline"
+              >
+                {commentCount} comment{commentCount !== 1 ? "s" : ""}
+              </button>
+            )}
           </div>
+        </div>
 
-          {/* Location & country */}
-          <div className="mt-2 text-xs text-gray-500 flex items-center gap-1">
-            <MapPin size={12} />
-            {item?.location ? `${item.location}${item?.country ? `, ${item.country}` : ""}` : (item?.country || "—")}
+        {/* ACTION BUTTONS */}
+        <div className="px-2 py-1 border-t border-gray-100 grid grid-cols-4 gap-1">
+          <button
+            onClick={toggleLike}
+            className={`flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium ${
+              liked ? "text-blue-600" : "text-gray-600"
+            }`}
+          >
+            <Heart
+              size={20}
+              className={liked ? "fill-blue-600" : ""}
+            />
+            <span className="max-sm:hidden">Like</span>
+          </button>
+
+          <button
+            onClick={() => setCommentsDialogOpen(true)}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+          >
+            <MessageCircle size={20} />
+            <span className="max-sm:hidden">Comment</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (!user?.id) {
+                data._showPopUp?.("login_prompt");
+                return;
+              } else {
+                setReportOpen(true);
+              }
+            }}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+          >
+            <Flag size={20} />
+            <span className="max-sm:hidden">Report</span>
+          </button>
+
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShareOpen((s) => !s);
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+            >
+              <Share2 size={20} />
+              <span className="max-sm:hidden">Share</span>
+            </button>
+            {shareOpen && <ShareMenu item={item} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
           </div>
+        </div>
 
-          {/* Tags — show exactly 2 + tooltip */}
-          {!!visibleTags.length && (
-            <div className="mt-3 mb-4 flex flex-wrap gap-2">
-              {visibleTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center rounded-full bg-gradient-to-r from-brand-50 to-brand-100 text-brand-700 px-3 py-1 text-xs font-medium border border-brand-200/50"
-                >
-                  {tag}
+        {/* BOTTOM SECTION - Message and Connect */}
+        {!isOwner && (
+          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-3">
+              {/* Location */}
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <MapPin size={14} />
+                <span>
+                  {item?.location ? `${item.location}${item?.country ? `, ${item.country}` : ""}` : (item?.country || "—")}
                 </span>
-              ))}
-              {extraCount > 0 && (
-                <div className="relative inline-block group/tagmore">
-                  <span
-                    className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-3 py-1 text-xs font-medium cursor-default hover:bg-gray-200 transition-colors duration-200"
-                    aria-describedby={`experience-tags-more-${item.id}`}
-                    tabIndex={0}
-                  >
-                    +{extraCount} more
-                  </span>
+              </div>
 
-                  <div
-                    id={`experience-tags-more-${item.id}`}
-                    role="tooltip"
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg
-                    opacity-0 invisible transition-opacity duration-200
-                    group-hover/tagmore:opacity-100 group-hover/tagmore:visible
-                    focus-within:opacity-100 focus-within:visible z-10 whitespace-nowrap"
-                  >
-                    <div className="flex flex-wrap gap-1 max-w-xs">
-                      {allTags.slice(2).map((t, i) => (
-                        <span key={i} className="inline-block">
-                          {t}
-                          {i < allTags.length - 3 ? "," : ""}
-                        </span>
-                      ))}
-                    </div>
-                    <div
-                      className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
-                      border-l-4 border-r-4 border-t-4
-                      border-l-transparent border-r-transparent border-t-gray-900"
-                    />
-                  </div>
+              {/* Optional fields (season / budget) */}
+              {item?.season && (
+                <div className="text-sm text-gray-700">
+                  <span className="font-medium">Best season:</span> {item.season}
+                </div>
+              )}
+              {item?.budgetRange && (
+                <div className="text-sm text-gray-700">
+                  <span className="font-medium">Budget:</span> {item.budgetRange}
                 </div>
               )}
             </div>
-          )}
 
-          {/* NEW: social row (like / comment / report) hidden for now */}
-          <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600">
-            <button
-              onClick={toggleLike}
-              className="inline-flex items-center gap-1 hover:text-brand-700"
-              title={liked ? "Unlike" : "Like"}
-            >
-              <Heart
-                size={16}
-                className={liked ? "fill-brand-500 text-brand-500" : ""}
-              />
-              <span>{likeCount}</span>
-            </button>
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 mt-3">
+              <button
+                onClick={() => {
+                  if (!user?.id) {
+                    data._showPopUp("login_prompt");
+                    return;
+                  }
+                  navigate(`/messages?userId=${item.authorUserId}`);
+                  toast.success("Starting conversation with " + (item.authorUserName || "experience author"));
+                }}
+                className="flex-1 px-4 py-2 rounded-full bg-brand-600 text-white font-medium text-sm hover:bg-brand-700 transition-colors"
+              >
+                Message
+              </button>
 
-            <button
-              onClick={() => setCommentsDialogOpen(true)}
-              className="inline-flex items-center gap-1 hover:text-brand-700"
-              title="Comments"
-            >
-              <MessageCircle size={16} />
-              <span>{commentCount}</span>
-            </button>
-
-            <button
-               onClick={() =>{
-                 if (!user?.id) {
-                  data._showPopUp?.("login_prompt");
-                  return;
-                }else{
-                  setReportOpen(true)
-                }
-              } }
-              className="inline-flex _login_prompt items-center gap-1 hover:text-rose-700"
-              title="Report this experience"
-            >
-              <Flag size={16} />
-              <span>Report</span>
-            </button>
+              {connectionStatus !== "connected" && renderConnectButton()}
+            </div>
           </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 mt-auto pt-2">
-            {/* View (Edit if owner) */}
-            <button
-              onClick={() => {
-                if (isOwner) navigate(`/experience/${item.id}`);
-                else setExperienceDetailsOpen(true);
-              }}
-              className="flex hidden items-center justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
-              aria-label={isOwner ? "Edit experience" : "View experience"}
-            >
-              {isOwner ? (
-                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-              ) : (
-                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-              )}
-            </button>
-
-            {/* Message */}
-          {!isOwner &&  <button
-              onClick={() => {
-                if (!user?.id) {
-                  data._showPopUp("login_prompt");
-                  return;
-                }
-                navigate(`/messages?userId=${item.authorUserId}`);
-                toast.success("Starting conversation with " + (item.authorUserName || "experience author"));
-              }}
-              className="rounded-xl px-4 flex-1 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md"
-            >
-              Message
-            </button>}
-
-            {/* Connect button with status */}
-            {(!isOwner && connectionStatus!="connected") && renderConnectButton()}
-          </div>
-
-         
-        </div>
-
-        {/* Subtle bottom gradient for depth (grid only) */}
-        {!isList && (
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-50" />
         )}
-
-        {/* SHARE MENU - inside the card for proper positioning */}
-        {shareOpen && <ShareMenu item={item} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
-      </article>
+      </div>
 
       {/* Connection Request Modal */}
       <ConnectionRequestModal
@@ -731,14 +533,6 @@ export default function ExperienceCard({
         onClose={() => setModalOpen(false)}
         toUserId={item?.authorUserId}
         toName={item?.authorUserName || "Experience Author"}
-        onSent={onSent}
-      />
-
-      {/* Profile Modal */}
-      <ProfileModal
-        userId={openId}
-        isOpen={!!openId}
-        onClose={() => setOpenId(null)}
         onSent={onSent}
       />
 
@@ -783,14 +577,14 @@ export default function ExperienceCard({
 
     if (status === "connected") {
       return (
-        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-green-100 text-green-700 cursor-default">
+        <button className="flex-1 px-4 py-2 rounded-full bg-green-100 text-green-700 font-medium text-sm">
           Connected
         </button>
       );
     }
     if (status === "pending_outgoing" || status === "outgoing_pending" || status === "pending") {
       return (
-        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-yellow-100 text-yellow-700 cursor-default">
+        <button className="flex-1 px-4 py-2 rounded-full bg-yellow-100 text-yellow-700 font-medium text-sm">
           Pending
         </button>
       );
@@ -799,7 +593,7 @@ export default function ExperienceCard({
       return (
         <button
           onClick={() => navigate("/notifications")}
-          className="rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-100 text-brand-600 hover:bg-brand-200"
+          className="flex-1 px-4 py-2 rounded-full bg-brand-100 text-brand-600 hover:bg-brand-200 font-medium text-sm transition-colors"
         >
           Respond
         </button>
@@ -809,7 +603,7 @@ export default function ExperienceCard({
       return (
         <button
           onClick={() => data._showPopUp("login_prompt")}
-          className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
+          className="flex-1 px-4 py-2 rounded-full font-medium text-sm transition-colors border-2 border-brand-600 text-brand-600 hover:bg-brand-50"
         >
           Connect
         </button>
@@ -818,13 +612,33 @@ export default function ExperienceCard({
     return (
       <button
         onClick={() => setModalOpen(true)}
-        className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200"
+        className="flex-1 px-4 py-2 rounded-full font-medium text-sm transition-colors border-2 border-brand-600 text-brand-600 hover:bg-brand-50"
       >
         Connect
       </button>
     );
   }
-}
+
+  const OptionsMenu = () => (
+    <div
+      ref={optionsMenuRef}
+      className="absolute z-30 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-xl top-12 right-3"
+      role="dialog"
+      aria-label="Options menu"
+    >
+      <button
+        onClick={() => {
+          navigate(`/experience/${item.id}`);
+          setOptionsMenuOpen(false);
+        }}
+        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+      >
+        <Edit size={16} />
+        Edit
+      </button>
+    </div>
+  );
+};
 
 // Share data and components
 const ShareMenu = ({ item, shareMenuRef, setShareOpen }) => {
@@ -837,7 +651,7 @@ const ShareMenu = ({ item, shareMenuRef, setShareOpen }) => {
   return (
     <div
       ref={shareMenuRef}
-      className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      className="absolute bottom-0 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
       role="dialog"
       aria-label="Share options"
     >

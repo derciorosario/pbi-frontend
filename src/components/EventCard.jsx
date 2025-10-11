@@ -15,7 +15,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import client,{API_URL} from "../api/client";
 import LogoGray from '../assets/logo.png';
-import { Edit, Eye, Share2, MapPin, Clock, User as UserIcon, Copy as CopyIcon, Heart, MessageCircle, Flag, Calendar, MoreVertical, Trash2 } from "lucide-react";
+import { Edit, Eye, Share2, MapPin, Clock, User as UserIcon, Copy as CopyIcon, Heart, MessageCircle, Flag, Calendar, MoreVertical, Trash2, Globe } from "lucide-react";
 import {
   FacebookShareButton,
   FacebookIcon,
@@ -86,6 +86,7 @@ export default function EventCard({
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
   const optionsMenuRef = useRef(null);
   
   // Close menus on outside click / Esc
@@ -180,7 +181,7 @@ export default function EventCard({
   const ShareMenu = () => (
     <div
       ref={shareMenuRef}
-      className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      className="absolute bottom-0 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
       role="dialog"
       aria-label="Share options"
     >
@@ -286,19 +287,31 @@ export default function EventCard({
           </button>
         </>
       ) : (
-        // Initial menu
-        <button
-          onClick={() => setShowDeleteConfirm(true)}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-        >
-          <Trash2 size={16} />
-          Delete
-        </button>
+        <>
+          <button
+            onClick={() => {
+              navigate(`/event/${e.id}`);
+              setOptionsMenuOpen(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+          >
+            <Edit size={16} />
+            Edit
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <Trash2 size={16} />
+            Delete
+          </button>
+        </>
       )}
     </div>
   );
 
   const allTags = [
+    "Event",
     ...(Array.isArray(e?.audienceCategories) ? e?.audienceCategories.map(i=>i.name) : []),
     e.eventType || "Event",
     e.categoryName,
@@ -325,6 +338,16 @@ export default function EventCard({
     // Restore body scroll when modal closes
     document.body.style.overflow = '';
   }
+
+  const cleanText = (htmlContent) => {
+    if (!htmlContent) return "";
+    const contentWithPeriods = htmlContent.replace(/<br\s*\/?>/gi, ". ");
+    const div = document.createElement("div");
+    div.innerHTML = contentWithPeriods;
+    let textContent = div.textContent || div.innerText || "";
+    textContent = textContent.replace(/\s+/g, " ").trim();
+    return textContent;
+  };
 
   const containerBase =
     "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
@@ -365,524 +388,296 @@ export default function EventCard({
   return (
     <>
       <div
-        ref={cardRef}
-        className={`${containerBase} relative ${containerLayout} ${!isList && isHovered ? "transform -translate-y-1" : ""} ${isDeleted ? "hidden" : ""}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${
+          isDeleted ? "hidden" : ""
+        }`}
       >
-        {/* IMAGE SIDE */}
-        {isList ? (
-          // Only show image side in list view if not text mode
-          settings?.contentType !== 'text' && (
-            <div className="relative h-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-              {imageUrl ? (
-                <>
-                  <img src={imageUrl} alt={e?.title} className="absolute inset-0 w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-  
-                  {/* Organizer name and logo on image */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    <div
-                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        if (e?.organizerUserId) {
-                          setOpenId(e.organizerUserId);
-                          data._showPopUp?.("profile");
-                        }
-                      }}
-                    >
-                      {e?.avatarUrl ? (
-                        <img
-                          src={e.avatarUrl}
-                          alt={e?.organizerUserName || "User"}
-                          className="w-7 h-7 rounded-full shadow-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                          <UserIcon size={12} className="text-brand-600" />
-                        </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                          {e?.organizerUserName || "User"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="absolute inset-0 w-full h-full bg-gray-200 flex justify-center items-center">
-                  <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
-                  {/* Organizer name and logo positioned absolutely when no image */}
-                  <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                    <div
-                      className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        if (e?.organizerUserId) {
-                          setOpenId(e.organizerUserId);
-                          data._showPopUp?.("profile");
-                        }
-                      }}
-                    >
-                      {e?.avatarUrl ? (
-                        <img
-                          src={e.avatarUrl}
-                          alt={e?.organizerUserName || "User"}
-                          className="w-7 h-7 rounded-full shadow-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                          <UserIcon size={12} className="text-brand-600" />
-                        </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                          {e?.organizerUserName || "User"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Quick actions on image */}
-              <div className="absolute top-3 right-3 flex gap-2">
-                {/* View / Edit */}
-                <button
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    if (isOwner) navigate(`/event/${e.id}`);
-                    else setEventDetailsOpen(true);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                  aria-label="View event"
-                >
-                  {isOwner ? <Edit size={16} className="text-gray-600" /> : <Eye size={16} className="text-gray-600" />}
-                </button>
-
-                {/* Share */}
-                <button
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                  aria-label="Share event"
-                >
-                  <Share2 size={16} className="text-gray-600" />
-                </button>
-
-                {/* Options (Delete) - only for owner */}
-                {isOwner && (
-                  <button
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      setOptionsMenuOpen((s) => !s);
-                    }}
-                    className="p-2 hidden rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                    aria-label="More options"
-                  >
-                    <MoreVertical size={16} className="text-gray-600" />
-                  </button>
-                )}
-              </div>
-            </div>
-          )
-        ) : (
-          // GRID IMAGE
-          <div className="relative overflow-hidden">
-            {settings?.contentType === 'text' ? null : imageUrl ? (
-              <div className="relative">
-                <img
-                  src={imageUrl}
-                  alt={e?.title}
-                  className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                {/* Organizer name and logo on image */}
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                  <div
-                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      if (e?.organizerUserId) {
-                        setOpenId(e.organizerUserId);
-                        data._showPopUp?.("profile");
-                      }
-                    }}
-                  >
-                    {e?.avatarUrl ? (
-                      <img
-                        src={e.avatarUrl}
-                        alt={e?.organizerUserName || "User"}
-                        className="w-7 h-7 rounded-full shadow-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                        <UserIcon size={12} className="text-brand-600" />
-                      </div>
-                    )}
-                    <div className="flex flex-col">
-                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                        {e?.organizerUserName || "User"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="w-full h-48 bg-gray-200 flex justify-center items-center">
-                <img src={LogoGray} className="w-[100px]" alt="54Links logo" />
-                {/* Organizer name and logo positioned absolutely when no image */}
-                <div className="absolute bottom-3 left-3 flex flex-wrap gap-2">
-                  <div
-                    className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      if (e?.organizerUserId) {
-                        setOpenId(e.organizerUserId);
-                        data._showPopUp?.("profile");
-                      }
-                    }}
-                  >
-                    {e?.avatarUrl ? (
-                      <img
-                        src={e.avatarUrl}
-                        alt={e?.organizerUserName || "User"}
-                        className="w-7 h-7 rounded-full shadow-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                        <UserIcon size={12} className="text-brand-600" />
-                      </div>
-                    )}
-                    <div className="flex flex-col">
-                      <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                        {e?.organizerUserName || "User"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* View & Share - only show when not text mode */}
-            {settings?.contentType !== 'text' && (
-              <div className="absolute top-4 right-4 flex gap-2">
-                   <button
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    if (isOwner) navigate(`/event/${e.id}`);
-                    else setEventDetailsOpen(true);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                  aria-label="View event"
-                >
-                  {isOwner ? <Edit size={16} className="text-gray-600" /> : <Eye size={16} className="text-gray-600" />}
-                </button>
-
-                <button
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200 group/share"
-                  aria-label="Share event"
-                >
-                  <Share2 size={16} className="text-gray-600 group-hover/share:text-brand-600 transition-colors duration-200" />
-                </button>
-
-                {/* Options (Delete) - only for owner */}
-                {isOwner && (
-                  <button
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      setOptionsMenuOpen((s) => !s);
-                    }}
-                    className="p-2 hidden rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-                    aria-label="More options"
-                  >
-                    <MoreVertical size={16} className="text-gray-600" />
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* CONTENT SIDE */}
-        <div className={`${isList ? "p-4 md:p-5" : "p-5"} flex flex-col flex-1`}>
-          {/* Text mode: Buttons and audience categories at top */}
-          {settings?.contentType === 'text' && (
-            <div className={`${!isList ? 'flex-col gap-y-2':'items-center justify-between gap-2'} flex  mb-3`}>
-              <div className="flex gap-2">
-                <button
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    if (isOwner) navigate(`/event/${e.id}`);
-                    else setEventDetailsOpen(true);
-                  }}
-                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                  aria-label="View event"
-                >
-                  {isOwner ? <Edit size={16} /> : <Eye size={16} />}
-                </button>
-                {!isOwner && (
-                  <button
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      if (!user?.id) {
-                        data._showPopUp("login_prompt");
-                        return;
-                      }
-                      setRegistrationOpen(true);
-                    }}
-                    className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                    aria-label="Register for event"
-                  >
-                    <Calendar size={16} className="text-gray-600" />
-                  </button>
-                )}
-                <button
-                  onClick={(ev) => {
-                    ev.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                  aria-label="Share event"
-                >
-                  <Share2 size={16} className="text-gray-600" />
-                </button>
-
-                {/* Options (Delete) - only for owner */}
-                {isOwner && (
-                  <button
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      setOptionsMenuOpen((s) => !s);
-                    }}
-                    className="p-2 hidden rounded-full bg-gray-100 hover:bg-gray-200 transition-all duration-200"
-                    aria-label="More options"
-                  >
-                    <MoreVertical size={16} className="text-gray-600" />
-                  </button>
-                )}
-              </div>
-              <div
-                className="flex items-center gap-2 text-sm text-gray-600 _profile hover:underline cursor-pointer"
-                onClick={(ev) => {
-                  ev.stopPropagation();
-                  if (e?.organizerUserId) {
-                    setOpenId(e.organizerUserId);
-                    data._showPopUp?.("profile");
-                  }
-                }}
-              >
-                {e?.avatarUrl ? (
+        {/* HEADER - Organizer/User Info */}
+        <div className="px-4 pt-3 pb-2 flex items-start justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            {/* Avatar */}
+            <div
+              className="cursor-pointer flex-shrink-0"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (e?.organizerUserId) {
+                  navigate(`/profile/${e.organizerUserId}`);
+                }
+              }}
+            >
+              {e?.avatarUrl ? (
+                <div className={`flex bg-white items-center justify-center w-20 h-20 ${
+                  e?.postedBy?.accountType === "company" ? "rounded" : "rounded-full"
+                } border border-gray-300 overflow-hidden`}>
                   <img
                     src={e.avatarUrl}
                     alt={e?.organizerUserName || "User"}
-                    className="w-7 h-7 rounded-full shadow-lg object-cover"
+                    className="w-full h-full"
+                    style={{ objectFit: 'contain' }}
                   />
-                ) : (
-                  <div className="w-7 h-7 bg-white shadow-lg rounded-full grid place-items-center">
-                    <UserIcon size={12} className="text-brand-600" />
-                  </div>
-                )}
-                <div className="flex flex-col">
-                  <span className="inline-flex items-center gap-1 bg-white text-brand-600 text-xs font-semibold px-2.5 py-1 rounded-full shadow-lg">
-                    {e?.organizerUserName || "User"}
-                  </span>
                 </div>
+              ) : (
+                <div className={`w-20 h-20 bg-gray-200 flex items-center justify-center ${
+                  e?.postedBy?.accountType === "company" ? "rounded" : "rounded-full"
+                } border border-gray-100`}>
+                  <UserIcon size={24} className="text-gray-400" />
+                </div>
+              )}
+            </div>
+
+            {/* Organizer/User Name and Meta */}
+            <div className="flex-1 min-w-0">
+              <div
+                className="font-semibold text-sm text-gray-900 hover:underline cursor-pointer"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (e?.organizerUserId) {
+                    navigate(`/profile/${e.organizerUserId}`);
+                  }
+                }}
+              >
+                {e?.organizerUserName || "User"}
+              </div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                {e?.profile?.professionalTitle || "Event Organizer"}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                <span>{timeAgo}</span>
+                <span>•</span>
+                <Globe size={12} />
               </div>
             </div>
-          )}
+          </div>
 
-          {/* Title */}
-          <h3 className="font-semibold text-lg text-gray-900  mb-0.5 group-hover:text-brand-600 transition-colors duration-200">
+          {/* Options Menu Toggle */}
+          <div className="relative flex-shrink-0">
+            {isOwner && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOptionsMenuOpen((s) => !s);
+                }}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="More options"
+              >
+                <MoreVertical size={20} className="text-gray-600" />
+              </button>
+            )}
+            {optionsMenuOpen && <OptionsMenu />}
+          </div>
+        </div>
+
+        {/* POST CONTENT */}
+        <div className="px-4 pb-3">
+          {/* Event Title */}
+          <h3
+            className="font-semibold text-base text-gray-900 mb-1 hover:text-brand-600 cursor-pointer transition-colors"
+            onClick={() => {
+              if (isOwner) navigate(`/event/${e.id}`);
+              else setEventDetailsOpen(true);
+            }}
+          >
             {e?.title}
           </h3>
 
-
           {/* Description */}
-          <p className={`mt-2 text-sm text-gray-600 leading-relaxed ${isList ? "line-clamp-2 md:line-clamp-3" : "line-clamp-2"}`}>
-            {e?.description}
-          </p>
-
-          {/* Price */}
-          <div className={`${isList ? "mt-2 mb-2" : "mt-2 mb-3"}`}>
-            <span className="text-sm font-bold text-gray-700">{priceText}</span>
+          <div className="text-sm text-gray-700 mb-2">
+            <div className={showFullDescription ? "" : "line-clamp-3"}>
+              {cleanText(e?.description)}
+            </div>
+            {e?.description && cleanText(e?.description).length > 250 && (
+              <button
+                onClick={() => setShowFullDescription(!showFullDescription)}
+                className="text-gray-500 hover:text-brand-600 font-medium mt-1"
+              >
+                {showFullDescription ? "Show less" : "Show more"}
+              </button>
+            )}
           </div>
 
-          {/* Meta: organizer + match + time + location */}
-          <div className={`${isList ? "mb-2" : "mb-3"} space-y-2`}>
-            <div className="flex items-center justify-between pb-2">
-              {/* Organizer display removed - now shown prominently above */}
-             
-
-              {/* Match % chip */}
-              {matchPercentage !== undefined && matchPercentage !== null && (
-                <div className="flex items-center gap-1">
-                  <div
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      matchPercentage >= 80
-                        ? "bg-green-100 text-green-700 border border-green-200"
-                        : matchPercentage >= 60
-                        ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                        : "bg-gray-100 text-gray-600 border border-gray-200"
-                    }`}
-                  >
-                    {matchPercentage}% match
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* time + location */}
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <span className="flex items-center gap-1">
-                <Clock size={12} />
-                {timeAgo}
-              </span>
-              <span className="flex items-center gap-1">
-                <MapPin size={12} />
-                {e?.city ? `${e.city}, ` : ""}
-                {e?.country || "—"}
-              </span>
-            </div>
-          </div>
-
-          {/* Tags (show 2) with +X tooltip if more */}
-          {!!visibleTags.length && (
-            <div className={`${isList ? "mb-3" : "mb-4"} flex flex-wrap gap-2`}>
-              {visibleTags.map((t) => (
+          {/* Tags */}
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {allTags.slice(0, 3).map((tag, idx) => (
                 <span
-                  key={t}
-                  className="inline-flex items-center rounded-full bg-gradient-to-r from-brand-50 to-brand-100 text-brand-700 px-3 py-1 text-xs font-medium border border-brand-200/50"
+                  key={idx}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-brand-500"
                 >
-                  {t}
+                  #{tag.replace(/\s+/g, "")}
                 </span>
               ))}
-
-              {extraCount > 0 && (
-                <div className="relative inline-block group/tagmore">
-                  <span
-                    className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-3 py-1 text-xs font-medium cursor-default hover:bg-gray-200 transition-colors duration-200"
-                    aria-describedby={`event-tags-more-${e.id}`}
-                    tabIndex={0}
-                  >
-                    +{extraCount} more
+              {allTags.length > 3 && (
+                <div className="relative inline-block group/tags">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-600 bg-gray-100 cursor-help">
+                    +{allTags.length - 3} more
                   </span>
 
-                  <div
-                    id={`event-tags-more-${e.id}`}
-                    role="tooltip"
-                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg
-                    opacity-0 invisible transition-opacity duration-200
-                    group-hover/tagmore:opacity-100 group-hover/tagmore:visible
-                    focus-within:opacity-100 focus-within:visible z-10 whitespace-nowrap"
-                  >
-                    <div className="flex flex-wrap gap-1 max-w-xs">
-                      {allTags.slice(2).map((tag, i) => (
+                  {/* Tooltip with remaining tags */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tags:opacity-100 group-hover/tags:visible z-10 whitespace-nowrap max-w-xs">
+                    <div className="flex flex-wrap gap-1">
+                      {allTags.slice(3).map((tag, i) => (
                         <span key={i} className="inline-block">
-                          {tag}
-                          {i < allTags.length - 3 ? "," : ""}
+                          #{tag.replace(/\s+/g, "")}
+                          {i < allTags.length - 4 ? "," : ""}
                         </span>
                       ))}
                     </div>
-                    <div
-                      className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
-                      border-l-4 border-r-4 border-t-4
-                      border-l-transparent border-r-transparent border-t-gray-900"
-                    />
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
                   </div>
                 </div>
               )}
+
+              {/* Match Percentage Badge */}
+              {matchPercentage > 0 && (
+                <span
+                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ml-auto ${
+                    matchPercentage >= 80
+                      ? "bg-green-100 text-green-700 border border-green-200"
+                      : matchPercentage >= 60
+                      ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                      : "bg-gray-100 text-gray-600 border border-gray-200"
+                  }`}
+                >
+                  {matchPercentage}% match
+                </span>
+              )}
             </div>
           )}
+        </div>
 
-          {/* NEW: social row (like / comment / report) hidden for now */}
-          <div className="mt-1 mb-2 flex items-center gap-5 text-sm text-gray-600">
-            <button
-              onClick={toggleLike}
-              className="inline-flex items-center gap-1 hover:text-brand-700"
-              title={liked ? "Unlike" : "Like"}
-            >
-              <Heart
-                size={16}
-                className={liked ? "fill-brand-500 text-brand-500" : ""}
-              />
-              <span>{likeCount}</span>
-            </button>
+        {/* IMAGE (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && imageUrl && (
+          <div className="relative">
+            <img
+              src={imageUrl}
+              alt={e?.title}
+              className="w-full max-h-96 object-cover cursor-pointer"
+              onClick={() => setEventDetailsOpen(true)}
+            />
+          </div>
+        )}
 
-            <button
-              onClick={() => setCommentsDialogOpen(true)}
-              className="inline-flex items-center gap-1 hover:text-brand-700"
-              title="Comments"
-            >
-              <MessageCircle size={16} />
-              <span>{commentCount}</span>
-            </button>
-
-            <button
-             onClick={() =>{
-                 if (!user?.id) {
-                  data._showPopUp?.("login_prompt");
-                  return;
-                }else{
-                  setReportOpen(true)
-                }
-              } }
-              className="inline-flex _login_prompt items-center gap-1 hover:text-rose-700"
-              title="Report this event"
-            >
-              <Flag size={16} />
-              <span>Report</span>
-            </button>
+        {/* ENGAGEMENT BAR - Like/Comment counts */}
+        <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+          <div className="flex items-center gap-1">
+            {likeCount > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="flex -space-x-1">
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                    <Heart size={10} className="text-white fill-white" />
+                  </div>
+                </div>
+                <span>
+                  {likeCount}
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Actions */}
-          <div className={`flex items-center gap-2 mt-auto pt-2 ${isList ? "justify-end md:justify-start" : ""}`}>
-            {/* View (Edit if owner) */}
+          <div className="flex items-center gap-3">
+            {commentCount > 0 && (
+              <button
+                onClick={() => setCommentsDialogOpen(true)}
+                className="hover:underline"
+              >
+                {commentCount} comment{commentCount !== 1 ? "s" : ""}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* ACTION BUTTONS */}
+        <div className="px-2 py-1 border-t border-gray-100 grid grid-cols-4 gap-1">
+          <button
+            onClick={toggleLike}
+            className={`flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium ${
+              liked ? "text-blue-600" : "text-gray-600"
+            }`}
+          >
+            <Heart
+              size={20}
+              className={liked ? "fill-blue-600" : ""}
+            />
+            <span className="max-sm:hidden">Like</span>
+          </button>
+
+          <button
+            onClick={() => setCommentsDialogOpen(true)}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+          >
+            <MessageCircle size={20} />
+            <span className="max-sm:hidden">Comment</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (!user?.id) {
+                data._showPopUp?.("login_prompt");
+                return;
+              } else {
+                setReportOpen(true);
+              }
+            }}
+            className="flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
+          >
+            <Flag size={20} />
+            <span className="max-sm:hidden">Report</span>
+          </button>
+
+          <div className="relative">
             <button
-              onClick={() => {
-                if (isOwner) navigate(`/event/${e.id}`);
-                else setEventDetailsOpen(true);
+              onClick={(e) => {
+                e.stopPropagation();
+                setShareOpen((s) => !s);
               }}
-              className="flex hidden items-center justify-center h-10 w-10 flex-shrink-0 rounded-xl border-2 border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 transition-all duration-200 group/view"
-              aria-label={isOwner ? "Edit event" : "View event"}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg hover:bg-gray-100 transition-colors text-sm font-medium text-gray-600"
             >
-              {isOwner ? (
-                <Edit size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-              ) : (
-                <Eye size={16} className="transition-transform duration-200 group-hover/view:scale-110" />
-              )}
+              <Share2 size={20} />
+              <span className="max-sm:hidden">Share</span>
             </button>
+            {shareOpen && <ShareMenu />}
+          </div>
+        </div>
 
-           
-           {/* Registration Status Buttons - Show different buttons based on status */}
-          {!isOwner && (
-            <>
-              {/* Registered Status - Show checkmark when already registered */}
-              {registrationStatus === 'registered' && (
-                <button
-                  className={`${
-                    type === "grid" ? "flex-1" : ""
-                  } rounded-xl px-4 py-2.5 text-sm font-medium bg-green-100 text-green-700 cursor-default flex items-center justify-center gap-2`}
-                  disabled
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  <span>Registered</span>
-                </button>
+        {/* REGISTRATION SECTION - Below actions */}
+        {!isOwner && (
+          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-3">
+              {/* Price */}
+              {isPaid && (
+                <div className="text-sm font-semibold text-gray-900">
+                  {priceText}
+                </div>
               )}
 
-              {/* Not Registered - Show regular Register button */}
-              {registrationStatus === 'not_registered' && (
+              {/* Location */}
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <MapPin size={14} />
+                <span>
+                  {e?.city ? `${e.city}, ` : ""}
+                  {e?.country || "—"}
+                </span>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 mt-3">
+              {registrationStatus === "registered" ? (
+                <button className="flex-1 px-4 py-2 rounded-full bg-green-100 text-green-700 font-medium text-sm flex items-center justify-center gap-2">
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  Registered
+                </button>
+              ) : (
                 <button
                   onClick={() => {
                     if (!user?.id) {
@@ -891,66 +686,43 @@ export default function EventCard({
                     }
                     setRegistrationOpen(true);
                   }}
-                  className={`${
-                    type === "grid" ? "flex-1" : ""
-                  } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
+                  className="flex-1 px-4 py-2 rounded-full bg-brand-600 text-white font-medium text-sm hover:bg-brand-700 transition-colors"
                 >
-                  <span>Register</span>
+                  Register
                 </button>
               )}
 
-              {/* Unauthenticated - Show Register button that prompts login */}
-              {(!registrationStatus || registrationStatus === 'unauthenticated') && (
+              {connectionStatus !== "connected" && (
                 <button
-                  onClick={() => data._showPopUp("login_prompt")}
-                  className={`${
-                    type === "grid" ? "flex-1" : ""
-                  } rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
+                  onClick={() => {
+                    if (!user?.id) {
+                      data._showPopUp("login_prompt");
+                      return;
+                    }
+                    setModalOpen(true);
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-full font-medium text-sm transition-colors ${
+                    connectionStatus === "pending_outgoing" ||
+                    connectionStatus === "outgoing_pending"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : connectionStatus === "pending_incoming" ||
+                        connectionStatus === "incoming_pending"
+                      ? "bg-brand-100 text-brand-600 hover:bg-brand-200"
+                      : "border-2 border-brand-600 text-brand-600 hover:bg-brand-50"
+                  }`}
                 >
-                  <span>Register</span>
+                  {connectionStatus === "pending_outgoing" ||
+                  connectionStatus === "outgoing_pending"
+                    ? "Pending"
+                    : connectionStatus === "pending_incoming" ||
+                      connectionStatus === "incoming_pending"
+                    ? "Respond"
+                    : "Connect"}
                 </button>
               )}
-            </>
-          )}
-
-            {/* Message - Hidden for now */}
-            {false && (
-              <button
-                onClick={() => {
-                  if (!user?.id) {
-                    data._showPopUp("login_prompt");
-                    return;
-                  }
-                  navigate(`/messages?userId=${e.organizerUserId}`);
-                  toast.success("Starting conversation with " + (e.organizerUserName || "event organizer"));
-                }}
-                className={`${
-                  type === "grid" ? "" : "flex-1"
-                } rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 hover:bg-brand-50 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow-md`}
-              >
-                Message
-              </button>
-            )}
-
-            {/* Connect */}
-            {(!isOwner && connectionStatus!="connected") && 
-            <div className="_login_prompt">
-              {renderConnectButton()}
-            </div>}
-            
+            </div>
           </div>
-        </div>
-
-        {/* Subtle bottom gradient for depth (grid only) */}
-        {!isList && (
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent opacity-50" />
         )}
-        
-        {/* SHARE MENU - inside the card for proper positioning */}
-        {shareOpen && <ShareMenu />}
-
-        {/* OPTIONS MENU */}
-        {optionsMenuOpen && <OptionsMenu />}
       </div>
 
       {/* Connection Request Modal */}

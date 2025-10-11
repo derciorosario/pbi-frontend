@@ -82,7 +82,7 @@ export default function FeedPage() {
   // Industries state
   const [selectedIndustries, setSelectedIndustries] = useState([]);
 
-  const [view, setView] = useState("grid");
+  const [view, setView] = useState("list");
   let view_types = ["grid", "list"];
 
   const data = useData();
@@ -274,13 +274,15 @@ export default function FeedPage() {
 
         <div className="grid lg:grid-cols-12 gap-6">
           {user && (
-            <aside className="lg:col-span-3 hidden lg:block sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
-               <CompanyAssociationPanel/>
+            <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
              
-              <div className="_sticky top-0 mb-2">
+            
+
+              <div className="_sticky top-0 z-10 _bg-white">
+                <CompanyAssociationPanel/>
                 <FiltersCard {...filtersProps} />
               </div>
-             
+
               <QuickActions
                 title="Quick Actions"
                 items={[
@@ -295,57 +297,50 @@ export default function FeedPage() {
                 ]}
               />
               <ProfileCard />
-
             </aside>
           )}
 
-          <section className={`${user ? "lg:col-span-8" : "lg:col-span-12"} sprace-y-4`}>
-            <section className="lg:col-span-4 space-y-4 flex items-center justify-between gap-y-2 flex-wrap mb-3">
-              <PageTabs page={"feed"} view={view} setView={setView} view_types={view_types} />
-              <TabsAndAdd
-                tabs={tabs}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                items={[
-                  { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
-                  { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
-                  { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company"},
-                  { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
-                  { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
-                  { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
-                ]}
-              />
+          <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-3 flex items-center flex-wrap w-full justify-between">
+              <div className="w-full">
+                <TabsAndAdd
+                  tabs={tabs}
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  items={[
+                    { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
+                    { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
+                    { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company"},
+                    { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+                    { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
+                    { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
+                  ]}
+                />
+              </div>
+            </div>
+
+            <section className="lg:col-span-2 space-y-4 overflow-hidden">
+              {loadingFeed && <CardSkeletonLoader columns={1} />}
+
+              {!loadingFeed && showTotalCount && (
+                <div className="text-sm text-gray-600">
+                  {totalCount} result{totalCount === 1 ? "" : "s"}
+                </div>
+              )}
+
+              {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
+
+              {!loadingFeed && items.length > 0 && (
+                <div className={`grid grid-cols-1 ${view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"} gap-6`}>
+                  {items.map(renderItem)}
+                </div>
+              )}
             </section>
 
-            {loadingFeed && <CardSkeletonLoader columns={user ? 2 : 3} />}
-
-            {!loadingFeed && showTotalCount && (
-              <div className="text-sm text-gray-600">
-                {totalCount} result{totalCount === 1 ? "" : "s"}
-              </div>
-            )}
-
-            {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
-
-            {!loadingFeed && items.length > 0 && (
-              <div
-                className={
-                  "grid grid-cols-1 gap-6" +
-                  (view === "list" ? " sm:grid-cols-1" : user ? " sm:grid-cols-2" : " sm:grid-cols-3")
-                }
-              >
-                {items.map(renderItem)}
-              </div>
-            )}
-          </section>
-
-          <aside className={`${user ? "lg:col-span-3" : "lg:col-span-4"} hidden sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto`}>
-            {loadingSuggestions ? (
-              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">Loading suggestions…</div>
-            ) : (
-              <SuggestedMatches matches={matches} nearby={nearby} />
-            )}
-          </aside>
+            <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+              <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
+            </aside>
+          </div>
         </div>
       </main>
 
