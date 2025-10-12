@@ -511,58 +511,6 @@ export default function MomentCard({
 
           
 
-          {/* Tags */}
-          {!!visibleTags.length && (
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {/* "Looking for" badge */}
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600 border border-green-200">
-                Experience
-              </span>
-              {visibleTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-brand-500"
-                >
-                  #{tag.replace(/\s+/g, "")}
-                </span>
-              ))}
-              {extraCount > 0 && (
-                <div className="relative inline-block group/tags">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-600 bg-gray-100 cursor-help">
-                    +{extraCount} more
-                  </span>
-
-                  {/* Tooltip with remaining tags */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tags:opacity-100 group-hover/tags:visible z-10 whitespace-nowrap max-w-xs">
-                    <div className="flex flex-wrap gap-1">
-                      {allTags.slice(2).map((tag, i) => (
-                        <span key={i} className="inline-block">
-                          #{tag.replace(/\s+/g, "")}
-                          {i < allTags.length - 3 ? "," : ""}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
-                  </div>
-                </div>
-              )}
-
-              {/* Match Percentage Badge */}
-              {matchPercentage > 0 && (
-                <span
-                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ml-auto ${
-                    matchPercentage >= 80
-                      ? "bg-green-100 text-green-700 border border-green-200"
-                      : matchPercentage >= 60
-                      ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                      : "bg-gray-100 text-gray-600 border border-gray-200"
-                  }`}
-                >
-                  {matchPercentage}% match
-                </span>
-              )}
-            </div>
-          )}
         </div>
 
         {/* IMAGE (if exists and not in text mode) */}
@@ -614,34 +562,95 @@ export default function MomentCard({
           </div>
         )}
 
-        {/* ENGAGEMENT BAR - Like/Comment counts */}
-        <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
-          <div className="flex items-center gap-1">
-            {likeCount > 0 && (
-              <div className="flex items-center gap-1">
-                <div className="flex -space-x-1">
-                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-                    <Heart size={10} className="text-white fill-white" />
-                  </div>
-                </div>
-                <span>
-                 {likeCount}
+        {/* Tags and Match Percentage */}
+        <div className="flex justify-between px-4 pt-3 pb-3">
+          {!!visibleTags.length && (
+            <div className="flex-1">
+              <div className="flex flex-wrap gap-1.5 flex-1">
+                {/* "Looking for" badge */}
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-600 border border-green-200">
+                  Experience
                 </span>
+                {visibleTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-brand-500"
+                  >
+                    #{tag.replace(/\s+/g, "")}
+                  </span>
+                ))}
+                {extraCount > 0 && (
+                  <div className="relative inline-block group/tags">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium text-gray-600 bg-gray-100 cursor-help">
+                      +{extraCount} more
+                    </span>
+
+                    {/* Tooltip with remaining tags */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tags:opacity-100 group-hover/tags:visible z-10 whitespace-nowrap max-w-xs">
+                      <div className="flex flex-wrap gap-1">
+                        {allTags.slice(2).map((tag, i) => (
+                          <span key={i} className="inline-block">
+                            #{tag.replace(/\s+/g, "")}
+                            {i < allTags.length - 3 ? "," : ""}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Match Percentage Badge */}
+          <div>
+            {matchPercentage > 0 && (
+              <div
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  matchPercentage >= 80
+                    ? "bg-green-100 text-green-700 border border-green-200"
+                    : matchPercentage >= 60
+                    ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                    : "bg-gray-100 text-gray-600 border border-gray-200"
+                }`}
+              >
+                {matchPercentage}% match
               </div>
             )}
           </div>
-
-          <div className="flex items-center gap-3">
-            {commentCount > 0 && (
-              <button
-                onClick={() => setCommentsDialogOpen(true)}
-                className="hover:underline"
-              >
-                {commentCount} comment{commentCount !== 1 ? "s" : ""}
-              </button>
-            )}
-          </div>
         </div>
+
+        {/* ENGAGEMENT BAR - Like/Comment counts */}
+        {(likeCount > 0 || commentCount > 0) && (
+          <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+            <div className="flex items-center gap-1">
+              {likeCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <div className="flex -space-x-1">
+                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                      <Heart size={10} className="text-white fill-white" />
+                    </div>
+                  </div>
+                  <span>
+                   {likeCount}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {commentCount > 0 && (
+                <button
+                  onClick={() => setCommentsDialogOpen(true)}
+                  className="hover:underline"
+                >
+                  {commentCount} comment{commentCount !== 1 ? "s" : ""}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ACTION BUTTONS */}
         <div className="px-2 py-1 border-t border-gray-100 grid grid-cols-4 gap-1">

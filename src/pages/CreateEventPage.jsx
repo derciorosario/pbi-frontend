@@ -1,5 +1,5 @@
 // src/pages/CreateEventPage.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import client,{API_URL} from "../api/client";
 import COUNTRIES from "../constants/countries";
@@ -430,7 +430,7 @@ function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
   );
 }
 
-export default function CreateEventPage() {
+export default function CreateEventPage({ triggerImageSelection = false, hideHeader = false }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -488,6 +488,7 @@ export default function CreateEventPage() {
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [coverImageBase64, setCoverImageBase64] = useState(null);
   const [coverImageFilename, setCoverImageFilename] = useState(null);
+  const imagePickerRef = useRef(null);
 
   // Support single or multi-country (comma-separated) selection
   const selectedCountries = useMemo(() => {
@@ -616,6 +617,29 @@ export default function CreateEventPage() {
       }
     })();
   }, []);
+
+  // Expose pick method to parent components
+  useImperativeHandle(imagePickerRef, () => ({
+    pick: () => {
+      // Find and trigger the CoverImagePicker's pick method
+      if (imagePickerRef.current && imagePickerRef.current.pick) {
+        imagePickerRef.current.pick();
+      }
+    }
+  }));
+
+  // Trigger image selection when component mounts with triggerImageSelection
+  useEffect(() => {
+    if (triggerImageSelection && imagePickerRef.current) {
+      // Small delay to ensure the component is fully rendered
+      const timer = setTimeout(() => {
+        if (imagePickerRef.current && imagePickerRef.current.pick) {
+          imagePickerRef.current.pick();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [triggerImageSelection]);
 
   // Load audience identities tree
   useEffect(() => {
@@ -823,8 +847,8 @@ export default function CreateEventPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
-      <Header page={"events"} />
-      <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
+      {!hideHeader && <Header page={"events"} />}
+      <main className={`mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'}`}>
         <button
           onClick={() => navigate("/events")}
           className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
@@ -1216,6 +1240,7 @@ export default function CreateEventPage() {
             <section>
               <h2 className="font-semibold text-brand-600 mt-8">Cover Image</h2>
               <CoverImagePicker
+                ref={imagePickerRef}
                 label="Cover Image (optional)"
                 value={coverImageBase64}
                 preview={typeof coverImageBase64 === 'string' ? coverImageBase64 : null}

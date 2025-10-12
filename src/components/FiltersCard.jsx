@@ -15,6 +15,7 @@ const libraries = ["places"];
 
 export default function FiltersCard({
   setShowTotalCount,
+  catComponent,
   selectedFilters = [],
   setSelectedFilters,
   showAudienceFilters,
@@ -808,6 +809,35 @@ export default function FiltersCard({
       </div>
 
    
+
+
+
+      <div>
+         {catComponent}
+      </div>
+
+      {/* Audience Tree */}
+      {Array.isArray(audienceTree) && audienceTree.length > 0 && selectedFilters.length > 0 && showAudienceFilters && (
+        <div className="mt-4">
+          <label className="text-xs text-gray-500 mb-2 block">
+            Audience Interests
+          </label>
+          <AudienceTree
+            tree={audienceTree}
+            shown={selectedFilters}
+            from={from}
+            selected={
+              audienceSelections || {
+                identityIds: new Set(),
+                categoryIds: new Set(),
+                subcategoryIds: new Set(),
+                subsubCategoryIds: new Set(),
+              }
+            }
+            onChange={setAudienceSelections}
+          />
+        </div>
+      )}
 
    
 
@@ -1679,29 +1709,6 @@ export default function FiltersCard({
             </div>
           )}
         </>
-      )}
-
-      {/* Audience Tree */}
-      {Array.isArray(audienceTree) && audienceTree.length > 0 && selectedFilters.length > 0 && showAudienceFilters && (
-        <div className="mt-4">
-          <label className="text-xs text-gray-500 mb-2 block">
-            Audience Interests
-          </label>
-          <AudienceTree
-            tree={audienceTree}
-            shown={selectedFilters}
-            from={from}
-            selected={
-              audienceSelections || {
-                identityIds: new Set(),
-                categoryIds: new Set(),
-                subcategoryIds: new Set(),
-                subsubCategoryIds: new Set(),
-              }
-            }
-            onChange={setAudienceSelections}
-          />
-        </div>
       )}
 
          {/* Funding */}

@@ -1,5 +1,5 @@
 // src/pages/CreateMomentPage.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Image as ImageIcon, Plus } from "lucide-react";
 import COUNTRIES from "../constants/countries"; // optional: if you want to suggest locations, else unused
@@ -361,7 +361,7 @@ function SearchableSelect({
 }
 
 /* ------------------------- Page ------------------------- */
-export default function CreateMomentPage() {
+export default function CreateMomentPage({ triggerImageSelection = false, type, hideHeader = false }) {
   const navigate = useNavigate();
   const { id, type: urlType } = useParams(); // Extract id and type from URL
   const isEditMode = Boolean(id);
@@ -397,6 +397,7 @@ export default function CreateMomentPage() {
   const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
   const attachmentInputRef = useRef(null);
+  const imagePickerRef = useRef(null);
 
   // General taxonomy (Category/Subcategory/SubsubCategory)
   const [generalTree, setGeneralTree] = useState([]);
@@ -492,13 +493,33 @@ export default function CreateMomentPage() {
     })();
   }, []);
 
-  // Set currentType based on URL type when creating
+  // Set currentType based on prop type or URL type when creating
   useEffect(() => {
-    if (urlType && !isEditMode) {
-      setCurrentType(urlType);
-      setField("relatedEntityType", urlType);
+    if (!isEditMode) {
+      // Prioritize the type prop from PostComposer, fallback to URL type
+      const effectiveType = type || urlType;
+      if (effectiveType) {
+        setCurrentType(effectiveType);
+        setField("relatedEntityType", effectiveType);
+      }
     }
-  }, [urlType, isEditMode]);
+  }, [type, urlType, isEditMode]);
+
+  // Expose pick method to parent components
+  useImperativeHandle(imagePickerRef, () => ({
+    pick: () => fileInputRef.current?.click()
+  }));
+
+  // Trigger image selection when component mounts with triggerImageSelection
+  useEffect(() => {
+    if (triggerImageSelection && imagePickerRef.current) {
+      // Small delay to ensure the component is fully rendered
+      const timer = setTimeout(() => {
+        imagePickerRef.current?.pick();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [triggerImageSelection]);
 
   /* -------- Options builders -------- */
   const generalCategoryOptions = useMemo(
@@ -837,10 +858,10 @@ export default function CreateMomentPage() {
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
       {/* ===== Header ===== */}
-      <Header page={"experiences"} />
+      {!hideHeader && <Header page={"experiences"} />}
 
       {/* ===== Content ===== */}
-      <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
+      <main className={`mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'}`}>
         <div>
           <button
             onClick={() => {

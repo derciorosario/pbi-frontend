@@ -23,6 +23,7 @@ import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import PageTabs from "../components/PageTabs";
 import TopFilterButtons from "../components/TopFilterButtons";
 import { useAuth } from "../contexts/AuthContext";
+import PostComposer from "../components/PostComposer";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -590,8 +591,16 @@ export default function PeopleFeedPage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+         
           <div className="_sticky top-0 z-10 _bg-white">
-              <FiltersCard  showAudienceFilters={true}   selectedFilters={selectedFilters} {...filtersProps} from="jobs"/>
+              <FiltersCard catComponent={<TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
+                                    buttons={
+                                      [
+                                      "Executives",
+                                      "Professionals",
+                                      "Freelancers",
+                                      "Students"
+              ]}/>}  showAudienceFilters={true}   selectedFilters={selectedFilters} {...filtersProps} from="jobs"/>
           </div>
            <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
@@ -605,38 +614,18 @@ export default function PeopleFeedPage() {
     
         <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
 
-          <div className="lg:col-span-3 flex items-center flex-wrap w-full justify-between">
- 
-            <div className="w-[70%]">
-                <TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
-                                    buttons={
-                                   [
-                                      "Executives",
-                                      "Professionals",
-                                      "Freelancers",
-                                      "Students"
-                ]}/>
-             
+          <div className="lg:col-span-2">
+            <div className="flex items-center flex-wrap w-full justify-between mb-4">
+              <PostComposer from={'job'} typeOfPosts={[
+                  { label: "Post Job Opportunity",short_label:'Post Job', Icon: PlusCircle,hide:user?.accountType=="individual",type:'main'},
+                  { label: "Share Job Experience", Icon: PlusCircle,hide:user?.accountType=="company"},
+                  { label: "Share Job Need", Icon: PlusCircle,hide:user?.accountType=="company"},
+              ]}/>
             </div>
-            <div className="">
-              <TabsAndAdd
-               tabs={[]}
-               items={[
-                    { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
-                    { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
-                    { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
-                ]}
-              activeTab={activeTab} setActiveTab={setActiveTab} />
-            </div>
-
+            <section className="space-y-4 overflow-hidden">
+              {renderMiddle()}
+            </section>
           </div>
-
-
-
-          <section className="lg:col-span-2 space-y-4  overflow-hidden">
-            {renderMiddle()}
-          </section>
-
           <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
             <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
           </aside>

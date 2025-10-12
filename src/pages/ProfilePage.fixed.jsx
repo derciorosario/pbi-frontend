@@ -871,6 +871,18 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
 }
 
 /* ------------------------------ Página ---------------------------------- */
+
+// Loading component similar to Profile.jsx
+const Loading = () => (
+  <div className="min-h-screen grid place-items-center text-brand-700">
+    <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"/>
+    </svg>
+    <span className="ml-2">Loading…</span>
+  </div>
+);
+
 export default function PublicProfilePage() {
   const { userId } = useParams();
   const [loading, setLoading] = useState(false);
@@ -1223,15 +1235,17 @@ export default function PublicProfilePage() {
   return (
      <DefaultLayout>
           <div className="min-h-screen bg-gray-50">
-      {/* Cabeçalho simples da página (opcional, pode trocar pelo seu Header global) */}
-     
+      {/* Header */}
       <Header/>
 
-      <div className="max-w-5xl mx-auto px-4 py-6">
-        {loading && <div className="text-sm text-gray-600">Loading profile…</div>}
-        {error && <div className="text-sm text-red-600">{error}</div>}
+      <div className="max-w-7xl mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content - Left & Center */}
+          <div className="lg:col-span-2 space-y-6">
+            {loading && <Loading />}
+            {error && <div className="text-sm text-red-600">{error}</div>}
 
-        {!loading && !error && profile && (
+            {!loading && !error && profile && (
           <>
             {/* Modern Header Section */}
             <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
@@ -1249,7 +1263,8 @@ export default function PublicProfilePage() {
                           <img
                             src={profile.avatarUrl}
                             alt={profile.name}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full"
+                            style={{ objectFit: profile.accountType === "company" ? 'contain' : 'cover' }}
                           />
                         </div>
                       ) : (
@@ -1301,7 +1316,7 @@ export default function PublicProfilePage() {
                     {/* Profile Info - Name on gradient, title on white background */}
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <h1 className={`${profile.accountType === "company" ? "text-3xl" : "text-2xl"} font-bold text-white`}>
+                        <h1 className={`${profile.accountType === "company" ? "text-3xl" : "text-2xl"} font-bold text-white max-md:text-black`}>
                           {profile.name}
                         </h1>
                         {profile.accountType && (
@@ -1316,9 +1331,12 @@ export default function PublicProfilePage() {
                       {/* Professional Title - On white background after gradient */}
                       {profile.accountType === "company" ? (
                         <div className="mb-2 p-4 bg-white rounded-lg shadow-sm border">
-                          <p className="text-gray-900 text-lg font-semibold mb-2">
-                            {profile.professionalTitle || (profile.categories && profile.categories.length > 0 ? profile.categories.join(", ") : "Company")}
-                          </p>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Briefcase size={16} className="text-brand-600" />
+                            <p className="text-gray-900 text-lg font-semibold">
+                              {profile.professionalTitle || (profile.categories && profile.categories.length > 0 ? profile.categories.join(", ") : "Company")}
+                            </p>
+                          </div>
                           {profile.categories && profile.categories.length > 0 && (
                             <div className="flex flex-wrap gap-1">
                               {profile.categories.map((cat, idx) => (
@@ -1332,9 +1350,12 @@ export default function PublicProfilePage() {
                         </div>
                       ) : (
                         <div className="mb-2 p-4 bg-white rounded-lg shadow-sm border">
-                          <p className="text-gray-900 text-lg font-semibold">
-                            {profile.professionalTitle || profile.title || "—"}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <Briefcase size={16} className="text-brand-600" />
+                            <p className="text-gray-900 text-lg font-semibold">
+                              {profile.professionalTitle || profile.title || "—"}
+                            </p>
+                          </div>
                         </div>
                       )}
 
@@ -1351,6 +1372,23 @@ export default function PublicProfilePage() {
                   {/* Action Buttons */}
                   <div className="flex gap-3 mt-4 md:mt-0">
                     {renderConnectButton()}
+
+                    {/* Share Button */}
+                    <div className="relative">
+                      <button
+                        ref={shareButtonRef}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShareOpen((s) => !s);
+                        }}
+                        className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
+                      >
+                        <Share2 size={16} />
+                        
+                      </button>
+                      {shareOpen && <ShareMenu profile={profile} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
+                    </div>
+
                     <button
                       onClick={() => {
                         if (!user) {
@@ -1360,31 +1398,92 @@ export default function PublicProfilePage() {
                         navigate(`/messages?userId=${userId}`);
                         toast.success("Starting conversation with " + profile.name);
                       }}
-                      className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-6 py-2 rounded-lg flex items-center gap-2 transition font-medium"
+                      className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
                     >
                       <MessageCircle size={16} />
-                      Message
                     </button>
+
+                    {/* Request Meeting Button - only show when connected */}
+                    {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
+                      <button
+                        onClick={openMR}
+                        className="border border-brand-200 hover:bg-brand-50 text-brand-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
+                      >
+                        <CalendarDays size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* About Section - Modern Card Design */}
+            {/* About Section */}
             {profile.about && (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+              <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4">About</h2>
                 <div className="space-y-4 text-gray-600 text-sm leading-relaxed">
                   <p>{profile.about}</p>
+                </div>
+              </div>
+            )}
 
-                  {/* For companies, show skills as "Expertise" */}
-                  {profile.accountType === "company" && profile.skills && profile.skills.length > 0 && (
+            {/* Skills & Expertise */}
+            {Array.isArray(profile.skills) && profile.skills.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Skills & Expertise</h2>
+                <div className="flex flex-wrap gap-2">
+                  {profile.skills.map((skill, idx) => (
+                    <span key={`skill-${idx}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Professional Focus & Interests */}
+            {(Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0) ||
+             (Array.isArray(profile.identities) && profile.identities.length > 0) ||
+             profile.interests ? (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Professional Focus</h2>
+                <div className="space-y-4">
+                  {/* Looking For */}
+                  {Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0 && (
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Company Expertise</h3>
+                      <h3 className="font-semibold text-gray-900 mb-2">Looking for</h3>
                       <div className="flex flex-wrap gap-2">
-                        {profile.skills.map((skill, idx) => (
-                          <span key={`skill-${idx}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                            {skill}
+                        {profile.lookingFor.map((g, i) => (
+                          <span key={`${g}-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                            {g}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Professional Identities */}
+                  {Array.isArray(profile.identities) && profile.identities.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Professional focus</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.identities.map((idn, i) => (
+                          <span key={`ident-${i}`} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                            {idn}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Industry Categories */}
+                  {profile.interests?.categories && profile.interests.categories.length > 0 && (
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Industry categories</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {profile.interests.categories.map((cat, i) => (
+                          <span key={`cat-int-${i}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
+                            {cat}
                           </span>
                         ))}
                       </div>
@@ -1392,7 +1491,7 @@ export default function PublicProfilePage() {
                   )}
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Work Samples - Enhanced Modern Card Design */}
             {Array.isArray(profile.workSamples) && profile.workSamples.length > 0 && (
@@ -1551,83 +1650,9 @@ export default function PublicProfilePage() {
               </div>
             )}
 
-            {/* Contact - Modern Card Design */}
-            {(profile.email || profile.website || (Array.isArray(profile.links) && profile.links.length)) && (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Contact Information</h2>
-                <div className="space-y-3">
-                  {profile.email && (
-                    <div className="flex items-center gap-3 text-gray-600 text-sm">
-                      <Mail size={16} className="text-gray-400" />
-                      <span>{profile.email}</span>
-                    </div>
-                  )}
-                  {profile.website && (
-                    <div className="flex items-center gap-3 text-gray-600 text-sm">
-                      <Globe size={16} className="text-gray-400" />
-                      <a href={profile.website} target="_blank" rel="noreferrer" className="text-brand-700 hover:text-brand-800">
-                        {profile.website}
-                      </a>
-                    </div>
-                  )}
-                  {Array.isArray(profile.links) &&
-                    profile.links.map((l, i) => (
-                      <div key={i} className="flex items-center gap-3 text-gray-600 text-sm">
-                        <ExternalLink size={16} className="text-gray-400" />
-                        <a href={l} target="_blank" rel="noreferrer" className="text-brand-700 hover:text-brand-800 truncate">
-                          {l}
-                        </a>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            {/* Looking For & Identities - Combined Modern Card */}
-            {(Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0) ||
-             (Array.isArray(profile.identities) && profile.identities.length > 0) ? (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Looking For */}
-                  {Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Target size={18} className="text-brand-600" />
-                        Looking For
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.lookingFor.map((g, i) => (
-                          <span key={`${g}-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                            {g}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Identities */}
-                  {Array.isArray(profile.identities) && profile.identities.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <User2 size={18} className="text-brand-600" />
-                        {profile.accountType === "company" ? "Company Identity" : "Identities"}
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.identities.map((idn, i) => (
-                          <span key={`ident-${i}`} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                            {idn}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
-
             {/* Posts and activities - Modern Card Design */}
             {feedItems.length > 0 && (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+              <div className="bg-white rounded-xl shadow-sm p-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Activity size={20} className="text-brand-600" />
                   Posts and activities
@@ -1666,348 +1691,23 @@ export default function PublicProfilePage() {
               </div>
             )}
 
-            {/* Interests - Modern Card Design */}
-            {profile.interests && (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                  {profile.accountType === "company" ? "Company Interests" : "Identity Interests"}
-                </h2>
-                <div className="space-y-4">
-                  {/* Identity Interests */}
-                  {(profile.interests.identities && profile.interests.identities.length > 0) ||
-                   (Array.isArray(profile.identityInterests) && profile.identityInterests.length > 0) ? (
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Identity Interests</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.identities && profile.interests.identities.length > 0 ? (
-                          profile.interests.identities.map((idn, i) => (
-                            <span key={`ident-int-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                              {idn}
-                            </span>
-                          ))
-                        ) : Array.isArray(profile.identityInterests) && profile.identityInterests.length > 0 ? (
-                          profile.identityInterests.map((idn, i) => (
-                            <span key={`old-ident-int-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                              {idn}
-                            </span>
-                          ))
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {/* Category Interests */}
-                  {profile.interests.categories && profile.interests.categories.length > 0 && (
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Category Interests</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.categories.map((cat, i) => (
-                          <span key={`cat-int-${i}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
-                            {cat}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Subcategory Interests */}
-                  {profile.interests.subcategories && profile.interests.subcategories.length > 0 && (
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Subcategory Interests</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.subcategories.map((sub, i) => (
-                          <span key={`sub-int-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                            {sub}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Expertise & Interests - Modern Card Design */}
-            {(profile.cats?.length || profile.subs?.length) || (Array.isArray(profile.subsubs) && profile.subsubs.length > 0) ? (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Expertise & Interests */}
-                  {(profile.cats?.length || profile.subs?.length) && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Layers size={18} className="text-brand-600" />
-                        Expertise & Interests
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {(profile.cats || []).map((c) => (
-                          <span key={`cat-${c}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
-                            {c}
-                          </span>
-                        ))}
-                        {(profile.subs || []).map((s) => (
-                          <span key={`sub-${s}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Specialties */}
-                  {Array.isArray(profile.subsubs) && profile.subsubs.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Hash size={18} className="text-brand-600" />
-                        Specialties
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.subsubs.map((s3, i) => (
-                          <span key={`s3-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                            {s3}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
-
-            {/* Skills & Languages - Modern Card Design */}
-            {(Array.isArray(profile.skills) && profile.skills.length > 0) || languages.length > 0 ? (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Skills */}
-                  {Array.isArray(profile.skills) && profile.skills.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Hash size={18} className="text-brand-600" />
-                        Skills
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.skills.map((s, i) => (
-                          <span key={`${s}-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Languages */}
-                  {languages.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Languages size={18} className="text-brand-600" />
-                        {profile.accountType === "company" ? "Working Languages" : "Languages"}
-                      </h3>
-                      <div className="space-y-2">
-                        {languages.map((l, i) => (
-                          <div key={`${l.name}-${i}`} className="flex justify-between items-center">
-                            <span className="text-gray-700 text-sm">{l.name}</span>
-                            <span className="text-gray-500 text-xs">{l.level}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
-
-            {/* Overview - Modern Card Design */}
-            {(profile.stats || profile.counts || profile.connections?.count || profile.requests?.incoming?.length || profile.requests?.outgoing?.length) && (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Star size={20} className="text-brand-600" />
-                  Overview
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                  {(() => {
-                    const parts = [];
-                    const counts = profile.counts || {};
-                    const add = (label, value) => {
-                      if (typeof value === "number") {
-                        parts.push(
-                          <div key={label} className="text-center p-3 bg-gray-50 rounded-lg">
-                            <p className="font-bold text-brand-600 text-lg">{value}</p>
-                            <p className="text-gray-500 text-xs">{label}</p>
-                          </div>
-                        );
-                      }
-                    };
-                    add("Jobs", counts.jobs ?? profile.recent?.jobs?.length);
-                    add("Events", counts.events ?? profile.recent?.events?.length);
-                    add("Funding", counts.funding ?? profile.recent?.funding?.length);
-                    add("Services", counts.services ?? profile.recent?.services?.length);
-                    add("Products", counts.products ?? profile.recent?.products?.length);
-                    add("Tourism posts", counts.tourism ?? profile.recent?.tourism?.length);
-                    add("Connections", profile.connections?.count);
-                    add("Incoming requests", profile.requests?.incoming?.length);
-                    add("Outgoing requests", profile.requests?.outgoing?.length);
-                    return parts;
-                  })()}
-                </div>
-              </div>
-            )}
-
-            {/* Recent Activity - Modern Card Design */}
-            {(profile.recent?.jobs?.length || profile.recent?.events?.length) ? (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Star size={20} className="text-brand-600" />
-                  Recent Activity
-                </h2>
-                <div className="space-y-3">
-                  {(profile.recent.jobs || []).map((j) => (
-                    <div key={`job-${j.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-semibold text-sm text-gray-900">{j.title}</div>
-                        <div className="text-xs text-gray-500">{timeAgo(j.createdAt)}</div>
-                      </div>
-                      <div className="text-xs text-gray-600 mb-2">
-                        {j.companyName || "—"} • {fmtLoc(j.city, j.country)}
-                      </div>
-                      {(j.categoryName || j.subcategoryName) && (
-                        <div className="mb-2 flex gap-1 flex-wrap">
-                          {j.categoryName && <span className="bg-brand-100 text-brand-700 px-2 py-1 rounded-full text-xs">{j.categoryName}</span>}
-                          {j.subcategoryName && <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">{j.subcategoryName}</span>}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Briefcase size={14} /> Job
-                      </div>
-                    </div>
-                  ))}
-                  {(profile.recent.events || []).map((e) => (
-                    <div key={`event-${e.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-semibold text-sm text-gray-900">{e.title}</div>
-                        <div className="text-xs text-gray-500">{timeAgo(e.createdAt)}</div>
-                      </div>
-                      <div className="text-xs text-gray-600 mb-2">{fmtLoc(e.city, e.country)}</div>
-                      {(e.categoryName || e.subcategoryName) && (
-                        <div className="mb-2 flex gap-1 flex-wrap">
-                          {e.categoryName && <span className="bg-brand-100 text-brand-700 px-2 py-1 rounded-full text-xs">{e.categoryName}</span>}
-                          {e.subcategoryName && <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">{e.subcategoryName}</span>}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <CalendarDays size={14} /> Event
-                        {e.registrationType === "Paid" && typeof e.price !== "undefined" ? (
-                          <span className="ml-2">• {e.currency || ""}{e.price}</span>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
-            {/* Recent Projects - Combined Modern Card Design */}
-            {(Array.isArray(profile.recent?.funding) && profile.recent.funding.length > 0) ||
-             (Array.isArray(profile.recent?.services) && profile.recent.services.length > 0) ||
-             (Array.isArray(profile.recent?.products) && profile.recent.products.length > 0) ||
-             (Array.isArray(profile.recent?.tourism) && profile.recent.tourism.length > 0) ? (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Briefcase size={20} className="text-brand-600" />
-                  Recent Projects
-                </h2>
-                <div className="space-y-3">
-                  {/* Recent Funding */}
-                  {Array.isArray(profile.recent?.funding) && profile.recent.funding.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="font-semibold text-gray-800 mb-3 text-lg">Funding Projects</h3>
-                      <div className="space-y-3">
-                        {profile.recent.funding.map((f) => (
-                          <div key={`fund-${f.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-semibold text-sm text-gray-900">{f.title}</div>
-                              <div className="text-xs text-gray-500">{timeAgo(f.createdAt)}</div>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {typeof f.goal !== "undefined" && (<span>Goal: {f.currency || ""}{f.goal}</span>)}
-                              {typeof f.raised !== "undefined" && (<span className="ml-2">• Raised: {f.currency || ""}{f.raised}</span>)}
-                              {(f.city || f.country) ? (<span className="ml-2">• {fmtLoc(f.city, f.country)}</span>) : null}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Recent Services */}
-                  {Array.isArray(profile.recent?.services) && profile.recent.services.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="font-semibold text-gray-800 mb-3 text-lg">Services</h3>
-                      <div className="space-y-3">
-                        {profile.recent.services.map((s) => (
-                          <div key={`svc-${s.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-semibold text-sm text-gray-900">{s.title}</div>
-                              <div className="text-xs text-gray-500">{timeAgo(s.createdAt)}</div>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {s.serviceType || "Service"}{s.priceAmount ? ` • ${s.priceAmount} ${s.currency || ""}` : ""}
-                              {(s.city || s.country) ? ` • ${fmtLoc(s.city, s.country)}` : ""}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Recent Products */}
-                  {Array.isArray(profile.recent?.products) && profile.recent.products.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="font-semibold text-gray-800 mb-3 text-lg">Products</h3>
-                      <div className="space-y-3">
-                        {profile.recent.products.map((p) => (
-                          <div key={`prd-${p.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-semibold text-sm text-gray-900">{p.title}</div>
-                              <div className="text-xs text-gray-500">{timeAgo(p.createdAt)}</div>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {typeof p.price !== "undefined" ? `Price: ${p.price} ${p.currency || ""}` : "Product"}
-                              {p.country ? ` • ${p.country}` : ""}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Recent Tourism */}
-                  {Array.isArray(profile.recent?.tourism) && profile.recent.tourism.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="font-semibold text-gray-800 mb-3 text-lg">Tourism Posts</h3>
-                      <div className="space-y-3">
-                        {profile.recent.tourism.map((t) => (
-                          <div key={`tour-${t.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-semibold text-sm text-gray-900">{t.title}</div>
-                              <div className="text-xs text-gray-500">{timeAgo(t.createdAt)}</div>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {t.postType || "Destination"} • {t.location || t.country || "—"}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
-
             {/* Meetings - Modern Card Design */}
             <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <CalendarDays size={20} className="text-brand-600" />
-                Meetings
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <CalendarDays size={20} className="text-brand-600" />
+                  Meetings
+                </h2>
+                {(profile?.connectionStatus=="connected" && (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
+                  <button
+                    onClick={openMR}
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
+                  >
+                    <CalendarDays size={16} />
+                    Request Meeting
+                  </button>
+                )}
+              </div>
 
               {profile.meetings && profile.meetings.length > 0 ? (
                 <div className="space-y-3">
@@ -2092,7 +1792,16 @@ export default function PublicProfilePage() {
                   })}
                 </div>
               ) : meetings.length === 0 ? (
-                <div className="text-sm text-gray-600">No meetings yet. Create one from the button below.</div>
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-600 mb-3">No meetings yet.</p>
+                  <button
+                    onClick={openMR}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
+                  >
+                    <CalendarDays size={16} />
+                    Request Meeting
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {meetings.map((m) => {
@@ -2162,176 +1871,202 @@ export default function PublicProfilePage() {
                 </div>
               )}
             </div>
+            </>
+            )}
 
-            {/* Footer Actions - Modern Card Design */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
-              {/* Member Since */}
-              <div className="text-xs text-gray-500 mb-4">
-                Member since {new Date(profile.memberSince).toLocaleDateString()} • {timeAgo(profile.memberSince)}
+          {/* Right Sidebar */}
+          <div className="space-y-6">
+            {/* Contact Information */}
+            {(profile.email || profile.website || (Array.isArray(profile.links) && profile.links.length)) && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Contact Information</h2>
+                <div className="space-y-3">
+                  {profile.email && (
+                    <div className="flex items-center gap-3 text-gray-600 text-sm">
+                      <Mail size={16} className="text-gray-400" />
+                      <span>{profile.email}</span>
+                    </div>
+                  )}
+                  {profile.website && (
+                    <div className="flex items-center gap-3 text-gray-600 text-sm">
+                      <Globe size={16} className="text-gray-400" />
+                      <a href={profile.website} target="_blank" rel="noreferrer" className="text-brand-700 hover:text-brand-800">
+                        {profile.website}
+                      </a>
+                    </div>
+                  )}
+                  {Array.isArray(profile.links) &&
+                    profile.links.map((l, i) => (
+                      <div key={i} className="flex items-center gap-3 text-gray-600 text-sm">
+                        <ExternalLink size={16} className="text-gray-400" />
+                        <a href={l} target="_blank" rel="noreferrer" className="text-brand-700 hover:text-brand-800 truncate">
+                          {l}
+                        </a>
+                      </div>
+                    ))}
+                </div>
               </div>
+            )}
 
-              {/* Block/Report section */}
-              <div className="flex items-center gap-3 mb-4">
-                {user && <button
-                  onClick={() => (isUnblock ? handleUnblockUser() : setOpenConfirmBlock(true))}
-                  className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all
-                    ${isUnblock
-                      ? "border border-red-300 text-red-700 bg-red-50 hover:bg-red-100"
-                      : "border border-gray-300 text-gray-700 bg-white hover:border-red-300 hover:text-red-700 hover:bg-red-50"}`}
-                  aria-label={isUnblock ? "Unblock user" : "Block user"}
-                  title={isUnblock ? "Unblock user" : "Block user"}
-                >
-                  <ShieldBan size={16} />
-                  <span>{isUnblock ? "Unblock user" : "Block user"}</span>
-                </button>}
-
-                <button
-                  onClick={() => setOpenConfirmReport(true)}
-                  className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 text-gray-700 bg-white hover:border-amber-300 hover:text-amber-700 hover:bg-amber-50 transition-all"
-                  aria-label="Report user"
-                  title="Report user"
-                >
-                  <Flag size={16}/>
-                  <span>Report user</span>
-                </button>
+            {/* Languages */}
+            {languages.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">
+                  {profile.accountType === "company" ? "Working Languages" : "Languages"}
+                </h2>
+                <div className="space-y-3">
+                  {languages.map((l, i) => (
+                    <div key={`${l.name}-${i}`} className="flex justify-between items-center">
+                      <span className="text-gray-700 text-sm">{l.name}</span>
+                      <span className="text-gray-500 text-xs">{l.level}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
+            )}
 
-              {/* Action Buttons */}
-              <div className={`grid grid-cols-2 md:grid-cols-4 gap-3 ${isUnblock ? 'hidden':''}`}>
-                {/* Share Menu */}
-                {shareOpen && <ShareMenu profile={profile} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
-
-                {/* Share */}
-                <button
-                  ref={shareButtonRef}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShareOpen((s) => !s);
-                  }}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
-                >
-                  <Share2 size={16} />
-                  <span>Share</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      data._showPopUp("login_prompt");
-                      return;
-                    }
-                    navigate(`/profile/${userId}`);
-                  }}
-                  className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
-                >
-                  View Full Profile
-                </button>
-
-                {renderConnectButton()}
-
-                {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
-                  <button
-                    onClick={openMR}
-                    className="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium border border-brand-200 bg-white text-brand-700 hover:border-brand-500 hover:text-brand-700 transition-colors"
-                  >
-                    <CalendarDays size={16} className="mr-2" />
-                    Request Meeting
-                  </button>
-                )}
-
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      data._showPopUp("login_prompt");
-                      return;
-                    }
-                    navigate(`/messages?userId=${userId}`);
-                    toast.success("Starting conversation with " + profile.name);
-                  }}
-                  className="rounded-lg px-4 py-2 text-sm font-medium border border-gray-300 bg-white text-gray-700 hover:border-brand-500 hover:text-brand-600 transition-colors"
-                >
-                  Message
-                </button>
+            {/* Skills */}
+            {Array.isArray(profile.skills) && profile.skills.length > 0 && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Skills</h2>
+                <div className="flex flex-wrap gap-2">
+                  {profile.skills.map((s, i) => (
+                    <span key={`${s}-${i}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
+                      {s}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            )}
+
+            {/* Recent Activity */}
+            {(profile.recent?.jobs?.length || profile.recent?.events?.length) && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h2>
+                <div className="space-y-4">
+                  {(profile.recent.jobs || []).slice(0, 3).map((j) => (
+                    <div key={`job-${j.id}`}>
+                      <p className="text-sm text-gray-600">
+                        Posted a <span className="text-brand-600 font-medium">job opportunity</span>
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{timeAgo(j.createdAt)}</p>
+                    </div>
+                  ))}
+                  {(profile.recent.events || []).slice(0, 3).map((e) => (
+                    <div key={`event-${e.id}`}>
+                      <p className="text-sm text-gray-600">
+                        Created an <span className="text-brand-600 font-medium">event</span>
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">{timeAgo(e.createdAt)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Overview Stats */}
+            {profile.stats && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Overview</h2>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  {(() => {
+                    const counts = profile.counts || {};
+                    const stats = [
+                      { label: "Jobs", value: counts.jobs ?? profile.recent?.jobs?.length },
+                      { label: "Events", value: counts.events ?? profile.recent?.events?.length },
+                      { label: "Services", value: counts.services ?? profile.recent?.services?.length },
+                      { label: "Products", value: counts.products ?? profile.recent?.products?.length },
+                    ].filter(stat => stat.value > 0);
+
+                    return stats.map((stat) => (
+                      <div key={stat.label} className="text-center p-3 bg-gray-50 rounded-lg">
+                        <p className="font-bold text-brand-600 text-lg">{stat.value}</p>
+                        <p className="text-gray-500 text-xs">{stat.label}</p>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Modals */}
+        <ConnectionRequestModal
+          open={crOpen}
+          onClose={() => setCrOpen(false)}
+          toUserId={userId}
+          toName={profile?.name}
+          onSent={() => {
+            setProfile({ ...profile, connectionStatus: "outgoing_pending" });
+          }}
+        />
+
+        <MeetingRequestModal
+          open={mrOpen}
+          onClose={() => setMrOpen(false)}
+          toUserId={userId}
+          toName={profile?.name}
+          onCreated={(m) => {
+            upsertMeetingList(m); // add to local list for immediate render
+          }}
+        />
+
+        <ConfirmDialog
+          open={openConfirmRemoveConnection}
+          onClose={() => setOpenConfirmRemoveConnection(false)}
+          title="Remove this connection?"
+          text="This action will remove the connection. You can send a new request later."
+          confirmText="Remove"
+          cancelText="Cancel"
+          tone="danger"
+          withInput={true}
+          inputLabel="Optional reason"
+          inputPlaceholder="Why are you removing this connection?"
+          inputType="textarea"
+          requireValue={false}
+          onConfirm={handleRemoveConnection}
+          onResult={(r) => {
+           toast.success("Connection removed");
+          }}
+        />
+
+        {/* Block dialog */}
+        <ConfirmDialog
+          open={openConfirmBlock}
+          onClose={() => setOpenConfirmBlock(false)}
+          title="Block this user?"
+          text="They won't be able to message or connect with you. Any connection and pending requests will be removed."
+          confirmText="Block"
+          cancelText="Cancel"
+          tone="danger"
+          withInput={true}
+          inputLabel="Optional note"
+          inputPlaceholder="Why are you blocking this user?"
+          inputType="textarea"
+          requireValue={false}
+          onConfirm={handleBlockUser}
+        />
+
+        {/* Report dialog */}
+        <ConfirmDialog
+          open={openConfirmReport}
+          onClose={() => setOpenConfirmReport(false)}
+          title="Report this user?"
+          text="Tell us what's going on. Our team will review."
+          confirmText="Submit report"
+          cancelText="Cancel"
+          tone="default"
+          withInput={true}
+          inputLabel="Report details"
+          inputPlaceholder="Describe the issue (spam, harassment, impersonation, etc.)"
+          inputType="textarea"
+          requireValue={true}
+          onConfirm={handleReportUser}
+        />
       </div>
-
-      {/* Modais */}
-      <ConnectionRequestModal
-        open={crOpen}
-        onClose={() => setCrOpen(false)}
-        toUserId={userId}
-        toName={profile?.name}
-        onSent={() => {
-          setProfile({ ...profile, connectionStatus: "outgoing_pending" });
-        }}
-      />
-
-      <MeetingRequestModal
-        open={mrOpen}
-        onClose={() => setMrOpen(false)}
-        toUserId={userId}
-        toName={profile?.name}
-        onCreated={(m) => {
-          upsertMeetingList(m); // add to local list for immediate render
-        }}
-      />
-
-      <ConfirmDialog
-        open={openConfirmRemoveConnection}
-        onClose={() => setOpenConfirmRemoveConnection(false)}
-        title="Remove this connection?"
-        text="This action will remove the connection. You can send a new request later."
-        confirmText="Remove"
-        cancelText="Cancel"
-        tone="danger"
-        withInput={true}
-        inputLabel="Optional reason"
-        inputPlaceholder="Why are you removing this connection?"
-        inputType="textarea"
-        requireValue={false}
-        onConfirm={handleRemoveConnection}
-        onResult={(r) => {
-         toast.success("Connection removed");
-        }}
-      />
-
-      {/* Block dialog */}
-      <ConfirmDialog
-        open={openConfirmBlock}
-        onClose={() => setOpenConfirmBlock(false)}
-        title="Block this user?"
-        text="They won't be able to message or connect with you. Any connection and pending requests will be removed."
-        confirmText="Block"
-        cancelText="Cancel"
-        tone="danger"
-        withInput={true}
-        inputLabel="Optional note"
-        inputPlaceholder="Why are you blocking this user?"
-        inputType="textarea"
-        requireValue={false}
-        onConfirm={handleBlockUser}
-      />
-
-      {/* Report dialog */}
-      <ConfirmDialog
-        open={openConfirmReport}
-        onClose={() => setOpenConfirmReport(false)}
-        title="Report this user?"
-        text="Tell us what's going on. Our team will review."
-        confirmText="Submit report"
-        cancelText="Cancel"
-        tone="default"
-        withInput={true}
-        inputLabel="Report details"
-        inputPlaceholder="Describe the issue (spam, harassment, impersonation, etc.)"
-        inputType="textarea"
-        requireValue={true}
-        onConfirm={handleReportUser}
-      />
-    </div>
+      </div>
+      </div>
      </DefaultLayout>
   );
 }

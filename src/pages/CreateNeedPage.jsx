@@ -1,5 +1,5 @@
 // src/pages/CreateNeedPage.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import client, { API_URL } from "../api/client";
 import COUNTRIES from "../constants/countries";
@@ -403,7 +403,7 @@ function SearchableSelect({
 }
 
 /* -------------- Page -------------- */
-export default function CreateNeedPage() {
+export default function CreateNeedPage({ triggerImageSelection = false, type, hideHeader = false }) {
   const navigate = useNavigate();
   const { id, type: urlType } = useParams(); // Extract id and type from URL
   const isEditMode = Boolean(id);
@@ -446,6 +446,7 @@ export default function CreateNeedPage() {
   // Attachments: [{ name, base64url }]
   const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
+  const imagePickerRef = useRef(null);
 
   // Temporary debug
 {console.log('Attachments:', attachments)}
@@ -609,13 +610,33 @@ export default function CreateNeedPage() {
     })();
   }, [id, navigate]);
 
-  // Set currentType based on URL type when creating
+  // Set currentType based on prop type or URL type when creating
   useEffect(() => {
-    if (urlType && !isEditMode) {
-      setCurrentType(urlType);
-      setField("relatedEntityType", urlType);
+    if (!isEditMode) {
+      // Prioritize the type prop from PostComposer, fallback to URL type
+      const effectiveType = type || urlType;
+      if (effectiveType) {
+        setCurrentType(effectiveType);
+        setField("relatedEntityType", effectiveType);
+      }
     }
-  }, [urlType, isEditMode]);
+  }, [type, urlType, isEditMode]);
+
+  // Expose pick method to parent components
+  useImperativeHandle(imagePickerRef, () => ({
+    pick: () => fileInputRef.current?.click()
+  }));
+
+  // Trigger image selection when component mounts with triggerImageSelection
+  useEffect(() => {
+    if (triggerImageSelection && imagePickerRef.current) {
+      // Small delay to ensure the component is fully rendered
+      const timer = setTimeout(() => {
+        imagePickerRef.current?.pick();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [triggerImageSelection]);
 
   // Clear general category selections when relatedEntityType is "information", "other", "job", or "partnership"
   useEffect(() => {
@@ -821,8 +842,8 @@ export default function CreateNeedPage() {
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
-      <Header page={"needs"} />
-      <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
+      {!hideHeader && <Header page={"needs"} />}
+      <main className={`mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'}`}>
         <div>
         
         <button

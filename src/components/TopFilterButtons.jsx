@@ -38,12 +38,31 @@ export default function TopFilterButtons({buttons=[], selected=[], setSelected, 
   }, [moreOpen])
 
   // Maximum number of buttons to show before "More"
-  const maxVisibleButtons = 3
+  const maxVisibleButtons = 0
   const primaryButtons = buttons.slice(0, maxVisibleButtons)
   const moreButtons = buttons.slice(maxVisibleButtons)
 
   // Check if any moreButtons are selected
   const hasSelectedMoreButton = moreButtons.some(button => selected.includes(button))
+
+  // Get button text based on selection
+  const getButtonText = () => {
+    if (selected.length === 0) {
+      return 'All Categories'
+    } else if (selected.length === 1) {
+      const selectedButton = buttons.find(button => selected.includes(button))
+      return buttonLabels[selectedButton] || selectedButton
+    } else {
+      return `${selected.length} Selected`
+    }
+  }
+
+  // Handle clear all selections
+  const handleClearSelection = (e) => {
+    e.stopPropagation() // Prevent opening dropdown when clicking close icon
+    setSelected([])
+    data.setUpdateData(Math.random())
+  }
 
   const handleButtonClick = (buttonValue) => {
     if(selected.includes(buttonValue)){
@@ -68,16 +87,13 @@ export default function TopFilterButtons({buttons=[], selected=[], setSelected, 
     <div className="relative w-full ">
       <div className="flex gap-2 sticky top-10 w-full rounded-sm whitespace-nowrap py-2 overflow-x-auto">
         {loading ? (
-          // Skeleton buttons
-          Array.from({ length: 5 }, (_, _i) => (
-            <div
-              key={`skeleton-${_i}`}
-              className="px-5 rounded-full py-1.5 mb-1 bg-gray-200 animate-pulse flex items-center justify-center gap-2 flex-shrink-0"
-              style={{ width: '120px', height: '28px' }} // Approximate button size
-            >
-              <div className="bg-gray-300 rounded w-3/4 h-3"></div>
-            </div>
-          ))
+          // Skeleton button
+          <div
+            className="px-5 rounded-full py-1.5 mb-1 bg-gray-200 animate-pulse flex items-center justify-center gap-2 flex-shrink-0"
+            style={{ width: '120px', height: '28px' }} // Approximate button size
+          >
+            <div className="bg-gray-300 rounded w-3/4 h-3"></div>
+          </div>
         ) : (
           primaryButtons.map((i,_i)=>(
             <button
@@ -97,7 +113,18 @@ export default function TopFilterButtons({buttons=[], selected=[], setSelected, 
               onClick={() => setMoreOpen(!moreOpen)}
               className={`px-5 rounded-full py-1.5 text-sm font-medium ${moreOpen || hasSelectedMoreButton ? 'text-brand-600 font-bold shadow-md active:bg-brand-800 bg-brand-50':'text-gray-700 hover:border-brand-300'} border border-gray-200 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md`}
             >
-              <span>More</span>
+              <span>{getButtonText()}</span>
+              {selected.length > 0 && (
+                <button
+                  onClick={handleClearSelection}
+                  className="ml-1 hover:bg-gray-200 rounded-full p-0.5 transition-colors"
+                  title="Clear selection"
+                >
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
               <svg className={`h-4 w-4 transition-transform ${moreOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M6 9l6 6 6-6" />
               </svg>

@@ -24,6 +24,7 @@ import PageTabs from "../components/PageTabs";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import TopFilterButtons from "../components/TopFilterButtons";
 import { useAuth } from "../contexts/AuthContext";
+import PostComposer from "../components/PostComposer";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -284,7 +285,7 @@ export default function EventsPage() {
           goalId: goalId || undefined,
           role:role || undefined,
           industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
-          limit: 10,
+          limit: 40,
         };
         const { data } = await client.get("/feed/suggestions", { params });
         setMatches(data.matches || []);
@@ -502,12 +503,21 @@ export default function EventsPage() {
             
             <FiltersCard
               selectedFilters={selectedFilters}
+              catComponent={ <TopFilterButtons
+              selected={selectedFilters}
+              setSelected={setSelectedFilters}
+              buttons={filterOptions}
+              buttonLabels={categoryIdToNameMap}
+              from={from}
+            loading={loadingFeed}
+            />}
               setSelectedFilters={setSelectedFilters}
               generalTree={generalTree}
               {...filtersProps}
               from={"events"}
             />
-                      </div>
+          </div>
+         
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil,onClick: () => navigate("/profile") },
             { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
@@ -524,23 +534,14 @@ export default function EventsPage() {
       <div className="lg:col-span-3 flex items-center flex-wrap w-full justify-between">
 
         <div className="w-[80%]">
-            <TopFilterButtons
-              selected={selectedFilters}
-              setSelected={setSelectedFilters}
-              buttons={filterOptions}
-              buttonLabels={categoryIdToNameMap}
-              from={from}
-            loading={loadingFeed}
-            />
+           
           </div>
           <div className="">
-            <TabsAndAdd
-            tabs={[]}
-            items={[
-                  { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
-                  { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
-                  { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
-              ]}
+           <PostComposer from={'event'} typeOfPosts={[
+                  { label: "Create Event", Icon: PlusCircle,hide:user?.accountType=="individual",type:'main'},
+                  { label: "Share Event Experience", Icon: PlusCircle,hide:user?.accountType=="company" },
+                  { label: "Ask About an Event", Icon: PlusCircle,hide:user?.accountType=="company" },
+            ]}
             activeTab={activeTab} setActiveTab={setActiveTab} />
           </div>
       </div>

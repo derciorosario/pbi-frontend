@@ -522,25 +522,9 @@ export default function JobCard({
             )}
           </div>
 
-        </div>
-
-        {/* IMAGE (if exists and not in text mode) */}
-        {settings?.contentType !== "text" && imageUrl && (
-          <div className="relative">
-            <img
-              src={imageUrl}
-              alt={job?.title}
-              className="w-full max-h-96 object-cover cursor-pointer"
-              onClick={() => setJobDetailsOpen(true)}
-            />
-          </div>
-        )}
-
-        {/* Tags */}
-        <div className="flex justify-between px-4 pt-3 pb-3">
-           {allTags.length > 0 && (
-          <div className=" flex-1">
-            <div className="flex flex-wrap gap-1.5 flex-1">
+          {/* Tags */}
+          {allTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {allTags.slice(0, 3).map((tag, idx) => (
                 <span
                   key={idx}
@@ -569,15 +553,11 @@ export default function JobCard({
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        )}
 
-         {/* Match Percentage Badge */}
-           <div>
-               {matchPercentage > 0 && (
-                <div
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+              {/* Match Percentage Badge */}
+              {matchPercentage > 0 && (
+                <span
+                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ml-auto ${
                     matchPercentage >= 80
                       ? "bg-green-100 text-green-700 border border-green-200"
                       : matchPercentage >= 60
@@ -586,44 +566,54 @@ export default function JobCard({
                   }`}
                 >
                   {matchPercentage}% match
-                </div>
+                </span>
               )}
-           </div>
-              
+            </div>
+          )}
         </div>
 
-        {/* ENGAGEMENT BAR - Like/Comment counts */}
-        {(likeCount > 0 || commentCount > 0) && (
-          <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
-            <div className="flex items-center gap-1">
-              {likeCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <div className="flex -space-x-1">
-                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-                      <Heart size={10} className="text-white fill-white" />
-                    </div>
-                  </div>
-                  <span>
-                    {likeCount}
-                  </span>
-                </div>
-              )}
-            </div>
-
-             <div className="flex items-center gap-3">
-              {commentCount > 0 && (
-                <button
-                  onClick={() => setCommentsDialogOpen(true)}
-                  className="hover:underline"
-                >
-                  {commentCount} comment{commentCount !== 1 ? "s" : ""}
-                </button>
-              )}
-
-            </div>
-
+        {/* IMAGE (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && imageUrl && (
+          <div className="relative">
+            <img
+              src={imageUrl}
+              alt={job?.title}
+              className="w-full max-h-96 object-cover cursor-pointer"
+              onClick={() => setJobDetailsOpen(true)}
+            />
           </div>
         )}
+
+        {/* ENGAGEMENT BAR - Like/Comment counts */}
+        <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+          <div className="flex items-center gap-1">
+            {likeCount > 0 && (
+              <div className="flex items-center gap-1">
+                <div className="flex -space-x-1">
+                  <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                    <Heart size={10} className="text-white fill-white" />
+                  </div>
+                </div>
+                <span>
+                  {likeCount}
+                </span>
+              </div>
+            )}
+          </div>
+
+           <div className="flex items-center gap-3">
+            {commentCount > 0 && (
+              <button
+                onClick={() => setCommentsDialogOpen(true)}
+                className="hover:underline"
+              >
+                {commentCount} comment{commentCount !== 1 ? "s" : ""}
+              </button>
+            )}
+          
+          </div>
+       
+        </div>
 
         {/* ACTION BUTTONS */}
         <div className="px-2 py-1 border-t border-gray-100 grid grid-cols-4 gap-1">

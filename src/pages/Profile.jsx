@@ -78,6 +78,7 @@ export default function ProfilePage() {
 
   // Handle URL parameters for highlighting specific applications/registrations
   useEffect(() => {
+
     const urlParams = new URLSearchParams(location.search);
     const jobApplicationId = urlParams.get('jobApplication');
     const eventRegistrationId = urlParams.get('eventRegistration');
@@ -124,10 +125,12 @@ export default function ProfilePage() {
             }
             setLoading(false);
           }, 500);
+
         }).catch((error) => {
-          console.error('Failed to load job applications:', error);
-          toast.error('Failed to load job applications');
-          setLoading(false);
+            console.error('Failed to load job applications:', error);
+            toast.error('Failed to load job applications');
+            setLoading(false);
+
         });
       }
     } else if (eventRegistrationId && me?.user?.id) {

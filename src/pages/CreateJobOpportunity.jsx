@@ -1,5 +1,5 @@
 // src/pages/CreateJobOpportunity.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 import client,{API_URL} from "../api/client";
@@ -878,7 +878,7 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
 }
 
 /* ---------- main page ---------- */
-export default function CreateJobOpportunity() {
+export default function CreateJobOpportunity({ triggerImageSelection = false, hideHeader = false }) {
   const navigate = useNavigate();
   const { id } = useParams(); // Get job ID from URL if editing
   const [isLoading, setIsLoading] = useState(false);
@@ -886,6 +886,7 @@ export default function CreateJobOpportunity() {
   const { user } = useAuth();
   const [coverImage, setCoverImage] = useState(null);
   const [coverImageFilename, setCoverImageFilename] = useState(null);
+  const imagePickerRef = useRef(null);
 
   // Form validation errors
   const [errors, setErrors] = useState({
@@ -1144,6 +1145,17 @@ export default function CreateJobOpportunity() {
       }
     })();
   }, []);
+
+  // Trigger image selection when component mounts with triggerImageSelection
+  useEffect(() => {
+    if (triggerImageSelection && imagePickerRef.current) {
+      // Small delay to ensure the component is fully rendered
+      const timer = setTimeout(() => {
+        imagePickerRef.current?.pick();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [triggerImageSelection]);
 
 
     function addSkill() {
@@ -1407,8 +1419,8 @@ export default function CreateJobOpportunity() {
  
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <Header page={"jobs"} />
-      <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
+      {!hideHeader && <Header page={"jobs"} />}
+      <main className={`mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'}`}>
         <div className="mb-5 cursor-pointer">
           <a onClick={() => navigate("/jobs")} className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
             <I.back /> Back to Jobs
@@ -1807,6 +1819,7 @@ export default function CreateJobOpportunity() {
               Optional hero image for the job (shown at the top of the posting).
             </p>
             <CoverImagePicker
+              ref={imagePickerRef}
               label="Upload a cover image (optional)"
               value={coverImage}
               preview={typeof coverImage === 'string' ? coverImage : null}

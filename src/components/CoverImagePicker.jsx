@@ -1,19 +1,24 @@
 // src/components/CoverImagePicker.jsx
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useImperativeHandle, forwardRef } from "react";
 
-export default function CoverImagePicker({
+const CoverImagePicker = forwardRef(function CoverImagePicker({
   label = "Cover Image (optional)",
   value,                  // filename or null
   onChange,               // (filenameOrNull) => void
   accept = "image/png, image/jpeg, image/jpg",
   maxSizeMB = 5,
   preview = null,         // URL for preview (if already uploaded)
-}) {
+}, ref) {
   const fileRef = useRef(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(preview);
 
   const pick = () => fileRef.current?.click();
+
+  // Expose pick method to parent components
+  useImperativeHandle(ref, () => ({
+    pick
+  }));
 
   const onFile = (e) => {
     const f = e.target.files?.[0];
@@ -113,4 +118,6 @@ export default function CoverImagePicker({
       </div>
     </div>
   );
-}
+});
+
+export default CoverImagePicker;
