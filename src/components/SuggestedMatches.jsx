@@ -10,11 +10,45 @@ import { toast } from "../lib/toast";
 function avatarSrc(item, idx = 0) {
   if (item?.avatarUrl) return item.avatarUrl;
   if (item?.avatar) return item.avatar;
-  if (item?.email)
-    return `https://i.pravatar.cc/100?u=${encodeURIComponent(item.email)}`;
-  if (item?.name)
-    return `https://i.pravatar.cc/100?u=${encodeURIComponent(item.name)}`;
-  return `https://i.pravatar.cc/100?img=${30 + idx}`;
+}
+
+function getInitials(name) {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join("");
+}
+
+function Avatar({ item, idx = 0, size = "md", className = "" }) {
+  const src = avatarSrc(item, idx);
+  const initials = getInitials(item?.name);
+
+  // If we have a valid avatar source, show the image
+  if (src) {
+    return (
+      <img
+        alt=""
+        className={`${size === "sm" ? "h-9 w-9" : "h-10 w-10"} rounded-full object-cover flex-shrink-0 ${className}`}
+        src={src}
+      />
+    );
+  }
+
+  // Otherwise, show initials with consistent brand colors like PeopleCards.jsx
+  return (
+    <div
+      className={`${size === "sm" ? "h-9 w-9" : "h-10 w-10"} rounded-full flex-shrink-0 flex items-center justify-center font-semibold ${className}`}
+      style={{
+        backgroundColor: "#f3f4f6", // bg-gray-100
+        color: "#374151" // text-gray-700
+      }}
+      title={item?.name || "Unknown"}
+    >
+      {initials}
+    </div>
+  );
 }
 
 // Clamp & clean match percentage to 0–100; return null if invalid
@@ -169,6 +203,8 @@ export default function SuggestedMatches({
     );
   };
 
+
+ 
   return (
     <>
       <div className="space-y-4">
@@ -204,11 +240,7 @@ export default function SuggestedMatches({
 
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3 min-w-0">
-                          <img
-                            alt=""
-                            className="h-10 w-10 rounded-full object-cover flex-shrink-0"
-                            src={avatarSrc(s, idx)}
-                          />
+                          <Avatar item={s} idx={idx} size="md" />
                           <div className="min-w-0">
                             <div
                               className="font-medium truncate max-w-[160px]"
@@ -243,8 +275,7 @@ export default function SuggestedMatches({
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => {
-                              setOpenId(s.id);
-                              data._showPopUp("profile");
+                              navigate('/profile/'+s.id)
                             }}
                             className="grid absolute top-2 right-2 _profile shrink-0 place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600"
                             title="View profile"
@@ -344,11 +375,7 @@ export default function SuggestedMatches({
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 min-w-0">
-                          <img
-                            alt=""
-                            className="h-9 w-9 rounded-full object-cover flex-shrink-0"
-                            src={avatarSrc(p, idx)}
-                          />
+                          <Avatar item={p} idx={idx} size="sm" />
                           <div className="min-w-0">
                             <div
                               className="text-sm font-medium truncate max-w-[160px]"
