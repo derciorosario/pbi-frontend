@@ -24,6 +24,7 @@ import PageTabs from "../components/PageTabs";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import TopFilterButtons from "../components/TopFilterButtons";
 import { useAuth } from "../contexts/AuthContext";
+import PostComposer from "../components/PostComposer";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -503,6 +504,15 @@ export default function TourismPage() {
               generalTree={generalTree}
               {...filtersProps}
               from={"tourism"}
+              
+              catComponent={ <TopFilterButtons
+              selected={selectedFilters}
+              setSelected={setSelectedFilters}
+              buttons={filterOptions}
+              buttonLabels={categoryIdToNameMap}
+              from={from}
+              loading={loadingFeed}
+            />}
             />
           </div>
           <QuickActions title="Quick Actions" items={[
@@ -517,39 +527,23 @@ export default function TourismPage() {
 
         <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
 
-          <div className="lg:col-span-3 flex items-center flex-wrap w-full justify-between">
-
-            <div className="w-[80%]">
-                <TopFilterButtons
-                  loading={loadingFeed}
-                  selected={selectedFilters}
-                  setSelected={setSelectedFilters}
-                  buttons={filterOptions}
-                  buttonLabels={categoryIdToNameMap}
-                  from={from}
-                />
-              </div>
-              <div className="">
-                <TabsAndAdd
-                  tabs={[]}
-                  items={[
-                    { label: "Share Tourism Experience", Icon: PlusCircle, onClick: () => navigate('/experiences/create'),hide:user?.accountType=="company" },
-                    { label: "Ask About Tourism", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create"),hide:user?.accountType=="company" },
-                  ]}
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                />
-              </div>
+          <div className="lg:col-span-2">
+            <div className="flex items-center flex-wrap w-full justify-between mb-4">
+              <PostComposer
+                from={'tourism'}
+                typeOfPosts={[
+                  { label: "Share Tourism Experience", Icon: PlusCircle,hide:user?.accountType=="company" },
+                  { label: "Ask About Tourism", Icon: PlusCircle,hide:user?.accountType=="company" },
+                ]}
+              />
+            </div>
+            <section className="space-y-4 overflow-hidden">
+              {renderMiddle()}
+            </section>
           </div>
-
-          <section className="lg:col-span-2 space-y-4  overflow-hidden">
-            {renderMiddle()}
-          </section>
-
           <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
             <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
           </aside>
-
         </div>
       </main>
 

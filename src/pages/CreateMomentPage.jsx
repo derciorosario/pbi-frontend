@@ -165,11 +165,11 @@ function ReadOnlyMomentView({ form, tags, images, audSel, audTree }) {
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-2">
+       {!hideHeader && <div className="flex justify-end gap-3 pt-2">
           <button type="button" className={styles.ghost} onClick={() => window.history.back()}>
             Back
           </button>
-        </div>
+        </div>}
       </div>
     </div>
   );
@@ -361,7 +361,7 @@ function SearchableSelect({
 }
 
 /* ------------------------- Page ------------------------- */
-export default function CreateMomentPage({ triggerImageSelection = false, type, hideHeader = false }) {
+export default function CreateMomentPage({ triggerImageSelection = false, type, hideHeader = false, onSuccess }) {
   const navigate = useNavigate();
   const { id, type: urlType } = useParams(); // Extract id and type from URL
   const isEditMode = Boolean(id);
@@ -635,7 +635,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
       } catch (err) {
         console.error(err);
         toast.error("Failed to load experience");
-        navigate("/experiences");
+        navigate("/feed");
       }
     })();
   }, [isEditMode, id, navigate]);
@@ -837,10 +837,14 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
       } else {
         await client.post("/moments", payload);
         toast.success("Experience published!");
-        if (window.history.state && window.history.state.idx > 0) {
-                navigate(-1);   // go back if possible
-              } else {
-                navigate("/");  // fallback if no history
+        if (hideHeader && onSuccess) {
+          onSuccess();
+        } else {
+          if (window.history.state && window.history.state.idx > 0) {
+            navigate(-1);   // go back if possible
+          } else {
+            navigate("/");  // fallback if no history
+          }
         }
       }
     } catch (error) {
@@ -863,7 +867,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
       {/* ===== Content ===== */}
       <main className={`mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'}`}>
         <div>
-          <button
+          {!hideHeader && <button
             onClick={() => {
               if (window.history.state && window.history.state.idx > 0) {
                 navigate(-1);   // go back if possible
@@ -875,7 +879,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
             type="button"
           >
             ←  {window.history.state && window.history.state.idx > 0 ? 'Back':'Feed'}
-          </button>
+          </button>}
 
   
           {!isEditMode && (
@@ -901,7 +905,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
               className="mt-6 rounded-2xl bg-white border border-gray-100 p-6 shadow-sm space-y-8"
             >
           {/* Related Entity (Required) - Moved to first position */}
-          <section className="hidden">
+          {hideHeader && <section>
             <h2 className="font-semibold">What is this experience about? *</h2>
             <div className="mt-2 grid sm:grid-cols-2 gap-4">
               <select
@@ -920,7 +924,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
               </select>
 
             </div>
-          </section>
+          </section>}
 
 
           {/* Type */}
@@ -1316,9 +1320,11 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
 
           {/* Actions */}
           <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => navigate("/experiences")} className={styles.ghost}>
-              Cancel
-            </button>
+            {!hideHeader && (
+              <button type="button" onClick={() => navigate("/feed")} className={styles.ghost}>
+                Cancel
+              </button>
+            )}
             <button type="submit" className={styles.primaryWide} disabled={saving}>
               {saving ? "Saving…" : isEditMode ? "Update Experience" : "Publish Experience"}
             </button>

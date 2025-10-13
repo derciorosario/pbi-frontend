@@ -287,7 +287,7 @@ function ReadOnlyServiceView({ form, audSel, audTree, media }) {
 }
 
 /* -------------- Page -------------- */
-export default function CreateServicePage() {
+export default function CreateServicePage({ triggerImageSelection = false, hideHeader = false, onSuccess }) {
   const navigate = useNavigate();
   const { id } = useParams(); // optional edit mode (services/:id)
   const isEditMode = Boolean(id);
@@ -330,6 +330,17 @@ export default function CreateServicePage() {
   // Attachments: [{ name, base64url }]
   const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
+
+  // Trigger image selection when component mounts with triggerImageSelection
+  useEffect(() => {
+    if (triggerImageSelection && fileInputRef.current) {
+      // Small delay to ensure the component is fully rendered
+      const timer = setTimeout(() => {
+        fileInputRef.current?.click();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [triggerImageSelection]);
 
   // Media extracted for read-only view
   const [media, setMedia] = useState({ coverImageUrl: null, images: [], docs: [] });
@@ -858,8 +869,11 @@ export default function CreateServicePage() {
       } else {
         await client.post("/services", payload);
         toast.success("Service published!");
-        
-         navigate("/services");
+        if (hideHeader && onSuccess) {
+          onSuccess();
+        } else {
+          navigate("/services");
+        }
       }
 
     } catch (error) {
@@ -882,15 +896,17 @@ export default function CreateServicePage() {
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
-      <Header page={"services"} />
-      <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
-        <button
-          onClick={() => navigate("/services")}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
-          type="button"
-        >
-          ← Back to services
-        </button>
+      {!hideHeader && <Header page={"services"} />}
+      <main className={`mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'}`}>
+        {!hideHeader && (
+          <button
+            onClick={() => navigate("/services")}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
+            type="button"
+          >
+            ← Back to services
+          </button>
+        )}
 
        {user && <>
         <h1 className="text-2xl font-bold mt-3">
@@ -1317,13 +1333,15 @@ export default function CreateServicePage() {
 
             {/* Actions */}
             <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                className={styles.ghost}
-                onClick={() => navigate("/services")}
-              >
-                Cancel
-              </button>
+              {!hideHeader && (
+                <button
+                  type="button"
+                  className={styles.ghost}
+                  onClick={() => navigate("/services")}
+                >
+                  Cancel
+                </button>
+              )}
               <button type="submit" className={styles.primary} disabled={saving}>
                 {saving ? "Saving…" : isEditMode ? "Update Service" : "Publish Service"}
               </button>

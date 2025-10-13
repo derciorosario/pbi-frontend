@@ -215,11 +215,11 @@ function ReadOnlyNeedView({ form, attachments, audSel, audTree }) {
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-2">
+       {!hideHeader && <div className="flex justify-end gap-3 pt-2">
           <button type="button" className={styles.ghost} onClick={() => window.history.back()}>
             Back
           </button>
-        </div>
+        </div>}
       </div>
     </div>
   );
@@ -403,7 +403,7 @@ function SearchableSelect({
 }
 
 /* -------------- Page -------------- */
-export default function CreateNeedPage({ triggerImageSelection = false, type, hideHeader = false }) {
+export default function CreateNeedPage({ triggerImageSelection = false, type, hideHeader = false, onSuccess }) {
   const navigate = useNavigate();
   const { id, type: urlType } = useParams(); // Extract id and type from URL
   const isEditMode = Boolean(id);
@@ -603,7 +603,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
       } catch (e) {
         console.error(e);
         toast.error("Failed to load need data");
-        navigate("/needs");
+        navigate("/feed");
       } finally {
         setLoading(false);
       }
@@ -824,10 +824,14 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
       } else {
         await client.post("/needs", payload);
         toast.success("Need posted successfully!");
-        if (window.history.state && window.history.state.idx > 0) {
-                navigate(-1);   // go back if possible
-              } else {
-                navigate("/");  // fallback if no history
+        if (hideHeader && onSuccess) {
+          onSuccess();
+        } else {
+          if (window.history.state && window.history.state.idx > 0) {
+            navigate(-1);   // go back if possible
+          } else {
+            navigate("/");  // fallback if no history
+          }
         }
       }
     } catch (error) {
@@ -846,7 +850,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
       <main className={`mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'}`}>
         <div>
         
-        <button
+        {!hideHeader && <button
           onClick={() => {
             if (window.history.state && window.history.state.idx > 0) {
               navigate(-1);   // go back if possible
@@ -858,7 +862,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
           type="button"
         >
           ← {window.history.state && window.history.state.idx > 0 ? 'Back':'Feed'} 
-        </button>
+        </button>}
 
 
           {!isEditMode && (
@@ -1233,13 +1237,15 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
 
           {/* Actions */}
           <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              className={styles.ghost}
-              onClick={() => navigate("/needs")}
-            >
-              Cancel
-            </button>
+            {!hideHeader && (
+              <button
+                type="button"
+                className={styles.ghost}
+                onClick={() => navigate("/feed")}
+              >
+                Cancel
+              </button>
+            )}
             <button type="submit" className={styles.primary} disabled={saving}>
               {saving ? "Saving…" : isEditMode ? "Update Need" : "Post Need"}
             </button>

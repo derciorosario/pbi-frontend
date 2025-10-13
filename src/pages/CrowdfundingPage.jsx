@@ -4,6 +4,7 @@ import client from "../api/client";
 import Header from "../components/Header";
 import MobileFiltersButton from "../components/MobileFiltersButton";
 import TabsAndAdd from "../components/TabsAndAdd";
+import PostComposer from "../components/PostComposer";
 import MobileFiltersBottomSheet from "../components/MobileFiltersBottomSheet";
 import ProfileCard from "../components/ProfileCard";
 import QuickActions from "../components/QuickActions";
@@ -514,40 +515,21 @@ export default function CrowdfundingPage() {
 
         <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
 
-          <div className="lg:col-span-3 flex items-center flex-wrap w-full justify-between">
-
-            <div className="w-[80%]">
-                <TopFilterButtons
-                  selected={selectedFilters}
-                  setSelected={setSelectedFilters}
-                  buttons={filterOptions}
-                  buttonLabels={categoryIdToNameMap}
-                  from={from}
-                  loading={loadingFeed}
-                />
-              </div>
-              <div className="">
-                <TabsAndAdd
-                  tabs={[]}
-                  items={[
-                    { label: "Post Funding Project", Icon: PlusCircle, onClick: () => navigate("/fundings/create"),hide:user?.accountType=="individual" },
-                    { label: "Share Funding Project", Icon: PlusCircle, onClick: () => navigate("/moment/funding/create"),hide:user?.accountType=="company" },
-                    { label: "Ask About Funding", Icon: PlusCircle, onClick: () => navigate("/need/funding/create"),hide:user?.accountType=="company" },
-                  ]}
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                />
-              </div>
+          <div className="lg:col-span-2">
+            <div className="flex items-center flex-wrap w-full justify-between mb-4">
+              <PostComposer from={'funding'} typeOfPosts={[
+                  { label: "Create Funding", Icon: PlusCircle,hide:user?.accountType=="individual",type:'main'},
+                  { label: "Share Funding Project", Icon: PlusCircle,hide:user?.accountType=="company" },
+                  { label: "Ask About Funding", Icon: PlusCircle,hide:user?.accountType=="company" },
+              ]}/>
+            </div>
+            <section className="space-y-4 overflow-hidden">
+              {renderMiddle()}
+            </section>
           </div>
-
-          <section className="lg:col-span-2 space-y-4  overflow-hidden">
-            {renderMiddle()}
-          </section>
-
           <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
             <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
           </aside>
-        
         </div>
       </main>
 

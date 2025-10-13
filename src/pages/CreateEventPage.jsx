@@ -1,5 +1,5 @@
 // src/pages/CreateEventPage.jsx
-import React, { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import client,{API_URL} from "../api/client";
 import COUNTRIES from "../constants/countries";
@@ -430,7 +430,7 @@ function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
   );
 }
 
-export default function CreateEventPage({ triggerImageSelection = false, hideHeader = false }) {
+export default function CreateEventPage({ triggerImageSelection = false, hideHeader = false, onSuccess }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const [isEditMode, setIsEditMode] = useState(false);
@@ -618,25 +618,16 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
     })();
   }, []);
 
-  // Expose pick method to parent components
-  useImperativeHandle(imagePickerRef, () => ({
-    pick: () => {
-      // Find and trigger the CoverImagePicker's pick method
-      if (imagePickerRef.current && imagePickerRef.current.pick) {
-        imagePickerRef.current.pick();
-      }
-    }
-  }));
 
   // Trigger image selection when component mounts with triggerImageSelection
   useEffect(() => {
     if (triggerImageSelection && imagePickerRef.current) {
       // Small delay to ensure the component is fully rendered
       const timer = setTimeout(() => {
-        if (imagePickerRef.current && imagePickerRef.current.pick) {
-          imagePickerRef.current.pick();
-        }
-      }, 100);
+         console.log(imagePickerRef.current)
+        imagePickerRef.current?.pick();
+       
+      }, 2000);
       return () => clearTimeout(timer);
     }
   }, [triggerImageSelection]);
@@ -804,7 +795,11 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
       } else {
         await client.post("/events", payload);
         toast.success("Event created successfully!");
-        navigate(`/events`);
+        if (hideHeader && onSuccess) {
+          onSuccess();
+        } else {
+          navigate(`/events`);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -849,12 +844,14 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
       {!hideHeader && <Header page={"events"} />}
       <main className={`mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'}`}>
-        <button
-          onClick={() => navigate("/events")}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
-        >
-          ← Go to Events
-        </button>
+        {!hideHeader && (
+          <button
+            onClick={() => navigate("/events")}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
+          >
+            ← Go to Events
+          </button>
+        )}
 
         {user?.id && <>
           <h1 className="text-2xl font-bold mt-3">{isEditMode ? "Edit Event" : "Create Event"}</h1>
@@ -1250,9 +1247,11 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
 
             {/* Actions */}
             <div className="flex justify-end gap-3">
-              <button type="button" className={styles.primaryGhost} onClick={() => navigate("/events")}>
-                Cancel
-              </button>
+              {!hideHeader && (
+                <button type="button" className={styles.primaryGhost} onClick={() => navigate("/events")}>
+                  Cancel
+                </button>
+              )}
               <button type="submit" className={styles.primary} disabled={saving}>
                 {saving ? "Saving…" : isEditMode ? "Update Event" : "Publish Event"}
               </button>

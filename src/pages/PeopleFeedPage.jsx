@@ -567,22 +567,7 @@ export default function PeopleFeedPage() {
               {...filtersProps}
               from={"people"}
               showAudienceFilters={true}
-            />
-          </div>
-
-          {/**   <QuickActions title="Quick Actions" items={[
-              { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
-              { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
-              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
-              { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
-              { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
-             ]} />
-          <ProfileCard /> */}
-        </aside>
-
-        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
-          <section className="lg:col-span-4 space-y-4 mt-4 w-full overflow-hidden">
-            <TopFilterButtons
+              catComponent={   <TopFilterButtons
               from={"people"}
               loading={loadingFeed}
               selected={selectedFilters}
@@ -611,7 +596,23 @@ export default function PeopleFeedPage() {
                     ]
               }
             />
+}
+            />
+          </div>
 
+          {/**   <QuickActions title="Quick Actions" items={[
+              { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
+              { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
+              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+              { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
+              { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
+             ]} />
+          <ProfileCard /> */}
+        </aside>
+
+        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
+          <section className="lg:col-span-4 space-y-4 mt-4 w-full overflow-hidden">
+         
             <div className="flex items-center justify-end gap-x-2 flex-wrap ">
               {/**  <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
                     { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },

@@ -878,7 +878,7 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
 }
 
 /* ---------- main page ---------- */
-export default function CreateJobOpportunity({ triggerImageSelection = false, hideHeader = false }) {
+export default function CreateJobOpportunity({ triggerImageSelection = false, hideHeader = false, onSuccess }) {
   const navigate = useNavigate();
   const { id } = useParams(); // Get job ID from URL if editing
   const [isLoading, setIsLoading] = useState(false);
@@ -1151,6 +1151,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
     if (triggerImageSelection && imagePickerRef.current) {
       // Small delay to ensure the component is fully rendered
       const timer = setTimeout(() => {
+         console.log(imagePickerRef.current)
         imagePickerRef.current?.pick();
       }, 100);
       return () => clearTimeout(timer);
@@ -1401,7 +1402,11 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
       );
 
       if (!isEditMode) {
-        navigate("/jobs");
+        if (hideHeader && onSuccess) {
+          onSuccess();
+        } else {
+          navigate("/jobs");
+        }
       }
 
     } catch (error) {
@@ -1421,11 +1426,13 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
     <div className="min-h-screen bg-gray-50 text-gray-900">
       {!hideHeader && <Header page={"jobs"} />}
       <main className={`mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'}`}>
-        <div className="mb-5 cursor-pointer">
-          <a onClick={() => navigate("/jobs")} className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
-            <I.back /> Back to Jobs
-          </a>
-        </div>
+        {!hideHeader && (
+          <div className="mb-5 cursor-pointer">
+            <a onClick={() => navigate("/jobs")} className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
+              <I.back /> Back to Jobs
+            </a>
+          </div>
+        )}
 
         {user?.id && (
           <div>

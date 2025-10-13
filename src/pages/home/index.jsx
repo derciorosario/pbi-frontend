@@ -314,7 +314,7 @@ export default function HomePage() {
       next.name = `${labelName} is required.`;
     } else if (signupForm.name.trim().length < 2) {
       next.name = `${labelName} must be at least 2 characters long.`;
-    } else if (!/^[a-zA-Z0-9\s\-'\.]+$/.test(signupForm.name.trim())) {
+    } else if (!/^[\p{L}0-9\s\-'\.]+$/u.test(signupForm.name.trim())) {
       next.name = `${labelName} can only contain letters, numbers, spaces, hyphens, apostrophes, and periods.`;
     }
     
@@ -350,7 +350,7 @@ export default function HomePage() {
       } else {
         const birthDate = new Date(signupForm.birthDate);
         const today = new Date();
-        const minAge = 13; // Minimum age requirement
+        const minAge = 18; // Minimum age requirement
         const maxAge = 120; // Maximum reasonable age
 
         if (birthDate > today) {
@@ -358,7 +358,7 @@ export default function HomePage() {
         } else {
           const age = today.getFullYear() - birthDate.getFullYear();
           if (age < minAge) {
-            next.birthDate = "You must be at least 13 years old.";
+            next.birthDate = "You must be at least 18 years old.";
           } else if (age > maxAge) {
             next.birthDate = "Please enter a valid birth date.";
           }
@@ -480,7 +480,7 @@ export default function HomePage() {
 
 
   return (
-    <DefaultLayout>
+    <DefaultLayout makePublic={true}>
      <Header page={'feed'}/>
 
        {settings?.hideMainFeed && <></>}

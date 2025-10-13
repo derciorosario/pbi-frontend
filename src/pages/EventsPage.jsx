@@ -494,30 +494,31 @@ export default function EventsPage() {
   return (
    <DefaultLayout>
      <Header />
-
-      <main className={`mx-auto  max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
+      <main className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
          <div className="_sticky top-0 z-10 _bg-white">
-            
             <FiltersCard
               selectedFilters={selectedFilters}
+              setSelectedFilters={setSelectedFilters}
+              generalTree={generalTree}
+              {...filtersProps}
+              from={"events"}
+
+
               catComponent={ <TopFilterButtons
               selected={selectedFilters}
               setSelected={setSelectedFilters}
               buttons={filterOptions}
               buttonLabels={categoryIdToNameMap}
               from={from}
-            loading={loadingFeed}
+              loading={loadingFeed}
             />}
-              setSelectedFilters={setSelectedFilters}
-              generalTree={generalTree}
-              {...filtersProps}
-              from={"events"}
+
             />
           </div>
-         
+
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil,onClick: () => navigate("/profile") },
             { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
@@ -526,35 +527,25 @@ export default function EventsPage() {
           ]} />
 
           <ProfileCard />
-         
-         
         </aside>
 
         <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
-      <div className="lg:col-span-3 flex items-center flex-wrap w-full justify-between">
 
-        <div className="w-[80%]">
-           
-          </div>
-          <div className="">
-           <PostComposer from={'event'} typeOfPosts={[
+          <div className="lg:col-span-2">
+            <div className="flex items-center flex-wrap w-full justify-between mb-4">
+              <PostComposer from={'event'} typeOfPosts={[
                   { label: "Create Event", Icon: PlusCircle,hide:user?.accountType=="individual",type:'main'},
                   { label: "Share Event Experience", Icon: PlusCircle,hide:user?.accountType=="company" },
                   { label: "Ask About an Event", Icon: PlusCircle,hide:user?.accountType=="company" },
-            ]}
-            activeTab={activeTab} setActiveTab={setActiveTab} />
+              ]}/>
+            </div>
+            <section className="space-y-4 overflow-hidden">
+              {renderMiddle()}
+            </section>
           </div>
-      </div>
-
-      <section className="lg:col-span-2 space-y-4  overflow-hidden">
-        {renderMiddle()}
-      </section>
-
-      <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
-        <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
-      </aside>
-
-         
+          <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+            <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
+          </aside>
         </div>
       </main>
 

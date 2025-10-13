@@ -277,7 +277,7 @@ function ReadOnlyCrowdfundView({ form, images, audSel, audTree }) {
 }
 
 /** Create/Edit Crowdfunding Project */
-export default function CrowdfundForm() {
+export default function CrowdfundForm({ triggerImageSelection = false, hideHeader = false, onSuccess }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = Boolean(id);
@@ -291,6 +291,17 @@ export default function CrowdfundForm() {
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+
+  // Trigger image selection when component mounts with triggerImageSelection
+  useEffect(() => {
+    if (triggerImageSelection && fileRef.current) {
+      // Small delay to ensure the component is fully rendered
+      const timer = setTimeout(() => {
+        fileRef.current?.click();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [triggerImageSelection]);
   const [cats, setCats] = useState([]); // [{id,name,subcategories:[{id,name}]}]
   const [saving, setSaving] = useState(false);
 
@@ -867,7 +878,11 @@ function removeTag(idx) {
       } else {
         await client.post("/funding/projects", payload);
         toast.success(status === "draft" ? "Draft saved!" : "Project published!");
-        navigate("/funding");
+        if (hideHeader && onSuccess) {
+          onSuccess();
+        } else {
+          navigate("/funding");
+        }
       }
     } catch (e) {
       console.error(e);
@@ -885,15 +900,17 @@ function removeTag(idx) {
 
   return (
     <DefaultLayout>
-      <Header page={'funding'}/>
-      <div className="max-w-4xl mx-auto my-5">
-        <button
-          onClick={() => navigate("/funding")}
-          className="flex mb-5 items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
-          type="button"
-        >
-          ← Back to Funding
-        </button>
+      {!hideHeader && <Header page={'funding'}/>}
+      <div className={`max-w-4xl mx-auto ${hideHeader ? 'my-2' : 'my-5'}`}>
+        {!hideHeader && (
+          <button
+            onClick={() => navigate("/funding")}
+            className="flex mb-5 items-center gap-2 text-sm text-gray-600 hover:text-brand-600"
+            type="button"
+          >
+            ← Back to Funding
+          </button>
+        )}
 
         {/* Non-owner summary view */}
         {readOnly ? (

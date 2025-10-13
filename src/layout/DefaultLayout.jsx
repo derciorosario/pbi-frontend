@@ -1,11 +1,12 @@
-import React,{useState} from 'react'
+import React from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import FullPageLoader from '../components/ui/FullPageLoader'
 import LoginPrompt from '../components/LoginPrompt'
+import BottomLoginBar from '../components/BottomLoginBar'
 import { useData } from '../contexts/DataContext'
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-function DefaultLayout({children}) {
+function DefaultLayout({children, makePublic = false}) {
   const {loading,user}=useAuth()
   const data=useData()
   const {pathname}=useLocation()
@@ -32,7 +33,9 @@ function DefaultLayout({children}) {
       <LoginPrompt/>
       <div id={'top'} className="min-h-screen bg-[#F7F7FB] text-gray-900">
          {children}
-      </div> 
+      </div>
+
+      <BottomLoginBar user={user} makePublic={makePublic} />
    </>
   )
 }

@@ -14,6 +14,7 @@ export default function LoginPrompt() {
   return (
     <>
       <div
+       
         className={`fixed inset-0 ${
           !data._openPopUps.login_prompt ? "opacity-0 pointer-events-none" : ""
         } transition-all z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm`}

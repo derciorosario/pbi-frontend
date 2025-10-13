@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Image, Heart, Search, X } from 'lucide-react';
+import { Image, Heart, Search, X, Video, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useData } from '../contexts/DataContext';
 import PostTypeSelector from './PostTypeSelector';
 import PostCreationDialog from './PostCreationDialog';
+import { useNavigate } from 'react-router-dom';
 
 function getInitials(name) {
   if (!name) return "U";
@@ -18,9 +20,15 @@ export default function PostComposer({typeOfPosts, from}) {
   const [selectedPostType, setSelectedPostType] = useState(null);
   const [showCreationDialog, setShowCreationDialog] = useState(false);
   const [pendingImageSelection, setPendingImageSelection] = useState(false);
+  const navigate=useNavigate()
   const {user} = useAuth()
+  const data = useData()
 
   const handleInputClick = () => {
+    if (!user?.id) {
+      data._showPopUp?.("login_prompt");
+      return;
+    }
     setShowTypeSelector(true);
   };
 
@@ -37,9 +45,22 @@ export default function PostComposer({typeOfPosts, from}) {
   };
 
   const handlePhotoClick = () => {
+    if (!user?.id) {
+      data._showPopUp?.("login_prompt");
+      return;
+    }
     // Set a flag to trigger image selection after type selection
     setPendingImageSelection(true);
     setShowTypeSelector(true);
+  };
+
+  const handleVideoClick = () => {
+    if (!user?.id) {
+      data._showPopUp?.("login_prompt");
+      return;
+    }
+    // Show alert for upcoming feature
+    alert("Feature will be available soon. Try adding a photo");
   };
 
   const handleCreationClose = () => {
@@ -48,11 +69,18 @@ export default function PostComposer({typeOfPosts, from}) {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full _login_prompt">
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         {/* Header with Avatar and Input */}
         <div className="flex items-start gap-3 mb-4">
-          {user?.avatarUrl ? (
+          <div className=" cursor-pointer" onClick={() => {
+            if (!user?.id) {
+              data._showPopUp?.("login_prompt");
+              return;
+            }
+            navigate('/profile');
+          }}>
+            {user?.avatarUrl ? (
             <img
               src={user.avatarUrl}
               alt={user?.name || "Profile"}
@@ -65,6 +93,7 @@ export default function PostComposer({typeOfPosts, from}) {
               </span>
             </div>
           )}
+          </div>
           <input
             type="text"
             placeholder="Share your thoughts, opportunities, or insights..."
@@ -76,21 +105,68 @@ export default function PostComposer({typeOfPosts, from}) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between _login_prompt">
           <div className="flex items-center gap-6">
             <button
               className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
               onClick={handlePhotoClick}
             >
-              <Image className="w-6 h-6" />
-              <span className="text-sm font-medium">Photo</span>
+              <Image className="w-5 h-5" />
+              <span className="text-sm font-medium max-md:hidden">Photo</span>
             </button>
 
-            {/* Main Post Type Button (Post Job Opportunity) - moved here */}
+            <button
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+              onClick={handleVideoClick}
+            >
+              <Video className="w-5 h-5" />
+              <span className="text-sm font-medium max-md:hidden">Video</span>
+            </button>
+
+          
+
+            {/* Experience Button */}
+            {user?.accountType!="company" &&<button
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+              onClick={() => {
+                if (!user?.id) {
+                  data._showPopUp?.("login_prompt");
+                  return;
+                }
+                handleTypeSelect(typeOfPosts?.find(type => type.label === "Share Job Experience") || { label: "Share Job Experience" });
+              }}
+            >
+              <Star className="w-5 h-5" />
+              <span className="text-sm font-medium max-md:hidden">Experience</span>
+            </button>}
+
+            {/* Need Button */}
+            {user?.accountType!="company" && <button
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+              onClick={() => {
+                if (!user?.id) {
+                  data._showPopUp?.("login_prompt");
+                  return;
+                }
+                handleTypeSelect(typeOfPosts?.find(type => type.label === "Share Job Need") || { label: "Share Job Need" });
+              }}
+            >
+              <Search className="w-5 h-5" />
+              <span className="text-sm font-medium max-md:hidden">Need</span>
+            </button>}
+
+
+              {/* Main Post Type Button (Post Job Opportunity) - moved here */}
             {typeOfPosts?.find(type => type.type === 'main') && (
               <button
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
-                onClick={() => handleTypeSelect(typeOfPosts.find(type => type.type === 'main'))}
+                onClick={() => {
+                  if (!user?.id) {
+                    data._showPopUp?.("login_prompt");
+                    return;
+                  }
+                  handleTypeSelect(typeOfPosts.find(type => type.type === 'main'));
+                }}
               >
                 <span className="text-sm">
                   {typeOfPosts.find(type => type.type === 'main')?.short_label || typeOfPosts.find(type => type.type === 'main')?.label}
@@ -98,23 +174,7 @@ export default function PostComposer({typeOfPosts, from}) {
               </button>
             )}
 
-            {/* Experience Button */}
-            <button
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-              onClick={() => handleTypeSelect(typeOfPosts?.find(type => type.label === "Share Job Experience") || { label: "Share Job Experience" })}
-            >
-              <Heart className="w-6 h-6" />
-              <span className="text-sm font-medium">Experience</span>
-            </button>
-
-            {/* Need Button */}
-            <button
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-              onClick={() => handleTypeSelect(typeOfPosts?.find(type => type.label === "Share Job Need") || { label: "Share Job Need" })}
-            >
-              <Search className="w-6 h-6" />
-              <span className="text-sm font-medium">Need</span>
-            </button>
+            
           </div>
         </div>
        </div>

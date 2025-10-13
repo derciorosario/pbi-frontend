@@ -175,7 +175,7 @@ function ReadOnlyProductView({ form, images, audSel, audTree }) {
   );
 }
 
-export default function CreateProductPage() {
+export default function CreateProductPage({ triggerImageSelection = false, hideHeader = false, onSuccess }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = Boolean(id);
@@ -502,6 +502,17 @@ const industrySubcategoryOptions = useMemo(() => {
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
 
+  // Trigger image selection when component mounts with triggerImageSelection
+  useEffect(() => {
+    if (triggerImageSelection && fileInputRef.current) {
+      // Small delay to ensure the component is fully rendered
+      const timer = setTimeout(() => {
+        fileInputRef.current?.click();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [triggerImageSelection]);
+
   const readOnly = isEditMode  && ownerUserId && user?.id !== ownerUserId;
 
 
@@ -778,7 +789,11 @@ const industrySubcategoryOptions = useMemo(() => {
       } else {
         await client.post("/products", payload);
         toast.success("Product published!");
-        navigate("/products");
+        if (hideHeader && onSuccess) {
+          onSuccess();
+        } else {
+          navigate("/products");
+        }
       }
 
     } catch (error) {
@@ -800,10 +815,10 @@ const industrySubcategoryOptions = useMemo(() => {
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
       {/* ===== Header ===== */}
-      <Header page={"products"} />
+      {!hideHeader && <Header page={"products"} />}
 
       {/* ===== Content ===== */}
-      <main className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8 fle justify-center gap-6">
+      <main className={`mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'} fle justify-center gap-6`}>
         {/* Left/Main Form OR Read-only */}
         <section className="lg:col-span-8">
           {!isEditMode ? null : isLoading ? (
@@ -1165,9 +1180,11 @@ const industrySubcategoryOptions = useMemo(() => {
 
               {/* Buttons */}
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => navigate("/products")} className={styles.ghost}>
-                  Cancel
-                </button>
+                {!hideHeader && (
+                  <button type="button" onClick={() => navigate("/products")} className={styles.ghost}>
+                    Cancel
+                  </button>
+                )}
                 <button type="submit" className={styles.primaryWide} disabled={saving}>
                   {saving ? "Saving…" : isEditMode ? "Update Product" : "Publish Product"}
                 </button>

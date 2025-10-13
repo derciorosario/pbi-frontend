@@ -1,4 +1,4 @@
-// src/pages/PublicProfilePage.jsx
+// src/pages/ProfilePage.jsx
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -31,6 +31,7 @@ import {
     MessageCircle,
     Mail,
     Globe,
+    Calendar,
   } from "lucide-react";
 import client from "../api/client";
 import ConnectionRequestModal from "../components/ConnectionRequestModal";
@@ -41,6 +42,7 @@ import { toast } from "../lib/toast";
 import Header from "../components/Header";
 import DefaultLayout from "../layout/DefaultLayout";
 import ConfirmDialog from "../components/ConfirmDialog";
+import MediaViewer from "../components/MediaViewer";
 import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import ServiceCard from "../components/ServiceCard";
@@ -134,7 +136,7 @@ const ShareMenu = ({ profile, shareMenuRef, setShareOpen }) => {
   return (
     <div
       ref={shareMenuRef}
-      className="absolute bottom-14 left-0 mt-2 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      className="absolute top-0  right-0 mt-2 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
       role="dialog"
       aria-label="Share options"
     >
@@ -901,10 +903,332 @@ export default function PublicProfilePage() {
   const [categories, setCategories] = useState([]);
   const [showAllPosts, setShowAllPosts] = useState(false);
 
+  // Tab state for Posts/Images/Videos
+  const [activeTab, setActiveTab] = useState('posts');
+
+  // Image slider modal state
+  const [imageSliderOpen, setImageSliderOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Helper function to extract and validate images from feed items
+  const extractValidImages = (items) => {
+    const allImages = [];
+
+    items.forEach(item => {
+      switch (item.kind) {
+        case 'job':
+          // Jobs have coverImageBase64 (from backend model)
+          if (item.coverImageBase64 && (
+            item.coverImageBase64.startsWith('data:image/') ||
+            item.coverImageBase64.startsWith('http://') ||
+            item.coverImageBase64.startsWith('https://')
+          )) {
+            allImages.push({
+              url: item.coverImageBase64,
+              alt: item.title || 'Job image',
+              type: 'job',
+              itemId: item.id,
+              itemTitle: item.title
+            });
+          }
+          break;
+
+        case 'event':
+          // Events have coverImageBase64 and coverImageUrl (from backend model)
+          if (item.coverImageBase64 && (
+            item.coverImageBase64.startsWith('data:image/') ||
+            item.coverImageBase64.startsWith('http://') ||
+            item.coverImageBase64.startsWith('https://')
+          )) {
+            allImages.push({
+              url: item.coverImageBase64,
+              alt: item.title || 'Event image',
+              type: 'event',
+              itemId: item.id,
+              itemTitle: item.title
+            });
+          }
+
+          if (item.coverImageUrl && (
+            item.coverImageUrl.startsWith('data:image/') ||
+            item.coverImageUrl.startsWith('http://') ||
+            item.coverImageUrl.startsWith('https://')
+          )) {
+            allImages.push({
+              url: item.coverImageUrl,
+              alt: item.title || 'Event cover image',
+              type: 'event',
+              itemId: item.id,
+              itemTitle: item.title
+            });
+          }
+
+          // Process images array if it exists (from EventCard.jsx pattern)
+          if (Array.isArray(item.images)) {
+            item.images.forEach((img, index) => {
+              if (img && (
+                img.startsWith('data:image/') ||
+                img.startsWith('http://') ||
+                img.startsWith('https://')
+              )) {
+                allImages.push({
+                  url: img,
+                  alt: `${item.title || 'Event image'} ${index + 1}`,
+                  type: 'event',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              }
+            });
+          }
+          break;
+
+        case 'service':
+          // Services have images array (from ServiceCard.jsx pattern)
+          if (Array.isArray(item.images)) {
+            item.images.forEach((img, index) => {
+              if (img && (
+                img.startsWith('data:image/') ||
+                (typeof img === 'string' && (
+                  /\.(jpe?g|png|gif|webp|svg)$/i.test(img) ||
+                  img.startsWith('http://') ||
+                  img.startsWith('https://')
+                ))
+              )) {
+                allImages.push({
+                  url: img,
+                  alt: `${item.title || 'Service image'} ${index + 1}`,
+                  type: 'service',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              }
+            });
+          }
+          break;
+
+        case 'product':
+          // Products have images array (from ProductCard.jsx pattern)
+          if (Array.isArray(item.images)) {
+            item.images.forEach((img, index) => {
+              if (img && (
+                img.startsWith('data:image/') ||
+                img.startsWith('http://') ||
+                img.startsWith('https://')
+              )) {
+                allImages.push({
+                  url: img,
+                  alt: `${item.title || 'Product image'} ${index + 1}`,
+                  type: 'product',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              }
+            });
+          }
+          break;
+
+        case 'tourism':
+          // Tourism items have images array (from ExperienceCard.jsx pattern)
+          if (Array.isArray(item.images)) {
+            item.images.forEach((img, index) => {
+              if (img && typeof img === 'object' && img?.base64url && (
+                img.base64url.startsWith('data:image/') ||
+                img.base64url.startsWith('http://') ||
+                img.base64url.startsWith('https://')
+              )) {
+                allImages.push({
+                  url: img.base64url,
+                  alt: `${item.title || 'Tourism image'} ${index + 1}`,
+                  type: 'tourism',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              } else if (img && typeof img === 'string' && (
+                img.startsWith('data:image/') ||
+                img.startsWith('http://') ||
+                img.startsWith('https://')
+              )) {
+                allImages.push({
+                  url: img,
+                  alt: `${item.title || 'Tourism image'} ${index + 1}`,
+                  type: 'tourism',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              }
+            });
+          }
+          break;
+
+        case 'funding':
+          // Funding items have images array (from CrowdfundCard.jsx pattern)
+          if (Array.isArray(item.images)) {
+            item.images.forEach((img, index) => {
+              if (img && typeof img === 'object' && img?.base64url && (
+                img.base64url.startsWith('data:image/') ||
+                img.base64url.startsWith('http://') ||
+                img.base64url.startsWith('https://')
+              )) {
+                allImages.push({
+                  url: img.base64url,
+                  alt: `${item.title || 'Funding image'} ${index + 1}`,
+                  type: 'funding',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              } else if (img && typeof img === 'string' && (
+                img.startsWith('data:image/') ||
+                img.startsWith('http://') ||
+                img.startsWith('https://')
+              )) {
+                allImages.push({
+                  url: img,
+                  alt: `${item.title || 'Funding image'} ${index + 1}`,
+                  type: 'funding',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              }
+            });
+          }
+          break;
+
+        case 'need':
+          // Needs have attachments array (from NeedCard.jsx pattern)
+          if (Array.isArray(item.attachments)) {
+            item.attachments.forEach((attachment, index) => {
+              if (attachment && typeof attachment === 'object' && attachment?.base64url && (
+                attachment.base64url.startsWith('data:image/') ||
+                attachment.base64url.startsWith('http://') ||
+                attachment.base64url.startsWith('https://')
+              )) {
+                allImages.push({
+                  url: attachment.base64url,
+                  alt: `${item.title || 'Need attachment'} ${index + 1}`,
+                  type: 'need',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              } else if (attachment && typeof attachment === 'string' && (
+                attachment.startsWith('data:image/') ||
+                (/\.(jpe?g|png|gif|webp|svg)$/i.test(attachment) ||
+                 attachment.startsWith('http://') ||
+                 attachment.startsWith('https://'))
+              )) {
+                allImages.push({
+                  url: attachment,
+                  alt: `${item.title || 'Need attachment'} ${index + 1}`,
+                  type: 'need',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              }
+            });
+          }
+          break;
+
+        case 'moment':
+          // Moments have images array (from MomentCard.jsx pattern)
+          if (Array.isArray(item.images)) {
+            item.images.forEach((img, index) => {
+              if (img && typeof img === 'object' && img?.base64url && (
+                img.base64url.startsWith('data:image/') ||
+                img.base64url.startsWith('http://') ||
+                img.base64url.startsWith('https://')
+              )) {
+                allImages.push({
+                  url: img.base64url,
+                  alt: `${item.title || 'Moment image'} ${index + 1}`,
+                  type: 'moment',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              }
+            });
+          }
+
+          // Also check attachments array as fallback (from MomentCard.jsx)
+          if (Array.isArray(item.attachments)) {
+            item.attachments.forEach((attachment, index) => {
+              if (attachment && typeof attachment === 'object' && attachment?.base64url && (
+                attachment.base64url.startsWith('data:image/') ||
+                attachment.base64url.startsWith('http://') ||
+                attachment.base64url.startsWith('https://')
+              )) {
+                allImages.push({
+                  url: attachment.base64url,
+                  alt: `${item.title || 'Moment attachment'} ${index + 1}`,
+                  type: 'moment',
+                  itemId: item.id,
+                  itemTitle: item.title
+                });
+              }
+            });
+          }
+          break;
+      }
+    });
+
+    return allImages;
+  };
+
+  // Get valid images for the Images tab
+  const validImages = extractValidImages(feedItems);
+
+  // Add keyboard event listener for image slider
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [imageSliderOpen]);
+
+  // Image slider handlers
+  const openImageSlider = (imageIndex) => {
+    setCurrentImageIndex(imageIndex);
+    setImageSliderOpen(true);
+  };
+
+  const closeImageSlider = () => {
+    setImageSliderOpen(false);
+    setCurrentImageIndex(0);
+  };
+
+  const goToNextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
+  };
+
+  const goToPrevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+  };
+
+  // Handle keyboard navigation
+  const handleKeyDown = (e) => {
+    if (!imageSliderOpen) return;
+
+    switch (e.key) {
+      case 'Escape':
+        closeImageSlider();
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        goToPrevImage();
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        goToNextImage();
+        break;
+    }
+  };
+
   // Share menu state
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
   const shareButtonRef = useRef(null);
+
+  // Media viewer state
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
 
   // Meeting modal + list
   const [mrOpen, setMrOpen] = useState(false);
@@ -997,6 +1321,7 @@ export default function PublicProfilePage() {
 
     async function loadUserFeed() {
       setLoadingFeed(true);
+
       try {
         const params = {
           tab: "all",
@@ -1015,6 +1340,31 @@ export default function PublicProfilePage() {
     }
 
     loadUserFeed();
+  }, [userId]);
+
+  // Test the new getUserItems API endpoint (for testing purposes only)
+  useEffect(() => {
+    if (!userId) return;
+
+    async function testUserItemsAPI() {
+      try {
+        const { data } = await client.get(`/users/${userId}/items`);
+        // Log the response for testing but don't render it
+        console.log("User items API test:", {
+          userId: data.userId,
+          totalItems: data.totalItems,
+          counts: data.counts,
+          itemsCount: data.items?.length || 0
+        });
+      } catch (error) {
+        console.error("Error testing user items API:", error);
+      }
+    }
+
+    // Only run this test in development
+    if (import.meta.env.DEV) {
+      testUserItemsAPI();
+    }
   }, [userId]);
 
   // Close share menu on outside click / Esc
@@ -1246,9 +1596,9 @@ export default function PublicProfilePage() {
         {!loading && !error && profile && (
           <>
             {/* Modern Header Section */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+            <div className="bg-white rounded-xl shadow-sm  mb-6">
               {/* Gradient Header Background - Fixed height */}
-              <div className="bg-gradient-to-r from-brand-700 to-brand-500 h-32"></div>
+              <div className="bg-gradient-to-r rounded-xl from-brand-700 to-brand-500 h-32"></div>
 
               {/* Profile Content - Overlay on gradient */}
               <div className="px-6 pb-6 relative">
@@ -1257,7 +1607,19 @@ export default function PublicProfilePage() {
                   <div className="flex flex-col md:flex-row md:items-end gap-4">
                     <div className="relative">
                       {profile.avatarUrl ? (
-                        <div className={`${profile.accountType === "company" ? "h-32 w-32 rounded-md" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-white flex justify-center items-center overflow-hidden`}>
+                        <div
+                          className={`${profile.accountType === "company" ? "h-32 w-32 rounded-md" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-white flex justify-center items-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
+                          onClick={() => setMediaViewerOpen(true)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setMediaViewerOpen(true);
+                            }
+                          }}
+                          aria-label={`View ${profile.name}'s profile picture`}
+                        >
                           <img
                             src={profile.avatarUrl}
                             alt={profile.name}
@@ -1328,7 +1690,7 @@ export default function PublicProfilePage() {
 
                       {/* Professional Title - On white background after gradient */}
                       {profile.accountType === "company" ? (
-                        <div className="mb-2 p-4 bg-white rounded-lg shadow-sm border">
+                        <div className="mb-2 px-4 py-2 bg-white rounded-lg shadow-sm border">
                           <p className="text-gray-900 text-lg font-semibold mb-2">
                             {profile.professionalTitle || (profile.categories && profile.categories.length > 0 ? profile.categories.join(", ") : "Company")}
                           </p>
@@ -1344,7 +1706,7 @@ export default function PublicProfilePage() {
                           )}
                         </div>
                       ) : (
-                        <div className="mb-2 p-4 bg-white rounded-lg shadow-sm border">
+                        <div className="mb-2 px-4 py-2 bg-white rounded-lg shadow-sm border">
                           <p className="text-gray-900 text-lg font-semibold">
                             {profile.professionalTitle || profile.title || "—"}
                           </p>
@@ -1364,6 +1726,18 @@ export default function PublicProfilePage() {
                   {/* Action Buttons */}
                   <div className="flex gap-3 mt-4 md:mt-0">
                     {renderConnectButton()}
+
+
+                     <div className="relative">
+                      <button
+                         onClick={openMR}
+                        className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
+                      >
+                        <Calendar size={16} />
+                        
+                      </button>
+                     </div>
+
 
                     {/* Share Button */}
                     <div className="relative">
@@ -1395,6 +1769,8 @@ export default function PublicProfilePage() {
                       <MessageCircle size={16} />
                     </button>
 
+
+
                     {/* Request Meeting Button - only show when connected */}
                     {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
                       <button
@@ -1409,152 +1785,200 @@ export default function PublicProfilePage() {
               </div>
             </div>
 
-            {/* About Section - Modern Card Design */}
+          
             {profile.about && (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">About</h2>
-                <div className="space-y-4 text-gray-600 text-sm leading-relaxed">
-                  <p>{profile.about}</p>
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">About</h2>
+          <div className="space-y-6 text-gray-600 text-sm leading-relaxed">
+            <p>{profile.about}</p>
 
-                  {/* For companies, show skills as "Expertise" */}
-                  {profile.accountType === "company" && profile.skills && profile.skills.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3">Company Expertise</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.skills.map((skill, idx) => (
-                          <span key={`skill-${idx}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
+            {/* Integrated Professional Summary */}
+            <div className="border-t border-gray-100 pt-6">
+              {/* What you do - smoothly integrated near professional info */}
+              {profile.professionalTitle && (
+                <div className="mb-4">
+                  <p className="text-gray-900 font-semibold mb-2 flex items-center gap-2">
+                    <span className="text-blue-600">→</span>
+                    {profile.accountType === "company" ? "What we do" : "What I do"}
+                  </p>
+                  <p className="text-gray-700">{profile.professionalTitle}</p>
+                </div>
+              )}
+
+              {/* Looking For - smoothly integrated */}
+              {Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-gray-900 font-semibold mb-2 flex items-center gap-2">
+                    <span className="text-blue-600">🔍</span>
+                    Looking for
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.lookingFor.map((item, i) => (
+                      <span key={`looking-${i}`} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Identities - only show if they exist and are different from looking for */}
+              {Array.isArray(profile.identities) && profile.identities.length > 0 &&
+               (!Array.isArray(profile.lookingFor) || !profile.lookingFor.some(lf => profile.identities.includes(lf))) && (
+                <div className="mb-4">
+                  <p className="text-gray-900 font-semibold mb-2 flex items-center gap-2">
+                    <span className="text-purple-600">✦</span>
+                    {profile.accountType === "company" ? "Company focuses" : "Focus areas"}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.identities.map((identity, i) => (
+                      <span key={`identity-${i}`} className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-sm">
+                        {identity}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Category Interests - smoothly integrated */}
+              {profile.interests?.categories && profile.interests.categories.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-gray-900 font-semibold mb-2 flex items-center gap-2">
+                    <span className="text-green-600">★</span>
+                    Interested in
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.interests.categories.map((cat, i) => (
+                      <span key={`cat-int-${i}`} className="bg-green-50 text-green-700 px-3 py-1 rounded-full text-sm">
+                        {cat}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Subcategory Interests */}
+              {profile.interests?.subcategories && profile.interests.subcategories.length > 0 && (
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-2">
+                    {profile.interests.subcategories.map((sub, i) => (
+                      <span key={`sub-int-${i}`} className="bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-sm">
+                        {sub}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Expertise & Interests - smoothly integrated */}
+              {(profile.cats?.length || profile.subs?.length) && (
+                <div className="mb-4">
+                  <p className="text-gray-900 font-semibold mb-2 flex items-center gap-2">
+                    <span className="text-indigo-600">◆</span>
+                    Expertise & interests
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {(profile.cats || []).map((c) => (
+                      <span key={`cat-${c}`} className="bg-brand-50 text-brand-700 px-3 py-1 rounded-full text-sm">
+                        {c}
+                      </span>
+                    ))}
+                    {(profile.subs || []).map((s) => (
+                      <span key={`sub-${s}`} className="bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-sm">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Specialties */}
+              {Array.isArray(profile.subsubs) && profile.subsubs.length > 0 && (
+                <div className="mb-4">
+                  <p className="text-gray-900 font-semibold mb-2 flex items-center gap-2">
+                    <span className="text-amber-600">◈</span>
+                    Specialties
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.subsubs.map((s3, i) => (
+                      <span key={`s3-${i}`} className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-sm">
+                        {s3}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* For companies, show skills as "Expertise" */}
+              {profile.accountType === "company" && profile.skills && profile.skills.length > 0 && (
+                <div>
+                  <p className="text-gray-900 font-semibold mb-2 flex items-center gap-2">
+                    <span className="text-emerald-600">●</span>
+                    Company expertise
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.skills.map((skill, idx) => (
+                      <span key={`skill-${idx}`} className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-sm">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      
+            {/* Contact - Modern Card Design */}
+            {(profile.email || profile.website || (Array.isArray(profile.links) && profile.links.length)) && (
+              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Contact Information</h2>
+                <div className="space-y-3">
+                  {profile.email && (
+                    <div className="flex items-center gap-3 text-gray-600 text-sm">
+                      <Mail size={16} className="text-gray-400" />
+                      <span>{profile.email}</span>
                     </div>
                   )}
+                  {profile.website && (
+                    <div className="flex items-center gap-3 text-gray-600 text-sm">
+                      <Globe size={16} className="text-gray-400" />
+                      <a href={profile.website} target="_blank" rel="noreferrer" className="text-brand-700 hover:text-brand-800">
+                        {profile.website}
+                      </a>
+                    </div>
+                  )}
+                  {Array.isArray(profile.links) &&
+                    profile.links.map((l, i) => (
+                      <div key={i} className="flex items-center gap-3 text-gray-600 text-sm">
+                        <ExternalLink size={16} className="text-gray-400" />
+                        <a href={l} target="_blank" rel="noreferrer" className="text-brand-700 hover:text-brand-800 truncate">
+                          {l}
+                        </a>
+                      </div>
+                    ))}
                 </div>
               </div>
             )}
 
-            {/* Looking For & Identities - Combined Modern Card */}
-            {(Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0) ||
-             (Array.isArray(profile.identities) && profile.identities.length > 0) ? (
+
+            
+            {/* Skills & Languages - Modern Card Design */}
+            {(Array.isArray(profile.skills) && profile.skills.length > 0) || languages.length > 0 ? (
               <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Looking For */}
-                  {Array.isArray(profile.lookingFor) && profile.lookingFor.length > 0 && (
+                  {/* Skills */}
+                  {Array.isArray(profile.skills) && profile.skills.length > 0 && (
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Target size={18} className="text-brand-600" />
-                        Looking For
+                        <Hash size={18} className="text-brand-600" />
+                        Skills
                       </h3>
                       <div className="flex flex-wrap gap-2">
-                        {profile.lookingFor.map((g, i) => (
-                          <span key={`${g}-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                            {g}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Identities */}
-                  {Array.isArray(profile.identities) && profile.identities.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <User2 size={18} className="text-brand-600" />
-                        {profile.accountType === "company" ? "Company Identity" : "Identities"}
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.identities.map((idn, i) => (
-                          <span key={`ident-${i}`} className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                            {idn}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
-
-            {/* Interests - Modern Card Design */}
-            {profile.interests && (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">
-                  {profile.accountType === "company" ? "Company Interests" : "Identity Interests"}
-                </h2>
-                <div className="space-y-4">
-                  {/* Identity Interests */}
-                  {(profile.interests.identities && profile.interests.identities.length > 0) ||
-                   (Array.isArray(profile.identityInterests) && profile.identityInterests.length > 0) ? (
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Identity Interests</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.identities && profile.interests.identities.length > 0 ? (
-                          profile.interests.identities.map((idn, i) => (
-                            <span key={`ident-int-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                              {idn}
-                            </span>
-                          ))
-                        ) : Array.isArray(profile.identityInterests) && profile.identityInterests.length > 0 ? (
-                          profile.identityInterests.map((idn, i) => (
-                            <span key={`old-ident-int-${i}`} className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                              {idn}
-                            </span>
-                          ))
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {/* Category Interests */}
-                  {profile.interests.categories && profile.interests.categories.length > 0 && (
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Category Interests</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.categories.map((cat, i) => (
-                          <span key={`cat-int-${i}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
-                            {cat}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Subcategory Interests */}
-                  {profile.interests.subcategories && profile.interests.subcategories.length > 0 && (
-                    <div>
-                      <h3 className="font-medium text-gray-700 mb-2 text-sm">Subcategory Interests</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.interests.subcategories.map((sub, i) => (
-                          <span key={`sub-int-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                            {sub}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Expertise & Interests - Modern Card Design */}
-            {(profile.cats?.length || profile.subs?.length) || (Array.isArray(profile.subsubs) && profile.subsubs.length > 0) ? (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Expertise & Interests */}
-                  {(profile.cats?.length || profile.subs?.length) && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Layers size={18} className="text-brand-600" />
-                        Expertise & Interests
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {(profile.cats || []).map((c) => (
-                          <span key={`cat-${c}`} className="bg-brand-100 text-brand-700 px-3 py-1 rounded-full text-sm">
-                            {c}
-                          </span>
-                        ))}
-                        {(profile.subs || []).map((s) => (
-                          <span key={`sub-${s}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                        {profile.skills.map((s, i) => (
+                          <span key={`${s}-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
                             {s}
                           </span>
                         ))}
@@ -1562,18 +1986,19 @@ export default function PublicProfilePage() {
                     </div>
                   )}
 
-                  {/* Specialties */}
-                  {Array.isArray(profile.subsubs) && profile.subsubs.length > 0 && (
+                  {/* Languages */}
+                  {languages.length > 0 && (
                     <div>
                       <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Hash size={18} className="text-brand-600" />
-                        Specialties
+                        <Languages size={18} className="text-brand-600" />
+                        {profile.accountType === "company" ? "Working Languages" : "Languages"}
                       </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.subsubs.map((s3, i) => (
-                          <span key={`s3-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                            {s3}
-                          </span>
+                      <div className="space-y-2">
+                        {languages.map((l, i) => (
+                          <div key={`${l.name}-${i}`} className="flex justify-between items-center">
+                            <span className="text-gray-700 text-sm">{l.name}</span>
+                            <span className="text-gray-500 text-xs">{l.level}</span>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -1581,6 +2006,8 @@ export default function PublicProfilePage() {
                 </div>
               </div>
             ) : null}
+
+
 
             {/* Work Samples - Enhanced Modern Card Design */}
             {Array.isArray(profile.workSamples) && profile.workSamples.length > 0 && (
@@ -1739,40 +2166,9 @@ export default function PublicProfilePage() {
               </div>
             )}
 
-            {/* Contact - Modern Card Design */}
-            {(profile.email || profile.website || (Array.isArray(profile.links) && profile.links.length)) && (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-4">Contact Information</h2>
-                <div className="space-y-3">
-                  {profile.email && (
-                    <div className="flex items-center gap-3 text-gray-600 text-sm">
-                      <Mail size={16} className="text-gray-400" />
-                      <span>{profile.email}</span>
-                    </div>
-                  )}
-                  {profile.website && (
-                    <div className="flex items-center gap-3 text-gray-600 text-sm">
-                      <Globe size={16} className="text-gray-400" />
-                      <a href={profile.website} target="_blank" rel="noreferrer" className="text-brand-700 hover:text-brand-800">
-                        {profile.website}
-                      </a>
-                    </div>
-                  )}
-                  {Array.isArray(profile.links) &&
-                    profile.links.map((l, i) => (
-                      <div key={i} className="flex items-center gap-3 text-gray-600 text-sm">
-                        <ExternalLink size={16} className="text-gray-400" />
-                        <a href={l} target="_blank" rel="noreferrer" className="text-brand-700 hover:text-brand-800 truncate">
-                          {l}
-                        </a>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
 
             {/* CV/Resume Section - Modern Card Design */}
-            {Array.isArray(profile.cvBase64) && profile.cvBase64.length > 0 && (
+            {Array.isArray(profile.cvBase64) && profile.cvBase64.length > 0 && (0!==0) && (
               <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1818,36 +2214,121 @@ export default function PublicProfilePage() {
             {/* Posts and activities - Modern Card Design */}
             {feedItems.length > 0 && (
               <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Activity size={20} className="text-brand-600" />
-                  Posts and activities
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Activity size={20} className="text-brand-600" />
+                    Posts and activities
+                  </h2>
+
+                  {/* Tab Buttons */}
+                  <div className="flex bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setActiveTab('posts')}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        activeTab === 'posts'
+                          ? 'bg-white text-brand-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Posts
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('images')}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        activeTab === 'images'
+                          ? 'bg-white text-brand-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Images {validImages.length > 0 && `(${validImages.length})`}
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('videos')}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        activeTab === 'videos'
+                          ? 'bg-white text-brand-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      Videos
+                    </button>
+                  </div>
+                </div>
                 <div className="space-y-4">
                   {loadingFeed ? (
-                    <div className="text-sm text-gray-600">Loading posts...</div>
+                    <div className="text-sm text-gray-600">Loading content...</div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {showAllPosts
-                          ? feedItems.map(renderFeedItem)
-                          : feedItems.slice(0, 4).map(renderFeedItem)
-                        }
-                      </div>
+                      {/* Posts Tab */}
+                      {activeTab === 'posts' && (
+                        <>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {showAllPosts
+                              ? feedItems.map(renderFeedItem)
+                              : feedItems.slice(0, 4).map(renderFeedItem)
+                            }
+                          </div>
 
-                      {feedItems.length > 4 && (
-                        <div className="flex justify-center pt-2">
-                          <button
-                            onClick={() => setShowAllPosts(!showAllPosts)}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors duration-200"
-                          >
-                            <span>
-                              {showAllPosts
-                                ? `View Less`
-                                : `View All ${feedItems.length} posts`
-                              }
-                            </span>
-                            <ExternalLink size={16} className={`transition-transform duration-200 ${showAllPosts ? 'rotate-180' : ''}`} />
-                          </button>
+                          {feedItems.length > 4 && (
+                            <div className="flex justify-center pt-2">
+                              <button
+                                onClick={() => setShowAllPosts(!showAllPosts)}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-lg transition-colors duration-200"
+                              >
+                                <span>
+                                  {showAllPosts
+                                    ? `View Less`
+                                    : `View All ${feedItems.length} posts`
+                                  }
+                                </span>
+                                <ExternalLink size={16} className={`transition-transform duration-200 ${showAllPosts ? 'rotate-180' : ''}`} />
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Images Tab */}
+                      {activeTab === 'images' && (
+                        <>
+                          {validImages.length > 0 ? (
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                              {validImages.map((image, index) => (
+                                <div
+                                  key={`${image.itemId}-${index}`}
+                                  className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
+                                  onClick={() => openImageSlider(index)}
+                                >
+                                  <img
+                                    src={image.url}
+                                    alt={image.alt}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                    loading="lazy"
+                                  />
+                                  {/* Overlay with item type and title on hover */}
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-end p-3">
+                                    <div className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <div className="font-medium capitalize">{image.type}</div>
+                                      <div className="truncate">{image.itemTitle}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8 text-gray-500">
+                              <div className="text-sm">No images found</div>
+                              <div className="text-xs mt-1">Images from posts will appear here</div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Videos Tab */}
+                      {activeTab === 'videos' && (
+                        <div className="text-center py-8 text-gray-500">
+                          <div className="text-sm">Videos coming soon</div>
+                          <div className="text-xs mt-1">Video content will be displayed here</div>
                         </div>
                       )}
                     </>
@@ -1856,47 +2337,6 @@ export default function PublicProfilePage() {
               </div>
             )}
 
-            {/* Skills & Languages - Modern Card Design */}
-            {(Array.isArray(profile.skills) && profile.skills.length > 0) || languages.length > 0 ? (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Skills */}
-                  {Array.isArray(profile.skills) && profile.skills.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Hash size={18} className="text-brand-600" />
-                        Skills
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {profile.skills.map((s, i) => (
-                          <span key={`${s}-${i}`} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Languages */}
-                  {languages.length > 0 && (
-                    <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Languages size={18} className="text-brand-600" />
-                        {profile.accountType === "company" ? "Working Languages" : "Languages"}
-                      </h3>
-                      <div className="space-y-2">
-                        {languages.map((l, i) => (
-                          <div key={`${l.name}-${i}`} className="flex justify-between items-center">
-                            <span className="text-gray-700 text-sm">{l.name}</span>
-                            <span className="text-gray-500 text-xs">{l.level}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
 
             {/* Overview - Modern Card Design */}
             {(profile.stats || profile.counts || profile.connections?.count || profile.requests?.incoming?.length || profile.requests?.outgoing?.length) && (
@@ -1934,156 +2374,9 @@ export default function PublicProfilePage() {
               </div>
             )}
 
-            {/* Recent Activity - Modern Card Design */}
-            {(profile.recent?.jobs?.length || profile.recent?.events?.length) ? (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Star size={20} className="text-brand-600" />
-                  Recent Activity
-                </h2>
-                <div className="space-y-3">
-                  {(profile.recent.jobs || []).map((j) => (
-                    <div key={`job-${j.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-semibold text-sm text-gray-900">{j.title}</div>
-                        <div className="text-xs text-gray-500">{timeAgo(j.createdAt)}</div>
-                      </div>
-                      <div className="text-xs text-gray-600 mb-2">
-                        {j.companyName || "—"} • {fmtLoc(j.city, j.country)}
-                      </div>
-                      {(j.categoryName || j.subcategoryName) && (
-                        <div className="mb-2 flex gap-1 flex-wrap">
-                          {j.categoryName && <span className="bg-brand-100 text-brand-700 px-2 py-1 rounded-full text-xs">{j.categoryName}</span>}
-                          {j.subcategoryName && <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">{j.subcategoryName}</span>}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <Briefcase size={14} /> Job
-                      </div>
-                    </div>
-                  ))}
-                  {(profile.recent.events || []).map((e) => (
-                    <div key={`event-${e.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-semibold text-sm text-gray-900">{e.title}</div>
-                        <div className="text-xs text-gray-500">{timeAgo(e.createdAt)}</div>
-                      </div>
-                      <div className="text-xs text-gray-600 mb-2">{fmtLoc(e.city, e.country)}</div>
-                      {(e.categoryName || e.subcategoryName) && (
-                        <div className="mb-2 flex gap-1 flex-wrap">
-                          {e.categoryName && <span className="bg-brand-100 text-brand-700 px-2 py-1 rounded-full text-xs">{e.categoryName}</span>}
-                          {e.subcategoryName && <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">{e.subcategoryName}</span>}
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1 text-xs text-gray-500">
-                        <CalendarDays size={14} /> Event
-                        {e.registrationType === "Paid" && typeof e.price !== "undefined" ? (
-                          <span className="ml-2">• {e.currency || ""}{e.price}</span>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
+           
 
-            {/* Recent Projects - Combined Modern Card Design */}
-            {(Array.isArray(profile.recent?.funding) && profile.recent.funding.length > 0) ||
-             (Array.isArray(profile.recent?.services) && profile.recent.services.length > 0) ||
-             (Array.isArray(profile.recent?.products) && profile.recent.products.length > 0) ||
-             (Array.isArray(profile.recent?.tourism) && profile.recent.tourism.length > 0) ? (
-              <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <Briefcase size={20} className="text-brand-600" />
-                  Recent Projects
-                </h2>
-                <div className="space-y-3">
-                  {/* Recent Funding */}
-                  {Array.isArray(profile.recent?.funding) && profile.recent.funding.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="font-semibold text-gray-800 mb-3 text-lg">Funding Projects</h3>
-                      <div className="space-y-3">
-                        {profile.recent.funding.map((f) => (
-                          <div key={`fund-${f.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-semibold text-sm text-gray-900">{f.title}</div>
-                              <div className="text-xs text-gray-500">{timeAgo(f.createdAt)}</div>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {typeof f.goal !== "undefined" && (<span>Goal: {f.currency || ""}{f.goal}</span>)}
-                              {typeof f.raised !== "undefined" && (<span className="ml-2">• Raised: {f.currency || ""}{f.raised}</span>)}
-                              {(f.city || f.country) ? (<span className="ml-2">• {fmtLoc(f.city, f.country)}</span>) : null}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Recent Services */}
-                  {Array.isArray(profile.recent?.services) && profile.recent.services.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="font-semibold text-gray-800 mb-3 text-lg">Services</h3>
-                      <div className="space-y-3">
-                        {profile.recent.services.map((s) => (
-                          <div key={`svc-${s.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-semibold text-sm text-gray-900">{s.title}</div>
-                              <div className="text-xs text-gray-500">{timeAgo(s.createdAt)}</div>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {s.serviceType || "Service"}{s.priceAmount ? ` • ${s.priceAmount} ${s.currency || ""}` : ""}
-                              {(s.city || s.country) ? ` • ${fmtLoc(s.city, s.country)}` : ""}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Recent Products */}
-                  {Array.isArray(profile.recent?.products) && profile.recent.products.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="font-semibold text-gray-800 mb-3 text-lg">Products</h3>
-                      <div className="space-y-3">
-                        {profile.recent.products.map((p) => (
-                          <div key={`prd-${p.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-semibold text-sm text-gray-900">{p.title}</div>
-                              <div className="text-xs text-gray-500">{timeAgo(p.createdAt)}</div>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {typeof p.price !== "undefined" ? `Price: ${p.price} ${p.currency || ""}` : "Product"}
-                              {p.country ? ` • ${p.country}` : ""}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Recent Tourism */}
-                  {Array.isArray(profile.recent?.tourism) && profile.recent.tourism.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="font-semibold text-gray-800 mb-3 text-lg">Tourism Posts</h3>
-                      <div className="space-y-3">
-                        {profile.recent.tourism.map((t) => (
-                          <div key={`tour-${t.id}`} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="font-semibold text-sm text-gray-900">{t.title}</div>
-                              <div className="text-xs text-gray-500">{timeAgo(t.createdAt)}</div>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {t.postType || "Destination"} • {t.location || t.country || "—"}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : null}
+           
 
             {/* Meetings - Modern Card Design */}
             <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
@@ -2379,7 +2672,107 @@ export default function PublicProfilePage() {
         requireValue={true}
         onConfirm={handleReportUser}
       />
+
+      <MediaViewer
+        isOpen={mediaViewerOpen}
+        onClose={() => setMediaViewerOpen(false)}
+        mediaUrl={profile?.avatarUrl}
+        mediaType="image"
+        alt={`${profile?.name}'s profile picture`}
+      />
+
+      {/* Image Slider Modal */}
+      {imageSliderOpen && validImages.length > 0 && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black bg-opacity-90">
+          <div className="relative max-w-4xl max-h-[90vh] w-full mx-4">
+            {/* Close button */}
+            <button
+              onClick={closeImageSlider}
+              className="absolute top-4 right-4 z-20 text-white hover:text-gray-300 transition-colors"
+              aria-label="Close image slider"
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Main image */}
+            <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+              <img
+                src={validImages[currentImageIndex].url}
+                alt={validImages[currentImageIndex].alt}
+                className="w-full h-full object-contain"
+              />
+
+              {/* Image info overlay */}
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
+                <div className="text-white">
+                  <div className="text-sm font-medium capitalize">
+                    {validImages[currentImageIndex].type}
+                  </div>
+                  <div className="text-sm opacity-90 truncate">
+                    {validImages[currentImageIndex].itemTitle}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation arrows */}
+            {validImages.length > 1 && (
+              <>
+                <button
+                  onClick={goToPrevImage}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-gray-300 transition-colors"
+                  aria-label="Previous image"
+                >
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                <button
+                  onClick={goToNextImage}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-gray-300 transition-colors"
+                  aria-label="Next image"
+                >
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </>
+            )}
+
+            {/* Image counter */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full">
+              {currentImageIndex + 1} of {validImages.length}
+            </div>
+
+            {/* Thumbnail strip */}
+            {validImages.length > 1 && (
+              <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 flex gap-2 max-w-2xl overflow-x-auto">
+                {validImages.map((image, index) => (
+                  <button
+                    key={`${image.itemId}-${index}`}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`flex-shrink-0 w-16 h-12 rounded border-2 transition-all ${
+                      index === currentImageIndex
+                        ? 'border-white opacity-100'
+                        : 'border-gray-400 opacity-60 hover:opacity-80'
+                    }`}
+                  >
+                    <img
+                      src={image.url}
+                      alt={image.alt}
+                      className="w-full h-full object-cover rounded"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
-     </DefaultLayout>
-  );
-}
+      </DefaultLayout>
+   );
+  }

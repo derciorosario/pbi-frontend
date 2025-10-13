@@ -7,7 +7,7 @@ import LoginDialog from "../../components/LoginDialog.jsx";
 import MobileFiltersButton from "../../components/MobileFiltersButton.jsx";
 import MobileFiltersBottomSheet from "../../components/MobileFiltersBottomSheet.jsx";
 import FiltersCard from "../../components/FiltersCard.jsx";
-import TabsAndAdd from "../../components/TabsAndAdd.jsx";
+import PostComposer from "../../components/PostComposer.jsx";
 import SuggestedMatches from "../../components/SuggestedMatches.jsx";
 import EventCard from "../../components/EventCard.jsx";
 import JobCard from "../../components/JobCard.jsx";
@@ -266,85 +266,69 @@ export default function FeedPage() {
     // default = event
     return <EventCard type={view} key={`event-${item.id}`} item={item} e={item} matchPercentage={item.matchPercentage} />;
   };
+return (
+  <DefaultLayout>
+   <main className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
+      <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
-  return (
-    <>
-      <main id="explore" className={`mx-auto ${data._openPopUps.profile ? "relative z-50" : ""} max-w-7xl px-4 sm:px-6 lg:px-8 py-10 relative`}>
-        <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
-
-        <div className="grid lg:grid-cols-12 gap-6">
-          {user && (
-            <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
-             
-            
-
-              <div className="_sticky top-0 z-10 _bg-white">
-                {/***<CompanyAssociationPanel/> */}
-                <FiltersCard {...filtersProps} />
-              </div>
-
-              <QuickActions
-                title="Quick Actions"
-                items={[
-                  { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
-                  { label: "Settings and Privacy", Icon: Pencil, onClick: () => navigate("/settings") },
-                  { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
-                  { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
-                  { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company"},
-                  { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
-                  { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
-                  { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
-                ]}
-              />
-              <ProfileCard />
-            </aside>
-          )}
-
-          <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-3 flex items-center flex-wrap w-full justify-between">
-              <div className="w-full">
-                <TabsAndAdd
-                  tabs={tabs}
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  items={[
-                    { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
-                    { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
-                    { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company"},
-                    { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
-                    { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company" },
-                    { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company" },
-                  ]}
-                />
-              </div>
-            </div>
-
-            <section className="lg:col-span-2 space-y-4 overflow-hidden">
-              {loadingFeed && <CardSkeletonLoader columns={1} />}
-
-              {!loadingFeed && showTotalCount && (
-                <div className="text-sm text-gray-600">
-                  {totalCount} result{totalCount === 1 ? "" : "s"}
-                </div>
-              )}
-
-              {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
-
-              {!loadingFeed && items.length > 0 && (
-                <div className={`grid grid-cols-1 ${view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"} gap-6`}>
-                  {items.map(renderItem)}
-                </div>
-              )}
-            </section>
-
-            <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
-              <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
-            </aside>
-          </div>
+      <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+        <div className="_sticky top-0 z-10 _bg-white">
+          <FiltersCard {...filtersProps} />
         </div>
-      </main>
 
-      <MobileFiltersBottomSheet isOpen={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)} filtersProps={filtersProps} />
-    </>
-  );
+        <QuickActions
+          title="Quick Actions"
+          items={[
+            { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
+            { label: "Settings and Privacy", Icon: Pencil, onClick: () => navigate("/settings") },
+            { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
+            { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
+            { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),from:'job',hide:user?.accountType=="company"},
+            { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),from:'job', hide:user?.accountType=="company" },
+            { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),from:'event', hide:user?.accountType=="company" },
+            { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),from:'event', hide:user?.accountType=="company" },
+          ]}
+        />
+        <ProfileCard />
+      </aside>
+
+      <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <div className="flex items-center flex-wrap w-full justify-between mb-4">
+            <PostComposer from={'feed'} typeOfPosts={[
+              { label: "Post Job Opportunity", Icon: PlusCircle, hide:user?.accountType=="individual"},
+              { label: "Create Event", Icon: PlusCircle, hide:user?.accountType=="individual"},
+              { label: "Share Job Experience", Icon: PlusCircle, from:'job', hide:user?.accountType=="company"},
+              { label: "Share Job Need", Icon: PlusCircle, from:'job', hide:user?.accountType=="company" },
+              { label: "Share Event Experience", Icon: PlusCircle, from:'event', hide:user?.accountType=="company" },
+              { label: "Ask About an Event", Icon: PlusCircle, from:'event', hide:user?.accountType=="company" },
+            ]}/>
+          </div>
+          <section className="space-y-4 overflow-hidden">
+            {loadingFeed && <CardSkeletonLoader columns={1} />}
+
+            {!loadingFeed && showTotalCount && (
+              <div className="text-sm text-gray-600">
+                {totalCount} result{totalCount === 1 ? "" : "s"}
+              </div>
+            )}
+
+            {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
+
+            {!loadingFeed && items.length > 0 && (
+              <div className={`grid grid-cols-1 ${view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"} gap-6`}>
+                {items.map(renderItem)}
+              </div>
+            )}
+          </section>
+        </div>
+        <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+          <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
+        </aside>
+      </div>
+    </main>
+
+    <MobileFiltersBottomSheet isOpen={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)} filtersProps={filtersProps} />
+  </DefaultLayout>
+);
 }

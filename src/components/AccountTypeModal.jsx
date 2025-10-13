@@ -5,15 +5,60 @@ import client from '../api/client';
 const AccountTypeModal = ({ isOpen, onClose, userInfo, accessToken, onSuccess }) => {
   const [selectedType, setSelectedType] = useState('individual');
   const [loading, setLoading] = useState(false);
+  const [showBirthDateInput, setShowBirthDateInput] = useState(false);
+  const [birthDate, setBirthDate] = useState('');
+  const [birthDateError, setBirthDateError] = useState('');
 
   if (!isOpen) return null;
 
+  // Age validation function
+  const validateAge = (birthDate) => {
+    if (!birthDate) {
+      return "Birth date is required.";
+    }
+
+    const birthDateObj = new Date(birthDate);
+    const today = new Date();
+    const minAge = 18; // Minimum age requirement
+
+    if (birthDateObj > today) {
+      return "Birth date cannot be in the future.";
+    }
+
+    const age = today.getFullYear() - birthDateObj.getFullYear();
+    if (age < minAge) {
+      return `You must be at least ${minAge} years old to sign up.`;
+    }
+
+    return null; // No error
+  };
+
+  const handleAccountTypeSelection = (type) => {
+    setSelectedType(type);
+    setShowBirthDateInput(true);
+    setBirthDate('');
+    setBirthDateError('');
+  };
+
+  const handleBirthDateChange = (e) => {
+    setBirthDate(e.target.value);
+    setBirthDateError('');
+  };
+
   const handleSubmit = async () => {
+    // Validate birth date first
+    const ageError = validateAge(birthDate);
+    if (ageError) {
+      setBirthDateError(ageError);
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await client.post('/auth/google', {
         accessToken,
-        accountType: selectedType
+        accountType: selectedType,
+        birthDate: selectedType === 'individual' ? birthDate : undefined
       });
 
       const token = response?.data?.token;
@@ -58,7 +103,7 @@ const AccountTypeModal = ({ isOpen, onClose, userInfo, accessToken, onSuccess })
         <div className="space-y-3 mb-6">
           <button
             type="button"
-            onClick={() => setSelectedType('individual')}
+            onClick={() => handleAccountTypeSelection('individual')}
             className={`w-full p-4 rounded-xl border-2 transition-all ${
               selectedType === 'individual'
                 ? 'border-brand-500 bg-brand-50 text-brand-700'
@@ -78,7 +123,7 @@ const AccountTypeModal = ({ isOpen, onClose, userInfo, accessToken, onSuccess })
 
           <button
             type="button"
-            onClick={() => setSelectedType('company')}
+            onClick={() => handleAccountTypeSelection('company')}
             className={`w-full p-4 rounded-xl border-2 transition-all ${
               selectedType === 'company'
                 ? 'border-brand-500 bg-brand-50 text-brand-700'
@@ -97,6 +142,27 @@ const AccountTypeModal = ({ isOpen, onClose, userInfo, accessToken, onSuccess })
           </button>
         </div>
 
+        {/* Birth Date Input - Show after account type selection */}
+        {showBirthDateInput && selectedType === 'individual' && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Birth Date
+            </label>
+            <input
+              type="date"
+              value={birthDate}
+              onChange={handleBirthDateChange}
+              className={`w-full rounded-xl border px-4 py-3 text-sm outline-none ring-brand-500 focus:ring-2 bg-white ${
+                birthDateError ? 'border-red-400 focus:ring-red-400' : 'border-gray-200'
+              }`}
+              max={new Date().toISOString().split('T')[0]} // Prevent future dates
+            />
+            {birthDateError && (
+              <p className="text-xs text-red-600 mt-1">{birthDateError}</p>
+            )}
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex gap-3">
           <button
@@ -108,7 +174,7 @@ const AccountTypeModal = ({ isOpen, onClose, userInfo, accessToken, onSuccess })
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading}
+            disabled={loading || (selectedType === 'individual' && !birthDate)}
             className="flex-1 px-4 py-3 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-xl hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading && (
