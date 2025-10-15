@@ -1116,6 +1116,20 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
             />
           </section>
 
+            {/* Description */}
+          <section>
+            <h2 className="font-semibold">Description *</h2>
+            <textarea
+              value={form.description}
+              onChange={(e) => setField("description", e.target.value)}
+              placeholder="Example: Just launched our new product! Learned valuable lessons about scaling and user onboarding."
+              _placeholder="Describe what happened, what you learned, challenges faced, outcomes…"
+              className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+              rows={5}
+              required
+            />
+          </section>
+
           {/* Date & Location */}
           <section>
             <h2 className="font-semibold hidden">When & Where</h2>
@@ -1166,19 +1180,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           </section>
 
 
-          {/* Description */}
-          <section>
-            <h2 className="font-semibold">Description *</h2>
-            <textarea
-              value={form.description}
-              onChange={(e) => setField("description", e.target.value)}
-              placeholder="Example: Just launched our new product! Learned valuable lessons about scaling and user onboarding."
-              _placeholder="Describe what happened, what you learned, challenges faced, outcomes…"
-              className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-              rows={5}
-              required
-            />
-          </section>
+        
 
           {/* Tags */}
           <section className="hidden">

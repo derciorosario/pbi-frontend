@@ -920,7 +920,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
 
             {/* Basic Info */}
             <section>
-              <h2 className="font-semibold text-brand-600">Basic Information</h2>
+              <h2 className="font-semibold text-brand-600">Basic Information <label className="text-[crimson]">*</label></h2>
               <div className="mt-3 grid gap-4">
                 {/*** <label className="text-[12px] font-medium text-gray-700">Enter event title</label> */}
                 <input
@@ -952,9 +952,10 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
 
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
               <div className="grid gap-1">
-                <label className="text-[12px] font-medium text-gray-700">Date</label>
+                <label className="text-[12px] font-medium text-gray-700">Date <label className="text-[crimson]">*</label></label>
                 <input
                   type="date"
+                  min={isEditMode ? form.createdAt?.split('T')?.[0] : new Date().toISOString().split('T')[0]}
                   value={form.date}
                   onChange={(e) => setField("date", e.target.value)}
                   className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
@@ -963,7 +964,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
               </div>
 
               <div className="grid gap-1">
-                <label className="text-[12px] font-medium text-gray-700">Start time</label>
+                <label className="text-[12px] font-medium text-gray-700">Start time <label className="text-[crimson]">*</label></label>
                 <input
                   type="time"
                   value={form.startTime}
@@ -1159,6 +1160,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
               </label>
               <input
                 type="date"
+                 min={isEditMode ? form.createdAt?.split('T')?.[0] : new Date().toISOString().split('T')[0]}
                 value={form.registrationDeadline}
                 onChange={(e) => setField("registrationDeadline", e.target.value)}
                 className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-200"
