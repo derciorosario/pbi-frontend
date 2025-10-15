@@ -764,7 +764,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
   }
 
   function validate() {
-    if (!form.title.trim()) return "Title is required";
+ //   if (!form.title.trim()) return "Title is required";
     if (!form.description.trim()) return "Description is required";
     return null;
   }
@@ -932,7 +932,6 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
                   onChange={(e) => setField("title", e.target.value)}
                   placeholder="e.g., Looking for a React Developer position"
                   className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  required
                 />
               </div>
               <div>

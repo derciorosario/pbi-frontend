@@ -126,7 +126,7 @@ export default function PostComposer({typeOfPosts, from}) {
             {typeOfPosts?.slice(0, 3).map(item => (
               <button
                 key={item.type || item.id}
-                className="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-all duration-200 font-medium px-3 py-2 rounded-lg hover:bg-brand-50"
+                className="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-all bg-gray-50 duration-200 font-medium px-3 py-2 rounded-full hover:bg-brand-50"
                 onClick={() => {
                   if (!user?.id) {
                     data._showPopUp?.("login_prompt");

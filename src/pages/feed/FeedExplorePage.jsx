@@ -20,7 +20,7 @@ import { useData } from "../../contexts/DataContext.jsx";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import DefaultLayout from "../../layout/DefaultLayout.jsx";
 import QuickActions from "../../components/QuickActions.jsx";
-import { Pencil, PlusCircle, Rocket } from "lucide-react";
+import { Briefcase, CalendarPlus, HelpCircle, MessageSquare, Pencil, PlusCircle, Rocket, Search, Star } from "lucide-react";
 import ProfileCard from "../../components/ProfileCard.jsx";
 import ServiceCard from "../../components/ServiceCard.jsx";
 import ProductCard from "../../components/ProductCard-1.jsx";
@@ -295,14 +295,18 @@ return (
       <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="flex items-center flex-wrap w-full justify-between mb-4">
-            <PostComposer from={'feed'} typeOfPosts={[
-              { label: "Post Job Opportunity", Icon: PlusCircle, hide:user?.accountType=="individual"},
-              { label: "Create Event", Icon: PlusCircle, hide:user?.accountType=="individual"},
-              { label: "Share Job Experience", Icon: PlusCircle, from:'job', hide:user?.accountType=="company"},
-              { label: "Search for a job", Icon: PlusCircle, from:'job', hide:user?.accountType=="company" },
-              { label: "Share Event Experience", Icon: PlusCircle, from:'event', hide:user?.accountType=="company" },
-              { label: "Ask About an Event", Icon: PlusCircle, from:'event', hide:user?.accountType=="company" },
-            ]}/>
+          
+          <PostComposer
+            from="feed"
+            typeOfPosts={[
+              { label: "Post Job Opportunity", Icon: Briefcase, hide: user?.accountType === "individual" },
+              { label: "Create Event", Icon: CalendarPlus, hide: user?.accountType === "individual" },
+              { label: "Share Job Experience", Icon: Star, from: "job", hide: user?.accountType === "company" },
+              { label: "Search for a Job", Icon: Search, from: "job", hide: user?.accountType === "company" },
+              { label: "Share Event Experience", Icon: MessageSquare, from: "event", hide: user?.accountType === "company" },
+              { label: "Ask About an Event", Icon: HelpCircle, from: "event", hide: user?.accountType === "company" },
+            ]}
+          />
           </div>
           <section className="space-y-4 overflow-hidden">
             {loadingFeed && <CardSkeletonLoader columns={1} />}

@@ -26,6 +26,7 @@ export default function PostCreationDialog({ isOpen, onClose, postType, from, hi
       } triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} />;
     } else if (postType.label === 'Search for a job' || postType.label === 'Ask About an Event' || postType.label === 'Search for a Product' || postType.label === 'Ask About a Service' || postType.label === 'Ask About Tourism') {
       return <CreateNeedPage type={
+        postType.label === 'Search for a job' ? 'job' :
         postType.label === 'Ask About an Event' ? 'event' :
         postType.label === 'Search for a Product' ? 'product' :
         postType.label === 'Ask About a Service' ? 'service' :

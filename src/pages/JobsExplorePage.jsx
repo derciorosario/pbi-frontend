@@ -14,7 +14,7 @@ import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
-import { Pencil, PlusCircle, Rocket } from "lucide-react";
+import { Briefcase, FileText, Pencil, PlusCircle, Rocket, SearchIcon, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
@@ -692,11 +692,9 @@ export default function PeopleFeedPage() {
 
           <div className="lg:col-span-2">
             <div className="flex items-center flex-wrap w-full justify-between mb-4">
-              <PostComposer from={'job'} typeOfPosts={[
-                  { label: "Post Job Opportunity",short_label:'Post Job', Icon: PlusCircle,hide:user?.accountType=="individual",type:'main'},
-                  { label: "Share Job Experience", Icon: PlusCircle,hide:user?.accountType=="company"},
-                  { label: "Search for a job", Icon: PlusCircle,hide:user?.accountType=="company"},
-              ]}/>
+         
+
+            <PostComposer from={'job'} typeOfPosts={[ { label: "Post Job Opportunity",short_label:'Post Job', Icon: Briefcase,hide:user?.accountType=="individual",type:'main'}, { label: "Share Job Experience", Icon: Star,hide:user?.accountType=="company"}, { label: "Search for a job", Icon: SearchIcon,hide:user?.accountType=="company"}, ]}/>
             </div>
             <section className="space-y-4 overflow-hidden">
               {renderMiddle()}

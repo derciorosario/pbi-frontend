@@ -673,7 +673,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
 
   function validate() {
     if (!form.relatedEntityType) return "Related entity type is required.";
-    if (!form.title.trim()) return "Title is required.";
+   // if (!form.title.trim()) return "Title is required.";
     if (!form.description.trim()) return "Description is required.";
     return null;
   }

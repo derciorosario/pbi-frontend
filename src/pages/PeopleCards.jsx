@@ -400,7 +400,7 @@ export default function PeopleProfileCard({
               <div className="p-5 pr-0">
                   {avatarUrl ? (
                   <div
-                    className={`flex bg-brand-300 items-center justify-center w-24 h-24 shadow-xl ${isCompany ? 'border-4 border-white rounded-2xl' : 'border-4 border-white rounded-2xl'} overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-200`}
+                    className={`flex bg-white items-center justify-center w-24 h-24 shadow-xl ${isCompany ? 'border-4 border-white rounded-2xl' : 'border-4 border-white rounded-2xl'} overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-200`}
                     onClick={() => {
                       navigate(`/profile/${id}`)
                     }}
@@ -592,7 +592,7 @@ export default function PeopleProfileCard({
         
 <div className="mt-6">
         <h3 
-        onClick={() => navigate(`/profile/${id}`)} className={`font-bold text-sm mb-2 hover:underline ${isCompany ? 'text-gray-900' : 'text-gray-900'} group-hover/name:text-brand-600 transition-colors leading-tight break-words`} title={name}>
+        onClick={() => navigate(`/profile/${id}`)} className={`font-bold cursor-pointer text-sm mb-2 hover:underline ${isCompany ? 'text-gray-900' : 'text-gray-900'} group-hover/name:text-brand-600 transition-colors leading-tight break-words`} title={name}>
                     {name || "Anonymous User"}
         </h3>
         </div>
