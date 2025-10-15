@@ -300,11 +300,11 @@ return (
             from="feed"
             typeOfPosts={[
               { label: "Post Job Opportunity", Icon: Briefcase, hide: user?.accountType === "individual" },
-              { label: "Create Event", Icon: CalendarPlus, hide: user?.accountType === "individual" },
+              { label: "Share an event", Icon: CalendarPlus, hide: user?.accountType === "individual" },
               { label: "Share Job Experience", Icon: Star, from: "job", hide: user?.accountType === "company" },
               { label: "Search for a Job", Icon: Search, from: "job", hide: user?.accountType === "company" },
               { label: "Share Event Experience", Icon: MessageSquare, from: "event", hide: user?.accountType === "company" },
-              { label: "Ask About an Event", Icon: HelpCircle, from: "event", hide: user?.accountType === "company" },
+              { label: "Search for an event", Icon: HelpCircle, from: "event", hide: user?.accountType === "company" },
             ]}
           />
           </div>

@@ -484,7 +484,7 @@ export default function MomentCard({
         {/* POST CONTENT */}
         <div className="px-4 pb-3">
           {/* Moment Title */}
-          <h3
+         {/** <h3
             className="font-semibold text-base text-gray-900 mb-1 hover:text-brand-600 cursor-pointer transition-colors"
             onClick={() => {
               if (isOwner) navigate(`/moment/${moment.id}`);
@@ -492,7 +492,7 @@ export default function MomentCard({
             }}
           >
             {moment?.title}
-          </h3>
+          </h3> */}
 
           {/* Description */}
           <div className="text-sm text-gray-700 mb-2">

@@ -878,6 +878,20 @@ function removeTag(idx) {
               </div>
             </div>
 
+            
+            {/* Pitch / Description */}
+            <div className="mt-4">
+              <Label required>Pitch / Description</Label>
+              <Textarea
+                name="pitch"
+                value={form.pitch}
+                onChange={change}
+                rows={6}
+                placeholder="Explain the problem, your solution, market, traction, and how funds will be used."
+                required
+              />
+            </div>
+
             {/* Location */}
             <div className="mt-4 grid md:grid-cols-2 gap-4">
               <div>
@@ -1022,18 +1036,6 @@ function removeTag(idx) {
               </div>
             </div>
 
-            {/* Pitch / Description */}
-            <div className="mt-4">
-              <Label required>Pitch / Description</Label>
-              <Textarea
-                name="pitch"
-                value={form.pitch}
-                onChange={change}
-                rows={6}
-                placeholder="Explain the problem, your solution, market, traction, and how funds will be used."
-                required
-              />
-            </div>
 
             {/* Rewards / Team */}
             <div className="mt-4 grid md:grid-cols-2 gap-4">
@@ -1060,7 +1062,7 @@ function removeTag(idx) {
             </div>
 
             {/* Links */}
-            <div className="mt-4">
+            <div className="mt-4 hidden">
               <Label>Links (site, deck, demo)</Label>
               <Input
                 name="links"

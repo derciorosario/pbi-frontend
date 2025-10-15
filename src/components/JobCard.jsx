@@ -692,6 +692,7 @@ export default function JobCard({
               {/* Location */}
               <div className="flex items-center gap-1 text-sm text-gray-600">
                 <MapPin size={14} />
+                {!job?.countries?.length && !job?.country && <span>All countries</span>}
                 <span>
                   {(() => {
                     // Priority: use countries array if available, fallback to single country/city

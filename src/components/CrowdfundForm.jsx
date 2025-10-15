@@ -292,6 +292,8 @@ export default function CrowdfundForm({ triggerImageSelection = false, hideHeade
   const [uploading, setUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
 
+  const [showAudienceSection, setShowAudienceSection] = useState(false);
+
   // Trigger image selection when component mounts with triggerImageSelection
   useEffect(() => {
     if (triggerImageSelection && fileRef.current) {
@@ -934,6 +936,7 @@ function removeTag(idx) {
                   required
                 />
               </div>
+              
               <div className="hidden">
                 <Label required>Category</Label>
                 <Select name="categoryId" value={form.categoryId} onChange={change} required>
@@ -945,6 +948,20 @@ function removeTag(idx) {
                   ))}
                 </Select>
               </div>
+            </div>
+
+             {/* Pitch / Description */}
+            <div className="mt-4">
+              <Label required>Pitch / Description</Label>
+              <Textarea
+                name="pitch"
+                value={form.pitch}
+                onChange={change}
+                rows={6}
+                placeholder="Example: We're building a mobile payment platform specifically for small businesses in rural areas. Our solution addresses the lack of banking infrastructure by enabling digital transactions through basic feature phones. Funds will be used to expand our merchant network and develop additional financial services."
+                _placeholder="Explain the problem, your solution, market, traction, and how funds will be used."
+                required
+              />
             </div>
 
 
@@ -1105,21 +1122,10 @@ function removeTag(idx) {
               </div>
             </div>
 
-            {/* Pitch / Description */}
-            <div className="mt-4">
-              <Label required>Pitch / Description</Label>
-              <Textarea
-                name="pitch"
-                value={form.pitch}
-                onChange={change}
-                rows={6}
-                placeholder="Explain the problem, your solution, market, traction, and how funds will be used."
-                required
-              />
-            </div>
+           
 
             {/* Rewards / Team */}
-            <div className="mt-4 grid md:grid-cols-2 gap-4">
+            <div className="mt-4 grid md:grid-cols-2 gap-4 hidden">
               <div>
                 <Label>Rewards / Perks (optional)</Label>
                 <Textarea
@@ -1143,7 +1149,7 @@ function removeTag(idx) {
             </div>
 
             {/* Links */}
-            <div className="mt-4">
+            <div className="mt-4 hidden">
               <Label>Links (site, deck, demo)</Label>
               <Input
                 name="links"
@@ -1154,7 +1160,7 @@ function removeTag(idx) {
             </div>
 
             {/* Contact & Tags */}
-            <div className="mt-4 grid md:grid-cols-2 gap-4">
+            <div className="mt-4 grid md:grid-cols-2 gap-4 hidden">
               <div>
                 <Label>Contact Email</Label>
                 <Input name="email" value={form.email} onChange={change} placeholder="you@company.com" />
@@ -1165,7 +1171,7 @@ function removeTag(idx) {
               </div>
             </div>
 
-           <div className="mt-4 mb-6">
+           <div className="mt-4 mb-6 hidden">
             <Label>Tags</Label>
             <div className="flex items-center gap-2">
            <div className="flex-1"> 
@@ -1223,7 +1229,7 @@ function removeTag(idx) {
 
             
             {/* ===== General Classification (SEARCHABLE) ===== */}
-            <div>
+            <div className="mt-5">
               <h2 className="font-semibold text-brand-600">Classification</h2>
               <p className="text-xs text-gray-600 mb-3">
                 Search and pick the category that best describes your crowdfunding project.
@@ -1272,7 +1278,7 @@ function removeTag(idx) {
             </div>
             
             {/* ===== Industry Classification ===== */}
-            <div className="mt-6">
+            <div className="mt-6 hidden">
               <h2 className="font-semibold text-brand-600">Industry Classification</h2>
               <p className="text-xs text-gray-600 mb-3">
                 Select the industry category and subcategory that best describes your crowdfunding project.
@@ -1308,25 +1314,64 @@ function removeTag(idx) {
               </div>
             </div>
 
+            
+           
+           {/* Audience Targeting */}
+          <div className="mt-4">
+            <div className="mb-4">
+              {!showAudienceSection ? (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAudienceSection(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Define Target Audience (optional)
+                  </button>
+                  <p className="text-xs text-gray-500">
+                    Select specific identities and industries to target your funding project to relevant audiences
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
+                      <h3 className="font-semibold text-brand-600">Target Audience</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAudienceSection(false)}
+                      className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50"
+                    >
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                      Hide
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Select who should see this funding project in their feeds and recommendations.
+                  </p>
 
-            {/* Audience Targeting */}
-            <div className="mt-4">
-              <Label>Target Audience</Label>
-              <div className="mt-2 border border-gray-200 rounded-xl p-4 bg-gray-50/60">
-                <p className="text-sm text-gray-500 mb-3">
-                  Select who should see this funding project in their feeds and recommendations.
-                </p>
-                {audTree.length > 0 ? (
-                  <AudienceTree
-                    tree={audTree || []}
-                    selected={audSel}
-                    onChange={setAudSel}
-                  />
-                ) : (
-                  <p className="text-sm text-gray-400 italic">Loading audience options...</p>
-                )}
-              </div>
+                  <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/60">
+                    {audTree.length > 0 ? (
+                      <AudienceTree
+                        tree={audTree || []}
+                        selected={audSel}
+                        onChange={setAudSel}
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-400 italic">Loading audience options...</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
 
 
 

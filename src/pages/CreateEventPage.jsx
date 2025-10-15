@@ -460,6 +460,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
     categoryId: "",
     subcategoryId: "",
   });
+  const [showAudienceSection, setShowAudienceSection] = useState(false);
 
   const [form, setForm] = useState({
     eventType: "Workshop",
@@ -874,8 +875,21 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
             onSubmit={onSubmit}
             className="mt-6 rounded-2xl bg-white border p-6 shadow-sm space-y-8"
           >
-            {/* Event Type */}
+
+               {/* Cover */}
             <section>
+              <h2 className="font-semibold text-brand-600 mt-8">Cover Image</h2>
+              <CoverImagePicker
+                ref={imagePickerRef}
+                label="Cover Image (optional)"
+                value={coverImageBase64}
+                preview={typeof coverImageBase64 === 'string' ? coverImageBase64 : null}
+                onChange={setCoverImageBase64}
+              />
+            </section>
+
+            {/* Event Type */}
+          {/***  <section>
               <h2 className="font-semibold text-brand-600">Event Type</h2>
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {["Workshop", "Conference", "Networking"].map((t) => (
@@ -900,24 +914,30 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
                   </button>
                 ))}
               </div>
-            </section>
+            </section> */}
+
+           
 
             {/* Basic Info */}
             <section>
               <h2 className="font-semibold text-brand-600">Basic Information</h2>
               <div className="mt-3 grid gap-4">
+                {/*** <label className="text-[12px] font-medium text-gray-700">Enter event title</label> */}
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setField("title", e.target.value)}
-                  placeholder="Enter event title"
+                  _placeholder="Enter event title"
+                  placeholder="Event title: Annual Marketing Conference 2024"
                   className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                   required
                 />
+                {/***<label className="text-[12px] font-medium text-gray-700">Description</label> */}
                 <textarea
                   value={form.description}
                   onChange={(e) => setField("description", e.target.value)}
-                  placeholder="Describe your event..."
+                  _placeholder="Describe your event..."
+                   placeholder="Describe your event: Join us for a day of networking and learning about the latest marketing trends. Featuring industry experts and hands-on workshops."
                   className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                   rows={4}
                   required
@@ -1188,7 +1208,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
             </section>
 
             {/* Industry Classification */}
-            <section>
+            <section className="hidden">
               <h2 className="font-semibold text-brand-600">Industry Classification</h2>
               <p className="text-xs text-gray-600 mb-3">
                 Select the industry category and subcategory that best describes your event.
@@ -1225,25 +1245,52 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
             </section>
 
             {/* Audience */}
-            <section>
-              <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
-              <p className="text-xs text-gray-600 mb-3">
-                Select who should see this event. You can choose multiple identities, categories, subcategories, and sub-subcategories.
-              </p>
-              <AudienceTree tree={audTree} selected={audSel} onChange={(next) => setAudSel(next)} />
-            </section>
+          <section>
+            <div className="mb-4">
+              {!showAudienceSection ? (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAudienceSection(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Define Target Audience (optional)
+                  </button>
+                  <p className="text-xs text-gray-500">
+                    Select specific identities and industries to target your event to relevant audiences
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
+                      <h3 className="font-semibold text-brand-600">Share With (Target Audience)</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAudienceSection(false)}
+                      className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50"
+                    >
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                      Hide
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Select who should see this event. You can choose multiple identities, categories, subcategories, and sub-subcategories.
+                  </p>
 
-            {/* Cover */}
-            <section>
-              <h2 className="font-semibold text-brand-600 mt-8">Cover Image</h2>
-              <CoverImagePicker
-                ref={imagePickerRef}
-                label="Cover Image (optional)"
-                value={coverImageBase64}
-                preview={typeof coverImageBase64 === 'string' ? coverImageBase64 : null}
-                onChange={setCoverImageBase64}
-              />
-            </section>
+                  <AudienceTree tree={audTree} selected={audSel} onChange={(next) => setAudSel(next)} />
+                </div>
+              )}
+            </div>
+          </section>
+                    
 
             {/* Actions */}
             <div className="flex justify-end gap-3">

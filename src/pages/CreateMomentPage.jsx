@@ -886,7 +886,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           {!isEditMode && (
             <div>
               <h1 className="text-2xl font-bold mt-3">
-                {isEditMode ? "Edit Experience" : "Create Experience"}
+                {isEditMode ? "Edit Experience" : "Share Experience"}
               </h1>
               <p className="text-sm text-gray-600">
                 {form.relatedEntityType
@@ -1230,7 +1230,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           </section>
 
          
-          <section className={`${form.relatedEntityType=="job" ? 'hidden':''}`}>
+          <section className={`${form.relatedEntityType=="_job" ? 'hidden':''}`}>
             <h2 className="font-semibold text-brand-600">General Classification</h2>
             <div className="grid md:grid-cols-2 gap-4 mt-2">
               <div>

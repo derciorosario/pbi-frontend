@@ -36,3 +36,6 @@ export const updateAvailability = (payload) => client.put("/profile/availability
 
 // AVATAR
 export const updateAvatarUrl = (payload) => client.put("/profile/avatar", payload);
+
+export const updateCoverImage  = (payload) => client.put("/profile/cover-image", payload);
+

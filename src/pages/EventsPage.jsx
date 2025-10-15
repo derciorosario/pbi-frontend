@@ -15,7 +15,7 @@ import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
-import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
+import { AlarmClock, Calendar, CalendarPlus, MessageSquare, Pencil, PlusCircle, Rocket, Search, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
@@ -514,16 +514,14 @@ export default function EventsPage() {
                   from={from}
                   loading={loadingFeed}
               />}
-            />
-
-            
+            /> 
           </div>
 
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil,onClick: () => navigate("/profile") },
-            { label: "Post an Event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
+            { label: "Share an event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
             { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company"},
-            { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company"},
+            { label: "Search for an event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company"},
           ]} />
 
           <ProfileCard />
@@ -533,11 +531,16 @@ export default function EventsPage() {
 
           <div className="lg:col-span-2">
             <div className="flex items-center flex-wrap w-full justify-between mb-4">
-              <PostComposer from={'event'} typeOfPosts={[
-                  { label: "Create Event", Icon: PlusCircle,hide:user?.accountType=="individual",type:'main'},
-                  { label: "Share Event Experience", Icon: PlusCircle,hide:user?.accountType=="company" },
-                  { label: "Ask About an Event", Icon: PlusCircle,hide:user?.accountType=="company" },
-              ]}/>
+             
+             <PostComposer
+                from="event"
+                typeOfPosts={[
+                  { label: "Share an event", Icon: CalendarPlus, hide: user?.accountType === "individual", type: "main" },
+                  { label: "Share Event Experience", Icon: Star, hide: user?.accountType === "company" },
+                  { label: "Search for an event", Icon: Search, hide: user?.accountType === "company" },
+                ]}
+              />
+
             </div>
             <section className="space-y-4 overflow-hidden">
               {renderMiddle()}

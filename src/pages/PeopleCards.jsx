@@ -315,6 +315,7 @@ function computeTimeAgo(explicit, createdAt) {
 export default function PeopleProfileCard({
   id,
   avatarUrl,
+  coverImage,
   name,
   role,
   city,
@@ -430,159 +431,167 @@ export default function PeopleProfileCard({
 
          
         </div>
-      ) : 
-      (
-        /* Header Section - Bold banner design with company/profile showcase */
-        <div className="relative w-full overflow-hidden">
-          {/* Company/Brand Banner Background */}
-          <div className={`h-32 ${isCompany ? 'bg-gradient-to-br from-blue-500 via-blue-400 to-blue-300' : 'bg-gradient-to-br from-brand-500 via-brand-300 to-brand-100'} relative`}>
-            {/* Decorative pattern overlay */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute inset-0" style={{
-                backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, currentColor 10px, currentColor 11px)`,
-                color: 'white'
-              }} />
-            </div>
-            
-            {/* Match percentage badge - top right */}
-            {(matchPercentage != 0) && (
-              <div className="absolute top-3 right-3">
-                <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-sm border-2 ${
-                  matchPercentage >= 80 
-                    ? 'bg-white/95 text-green-700 border-green-400' 
-                    : matchPercentage >= 60 
-                    ? 'bg-white/95 text-brand-700 border-brand-400'
-                    : 'bg-white/95 text-gray-700 border-gray-300'
-                }`}>
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                  {matchPercentage}%
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Profile Content - Overlapping the banner */}
-          <div className="relative px-5 pb-5 bg-white">
-            {/* Avatar positioned to overlap banner more */}
-            <div className="flex items-start gap-4 -mt-16">
-              <div className="relative flex-shrink-0 -translate-y-4">
-                {avatarUrl ? (
-                  <div
-                    className={`flex bg-white items-center justify-center w-24 h-24 shadow-xl ${isCompany ? 'border-4 border-white rounded-2xl' : 'border-4 border-white rounded-2xl'} overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-200`}
-                    onClick={() => {
-                      navigate(`/profile/${id}`)
-                    }}
-                    title={`View ${name}'s profile`}
-                  >
-                    <img
-                      src={avatarUrl}
-                      alt={name}
-                      className="w-full h-full"
-                      style={{ objectFit: isCompany ? 'contain' : 'cover' }}
-                    />
-                  </div>
-                ) : (
-                  <div
-                    className={`w-24 h-24 rounded-2xl shadow-xl ${isCompany ? 'border-4 border-white bg-gradient-to-br from-blue-100 to-blue-200' : 'border-4 border-white bg-gradient-to-br from-brand-100 to-brand-200'} flex items-center justify-center cursor-pointer hover:shadow-2xl transition-all duration-200`}
-                    onClick={() => {
-                      navigate(`/profile/${id}`)
-                    }}
-                    title={`View ${name}'s profile`}
-                  >
-                    <span className={`${isCompany ? 'text-blue-700' : 'text-brand-700'} font-bold text-3xl`}>
-                      {getInitials(name)}
-                    </span>
-                  </div>
-                )}
-
-                {/* Company logos for approved staff members */}
-                {companyMemberships && companyMemberships.length > 0 && (
-                  <div className="absolute -bottom-1 -right-1 flex -space-x-1">
-                    {[...companyMemberships]
-                      .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
-                      .slice(0, 3)
-                      .map((membership, index) => (
-                        membership.company.avatarUrl ? (
-                          <img
-                            key={membership.companyId}
-                            src={membership.company.avatarUrl}
-                            alt={membership.company.name}
-                            className={`h-7 w-7 rounded-full border-2 border-white shadow-md object-cover ${
-                              membership.isMain ? 'ring-2 ring-brand-400' : ''
-                            }`}
-                            title={`${membership.company.name} (${membership.role})`}
-                          />
-                        ) : (
-                          <div
-                            key={membership.companyId}
-                            className={`h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-600 ${
-                              membership.isMain ? 'ring-2 ring-brand-400' : ''
-                            }`}
-                            title={`${membership.company.name} (${membership.role})`}
-                          >
-                            {getInitials(membership.company.name)}
-                          </div>
-                        )
-                      ))}
-                    {companyMemberships.length > 3 && (
-                      <div className="h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-600">
-                        +{companyMemberships.length - 3}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Name, account type, role, and location - next to image */}
-              <div className="flex-1 min-w-0 pt-4 space-y-2">
-                {/* Account type label for companies */}
-                {isCompany && (
-                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wide">
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    Association
-                  </div>
-                )}
-                
-                {/* Name */}
-                <div
-                  className="cursor-pointer group/name"
-                  onClick={() => {
-                    navigate(`/profile/${id}`)
-                  }}
-                >
-                  <h3 className={`font-bold text-sm ${isCompany ? 'text-gray-900' : 'text-gray-900'} group-hover/name:text-brand-600 transition-colors leading-tight break-words`} title={name}>
-                    {name || "Anonymous User"}
-                  </h3>
-                </div>
-
-                {/* Role */}
-                {role ? (
-                  <div className={`text-sm ${isCompany ? 'font-semibold text-gray-700' : 'font-semibold text-gray-600'} break-words`} title={role}>
-                    {isCompany ? `${role || 'Company'}` : role}
-                  </div>
-                ) : (
-                  <div className="text-sm font-medium text-gray-500 italic">
-                    {isCompany ? 'Company Profile' : 'Professional'}
-                  </div>
-                )}
-
-                {/* Location */}
-                {location && (
-                  <div className="flex items-start text-sm text-gray-600 gap-1.5">
-                    <MapPin size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />
-                    <span className="break-words text-[12px]" title={location}>{location}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-          </div>
+     ) : 
+(
+ /* Header Section - Bold banner design with company/profile showcase */
+  <div className="relative w-full overflow-hidden">
+    {/* Cover Image or Gradient Background */}
+    {coverImage ? (
+      <div className="h-32 relative">
+        <img
+          src={coverImage}
+          alt={`${name}'s cover`}
+          className="w-full h-full object-cover object-bottom" // Added object-center
+        />
+        {/* Gradient overlay for text readability */}
+        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
+      </div>
+    ) : (
+      <div className={`h-32 ${isCompany ? 'bg-gradient-to-br from-blue-500 via-blue-400 to-blue-300' : 'bg-gradient-to-br from-brand-500 via-brand-300 to-brand-100'} relative`}>
+        {/* Decorative pattern overlay */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, currentColor 10px, currentColor 11px)`,
+            color: 'white'
+          }} />
         </div>
+      </div>
+    )}
+    
+    {/* Match percentage badge - top right */}
+    {(matchPercentage != 0) && (
+      <div className="absolute top-3 right-3">
+        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-sm border-2 ${
+          matchPercentage >= 80 
+            ? 'bg-white/95 text-green-700 border-green-400' 
+            : matchPercentage >= 60 
+            ? 'bg-white/95 text-brand-700 border-brand-400'
+            : 'bg-white/95 text-gray-700 border-gray-300'
+        }`}>
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+          {matchPercentage}%
+        </div>
+      </div>
+    )}
+
+    {/* Profile Content - Overlapping the banner */}
+    <div className="relative px-5 pb-3 bg-white">
+      {/* Avatar positioned to overlap banner more */}
+      <div className="flex items-start gap-4 -mt-16">
+        <div className="relative flex-shrink-0 -translate-y-4">
+          {avatarUrl ? (
+            <div
+              className={`flex bg-white items-center justify-center w-24 h-24 shadow-xl ${isCompany ? 'border-4 border-white rounded-2xl' : 'border-4 border-white rounded-2xl'} overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-200`}
+              onClick={() => {
+                navigate(`/profile/${id}`)
+              }}
+              title={`View ${name}'s profile`}
+            >
+              <img
+                src={avatarUrl}
+                alt={name}
+                className="w-full h-full"
+                style={{ objectFit: isCompany ? 'contain' : 'cover' }}
+              />
+            </div>
+          ) : (
+            <div
+              className={`w-24 h-24 rounded-2xl shadow-xl ${isCompany ? 'border-4 border-white bg-gradient-to-br from-blue-100 to-blue-200' : 'border-4 border-white bg-gradient-to-br from-brand-100 to-brand-200'} flex items-center justify-center cursor-pointer hover:shadow-2xl transition-all duration-200`}
+              onClick={() => {
+                navigate(`/profile/${id}`)
+              }}
+              title={`View ${name}'s profile`}
+            >
+              <span className={`${isCompany ? 'text-blue-700' : 'text-brand-700'} font-bold text-3xl`}>
+                {getInitials(name)}
+              </span>
+            </div>
+          )}
+
+          {/* Company logos for approved staff members */}
+          {companyMemberships && companyMemberships.length > 0 && (
+            <div className="absolute -bottom-1 -right-1 flex -space-x-1">
+              {[...companyMemberships]
+                .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
+                .slice(0, 3)
+                .map((membership, index) => (
+                  membership.company.avatarUrl ? (
+                    <img
+                      key={membership.companyId}
+                      src={membership.company.avatarUrl}
+                      alt={membership.company.name}
+                      className={`h-7 w-7 rounded-full border-2 border-white shadow-md object-cover ${
+                        membership.isMain ? 'ring-2 ring-brand-400' : ''
+                      }`}
+                      title={`${membership.company.name} (${membership.role})`}
+                    />
+                  ) : (
+                    <div
+                      key={membership.companyId}
+                      className={`h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-600 ${
+                        membership.isMain ? 'ring-2 ring-brand-400' : ''
+                      }`}
+                      title={`${membership.company.name} (${membership.role})`}
+                    >
+                      {getInitials(membership.company.name)}
+                    </div>
+                  )
+                ))}
+              {companyMemberships.length > 3 && (
+                <div className="h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-600">
+                  +{companyMemberships.length - 3}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Name, account type, role, and location - next to image */}
+        <div className="flex-1 min-w-0 pt-4 space-y-2">
+          {/* Account type label for companies */}
+          {isCompany && (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wide">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Association
+            </div>
+          )}
+          
+          {/* Name */}
+          <div
+            className="cursor-pointer group/name"
+            onClick={() => {
+              navigate(`/profile/${id}`)
+            }}
+          >
+            <h3 className={`font-bold text-sm ${isCompany ? 'text-gray-900' : 'text-gray-900'} group-hover/name:text-brand-600 transition-colors leading-tight break-words`} title={name}>
+              {name || "Anonymous User"}
+            </h3>
+          </div>
+
+          {/* Role */}
+          {role ? (
+            <div className={`text-sm ${isCompany ? 'font-semibold text-gray-700' : 'font-semibold text-gray-600'} break-words`} title={role}>
+              {isCompany ? `${role || 'Company'}` : role}
+            </div>
+          ) : (
+            <div className="text-sm font-medium text-gray-500 italic">
+              {isCompany ? 'Company Profile' : 'Professional'}
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  </div>
       )}
+
+
+
+      
 
       {/* CONTENT */}
       <div className={`${isList ? "pb-5 pl-5 pr-5 md:pb-6 md:pl-6 md:pr-6" : "pb-6 pl-6 pr-6"} mt-1 flex flex-col flex-1`}>
@@ -606,6 +615,16 @@ export default function PeopleProfileCard({
           </div>
          
          </> }
+
+         
+          {/* Location */}
+          {location && (
+            <div className={`flex mb-3 items-start text-sm text-gray-600 gap-1.5 ${isCompany  ? 'absolute bottom-1 right-4':''}`}>
+              <MapPin size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />
+              <span className="break-words text-[12px]" title={location}>{location}</span>
+            </div>
+          )}
+
         {/* Tags */}
         {!!visibleTags.length && (
           <div className="mb-4 flex flex-wrap gap-2">

@@ -680,9 +680,10 @@ export default function PeopleFeedPage() {
           </div>
            <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
-              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
               { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
               { label: "Search for a job", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
+           
             ]} />
            <ProfileCard />
         </aside>

@@ -144,7 +144,7 @@ function ReadOnlyProductView({ form, images, audSel, audTree }) {
         </div>
 
         {/* Tags */}
-        <div>
+        <div className="hidden">
           <h3 className="text-sm font-semibold text-gray-700">Tags</h3>
           <div className="mt-2 flex flex-wrap gap-2">
             {tags.length ? tags.map((t) => <span key={t} className={styles.chip}>{t}</span>) : <span className="text-sm text-gray-500">—</span>}
@@ -180,6 +180,7 @@ export default function CreateProductPage({ triggerImageSelection = false, hideH
   const { id } = useParams();
   const isEditMode = Boolean(id);
   const { user } = useAuth();
+  const [showAudienceSection, setShowAudienceSection] = useState(false);
 
   const [isLoading, setIsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -842,23 +843,12 @@ const industrySubcategoryOptions = useMemo(() => {
                     Share your product with the Pan-African community
                   </p>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate("/products")}
-                    className={styles.ghost}
-                  >
-                    Cancel
-                  </button>
-                  <button type="submit" className={styles.primary} disabled={saving}>
-                    {saving ? "Saving…" : isEditMode ? "Update" : "Publish Product"}
-                  </button>
-                </div>
+              
               </div>
 
               {/* Product Images */}
               <section>
-                <h2 className="font-semibold text-brand-600">Product Images</h2>
+                <h2 className="font-semibold">Product Images <label className="text-[crimson] text-[14px]">*</label></h2>
                 <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
                   <div className="mb-2">
                     <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -946,13 +936,28 @@ const industrySubcategoryOptions = useMemo(() => {
 
               {/* Product Title */}
               <div>
-                <h2 className="font-semibold">Product Title</h2>
+                <h2 className="font-semibold">Product Name  <label className="text-[crimson] text-[14px]">*</label></h2>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => setField("title", e.target.value)}
                   placeholder="Enter your product title..."
                   className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  required
+                />
+              </div>
+
+              
+              {/* Description */}
+              <div>
+                <h2 className="font-semibold">Product Description <label className="text-[crimson] text-[14px]">*</label></h2>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setField("description", e.target.value)}
+                   placeholder="Example: Handcrafted leather bag made with premium materials. Features multiple compartments, adjustable strap, and water-resistant lining. Perfect for everyday use or special occasions."
+                  _placeholder="Describe your product in detail..."
+                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  rows={4}
                   required
                 />
               </div>
@@ -993,18 +998,6 @@ const industrySubcategoryOptions = useMemo(() => {
                 </div>
               </div>
 
-              {/* Description */}
-              <div>
-                <h2 className="font-semibold">Product Description</h2>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setField("description", e.target.value)}
-                  placeholder="Describe your product in detail..."
-                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  rows={4}
-                  required
-                />
-              </div>
 
               {/* Location */}
               <div>
@@ -1036,7 +1029,7 @@ const industrySubcategoryOptions = useMemo(() => {
 
               {/* Tags */}
             
-            <div>
+            <div className="hidden">
   <h2 className="font-semibold">Tags</h2>
   <div className="mt-2 flex items-center gap-2">
     <input
@@ -1129,7 +1122,7 @@ const industrySubcategoryOptions = useMemo(() => {
 </section>
 
 {/* ===== Industry Classification ===== */}
-<section>
+<section className="hidden">
   <h2 className="font-semibold text-brand-600">Industry Classification</h2>
   <p className="text-xs text-gray-600 mb-3">
     Select the industry category and subcategory that best describes your product.
@@ -1165,18 +1158,58 @@ const industrySubcategoryOptions = useMemo(() => {
   </div>
 </section>
 
+              
               {/* ===== Share With (Audience selection) ===== */}
-              <section>
-                <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
-                <p className="text-xs text-gray-600 mb-3">
-                  Select who should see this product. Choose multiple identities, categories, subcategories, and sub-subs.
-                </p>
-                <AudienceTree
-                  tree={audTree}
-                  selected={audSel}
-                  onChange={(next) => setAudSel(next)}
-                />
-              </section>
+<section>
+  <div className="mb-4">
+    {!showAudienceSection ? (
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setShowAudienceSection(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Define Target Audience (optional)
+        </button>
+        <p className="text-xs text-gray-500">
+          Select specific identities and industries to target your product to relevant audiences
+        </p>
+      </div>
+    ) : (
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
+            <h3 className="font-semibold text-brand-600">Share With (Target Audience)</h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAudienceSection(false)}
+            className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50"
+          >
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+            Hide
+          </button>
+        </div>
+        <p className="text-xs text-gray-600 mb-3">
+          Select who should see this product. Choose multiple identities, categories, subcategories, and sub-subs.
+        </p>
+
+        <AudienceTree
+          tree={audTree}
+          selected={audSel}
+          onChange={(next) => setAudSel(next)}
+        />
+      </div>
+    )}
+  </div>
+</section>
+
 
               {/* Buttons */}
               <div className="flex justify-end gap-3">

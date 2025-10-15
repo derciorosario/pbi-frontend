@@ -1,14 +1,15 @@
+// src/components/ProfilePhotoUpload.jsx
 import { useRef, useState, useEffect } from "react";
-import { toast } from "../lib/toast"; // ✅ import your toast
-import { updateAvatarUrl } from "../api/profile"; // ✅ import the new API function
+import { toast } from "../lib/toast";
+import { updateAvatarUrl, updateCoverImage } from "../api/profile"; // Add updateCoverImage import
 import { Camera } from "lucide-react";
 
-export default function ProfilePhoto({ avatarUrl, onChange }) {
+export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "avatar" }) {
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
-  const [isUploading, setIsUploading] = useState(false); // ✅ loading state for upload
-  const [isRemoving, setIsRemoving] = useState(false); // ✅ loading state for removal
-  const [showOptions, setShowOptions] = useState(false); // ✅ state for options menu
+  const [isUploading, setIsUploading] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -31,83 +32,96 @@ export default function ProfilePhoto({ avatarUrl, onChange }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // ✅ Check file size (5MB max)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    // Check file size (5MB max)
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error("File size must be less than 5MB."); // 🔥 show toast
+      toast.error("File size must be less than 5MB.");
       if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // reset file input
+        fileInputRef.current.value = "";
       }
       return;
     }
 
-    setIsUploading(true); // ✅ start uploading
+    setIsUploading(true);
     try {
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64Url = reader.result;
         onChange(base64Url); // update local state immediately
 
-        // ✅ Auto-save the avatar URL
         try {
-          await updateAvatarUrl({ avatarUrl: base64Url });
-          toast.success("Profile photo updated successfully!");
+          if (type === "avatar") {
+            await updateAvatarUrl({ avatarUrl: base64Url });
+            toast.success("Profile photo updated successfully!");
+          } else if (type === "cover") {
+            await updateCoverImage({ coverImage: base64Url });
+            toast.success("Cover image updated successfully!");
+          }
         } catch (error) {
-          console.error("Failed to save avatar:", error);
-          toast.error("Failed to save profile photo. Please try again.");
+          console.error(`Failed to save ${type}:`, error);
+          toast.error(`Failed to save ${type === "avatar" ? "profile photo" : "cover image"}. Please try again.`);
           // Revert local state on error
-          onChange(avatarUrl);
+          onChange(type === "avatar" ? avatarUrl : coverImage);
         } finally {
-          setIsUploading(false); // ✅ stop uploading
+          setIsUploading(false);
         }
       };
       reader.readAsDataURL(file);
     } catch (error) {
       console.error("Failed to read file:", error);
       toast.error("Failed to process image. Please try again.");
-      setIsUploading(false); // ✅ stop uploading on error
+      setIsUploading(false);
     }
   };
 
   const handleRemovePhoto = async () => {
-    setIsRemoving(true); // ✅ start removing
-    setShowOptions(false); // Close options menu
+    setIsRemoving(true);
+    setShowOptions(false);
     try {
       onChange(null); // update local state immediately
 
-      // ✅ Auto-save the avatar URL removal
-      await updateAvatarUrl({ avatarUrl: null });
-      toast.success("Profile photo removed successfully!");
+      try {
+        if (type === "avatar") {
+          await updateAvatarUrl({ avatarUrl: null });
+          toast.success("Profile photo removed successfully!");
+        } else if (type === "cover") {
+          await updateCoverImage({ coverImage: null });
+          toast.success("Cover image removed successfully!");
+        }
 
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // clears file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      } catch (error) {
+        console.error(`Failed to remove ${type}:`, error);
+        toast.error(`Failed to remove ${type === "avatar" ? "profile photo" : "cover image"}. Please try again.`);
+        // Revert local state on error
+        onChange(type === "avatar" ? avatarUrl : coverImage);
       }
-    } catch (error) {
-      console.error("Failed to remove avatar:", error);
-      toast.error("Failed to remove profile photo. Please try again.");
-      // Revert local state on error
-      onChange(avatarUrl);
     } finally {
-      setIsRemoving(false); // ✅ stop removing
+      setIsRemoving(false);
     }
   };
 
   const handleChangePhoto = () => {
-    setShowOptions(false); // Close options menu
+    setShowOptions(false);
     fileInputRef.current?.click();
   };
 
   const handleButtonClick = () => {
-    if (avatarUrl) {
-      setShowOptions(!showOptions); // Toggle options menu
+    const currentImage = type === "avatar" ? avatarUrl : coverImage;
+    console.log({currentImage})
+    if (currentImage) {
+      setShowOptions(!showOptions);
     } else {
-      fileInputRef.current?.click(); // Directly open file input
+      fileInputRef.current?.click();
     }
   };
 
+
+
   return (
     <div>
-      {/* Avatar with camera icon */}
       <input
         type="file"
         accept="image/*"
@@ -117,41 +131,49 @@ export default function ProfilePhoto({ avatarUrl, onChange }) {
         disabled={isUploading || isRemoving}
       />
 
-      {/* Camera button */}
-      <div
+      {/* Camera button - position differently based on type */}
+   
+       <div
         onClick={handleButtonClick}
-        className="bg-brand-600 absolute -bottom-1 -right-2 rounded-full p-1 flex cursor-pointer hover:opacity-60 transition-opacity"
+        className={`bg-brand-600 rounded-full p-1 flex cursor-pointer hover:opacity-60 transition-opacity ${
+          type === "avatar" 
+            ? "absolute -bottom-1 -right-2" 
+            : "absolute top-2 right-2"
+        }`}
       >
+       <div className="flex items-center gap-2">
+         {type!="avatar" && !coverImage &&  <span className="text-white">Add</span>}
         <Camera size={18} className="text-white"/>
+       </div>
       </div>
 
       <div className="relative">
-        
-      {/* Options dropdown */}
-      {showOptions && avatarUrl && (
-        <div ref={dropdownRef} className="absolute top-full right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-          <div className="py-1">
-            <button
-              onClick={handleChangePhoto}
-              disabled={isUploading || isRemoving}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-            >
-              Change Image
-            </button>
-            <button
-              onClick={handleRemovePhoto}
-              disabled={isUploading || isRemoving}
-              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 disabled:opacity-50"
-            >
-              {isRemoving ? "Removing..." : "Remove Image"}
-            </button>
+        {/* Options dropdown */}
+        {showOptions && (type === "avatar" ? avatarUrl : coverImage) && (
+          <div ref={dropdownRef} className={`absolute bg-white border border-gray-200 rounded-md shadow-lg z-50 ${
+            type === "avatar" 
+              ? "top-full right-0 mt-2 w-48" 
+              : "top-full right-0 mt-2 w-48"
+          }`}>
+            <div className="py-1">
+              <button
+                onClick={handleChangePhoto}
+                disabled={isUploading || isRemoving}
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              >
+                Change Image
+              </button>
+              <button
+                onClick={handleRemovePhoto}
+                disabled={isUploading || isRemoving}
+                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 disabled:opacity-50"
+              >
+                {isRemoving ? "Removing..." : "Remove Image"}
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
-
     </div>
   );
 }
-
-

@@ -15,7 +15,7 @@ import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
-import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
+import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket, Search, Star, Tag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
@@ -545,11 +545,15 @@ export default function ProductsPage() {
 
           <div className="lg:col-span-2">
             <div className="flex items-center flex-wrap w-full justify-between mb-4">
-              <PostComposer from={'product'} typeOfPosts={[
-                  { label: "Sell a product", Icon: PlusCircle,hide:user?.accountType=="individual",type:'main'},
-                  { label: "Share Your Experience", Icon: PlusCircle,hide:user?.accountType=="company" },
-                  { label: "Search for a Product", Icon: PlusCircle,hide:user?.accountType=="company" },
-              ]}/>
+             
+              <PostComposer
+                from="product"
+                typeOfPosts={[
+                  { label: "Sell a Product", Icon: Tag, hide: user?.accountType === "individual", type: "main" }, // 🏷️ Selling a product
+                  { label: "Search for a Product", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for products
+                  { label: "Share Product Experience", Icon: Star, hide: user?.accountType === "company" }, // ⭐ Sharing experience
+                ]}
+              />
             </div>
             <section className="space-y-4 overflow-hidden">
               {renderMiddle()}

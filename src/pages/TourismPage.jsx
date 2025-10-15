@@ -14,7 +14,7 @@ import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
-import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket } from "lucide-react";
+import { AlarmClock, Calendar, MapPin, Pencil, PlusCircle, Rocket, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
@@ -517,8 +517,8 @@ export default function TourismPage() {
           </div>
           <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, path: "/profile",hide:user?.accountType=="individual" },
-              { label: "Share Tourism Experience", Icon: PlusCircle, onClick: () => navigate('/experiences/create'),hide:user?.accountType=="company" },
-              { label: "Ask About Tourism", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create"),hide:user?.accountType=="company" },
+              { label: "Share a tourism activity", Icon: PlusCircle, onClick: () => navigate('/experiences/create'),hide:user?.accountType=="company" },
+              { label: "Search for tourism activities", Icon: PlusCircle, onClick: () => navigate("/need/tourism/create"),hide:user?.accountType=="company" },
            ]} />
 
           <ProfileCard />
@@ -529,11 +529,11 @@ export default function TourismPage() {
 
           <div className="lg:col-span-2">
             <div className="flex items-center flex-wrap w-full justify-between mb-4">
-              <PostComposer
-                from={'tourism'}
+            <PostComposer
+                from="tourism"
                 typeOfPosts={[
-                  { label: "Share Tourism Experience", Icon: PlusCircle,hide:user?.accountType=="company" },
-                  { label: "Ask About Tourism", Icon: PlusCircle,hide:user?.accountType=="company" },
+                  { label: "Share a Tourism Activity", Icon: MapPin, hide: user?.accountType === "company" }, // 📍 Sharing locations/activities
+                  { label: "Search for Tourism Activities", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for activities
                 ]}
               />
             </div>

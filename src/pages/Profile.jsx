@@ -57,16 +57,16 @@ const Tab = {
 };
 
 export default function ProfilePage() {
+
   const { id: userId } = useParams();
   const location = useLocation();
   const isAdminEditing = location.pathname.includes('/admin/user-profile/');
   const {user,profile, setProfile,setUser} = useAuth() 
   const navigate=useNavigate()
   
-
-  
     // Media viewer state
   const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [coverImageOpen, setCoverImageOpen] = useState(false);
   
   const [active, setActive]   = useState(Tab.PERSONAL);
   const [loading, setLoading] = useState(true);
@@ -209,6 +209,7 @@ export default function ProfilePage() {
      name: "", phone: "", nationality: "",
      country: "", countryOfResidence: "", city: "", address: "",
      birthDate: "", professionalTitle: "", about: "", avatarUrl: "",
+     coverImage: "",
      // Individual fields
      gender: "",
      // Company fields
@@ -1330,6 +1331,8 @@ export default function ProfilePage() {
           professionalTitle: p.professionalTitle || "",
           about: p.about || "",
           avatarUrl: u.avatarUrl || p.avatarUrl || "",
+
+          coverImage: u.coverImage || p.coverImage || "",
           // Individual fields
           gender: u.gender || "",
           // Company fields
@@ -1430,7 +1433,8 @@ const companyStages = ["Startup", "Small business", "Medium business", "Large en
              birthDate: personal.birthDate,
              professionalTitle: personal.professionalTitle,
              about: personal.about,
-             avatarUrl: personal.avatarUrl
+             avatarUrl: personal.avatarUrl,
+             coverImage: personal.coverImage // Add this line
            }
          };
         
@@ -1456,7 +1460,8 @@ const companyStages = ["Startup", "Small business", "Medium business", "Large en
             birthDate: personal.birthDate,
             professionalTitle: personal.professionalTitle,
             about: personal.about,
-            avatarUrl: personal.avatarUrl
+            avatarUrl: personal.avatarUrl,
+            coverImage: personal.coverImage // Add this line
           },
           progress: data.progress
         });
@@ -2505,7 +2510,7 @@ const toggleIdentityWant = (identityKey) => {
 
         {/* Selected identities as tabs */}
         {selectedIdentities.length > 0 && (
-          <div>
+          <div className="border-t pt-4">
             <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Identities</h4>
             <div className="flex flex-wrap gap-2">
               {selectedIdentities.map((iden, i) => {
@@ -2515,7 +2520,7 @@ const toggleIdentityWant = (identityKey) => {
                   <button
                     key={`${i}-${iden.name}`}
                     onClick={() => onTabSwitch(key)}
-                    className={`px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                    className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
                       isActive
                         ? "bg-brand-700 text-white border-brand-700"
                         : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
@@ -2877,110 +2882,148 @@ const toggleIdentityWant = (identityKey) => {
     <div>
       {!isAdminEditing && <Header/>}
       <div className="max-w-5xl mx-auto p-4 md:p-8">
-        {/* Modern Header Section with Progress */}
-        <div className="bg-white rounded-xl shadow-sm mb-6">
-          {/* Gradient Header Background - Fixed height */}
-          <div className="bg-gradient-to-r rounded-xl from-brand-600 to-brand-600 h-32"></div>
+      
+      {/* Modern Header Section with Progress */}
+<div className="bg-white rounded-xl shadow-sm mb-6">
+  {/* Cover Image with Upload Button */}
 
-          {/* Profile Content - Overlay on gradient */}
-          <div className="px-6 pb-6 relative">
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 gap-4 mb-6">
-              {/* Profile Image and Company Logos */}
-              <div className="flex flex-col md:flex-row md:items-end gap-4">
-                <div className="relative">
+{/* Cover Image with Upload Button */}
+<div className="relative h-48 rounded-t-xl overflow-hidden border border-b-0">
+  {personal.coverImage ? (
+    <div className="relative w-full h-full">
+      <img
+        src={personal.coverImage}
+        alt="Cover"
+        className="w-full h-full object-cover cursor-pointer"
+        onClick={() => setCoverImageOpen(true)}
+      />
+      {/* Move the ProfilePhoto outside the clickable area */}
+      <div className="absolute top-2 right-2">
+        <ProfilePhoto 
+          type="cover"
+          coverImage={personal.coverImage}
+          onChange={(base64) => {
+            setPersonal({ ...personal, coverImage: base64 });
+          }}
+        />
+      </div>
+    </div>
+  ) : (
+    <div className="w-full h-full bg-gradient-to-r from-brand-600 to-brand-600 flex items-center justify-center relative">
+      <div className="absolute top-2 right-2">
+        <ProfilePhoto 
+          type="cover"
+          coverImage={personal.coverImage}
+          onChange={(base64) => {
+            setPersonal({ ...personal, coverImage: base64 });
+          }}
+        />
+      </div>
+      <div className="text-center">
+        <Camera size={32} className="text-white mx-auto mb-2 opacity-70" />
+        <p className="text-white text-sm opacity-70">cover image</p>
+      </div>
+    </div>
+  )}
+</div>
 
-                    <ProfilePhoto onChange={(base64)=>{
-                                  setPersonal({ ...personal, avatarUrl: base64 })
-                                  setUser({...user, avatarUrl: base64})
-                    }} avatarUrl={personal.avatarUrl}/>
-
-
-                
-
-                  {personal.avatarUrl ? (
-                    <div
-                      className={`${isCompany ? "h-32 w-32 rounded-xl" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-white flex justify-center items-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
-                      onClick={() => {
-                        // Optional: Add media viewer functionality if needed
-                        setMediaViewerOpen(true)
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`View ${personal.name || 'Profile'} picture`}
-                    >
-                      <img
-                        src={personal.avatarUrl}
-                        alt={personal.name || 'Profile'}
-                        className="w-full h-full"
-                        style={{ objectFit: isCompany ? 'contain' : 'cover' }}
-                      />
-                    </div>
-                  ) : (
-                    <div className={`${isCompany ? "h-32 w-32 rounded-xl" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-gradient-to-br from-brand-50 to-brand-50 grid place-items-center overflow-hidden`}>
-                      <span className="font-semibold text-brand-600 text-2xl">
-                        {getInitials(personal.name || "User")}
-                      </span>
-                    </div>
-                  )}
-
-                 
-                </div>
-
-                {/* Profile Info - Name on gradient, title on white background */}
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <h1 className={`${isCompany ? "text-3xl" : "text-2xl"} font-bold text-white max-md:text-gray-900`}>
-                      {personal.name || "Profile"}
-                    </h1>
-                    {isCompany && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                        Company
-                      </span>
-                    )}
-                    {!isCompany && me?.user?.accountType && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
-                        Individual
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Professional Title - On white background after gradient */}
-                  <div className="mb-2 px-4 py-2 bg-white rounded-lg shadow-sm border">
-                    <p className="text-gray-900 text-lg font-semibold">
-                      {personal.professionalTitle || (isCompany ? "Company" : "Professional")}
-                    </p>
-                  </div>
-
-                  {(personal.city || personal.countryOfResidence) && (
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                      </svg>
-                      <span>{[personal.city, personal.countryOfResidence].filter(Boolean).join(", ")}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Progress Section - Modern Design */}
-              <div className="flex flex-col items-end gap-3 pt-5">
-                <div className="text-right flex items-center gap-2">
-                  <div className="text-sm font-medium text-gray-700">Profile Completion</div>
-                  <div className="text-sm font-bold text-gray-700"> ({progress}%) </div>
-                </div>
-              <div>
-                <div className="w-40 h-3 bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-3 bg-gradient-to-r from-brand-500 to-brand-500 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-              </div>
+  {/* Profile Content - Overlay on gradient/cover */}
+  <div className="px-6 pb-6 relative">
+    <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 gap-4 mb-6">
+      {/* Profile Image and Company Logos */}
+      <div className="flex flex-col md:flex-row md:items-end gap-4">
+        <div className="relative">
+          <ProfilePhoto 
+            type="avatar"
+            onChange={(base64) => {
+              setPersonal({ ...personal, avatarUrl: base64 });
+              setUser({ ...user, avatarUrl: base64 });
+            }} 
+            avatarUrl={personal.avatarUrl}
+          />
+          
+          {personal.avatarUrl ? (
+            <div
+              className={`${isCompany ? "h-32 w-32 rounded-xl" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-white flex justify-center items-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
+              onClick={() => setMediaViewerOpen(true)}
+              role="button"
+              tabIndex={0}
+            >
+              <img
+                src={personal.avatarUrl}
+                alt={personal.name || 'Profile'}
+                className="w-full h-full"
+                style={{ objectFit: isCompany ? 'contain' : 'cover' }}
+              />
             </div>
+          ) : (
+            <div className={`${isCompany ? "h-32 w-32 rounded-xl" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-gradient-to-br from-brand-50 to-brand-50 grid place-items-center overflow-hidden`}>
+              <span className="font-semibold text-brand-600 text-2xl">
+                {getInitials(personal.name || "User")}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Profile Info */}
+      
+      {/* Profile Info */}
+<div className="flex-1">
+  <div className="flex flex-wrap items-center gap-2 mb-2">
+    <div className="relative">
+      <h1 className={`${isCompany ? "text-3xl" : "text-2xl"} font-bold text-white drop-shadow-md max-md:text-gray-900 relative z-10`}>
+        {personal.name || "Profile"}
+      </h1>
+      {/* Text background for better readability */}
+      <div className="absolute inset-0 bg-black bg-opacity-10 blur-sm rounded-lg -m-1 z-0"></div>
+    </div>
+    {isCompany && (
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 z-10 relative">
+        Company
+      </span>
+    )}
+    {!isCompany && me?.user?.accountType && (
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 z-10 relative">
+        Individual
+      </span>
+    )}
+  </div>
+
+  {/* Professional Title with background */}
+  <div className="mb-2 px-4 py-2 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-sm border border-white border-opacity-20">
+    <p className="text-gray-900 text-lg font-semibold">
+      {personal.professionalTitle || (isCompany ? "Company" : "Professional")}
+    </p>
+  </div>
+
+  {(personal.city || personal.countryOfResidence) && (
+    <div className="flex items-center gap-1 text-sm text-white drop-shadow-md">
+      <MapPin size={16} className="text-white drop-shadow-md" />
+      <span>{[personal.city, personal.countryOfResidence].filter(Boolean).join(", ")}</span>
+    </div>
+  )}
+</div>
+
+      </div>
+
+      {/* Progress Section */}
+      <div className="flex flex-col items-end gap-3 pt-5">
+        <div className="text-right flex items-center gap-2">
+          <div className="text-sm font-medium text-gray-700">Profile Completion</div>
+          <div className="text-sm font-bold text-gray-700"> ({progress}%) </div>
+        </div>
+        <div>
+          <div className="w-[10.5rem] h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-3 bg-gradient-to-r from-brand-500 to-brand-500 rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
 
         {/* Availability Status - Compact design with subtle message */}
         {(!isAdminEditing && user?.accountType=="individual") && (
@@ -5943,13 +5986,21 @@ const toggleIdentityWant = (identityKey) => {
          />
        )}
 
-       
         <MediaViewer
           isOpen={mediaViewerOpen}
           onClose={() => setMediaViewerOpen(false)}
           mediaUrl={personal?.avatarUrl}
           mediaType="image"
           alt={`${personal?.name}'s profile picture`}
+        />
+
+        {/* Add cover image viewer if needed */}
+        <MediaViewer
+          isOpen={coverImageOpen} // You'll need to add this state
+          onClose={() => setCoverImageOpen(false)}
+          mediaUrl={personal?.coverImage}
+          mediaType="image"
+          alt={`${personal?.name}'s cover image`}
         />
 
        {/* Profile Modal */}

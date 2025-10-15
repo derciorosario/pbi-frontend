@@ -1633,194 +1633,201 @@ export default function PublicProfilePage() {
         {!loading && !error && profile && (
           <>
             {/* Modern Header Section */}
-            <div className="bg-white rounded-xl shadow-sm  mb-6">
-              {/* Gradient Header Background - Fixed height */}
-              <div className="bg-gradient-to-r rounded-xl from-brand-700 to-brand-500 h-32"></div>
+         
+         {/* Modern Header Section */}
+<div className="bg-white rounded-xl shadow-sm  mb-6">
+  {/* Cover Image or Gradient Background */}
+  {profile.coverImage ? (
+    <div className="h-32 relative rounded-t-xl overflow-hidden">
+      <img
+        src={profile.coverImage}
+        alt={`${profile.name}'s cover`}
+        className="w-full h-full object-cover object-center"
+      />
+      {/* Gradient overlay for text readability */}
+      <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
+    </div>
+  ) : (
+    <div className="bg-gradient-to-r rounded-xl from-brand-700 to-brand-500 h-32"></div>
+  )}
 
-              {/* Profile Content - Overlay on gradient */}
-              <div className="px-6 pb-6 relative">
-                <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 gap-4 mb-6">
-                  {/* Profile Image and Company Logos */}
-                  <div className="flex flex-col md:flex-row md:items-end gap-4">
-                    <div className="relative">
-                      {profile.avatarUrl ? (
-                        <div
-                          className={`${profile.accountType === "company" ? "h-32 w-32 rounded-md" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-white flex justify-center items-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
-                          onClick={() => setMediaViewerOpen(true)}
-                          role="button"
-                          tabIndex={0}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              setMediaViewerOpen(true);
-                            }
-                          }}
-                          aria-label={`View ${profile.name}'s profile picture`}
-                        >
-                          <img
-                            src={profile.avatarUrl}
-                            alt={profile.name}
-                            className="w-full h-full"
-                            style={{ objectFit: profile.accountType === "company" ? 'contain' : 'cover' }}
-                          />
-                        </div>
-                      ) : (
-                        <div className={`${profile.accountType === "company" ? "h-32 w-32 rounded-md" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-brand-50 grid place-items-center overflow-hidden`}>
-                          <span className="font-semibold text-brand-600 text-xl">
-                            {getInitials(profile.name)}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Company logos for approved staff members */}
-                      {profile.companyMemberships && profile.companyMemberships.length > 0 && (
-                        <div className="absolute -bottom-2 -right-2 flex -space-x-2">
-                          {[...profile.companyMemberships]
-                            .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
-                            .slice(0, 3)
-                            .map((membership, index) => (
-                              membership.company.avatarUrl ? (
-                                <img
-                                  key={membership.companyId}
-                                  src={membership.company.avatarUrl}
-                                  alt={membership.company.name}
-                                  className={`h-7 w-7 rounded-full border-2 border-white shadow-sm object-cover ${
-                                    membership.isMain ? 'ring-2 ring-brand-400' : ''
-                                  }`}
-                                  title={`${membership.company.name} (${membership.role})`}
-                                />
-                              ) : (
-                                <div
-                                  key={membership.companyId}
-                                  className={`h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 ${
-                                    membership.isMain ? 'ring-2 ring-brand-400' : ''
-                                  }`}
-                                  title={`${membership.company.name} (${membership.role})`}
-                                >
-                                  {getInitials(membership.company.name)}
-                                </div>
-                              )
-                            ))}
-                          {profile.companyMemberships.length > 3 && (
-                            <div className="h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 z-10">
-                              +{profile.companyMemberships.length - 3}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Profile Info - Name on gradient, title on white background */}
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <h1 className={`${profile.accountType === "company" ? "text-3xl" : "text-2xl"} font-bold text-white max-md:text-black`}>
-                          {profile.name}
-                        </h1>
-                        {profile.accountType && (
-                          <Chip tone={profile.accountType === "company" ? "blue" : "gray"}>
-                            {profile.accountType === "company" ? "Company" : "Individual"}
-                          </Chip>
-                        )}
-                        {profile.primaryIdentity && <Chip tone="brand">{profile.primaryIdentity}</Chip>}
-                        {profile.experienceLevel && <Chip tone="gray">{profile.experienceLevel}</Chip>}
-                      </div>
-
-                      {/* Professional Title - On white background after gradient */}
-                      {profile.accountType === "company" ? (
-                        <div className="mb-2 px-4 py-2 bg-white rounded-lg shadow-sm border">
-                          <p className="text-gray-900 text-lg font-semibold mb-2">
-                            {profile.professionalTitle || (profile.categories && profile.categories.length > 0 ? profile.categories.join(", ") : "Company")}
-                          </p>
-                          {profile.categories && profile.categories.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {profile.categories.map((cat, idx) => (
-                                <Chip key={`cat-${idx}`} tone="brand">{cat}</Chip>
-                              ))}
-                              {profile.subcategories && profile.subcategories.map((subcat, idx) => (
-                                <Chip key={`subcat-${idx}`} tone="gray">{subcat}</Chip>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="mb-2 px-4 py-2 bg-white rounded-lg shadow-sm border">
-                          <p className="text-gray-900 text-lg font-semibold">
-                            {profile.professionalTitle || profile.title || "—"}
-                          </p>
-                        </div>
-                      )}
-
-                      {(profile.city || profile.country) && (
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <MapPin size={14} />
-                          <span>{fmtLoc(profile.city, profile.country)}</span>
-                        </div>
-                      )}
-
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 mt-4 md:mt-0">
-                    {renderConnectButton()}
-
-
-                     <div className="relative">
-                      <button
-                         onClick={openMR}
-                        className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
-                      >
-                        <Calendar size={16} />
-                        
-                      </button>
-                     </div>
-
-
-                    {/* Share Button */}
-                    <div className="relative">
-                      <button
-                        ref={shareButtonRef}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShareOpen((s) => !s);
-                        }}
-                        className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
-                      >
-                        <Share2 size={16} />
-                        
-                      </button>
-                      {shareOpen && <ShareMenu profile={profile} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        if (!user) {
-                          data._showPopUp("login_prompt");
-                          return;
-                        }
-                        navigate(`/messages?userId=${userId}`);
-                        toast.success("Starting conversation with " + profile.name);
-                      }}
-                      className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
-                    >
-                      <MessageCircle size={16} />
-                    </button>
-
-
-
-                    {/* Request Meeting Button - only show when connected */}
-                    {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
-                      <button
-                        onClick={openMR}
-                        className="border border-brand-200 hover:bg-brand-50 text-brand-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
-                      >
-                        <CalendarDays size={16} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+  {/* Profile Content - Overlay on gradient/cover */}
+  <div className="px-6 pb-6 relative">
+    <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 gap-4 mb-6">
+      {/* Profile Image and Company Logos */}
+      <div className="flex flex-col md:flex-row md:items-end gap-4">
+        <div className="relative">
+          {profile.avatarUrl ? (
+            <div
+              className={`${profile.accountType === "company" ? "h-32 w-32 rounded-md" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-white flex justify-center items-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
+              onClick={() => setMediaViewerOpen(true)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setMediaViewerOpen(true);
+                }
+              }}
+              aria-label={`View ${profile.name}'s profile picture`}
+            >
+              <img
+                src={profile.avatarUrl}
+                alt={profile.name}
+                className="w-full h-full"
+                style={{ objectFit: profile.accountType === "company" ? 'contain' : 'cover' }}
+              />
             </div>
+          ) : (
+            <div className={`${profile.accountType === "company" ? "h-32 w-32 rounded-md" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-brand-50 grid place-items-center overflow-hidden`}>
+              <span className="font-semibold text-brand-600 text-xl">
+                {getInitials(profile.name)}
+              </span>
+            </div>
+          )}
+
+          {/* Company logos for approved staff members */}
+          {profile.companyMemberships && profile.companyMemberships.length > 0 && (
+            <div className="absolute -bottom-2 -right-2 flex -space-x-2">
+              {[...profile.companyMemberships]
+                .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
+                .slice(0, 3)
+                .map((membership, index) => (
+                  membership.company.avatarUrl ? (
+                    <img
+                      key={membership.companyId}
+                      src={membership.company.avatarUrl}
+                      alt={membership.company.name}
+                      className={`h-7 w-7 rounded-full border-2 border-white shadow-sm object-cover ${
+                        membership.isMain ? 'ring-2 ring-brand-400' : ''
+                      }`}
+                      title={`${membership.company.name} (${membership.role})`}
+                    />
+                  ) : (
+                    <div
+                      key={membership.companyId}
+                      className={`h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 ${
+                        membership.isMain ? 'ring-2 ring-brand-400' : ''
+                      }`}
+                      title={`${membership.company.name} (${membership.role})`}
+                    >
+                      {getInitials(membership.company.name)}
+                    </div>
+                  )
+                ))}
+              {profile.companyMemberships.length > 3 && (
+                <div className="h-7 w-7 rounded-full border-2 border-white shadow-sm bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 z-10">
+                  +{profile.companyMemberships.length - 3}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Profile Info - Name on gradient/cover, title on white background */}
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <h1 className={`${profile.accountType === "company" ? "text-3xl" : "text-2xl"} font-bold text-white drop-shadow-lg max-md:text-black`}>
+              {profile.name}
+            </h1>
+            {profile.accountType && (
+              <Chip tone={profile.accountType === "company" ? "blue" : "gray"}>
+                {profile.accountType === "company" ? "Company" : "Individual"}
+              </Chip>
+            )}
+            {profile.primaryIdentity && <Chip tone="brand">{profile.primaryIdentity}</Chip>}
+            {profile.experienceLevel && <Chip tone="gray">{profile.experienceLevel}</Chip>}
+          </div>
+
+          {/* Professional Title - On white background after gradient/cover */}
+          {profile.accountType === "company" ? (
+            <div className="mb-2 px-4 py-2 bg-white rounded-lg shadow-sm border">
+              <p className="text-gray-900 text-lg font-semibold mb-2">
+                {profile.professionalTitle || (profile.categories && profile.categories.length > 0 ? profile.categories.join(", ") : "Company")}
+              </p>
+              {profile.categories && profile.categories.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {profile.categories.map((cat, idx) => (
+                    <Chip key={`cat-${idx}`} tone="brand">{cat}</Chip>
+                  ))}
+                  {profile.subcategories && profile.subcategories.map((subcat, idx) => (
+                    <Chip key={`subcat-${idx}`} tone="gray">{subcat}</Chip>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mb-2 px-4 py-2 bg-white rounded-lg shadow-sm border">
+              <p className="text-gray-900 text-lg font-semibold">
+                {profile.professionalTitle || profile.title || "—"}
+              </p>
+            </div>
+          )}
+
+          {(profile.city || profile.country) && (
+            <div className="flex items-center gap-1 text-sm text-white drop-shadow-lg">
+              <MapPin size={14} className="text-white drop-shadow-lg" />
+              <span>{fmtLoc(profile.city, profile.country)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 mt-4 md:mt-0">
+        {renderConnectButton()}
+
+        <div className="relative">
+          <button
+            onClick={openMR}
+            className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
+          >
+            <Calendar size={16} />
+          </button>
+        </div>
+
+        {/* Share Button */}
+        <div className="relative">
+          <button
+            ref={shareButtonRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShareOpen((s) => !s);
+            }}
+            className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
+          >
+            <Share2 size={16} />
+          </button>
+          {shareOpen && <ShareMenu profile={profile} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
+        </div>
+
+        <button
+          onClick={() => {
+            if (!user) {
+              data._showPopUp("login_prompt");
+              return;
+            }
+            navigate(`/messages?userId=${userId}`);
+            toast.success("Starting conversation with " + profile.name);
+          }}
+          className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
+        >
+          <MessageCircle size={16} />
+        </button>
+
+        {/* Request Meeting Button - only show when connected */}
+        {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
+          <button
+            onClick={openMR}
+            className="border border-brand-200 hover:bg-brand-50 text-brand-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
+          >
+            <CalendarDays size={16} />
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+</div>
 
           
             {profile.about && (

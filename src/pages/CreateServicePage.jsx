@@ -295,6 +295,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
   const [loading,setLoading]=useState(true)
   const [uploading, setUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [showAudienceSection, setShowAudienceSection] = useState(false);
 
   // owner detection
   const [ownerUserId, setOwnerUserId] = useState(null);
@@ -970,7 +971,8 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                   <textarea
                     value={form.description}
                     onChange={(e) => setField("description", e.target.value)}
-                    placeholder="Describe your service in detail. What problems do you solve? What value do you provide?"
+                    _placeholder="Describe your service in detail. What problems do you solve? What value do you provide?"
+                    placeholder="Example: I provide comprehensive digital marketing strategy consulting for small businesses. I'll analyze your current marketing efforts, identify growth opportunities, and create a customized 3-month action plan to increase your online presence and customer engagement."
                     className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                     rows={4}
                     required
@@ -981,7 +983,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
 
             {/* Pricing */}
             <section>
-              <h2 className="font-semibold text-brand-600">Pricing</h2>
+              <h2 className="font-semibold text-brand-600">Pricing (optional)</h2>
               <div className="mt-3 grid gap-4 sm:grid-cols-3">
                 <div>
                   <Label>Amount</Label>
@@ -1021,7 +1023,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                     <I.chevron />
                   </span>
                 </div>
-                <div className="relative">
+                <div className="relative hidden">
                   <Label>Typical Delivery</Label>
                   <select
                     value={form.deliveryTime}
@@ -1043,7 +1045,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
 
             {/* Location & Experience */}
             <section>
-              <h2 className="font-semibold text-brand-600">Location & Experience</h2>
+              <h2 className="font-semibold text-brand-600">Location</h2>
               <div className="mt-3 grid gap-4 sm:grid-cols-2">
                 <div className="relative">
                   <Label>Location Type</Label>
@@ -1060,7 +1062,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                   </span>
                 </div>
 
-                <div className="relative">
+                <div className="relative hidden">
                   <Label>Experience Level</Label>
                   <select
                     value={form.experienceLevel}
@@ -1105,7 +1107,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
             </section>
 
             {/* Skills & Tags */}
-            <section>
+            <section className="hidden">
               <h2 className="font-semibold text-brand-600">Skills & Tags</h2>
               <div className="mt-2 flex items-center gap-2">
                 <input
@@ -1194,7 +1196,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
 </section>
 
 {/* ===== Industry Classification ===== */}
-<section>
+<section className="hidden">
  <h2 className="font-semibold text-brand-600">Industry Classification</h2>
  <p className="text-xs text-gray-600 mb-3">
    Select the industry category and subcategory that best describes your service.
@@ -1230,20 +1232,8 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
  </div>
 </section>
 
-            {/* Share With (Audience) */}
-            <section>
-              <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
-              <p className="text-xs text-gray-600 mb-3">
-                Select who should see this service. Choose multiple identities, categories, subcategories, and sub-subs.
-              </p>
-              <AudienceTree
-                tree={audTree}
-                selected={audSel}
-                onChange={(next) => setAudSel(next)}
-              />
-            </section>
 
-            {/* Portfolio / Attachments */}
+  {/* Portfolio / Attachments */}
             <section>
               <h2 className="font-semibold text-brand-600">Portfolio Samples (Optional)</h2>
               <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
@@ -1330,6 +1320,61 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
 
               </div>
             </section>
+
+            {/* Share With (Audience) */}
+                    
+          <section>
+            <div className="mb-4">
+              {!showAudienceSection ? (
+                <div className="space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAudienceSection(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    Define Target Audience (optional)
+                  </button>
+                  <p className="text-xs text-gray-500">
+                    Select specific identities and industries to target your service to relevant audiences
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
+                      <h3 className="font-semibold text-brand-600">Share With (Target Audience)</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAudienceSection(false)}
+                      className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50"
+                    >
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                      </svg>
+                      Hide
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Select who should see this service. Choose multiple identities, categories, subcategories, and sub-subs.
+                  </p>
+
+                  <AudienceTree
+                    tree={audTree}
+                    selected={audSel}
+                    onChange={(next) => setAudSel(next)}
+                  />
+                </div>
+              )}
+            </div>
+          </section>
+
+
+          
 
             {/* Actions */}
             <div className="flex justify-end gap-3">

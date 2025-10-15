@@ -121,9 +121,9 @@ export default function PostComposer({typeOfPosts, from}) {
 
         {/* Action Buttons */}
         <div className="flex items-center justify-between _login_prompt">
-          <div className="flex items-center gap-4 relative">
-            {/* Show only first 3 post types */}
-            {typeOfPosts?.slice(0, 3).map(item => (
+          <div className="flex items-center gap-4 relative flex-wrap">
+            {/* Show only first 2 post types */}
+            {typeOfPosts?.filter(i=>!i.hide || user?.accountType === "company")?.slice(0, 2).map(item => (
               <button
                 key={item.type || item.id}
                 className="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-all bg-gray-50 duration-200 font-medium px-3 py-2 rounded-full hover:bg-brand-50"
@@ -135,6 +135,7 @@ export default function PostComposer({typeOfPosts, from}) {
                   handleTypeSelect(item);
                 }}
               >
+                <item.Icon size="20"/>
                 <span className="text-sm">
                   {item.label}
                 </span>
@@ -142,7 +143,7 @@ export default function PostComposer({typeOfPosts, from}) {
             ))}
 
             {/* More button for remaining items */}
-            {typeOfPosts && typeOfPosts.length > 3 && (
+            {typeOfPosts && typeOfPosts?.filter(i=>!i.hide || user?.accountType === "company").length > 2 && (
               <div className="relative">
                 <button
                   ref={moreButtonRef}
@@ -159,7 +160,7 @@ export default function PostComposer({typeOfPosts, from}) {
                     ref={dropdownRef}
                     className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50"
                   >
-                    {typeOfPosts.slice(3).map(item => (
+                    {typeOfPosts?.filter(i=>!i.hide || user?.accountType === "company").slice(2).map(item => (
                       <button
                         key={item.type || item.id}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-600 transition-colors duration-200 flex items-center gap-2"
@@ -172,6 +173,7 @@ export default function PostComposer({typeOfPosts, from}) {
                           setShowMoreDropdown(false);
                         }}
                       >
+                         <item.Icon size="20" className="shrink-0"/>
                         <span>{item.label}</span>
                       </button>
                     ))}
@@ -188,11 +190,15 @@ export default function PostComposer({typeOfPosts, from}) {
          isOpen={showTypeSelector}
          onClose={() => setShowTypeSelector(false)}
          onTypeSelect={handleTypeSelect}
-         postTypes={typeOfPosts}
+         postTypes={typeOfPosts?.filter(i=>!i.hide || user?.accountType === "company")}
        />
 
        {/* Post Creation Dialog */}
        <PostCreationDialog
+         onBack={()=>{
+          handleInputClick()
+          setShowCreationDialog(false)
+         }}
          isOpen={showCreationDialog}
          onClose={handleCreationClose}
          postType={selectedPostType}
