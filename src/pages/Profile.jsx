@@ -38,6 +38,24 @@ import { useAuth } from "../contexts/AuthContext.jsx";
 import { Camera, Download, MapPin } from "lucide-react";
 import ProfileModal from "../components/ProfileModal.jsx";
 
+// Add these color styles near the top of the component, after the imports
+const dropdownStyles = {
+  identities: {
+    backgroundColor: '#f8f6f4',
+    borderLeft: '3px solid #8b7355',
+    borderTop: '1px solid #e8e2d9',
+    borderRight: '1px solid #e8e2d9',
+    borderBottom: '1px solid #e8e2d9'
+  },
+  categories: {
+    backgroundColor: '#f4f8f6',
+    borderLeft: '3px solid #558b75',
+    borderTop: '1px solid #d9e8e2',
+    borderRight: '1px solid #d9e8e2',
+    borderBottom: '1px solid #d9e8e2'
+  }
+};
+
 const Tab = {
   PERSONAL: "personal",
   PROFESSIONAL: "professional",
@@ -2487,7 +2505,7 @@ const toggleIdentityWant = (identityKey) => {
                   onClick={() => !disabled && onToggle(key)}
                   disabled={disabled}
                   className={`rounded-xl flex items-center justify-between border px-4 py-3 text-left hover:shadow-soft transition-all ${
-                    isSelected ? "border-brand-700 bg-brand-50 ring-2 ring-brand-500" : "border-gray-200"
+                    isSelected ? "border-brand-700 bg-brand-50 ring-2 ring-brand-200" : "border-gray-200"
                   } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
                   <div>
@@ -2523,7 +2541,7 @@ const toggleIdentityWant = (identityKey) => {
                     className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
                       isActive
                         ? "bg-brand-700 text-white border-brand-700"
-                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        : "bg-white text-gray-700 ring-1 border-gray-300 hover:bg-gray-50"
                     }`}
                   >
                     {iden.name}
@@ -2537,190 +2555,210 @@ const toggleIdentityWant = (identityKey) => {
     );
   }
 
-  function CategoryTree({
-    selectedIdentitiesKeys,
-    catIds, subIds, xIds,
-    openCats, openSubs,
-    onToggleCat, onToggleSub, onToggleSubsub,
-    setOpenCats, setOpenSubs,
-    catLimit,
-    ensureCatOpenOnSelect = true,
-    ensureSubOpenOnSelect = true,
-  }) {
-    const hasSubs = (cat) => Array.isArray(cat?.subcategories) && cat.subcategories.length > 0;
-    const hasSubsubs = (sc) => Array.isArray(sc?.subsubs) && sc.subsubs.length > 0;
-    const reachedCatLimit = false; // Remove category limit restriction
+ 
+  // Update the CategoryTree component with different background colors
 
-    const selectedIdentities = useMemo(() => {
-      const keys = new Set(selectedIdentitiesKeys);
-      return identities.filter((iden) => keys.has(getIdentityKey(iden)));
-    }, [identities, selectedIdentitiesKeys]);
+  // Update the CategoryTree component with gray/dark backgrounds
+function CategoryTree({
+  selectedIdentitiesKeys,
+  catIds, subIds, xIds,
+  openCats, openSubs,
+  onToggleCat, onToggleSub, onToggleSubsub,
+  setOpenCats, setOpenSubs,
+  catLimit,
+  ensureCatOpenOnSelect = true,
+  ensureSubOpenOnSelect = true,
+  color = "categories", // Default to categories color
+}) {
+  const hasSubs = (cat) => Array.isArray(cat?.subcategories) && cat.subcategories.length > 0;
+  const hasSubsubs = (sc) => Array.isArray(sc?.subsubs) && sc.subsubs.length > 0;
+  const reachedCatLimit = false;
 
-    if (selectedIdentities.length === 0) {
-      return (
-        <div className="rounded-xl border bg-white p-6 text-sm text-gray-600">
-          Select at least one identity to see categories.
-        </div>
-      );
+  const selectedIdentities = useMemo(() => {
+    const keys = new Set(selectedIdentitiesKeys);
+    return identities.filter((iden) => keys.has(getIdentityKey(iden)));
+  }, [identities, selectedIdentitiesKeys]);
+
+  // Define background colors using gray/dark shades
+  const sectionColors = {
+    identities: {
+      container: "bg-gray-50 border-gray-200", // Light gray for identities container
+      subcategory: "bg-gray-100 border-gray-300", // Medium gray for subcategories
+      subsubcategory: "bg-gray-200" // Darker gray for subsubcategories
+    },
+    categories: {
+      container: "bg-gray-50 border-gray-200", // Light gray for categories container
+      subcategory: "bg-gray-100 border-gray-300", // Medium gray for subcategories
+      subsubcategory: "bg-gray-200" // Darker gray for subsubcategories
     }
+  };
 
-    const toggleCatOpen = (catId) => {
-      setOpenCats(prev => {
-        const n = new Set(prev);
-        n.has(catId) ? n.delete(catId) : n.add(catId);
-        return n;
-      });
-    };
-    const toggleSubOpen = (subId) => {
-      setOpenSubs(prev => {
-        const n = new Set(prev);
-        n.has(subId) ? n.delete(subId) : n.add(subId);
-        return n;
-      });
-    };
+  const colors = sectionColors[color];
 
+  if (selectedIdentities.length === 0) {
     return (
-      <div className="space-y-4">
-        {selectedIdentities.map((iden, iIdx) => (
-          <div key={`iden-${iIdx}`} className="rounded-xl border">
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-xl">
-              <div className="font-semibold">{iden.name}</div>
-            </div>
-
-            <div className="px-4 py-4 space-y-3">
-              {(iden.categories || []).map((cat, cIdx) => {
-                const _hasSubs = hasSubs(cat);
-                const catOpen = !!cat.id && openCats.has(cat.id);
-                const catSelected = !!cat.id && catIds.includes(cat.id);
-                const catDisabled = false; // Remove category limit restriction
-
-                return (
-                  <div key={`cat-${iIdx}-${cIdx}`} className="border rounded-lg">
-                    {/* Entire row toggles open/close */}
-                    <div
-                      className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
-                      role="button"
-                      aria-expanded={catOpen}
-                      onClick={() => cat.id && toggleCatOpen(cat.id)}
-                    >
-                      <label
-                        className={`flex items-center gap-2 ${catDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4"
-                          checked={catSelected}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            if (!cat.id) return;
-                            if (catDisabled) return;
-                            onToggleCat(cat.id);
-                            if (ensureCatOpenOnSelect && _hasSubs) {
-                              setOpenCats(prev => new Set(prev).add(cat.id));
-                            }
-                          }}
-                          disabled={!cat.id || catDisabled}
-                          title={!cat.id ? "Category not found in DB" : ""}
-                        />
-                        <span className="font-medium">{cat.name}</span>
-                      </label>
-
-                      {_hasSubs && (
-                        <span className={`text-gray-500 transition-transform ${catOpen ? "rotate-180" : ""}`}>▾</span>
-                      )}
-                    </div>
-
-                    {_hasSubs && catOpen && (
-                      <div className="px-4 pb-4 space-y-3">
-                        {(cat.subcategories || []).map((sc, sIdx) => {
-                          const _hasSubsubs = hasSubsubs(sc);
-                          const isOpen = !!sc.id && openSubs.has(sc.id);
-                          const isSelected = !!sc.id && subIds.includes(sc.id);
-
-                          const parentSelected = !!cat.id && catIds.includes(cat.id);
-                          const subDisabled = false; // Remove subcategory limit restriction
-
-                          return (
-                            <div key={`sub-${iIdx}-${cIdx}-${sIdx}`} className="border rounded-lg">
-                              <div
-                                className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
-                                role="button"
-                                aria-expanded={isOpen}
-                                onClick={() => sc.id && toggleSubOpen(sc.id)}
-                              >
-                                <label
-                                  className={`flex items-center gap-3 ${subDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <input
-                                    type="checkbox"
-                                    className="h-4 w-4"
-                                    checked={isSelected}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      if (!sc.id) return;
-                                      if (subDisabled) return;
-                                      onToggleSub(sc.id);
-                                      if (ensureSubOpenOnSelect && _hasSubsubs) {
-                                        setOpenSubs(prev => new Set(prev).add(sc.id));
-                                      }
-                                    }}
-                                    disabled={!sc.id || subDisabled}
-                                    title={!sc.id ? "Subcategory not found in DB" : ""}
-                                  />
-                                  <span className="font-medium">{sc.name}</span>
-                                </label>
-
-                                {_hasSubsubs && (
-                                  <span className={`text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
-                                )}
-                              </div>
-
-                              {_hasSubsubs && (isOpen || isSelected) && (
-                                <div className="px-4 pb-3">
-                                  <div className="mt-2 flex flex-wrap gap-2">
-                                    {sc.subsubs.map((ss, ssIdx) => {
-                                      const parentCatSelected = !!cat.id && catIds.includes(cat.id);
-                                      const ssSelected = !!ss.id && xIds.includes(ss.id);
-                                      const ssDisabled = false; // Remove subsubcategory limit restriction
-                                      return (
-                                        <label
-                                          key={`ss-${iIdx}-${cIdx}-${sIdx}-${ssIdx}`}
-                                          className={`inline-flex items-center gap-2 px-2 py-1 border rounded-full text-sm ${ssDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                                        >
-                                          <input
-                                            type="checkbox"
-                                            checked={!!ss.id && ssSelected}
-                                            onChange={() => {
-                                              if (!ss.id || ssDisabled) return;
-                                              onToggleSubsub(ss.id);
-                                            }}
-                                            disabled={!ss.id || ssDisabled}
-                                            title={!ss.id ? "Level-3 not found in DB" : ""}
-                                          />
-                                          <span>{ss.name}</span>
-                                        </label>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      <div className={`rounded-xl border bg-white p-6 text-sm text-gray-600 ${colors.container}`}>
+        Select at least one identity to see categories.
       </div>
     );
   }
 
+  const toggleCatOpen = (catId) => {
+    setOpenCats(prev => {
+      const n = new Set(prev);
+      n.has(catId) ? n.delete(catId) : n.add(catId);
+      return n;
+    });
+  };
+  
+  const toggleSubOpen = (subId) => {
+    setOpenSubs(prev => {
+      const n = new Set(prev);
+      n.has(subId) ? n.delete(subId) : n.add(subId);
+      return n;
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      {selectedIdentities.map((iden, iIdx) => (
+        <div key={`iden-${iIdx}`} className={`rounded-xl border ${colors.container}`}>
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-xl">
+            <div className="font-semibold">{iden.name}</div>
+          </div>
+
+          <div className="px-4 py-4 space-y-3">
+            {(iden.categories || []).map((cat, cIdx) => {
+              const _hasSubs = hasSubs(cat);
+              const catOpen = !!cat.id && openCats.has(cat.id);
+              const catSelected = !!cat.id && catIds.includes(cat.id);
+              const catDisabled = false;
+
+              return (
+                <div key={`cat-${iIdx}-${cIdx}`} className="border rounded-lg bg-white"> {/* Categories remain white */}
+                  {/* Entire row toggles open/close */}
+                  <div
+                    className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+                    role="button"
+                    aria-expanded={catOpen}
+                    onClick={() => cat.id && toggleCatOpen(cat.id)}
+                  >
+                    <label
+                      className={`flex items-center gap-2 ${catDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4"
+                        checked={catSelected}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          if (!cat.id) return;
+                          if (catDisabled) return;
+                          onToggleCat(cat.id);
+                          if (ensureCatOpenOnSelect && _hasSubs) {
+                            setOpenCats(prev => new Set(prev).add(cat.id));
+                          }
+                        }}
+                        disabled={!cat.id || catDisabled}
+                        title={!cat.id ? "Category not found in DB" : ""}
+                      />
+                      <span className="font-medium">{cat.name}</span>
+                    </label>
+
+                    {_hasSubs && (
+                      <span className={`text-gray-500 transition-transform ${catOpen ? "rotate-180" : ""}`}>▾</span>
+                    )}
+                  </div>
+
+                  {_hasSubs && catOpen && (
+                    <div className="px-4 pb-4 space-y-3">
+                      {(cat.subcategories || []).map((sc, sIdx) => {
+                        const _hasSubsubs = hasSubsubs(sc);
+                        const isOpen = !!sc.id && openSubs.has(sc.id);
+                        const isSelected = !!sc.id && subIds.includes(sc.id);
+                        const parentSelected = !!cat.id && catIds.includes(cat.id);
+                        const subDisabled = false;
+
+                        return (
+                          <div key={`sub-${iIdx}-${cIdx}-${sIdx}`} className={`border rounded-lg ${colors.subcategory}`}> {/* Subcategories get medium gray */}
+                            <div
+                              className="flex items-center justify-between px-4 py-3 cursor-pointer select-none"
+                              role="button"
+                              aria-expanded={isOpen}
+                              onClick={() => sc.id && toggleSubOpen(sc.id)}
+                            >
+                              <label
+                                className={`flex items-center gap-3 ${subDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    if (!sc.id) return;
+                                    if (subDisabled) return;
+                                    onToggleSub(sc.id);
+                                    if (ensureSubOpenOnSelect && _hasSubsubs) {
+                                      setOpenSubs(prev => new Set(prev).add(sc.id));
+                                    }
+                                  }}
+                                  disabled={!sc.id || subDisabled}
+                                  title={!sc.id ? "Subcategory not found in DB" : ""}
+                                />
+                                <span className="font-medium">{sc.name}</span>
+                              </label>
+
+                              {_hasSubsubs && (
+                                <span className={`text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+                              )}
+                            </div>
+
+                            {_hasSubsubs && (isOpen || isSelected) && (
+                              <div className="px-4 pb-3">
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {sc.subsubs.map((ss, ssIdx) => {
+                                    const parentCatSelected = !!cat.id && catIds.includes(cat.id);
+                                    const ssSelected = !!ss.id && xIds.includes(ss.id);
+                                    const ssDisabled = false;
+                                    return (
+                                      <label
+                                        key={`ss-${iIdx}-${cIdx}-${sIdx}-${ssIdx}`}
+                                        className={`inline-flex items-center gap-2 px-2 py-1 border border-gray-300 rounded-full text-sm ${ssDisabled ? "opacity-50 cursor-not-allowed" : ""} ${colors.subsubcategory}`} // Subsubcategories get darker gray
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={!!ss.id && ssSelected}
+                                          onChange={() => {
+                                            if (!ss.id || ssDisabled) return;
+                                            onToggleSubsub(ss.id);
+                                          }}
+                                          disabled={!ss.id || ssDisabled}
+                                          title={!ss.id ? "Level-3 not found in DB" : ""}
+                                        />
+                                        <span>{ss.name}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
   // Industry tree component
   function IndustryTreeStep({
     title, subtitle,
@@ -2997,8 +3035,8 @@ const toggleIdentityWant = (identityKey) => {
   </div>
 
   {(personal.city || personal.countryOfResidence) && (
-    <div className="flex items-center gap-1 text-sm text-white drop-shadow-md">
-      <MapPin size={16} className="text-white drop-shadow-md" />
+    <div className="flex items-center gap-1 text-sm drop-shadow-md">
+      <MapPin size={16}/>
       <span>{[personal.city, personal.countryOfResidence].filter(Boolean).join(", ")}</span>
     </div>
   )}
@@ -3190,6 +3228,7 @@ const toggleIdentityWant = (identityKey) => {
                     value={personal.country}
                     onChange={(value) => setPersonal({...personal, country: value})}
                     placeholder="Select country of birth"
+                    className="bg-blue-50 border-blue-200"
                   />
                 </div>}
 

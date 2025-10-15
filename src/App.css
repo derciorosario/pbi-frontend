@@ -12,6 +12,15 @@ input[type=number]::-webkit-outer-spin-button {
   margin: 0;
 }
 
+/* Add these custom color shades if they don't exist in your Tailwind config */
+.bg-blue-25 { background-color: rgba(239, 246, 255, 0.8); }
+.border-blue-75 { border-color: rgba(191, 219, 254, 0.8); }
+.bg-blue-10 { background-color: rgba(239, 246, 255, 0.4); }
+
+.bg-green-25 { background-color: rgba(236, 253, 245, 0.8); }
+.border-green-75 { border-color: rgba(167, 243, 208, 0.8); }
+.bg-green-10 { background-color: rgba(236, 253, 245, 0.4); }
+
 /* Firefox */
 input[type=number] {
   -moz-appearance: textfield;
