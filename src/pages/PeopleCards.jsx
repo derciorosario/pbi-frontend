@@ -401,7 +401,7 @@ export default function PeopleProfileCard({
               <div className="p-5 pr-0">
                   {avatarUrl ? (
                   <div
-                    className={`flex bg-white items-center justify-center w-24 h-24 shadow-xl ${isCompany ? 'border-4 border-white rounded-2xl' : 'border-4 border-white rounded-2xl'} overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-200`}
+                    className={`flex bg-white  items-center justify-center w-24 h-24 shadow-xl ${isCompany ? 'border-4 border-white rounded-2xl' : 'border-4 border-white rounded-2xl'} overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-200`}
                     onClick={() => {
                       navigate(`/profile/${id}`)
                     }}
@@ -410,7 +410,7 @@ export default function PeopleProfileCard({
                     <img
                       src={avatarUrl}
                       alt={name}
-                      className="w-full h-full"
+                      className="w-full h-full border border-gray-100"
                       style={{ objectFit: isCompany ? 'contain' : 'cover' }}
                     />
                   </div>

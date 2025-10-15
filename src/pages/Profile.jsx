@@ -3218,7 +3218,6 @@ function CategoryTree({
                     placeholder="Select nationality"
                   />
                 </div> */}
-                
               
 
                 {!isCompany && <div>

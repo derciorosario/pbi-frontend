@@ -22,6 +22,7 @@ import { useData } from "../contexts/DataContext";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import PageTabs from "../components/PageTabs";
 import TopFilterButtons from "../components/TopFilterButtons";
+import CompanySkeletonLoader from "../components/ui/CompanySkeletonLoader";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -516,7 +517,7 @@ export default function PeopleFeedPage() {
       <>
         {showSkeleton && (
           <div className="min-h-[160px] grid text-gray-600">
-            <CardSkeletonLoader />
+            {currentPage=="companies" ?  <CompanySkeletonLoader/> : <CardSkeletonLoader /> } 
           </div>
         )}
 
