@@ -881,6 +881,7 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
 /* ---------- main page ---------- */
 export default function CreateJobOpportunity({ triggerImageSelection = false, hideHeader = false, onSuccess }) {
   const navigate = useNavigate();
+  const [showAudienceSection, setShowAudienceSection] = useState(false);
   const { id } = useParams(); // Get job ID from URL if editing
   const [isLoading, setIsLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -1472,7 +1473,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
 
         {user?.id && (
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">
+            <h1 className="text-[20px] font-bold">
               {isEditMode ? "Edit Job Opportunity" : "Create Job Opportunity"}
             </h1>
             <p className="mt-1 text-sm text-gray-600">
@@ -1501,6 +1502,26 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
           </div>
         ) : (
           <form onSubmit={onSubmit} className="mt-6 rounded-2xl bg-white border border-gray-100 shadow-sm p-5 md:p-6">
+
+
+            <div className="flex items-center gap-2"><I.doc /><h3 className="font-semibold">Cover Image</h3></div>
+            <p className="text-xs text-gray-600 mb-3">
+              Optional hero image for the job (shown at the top of the posting).
+            </p>
+
+
+            <CoverImagePicker
+              ref={imagePickerRef}
+              label="Upload a cover image (optional)"
+              value={coverImage}
+              preview={typeof coverImage === 'string' ? coverImage : null}
+              onChange={setCoverImage}
+            />
+
+               {/* ===== Cover Image (optional) ===== */}
+            <hr className="my-5 border-gray-200" />
+          
+
             {/* ===== Basic Information ===== */}
             <div className="flex items-center gap-2"><I.briefcase /><h3 className="font-semibold">Basic Information</h3></div>
             <div className="mt-3 grid md:grid-cols-2 gap-4">
@@ -1511,7 +1532,6 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
                   value={form.title}
                   onChange={onChange}
                   placeholder="e.g. Senior Software Engineer"
-                  required
                 />
               </div>
 
@@ -1522,7 +1542,6 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
                    <InlineCompanyPicker
                   companies={companies}
                   value={form.companyId}
-                  required
                   onChange={(picked) => {
                     setForm((f) => ({
                       ...f,
@@ -1547,7 +1566,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
                 </div>
               </div>}
 
-              <div>
+              <div className="hidden">
                 <Label>Department</Label>
                 <Input name="department" value={form.department} onChange={onChange} placeholder="e.g. Engineering, Marketing" />
               </div>
@@ -1561,66 +1580,64 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
               </div>
             </div>
 
-            <hr className="my-5 border-gray-200" />
+            <hr className="my-5 border-gray-200"/>
 
             {/* ===== Job Details ===== */}
             <div className="flex items-center gap-2"><I.doc /><h3 className="font-semibold">Job Details</h3></div>
-            <div className="mt-3 grid md:grid-cols-2 gap-4">
-  <div>
-    <Label required>Job Type</Label>
-    <Select name="jobType" value={form.jobType} onChange={onChange} required>
-      <option value="">Select job type</option>
-      <option>Full-Time</option><option>Part-Time</option>
-      <option>Temporary</option><option>Seasonal</option>
-      <option>Internship</option><option>Apprenticeship</option>
-      <option>Contract / Freelance</option>
-    </Select>
-  </div>
+            <div className="mt-3 grid md:grid-cols-2 gap-4 hidden">
+            <div>
+              <Label>Job Type</Label>
+              <Select name="jobType" value={form.jobType} onChange={onChange}>
+                <option value="">Select job type</option>
+                <option>Full-Time</option><option>Part-Time</option>
+                <option>Temporary</option><option>Seasonal</option>
+                <option>Internship</option><option>Apprenticeship</option>
+                <option>Contract / Freelance</option>
+              </Select>
+            </div>
 
-  <div>
-    <Label required>Work Location</Label>
-    <Select  name="workLocation" value={form.workLocation} onChange={onChange} required>
-      <option value="">Select location</option>
-      <option>Office</option><option>Field</option>
-      <option>Home</option><option>Client Site</option>
-    </Select>
-  </div>
+            <div>
+              <Label required>Work Location</Label>
+              <Select  name="workLocation" value={form.workLocation} onChange={onChange}>
+                <option value="">Select location</option>
+                <option>Office</option><option>Field</option>
+                <option>Home</option><option>Client Site</option>
+              </Select>
+            </div>
 
-  <div>
-    <Label required>Work Schedule</Label>
-    <Select name="workSchedule" value={form.workSchedule} onChange={onChange} required>
-      <option value="">Select schedule</option>
-      <option>Day Shift</option><option>Night Shift</option>
-      <option>Rotational Shifts</option><option>Flexible Hours</option>
-      <option>Weekend Jobs</option><option>Overtime</option><option>On-Call</option>
-    </Select>
-  </div>
+            <div>
+              <Label required>Work Schedule</Label>
+              <Select name="workSchedule" value={form.workSchedule} onChange={onChange}>
+                <option value="">Select schedule</option>
+                <option>Day Shift</option><option>Night Shift</option>
+                <option>Rotational Shifts</option><option>Flexible Hours</option>
+                <option>Weekend Jobs</option><option>Overtime</option><option>On-Call</option>
+              </Select>
+            </div>
 
-  <div>
-    <Label required>Career Level</Label>
-    <Select name="careerLevel" value={form.careerLevel} onChange={onChange} required>
-      <option value="">Select level</option>
-      <option>Entry-Level</option><option>Mid-Level</option>
-      <option>Senior-Level</option><option>Executive / C-Suite</option>
-      <option>Volunteer / Community Work</option>
-    </Select>
-  </div>
+            <div>
+              <Label required>Career Level</Label>
+              <Select name="careerLevel" value={form.careerLevel} onChange={onChange}>
+                <option value="">Select level</option>
+                <option>Entry-Level</option><option>Mid-Level</option>
+                <option>Senior-Level</option><option>Executive / C-Suite</option>
+                <option>Volunteer / Community Work</option>
+              </Select>
+            </div>
 
-  <div>
-    <Label required>Payment Type</Label>
-    <Select name="paymentType" value={form.paymentType} onChange={onChange} required>
-      <option value="">Select payment type</option>
-      <option>Salaried Jobs</option><option>Hourly Jobs</option>
-      <option>Commission-Based</option><option>Stipend-Based</option>
-      <option>Equity / Profit-Sharing Roles</option>
-    </Select>
-  </div>
-</div>
+            <div>
+              <Label required>Payment Type</Label>
+              <Select name="paymentType" value={form.paymentType} onChange={onChange}>
+                <option value="">Select payment type</option>
+                <option>Salaried Jobs</option><option>Hourly Jobs</option>
+                <option>Commission-Based</option><option>Stipend-Based</option>
+                <option>Equity / Profit-Sharing Roles</option>
+              </Select>
+            </div>
+         </div>
 
             
             <div className="mt-3 grid md:grid-cols-3 gap-4">
-              
-              
 
               <div className="md:col-span-3">
                 <Label required>Job Description</Label>
@@ -1651,13 +1668,13 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
                     'link'
                   ]}
                   className="bg-white rounded-xl border border-gray-200"
-                  style={{ minHeight: '200px' }}
+                  style={{ minHeight: '80px' }}
                   preserveWhitespace={true}
-                  required
+                
                 />
               </div>
               
-              <div className="md:col-span-3">
+              <div className="md:col-span-3 hidden">
                 <Label>Required Skills & Qualifications</Label>
                 <div className="mt-2 flex items-center gap-2">
                   <input
@@ -1705,11 +1722,51 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
               </div>
 
             </div>
+            
 
+            <div>
+                <hr className="my-5 border-gray-200" />
+
+            {/* ===== Location & Compensation ===== */}
+            <div className="flex items-center gap-2"><I.pin /><h3 className="font-semibold">Location & Compensation</h3></div>
+           {/***Hide For now***/}
+           {/**
+            *  <div className="mt-3 grid md:grid-cols-2 gap-4">
+              <div>
+                <Label required>Country</Label>
+                <SearchableSelect
+                  value={form.country}
+                  onChange={(value) => setForm({ ...form, country: value, city: "" })}
+                  options={countryOptions}
+                  placeholder="Search and select country..."
+                  required
+                />
+              </div>
+              <div>
+                <Label>City</Label>
+                <SearchableSelect
+                  key={form.country} // Force remount when country changes to reset internal state
+                  value={form.city}
+                  onChange={(value) => setForm({ ...form, city: value })}
+                  options={cityOptions}
+                  placeholder="Search and select city..."
+                />
+              </div>
+            </div>
+            */}
+
+            {/* ===== Additional Countries (Multi-select) ===== */}
+
+            <div className="mt-3">
+              <CountryCitySelector
+                value={form.countries}
+                onChange={(values) => setForm(prev => ({ ...prev, countries: values }))}
+              />
+            </div>
+            </div>
 
              <hr className="my-5 border-gray-200" />
-
-            
+             
              {/* General Classification (SEARCHABLE) */}
             <section>
               <h2 className="font-semibold text-brand-600">Classification</h2>
@@ -1752,7 +1809,9 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
 
 
          
-            <hr className="my-5 border-gray-200" />
+           <div className="hidden">
+
+             <hr className="my-5 border-gray-200" />
 
             {/* ===== Industry Classification ===== */}
             <div className="mb-2 flex items-center gap-2">
@@ -1792,64 +1851,64 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
               </div>
             </div>
 
-               <hr className="my-5 border-gray-200" />
+           </div>
 
-            {/* ===== Share With (Audience selection) ===== */}
-            <div className="mb-2 flex items-center gap-2">
-              <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
-              <h3 className="font-semibold">Share with (identities & industries)</h3>
-            </div>
-            <p className="text-xs text-gray-600 mb-3">
-              Pick who should see this job. You can select multiple identities, industries and roles.
-            </p>
+          
+        
+         
+         <hr className="my-5 border-gray-200" />
 
-            <AudienceTree
-              tree={audTree}
-              selected={audSel}
-              onChange={(next) => setAudSel(next)}
-            />
+{/* ===== Share With (Audience selection) ===== */}
+<div className="mb-4">
+  {!showAudienceSection ? (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setShowAudienceSection(true)}
+        className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Define Audience (optional)
+      </button>
+      <p className="text-xs text-gray-500">
+        Select specific identities and industries to target your job posting to relevant audiences
+      </p>
+    </div>
+  ) : (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
+          <h3 className="font-semibold">Share with (identities & industries)</h3>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowAudienceSection(false)}
+          className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50"
+        >
+          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+          Hide
+        </button>
+      </div>
+      <p className="text-xs text-gray-600 mb-3">
+        Pick who should see this job. You can select multiple identities, industries and roles.
+      </p>
 
+      <AudienceTree
+        tree={audTree}
+        selected={audSel}
+        onChange={(next) => setAudSel(next)}
+      />
+    </div>
+  )}
+</div>
+          
 
-            <hr className="my-5 border-gray-200" />
-
-            {/* ===== Location & Compensation ===== */}
-            <div className="flex items-center gap-2"><I.pin /><h3 className="font-semibold">Location & Compensation</h3></div>
-           {/***Hide For now***/}
-           {/**
-            *  <div className="mt-3 grid md:grid-cols-2 gap-4">
-              <div>
-                <Label required>Country</Label>
-                <SearchableSelect
-                  value={form.country}
-                  onChange={(value) => setForm({ ...form, country: value, city: "" })}
-                  options={countryOptions}
-                  placeholder="Search and select country..."
-                  required
-                />
-              </div>
-              <div>
-                <Label>City</Label>
-                <SearchableSelect
-                  key={form.country} // Force remount when country changes to reset internal state
-                  value={form.city}
-                  onChange={(value) => setForm({ ...form, city: value })}
-                  options={cityOptions}
-                  placeholder="Search and select city..."
-                />
-              </div>
-            </div>
-            */}
-
-            {/* ===== Additional Countries (Multi-select) ===== */}
-
-            <div className="mt-3">
-              <CountryCitySelector
-                value={form.countries}
-                onChange={(values) => setForm(prev => ({ ...prev, countries: values }))}
-              />
-            </div>
-
-            <div className="mt-3 grid md:grid-cols-3 gap-4">
+            <div className="mt-3 grid md:grid-cols-3 gap-4 hidden">
               <div><Label>Min Salary</Label><Input name="minSalary" type="number" min="0" step="1" value={form.minSalary} onChange={onChange} placeholder="e.g. 2000"/></div>
               <div><Label>Max Salary</Label><Input name="maxSalary" type="number" min="0" step="1" value={form.maxSalary} onChange={onChange} placeholder="e.g. 4000"/></div>
               <div>
@@ -1861,7 +1920,9 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
               <div className="md:col-span-3"><Label>Benefits</Label><Input name="benefits" value={form.benefits} onChange={onChange} placeholder="Health insurance, remote work…"/></div>
             </div>
 
-            <hr className="my-5 border-gray-200" />
+          <div className="hidden">
+
+               <hr className="my-5 border-gray-200" />
 
             {/* ===== Application Details ===== */}
             <div className="flex items-center gap-2"><I.send /><h3 className="font-semibold">Application Details</h3></div>
@@ -1895,19 +1956,11 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
 
             <div className="mt-3"><Label>Application Instructions</Label><Textarea name="applicationInstructions" value={form.applicationInstructions} onChange={onChange} rows={3} placeholder="Provide specific instructions for applicants…"/></div>
           
-            {/* ===== Cover Image (optional) ===== */}
-            <hr className="my-5 border-gray-200" />
-            <div className="flex items-center gap-2"><I.doc /><h3 className="font-semibold">Cover Image</h3></div>
-            <p className="text-xs text-gray-600 mb-3">
-              Optional hero image for the job (shown at the top of the posting).
-            </p>
-            <CoverImagePicker
-              ref={imagePickerRef}
-              label="Upload a cover image (optional)"
-              value={coverImage}
-              preview={typeof coverImage === 'string' ? coverImage : null}
-              onChange={setCoverImage}
-            />
+
+
+          </div>
+          
+           
             <div className="flex justify-end gap-3 mt-8">
               {isLoading ? (
                 <button type="button" className="px-4 py-2 rounded-xl bg-brand-600 text-white opacity-70 cursor-not-allowed" disabled>

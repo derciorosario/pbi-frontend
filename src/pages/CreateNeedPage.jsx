@@ -408,6 +408,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
   const { id, type: urlType } = useParams(); // Extract id and type from URL
   const isEditMode = Boolean(id);
   const { user } = useAuth();
+  const [showAudienceSection, setShowAudienceSection] = useState(false);
 
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
@@ -888,7 +889,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
               className="mt-6 rounded-2xl bg-white border p-6 shadow-sm space-y-8"
             >
           {/* What are you looking for? */}
-          <section>
+          <section className="hidden">
             <h2 className="font-semibold">What are you looking for? *</h2>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
@@ -923,7 +924,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
           <section>
             <h2 className="font-semibold text-brand-600">Basic Information</h2>
             <div className="mt-3 grid gap-4">
-              <div>
+              <div className="hidden">
                 <Label required>Title</Label>
                 <input
                   type="text"
@@ -939,7 +940,8 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
                 <textarea
                   value={form.description}
                   onChange={(e) => setField("description", e.target.value)}
-                  placeholder="Describe what you're looking for in detail. What do you need and why?"
+                   placeholder="Example: Looking for a graphic designer to create branding materials for our new restaurant opening next month."
+                  _placeholder="Describe what you're looking for in detail. What do you need and why?"
                   className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                   rows={4}
                   required
@@ -950,7 +952,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
 
 
           {/* Budget & Urgency */}
-          <section>
+          <section className="hidden">
             <h2 className="font-semibold text-brand-600">Budget & Urgency</h2>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
               <div>
@@ -1011,7 +1013,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
           </section>
 
           {/* Criteria */}
-          <section>
+          <section className="hidden">
             <h2 className="font-semibold text-brand-600">Specific Criteria or Requirements</h2>
             <div className="mt-2 flex items-center gap-2">
               <input
@@ -1186,7 +1188,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
           )}
 
           {/* Industry Classification */}
-          <section>
+          <section className="hidden">
             <h2 className="font-semibold text-brand-600">Industry Classification</h2>
             <p className="text-xs text-gray-600 mb-3">
               Select the industry category that best describes your need.
@@ -1223,17 +1225,57 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
           </section>
 
           {/* Share With (Audience) */}
-          <section>
-            <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
-            <p className="text-xs text-gray-600 mb-3">
-              Select who should see this need. Choose multiple identities, categories, subcategories, and sub-subs.
-            </p>
-            <AudienceTree
-              tree={audTree}
-              selected={audSel}
-              onChange={(next) => setAudSel(next)}
-            />
-          </section>
+          
+          {/* Share With (Audience) */}
+<section>
+  <div className="mb-4">
+    {!showAudienceSection ? (
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setShowAudienceSection(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Define Target Audience (optional)
+        </button>
+        <p className="text-xs text-gray-500">
+          Select specific identities and industries to target your post to relevant audiences
+        </p>
+      </div>
+    ) : (
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
+            <h3 className="font-semibold text-brand-600">Share With (Target Audience)</h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAudienceSection(false)}
+            className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50"
+          >
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+            Hide
+          </button>
+        </div>
+        <p className="text-xs text-gray-600 mb-3">
+          Select who should see this post. Choose multiple identities, categories, subcategories, and sub-subs.
+        </p>
+
+        <AudienceTree
+          tree={audTree}
+          selected={audSel}
+          onChange={(next) => setAudSel(next)}
+        />
+      </div>
+    )}
+  </div>
+</section>
 
           {/* Actions */}
           <div className="flex justify-end gap-3">

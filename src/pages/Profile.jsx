@@ -25,16 +25,17 @@ import {
 
 import { getUserById, updateUser } from "../api/admin";
 import client from "../api/client";
-import ProfilePhoto from "../components/ProfilePhoto";
+import ProfilePhoto from "../components/ProfilePhotoUpload";
 import SearchableSelect from "../components/SearchableSelect.jsx";
 import COUNTRIES from "../constants/countries.js";
 import CITIES from "../constants/cities.json";
 import Header from "../components/Header.jsx";
+import MediaViewer from "../components/MediaViewer";
 import UserSelectionModal from "../components/UserSelectionModal";
 import StaffInvitationModal from "../components/StaffInvitationModal";
 import OrganizationSelectionModal from "../components/OrganizationSelectionModal";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { Download } from "lucide-react";
+import { Camera, Download, MapPin } from "lucide-react";
 import ProfileModal from "../components/ProfileModal.jsx";
 
 const Tab = {
@@ -61,6 +62,11 @@ export default function ProfilePage() {
   const isAdminEditing = location.pathname.includes('/admin/user-profile/');
   const {user,profile, setProfile,setUser} = useAuth() 
   const navigate=useNavigate()
+  
+
+  
+    // Media viewer state
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
   
   const [active, setActive]   = useState(Tab.PERSONAL);
   const [loading, setLoading] = useState(true);
@@ -188,6 +194,15 @@ export default function ProfilePage() {
       }
     }
   }, [location.search, me, isCompany]);
+
+  function getInitials(name) {
+  if (!name) return "U";
+  const parts = name.trim().split(/\s+/);
+  const first = parts[0]?.charAt(0).toUpperCase() || "";
+  const second = parts[1]?.charAt(0).toUpperCase() || "";
+  return first + second;
+}
+
 
   // Personal
    const [personal, setPersonal] = useState({
@@ -2862,26 +2877,108 @@ const toggleIdentityWant = (identityKey) => {
     <div>
       {!isAdminEditing && <Header/>}
       <div className="max-w-5xl mx-auto p-4 md:p-8">
-        {/* Header + progress */}
-        <div className="bg-white rounded-2xl shadow-soft p-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold">
-                {isCompany ? "Company Profile" : "Profile"}
-              </h1>
-              <p className="text-gray-500">
-                {isCompany
-                  ? "Update your company information and preferences"
-                  : "Update your information and preferences"}
-              </p>
+        {/* Modern Header Section with Progress */}
+        <div className="bg-white rounded-xl shadow-sm mb-6">
+          {/* Gradient Header Background - Fixed height */}
+          <div className="bg-gradient-to-r rounded-xl from-brand-600 to-brand-600 h-32"></div>
+
+          {/* Profile Content - Overlay on gradient */}
+          <div className="px-6 pb-6 relative">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 gap-4 mb-6">
+              {/* Profile Image and Company Logos */}
+              <div className="flex flex-col md:flex-row md:items-end gap-4">
+                <div className="relative">
+
+                    <ProfilePhoto onChange={(base64)=>{
+                                  setPersonal({ ...personal, avatarUrl: base64 })
+                                  setUser({...user, avatarUrl: base64})
+                    }} avatarUrl={personal.avatarUrl}/>
+
+
+                
+
+                  {personal.avatarUrl ? (
+                    <div
+                      className={`${isCompany ? "h-32 w-32 rounded-xl" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-white flex justify-center items-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
+                      onClick={() => {
+                        // Optional: Add media viewer functionality if needed
+                        setMediaViewerOpen(true)
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`View ${personal.name || 'Profile'} picture`}
+                    >
+                      <img
+                        src={personal.avatarUrl}
+                        alt={personal.name || 'Profile'}
+                        className="w-full h-full"
+                        style={{ objectFit: isCompany ? 'contain' : 'cover' }}
+                      />
+                    </div>
+                  ) : (
+                    <div className={`${isCompany ? "h-32 w-32 rounded-xl" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-gradient-to-br from-brand-50 to-brand-50 grid place-items-center overflow-hidden`}>
+                      <span className="font-semibold text-brand-600 text-2xl">
+                        {getInitials(personal.name || "User")}
+                      </span>
+                    </div>
+                  )}
+
+                 
+                </div>
+
+                {/* Profile Info - Name on gradient, title on white background */}
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <h1 className={`${isCompany ? "text-3xl" : "text-2xl"} font-bold text-white max-md:text-gray-900`}>
+                      {personal.name || "Profile"}
+                    </h1>
+                    {isCompany && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                        Company
+                      </span>
+                    )}
+                    {!isCompany && me?.user?.accountType && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                        Individual
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Professional Title - On white background after gradient */}
+                  <div className="mb-2 px-4 py-2 bg-white rounded-lg shadow-sm border">
+                    <p className="text-gray-900 text-lg font-semibold">
+                      {personal.professionalTitle || (isCompany ? "Company" : "Professional")}
+                    </p>
+                  </div>
+
+                  {(personal.city || personal.countryOfResidence) && (
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                      <span>{[personal.city, personal.countryOfResidence].filter(Boolean).join(", ")}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Progress Section - Modern Design */}
+              <div className="flex flex-col items-end gap-3 pt-5">
+                <div className="text-right flex items-center gap-2">
+                  <div className="text-sm font-medium text-gray-700">Profile Completion</div>
+                  <div className="text-sm font-bold text-gray-700"> ({progress}%) </div>
+                </div>
+              <div>
+                <div className="w-40 h-3 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-3 bg-gradient-to-r from-brand-500 to-brand-500 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+              </div>
             </div>
-            <div className="text-right text-sm text-gray-600">
-              <div className="font-medium">Completion</div>
-              <div>{progress}%</div>
-            </div>
-          </div>
-          <div className="mt-3 h-3 bg-gray-200 rounded-full overflow-hidden">
-            <div className="h-3 bg-brand-700 rounded-full transition-all" style={{ width: `${progress}%` }} />
           </div>
         </div>
 
@@ -2995,10 +3092,7 @@ const toggleIdentityWant = (identityKey) => {
           {/* PERSONAL */}
           {active === Tab.PERSONAL && (
             <div className="space-y-4">
-              <ProfilePhoto onChange={(base64)=>{
-                setPersonal({ ...personal, avatarUrl: base64 })
-                setUser({...user, avatarUrl: base64})
-              }} avatarUrl={personal.avatarUrl}/>
+            
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">
@@ -4884,7 +4978,7 @@ const toggleIdentityWant = (identityKey) => {
                                 </span>
                               ))}
                               {application.similarity.matches.subsubcategories.map(subsub => (
-                                <span key={subsub.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                <span key={subsub.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-brand-100 text-brand-800">
                                   {subsub.name}
                                 </span>
                               ))}
@@ -5438,7 +5532,7 @@ const toggleIdentityWant = (identityKey) => {
                                 </span>
                               ))}
                               {application.similarity.matches.subsubcategories.map(subsub => (
-                                <span key={subsub.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                                <span key={subsub.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-brand-100 text-brand-800">
                                   {subsub.name}
                                 </span>
                               ))}
@@ -5848,6 +5942,15 @@ const toggleIdentityWant = (identityKey) => {
            description="Select an organization you'd like to join and send a request for approval."
          />
        )}
+
+       
+        <MediaViewer
+          isOpen={mediaViewerOpen}
+          onClose={() => setMediaViewerOpen(false)}
+          mediaUrl={personal?.avatarUrl}
+          mediaType="image"
+          alt={`${personal?.name}'s profile picture`}
+        />
 
        {/* Profile Modal */}
        <ProfileModal

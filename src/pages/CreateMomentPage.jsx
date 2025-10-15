@@ -367,6 +367,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
   const isEditMode = Boolean(id);
   const { user } = useAuth();
 
+  const [showAudienceSection, setShowAudienceSection] = useState(false);
   const [loading, setLoading] = useState(Boolean(id));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -905,14 +906,14 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
               className="mt-6 rounded-2xl bg-white border border-gray-100 p-6 shadow-sm space-y-8"
             >
           {/* Related Entity (Required) - Moved to first position */}
-          {hideHeader && <section>
+          {hideHeader && <section className="hidden">
             <h2 className="font-semibold">What is this experience about? *</h2>
             <div className="mt-2 grid sm:grid-cols-2 gap-4">
               <select
                 value={form.relatedEntityType}
                 onChange={(e) => setField("relatedEntityType", e.target.value)}
                 className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-brand-200"
-                required
+               
               >
                 <option value="">Select entity type</option>
                 <option value="job">Job</option>
@@ -926,30 +927,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
             </div>
           </section>}
 
-
-          {/* Type */}
-          <section>
-            <h2 className="font-semibold">Experience Type</h2>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-5 gap-3">
-              {["Achievement", "Milestone", "Learning", "Challenge", "Opportunity"].map((label) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => setField("type", label)}
-                  className={`border rounded-xl p-3 text-center transition-colors ${
-                    form.type === label
-                      ? "border-brand-600 bg-brand-50"
-                      : "border-gray-200 bg-white hover:border-brand-600"
-                  }`}
-                >
-                  <div className="text-sm font-medium">{label}</div>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          
-          {/* Photos */}
+            {/* Photos */}
           <section>
             <h2 className="font-semibold">Photos</h2>
             <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
@@ -1025,6 +1003,34 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
             </div>
           </section>
 
+
+          {/* Type */}
+     
+
+<section>
+  <h2 className="font-semibold">Experience Type</h2>
+  <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+    {["Achievement", "Learning", "Challenge", "Opportunity"].map((label) => (
+      <button
+        key={label}
+        type="button"
+        onClick={() => setField("type", label)}
+        className={`border rounded-xl p-3 text-center transition-colors break-words min-h-[60px] flex items-center justify-center ${
+          form.type === label
+            ? "border-brand-600 bg-brand-50"
+            : "border-gray-200 bg-white hover:border-brand-600"
+        }`}
+      >
+        <span className="text-sm font-medium leading-tight">
+          {label}{["Achievement", "Learning"].includes(label) ? " Milestone" : ""}
+        </span>
+      </button>
+    ))}
+  </div>
+</section>
+          
+        
+
           {/* Attachments  hidden for now*/}
           <section className="hidden">
             <h2 className="font-semibold">Attachments (Optional)</h2>
@@ -1098,7 +1104,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           </section>
 
           {/* Title */}
-          <section>
+          <section className="hidden">
             <h2 className="font-semibold">Title *</h2>
             <input
               type="text"
@@ -1106,14 +1112,14 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
               onChange={(e) => setField("title", e.target.value)}
               placeholder="Give your experience a clear, strong title"
               className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-              required
+             
             />
           </section>
 
           {/* Date & Location */}
           <section>
-            <h2 className="font-semibold">When & Where</h2>
-            <div className="mt-2 grid sm:grid-cols-2 gap-4">
+            <h2 className="font-semibold hidden">When & Where</h2>
+            <div className="mt-2 grid sm:grid-cols-2 gap-4 hidden">
               <div>
                 <label className="text-[12px] font-medium text-gray-700">Date</label>
                 <input
@@ -1166,7 +1172,8 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
             <textarea
               value={form.description}
               onChange={(e) => setField("description", e.target.value)}
-              placeholder="Describe what happened, what you learned, challenges faced, outcomes…"
+              placeholder="Example: Just launched our new product! Learned valuable lessons about scaling and user onboarding."
+              _placeholder="Describe what happened, what you learned, challenges faced, outcomes…"
               className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
               rows={5}
               required
@@ -1174,7 +1181,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           </section>
 
           {/* Tags */}
-          <section>
+          <section className="hidden">
             <h2 className="font-semibold">Tags</h2>
             <div className="mt-2 flex items-center gap-2">
               <input
@@ -1265,7 +1272,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
 
           {/* Industry Classification  */}
        
-          <section>
+          <section className="hidden">
             <h2 className="font-semibold text-brand-600">Industry Classification</h2>
             <div className="grid md:grid-cols-2 gap-4 mt-2">
               <div>
@@ -1306,17 +1313,57 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
 
 
           {/* Share With (Audience) */}
-          <section>
-            <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
-            <p className="text-xs text-gray-600 mb-3">
-              Select who should see this experience. Choose multiple identities, categories, subcategories, and sub-subs.
-            </p>
-            <AudienceTree
-              tree={audTree}
-              selected={audSel}
-              onChange={(next) => setAudSel(next)}
-            />
-          </section>
+          
+          {/* Share With (Audience) */}
+<section>
+  <div className="mb-4">
+    {!showAudienceSection ? (
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={() => setShowAudienceSection(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Define Audience (optional)
+        </button>
+        <p className="text-xs text-gray-500">
+          Select specific identities and industries to target your experience to relevant audiences
+        </p>
+      </div>
+    ) : (
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
+            <h3 className="font-semibold text-brand-600">Share With (Target Audience)</h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAudienceSection(false)}
+            className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50"
+          >
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+            Hide
+          </button>
+        </div>
+        <p className="text-xs text-gray-600 mb-3">
+          Select who should see this experience. Choose multiple identities, categories, subcategories, and sub-subs.
+        </p>
+
+        <AudienceTree
+          tree={audTree}
+          selected={audSel}
+          onChange={(next) => setAudSel(next)}
+        />
+      </div>
+    )}
+  </div>
+</section>
 
           {/* Actions */}
           <div className="flex justify-end gap-3">

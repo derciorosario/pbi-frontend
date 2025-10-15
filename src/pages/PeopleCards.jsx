@@ -591,7 +591,8 @@ export default function PeopleProfileCard({
           {/* Quick actions on image */}
         
 <div className="mt-6">
-        <h3 className={`font-bold text-sm mb-2 ${isCompany ? 'text-gray-900' : 'text-gray-900'} group-hover/name:text-brand-600 transition-colors leading-tight break-words`} title={name}>
+        <h3 
+        onClick={() => navigate(`/profile/${id}`)} className={`font-bold text-sm mb-2 hover:underline ${isCompany ? 'text-gray-900' : 'text-gray-900'} group-hover/name:text-brand-600 transition-colors leading-tight break-words`} title={name}>
                     {name || "Anonymous User"}
         </h3>
         </div>
