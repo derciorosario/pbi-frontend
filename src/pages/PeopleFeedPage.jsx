@@ -532,14 +532,15 @@ export default function PeopleFeedPage() {
 
         <div
           className={`grid grid-cols-1 mt-3 ${
-            view == "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
+            currentPage!="people" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
           } gap-6`}
         >
           {!showSkeleton &&
             items.map((item) => (
               <PeopleProfileCard
+                type={currentPage=="people" ? "grid" : "list"}
                 key={item.id || item.userId || item.profileId || Math.random()}
-                tyle={view} /* preserving your prop name as-is */
+                tyle={'list'} /* preserving your prop name as-is */
                 {...item}
                 matchPercentage={item.matchPercentage}
               />

@@ -531,9 +531,9 @@ export default function ProductsPage() {
           </div>
            <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { label: "Post a Product", Icon: PlusCircle, onClick: () => navigate("/products/create"),hide:user?.accountType=="individual" },
+            { label: "Sell a product", Icon: PlusCircle, onClick: () => navigate("/products/create"),hide:user?.accountType=="individual" },
             { label: "Share Your Experience", Icon: PlusCircle, onClick: () => navigate("/moment/product/create"),hide:user?.accountType=="company" },
-            { label: "Ask About a Product", Icon: PlusCircle, onClick: () => navigate("/need/product/create"),hide:user?.accountType=="company" },
+            { label: "Search for a Product", Icon: PlusCircle, onClick: () => navigate("/need/product/create"),hide:user?.accountType=="company" },
           
         ]} />
           <ProfileCard />
@@ -546,9 +546,9 @@ export default function ProductsPage() {
           <div className="lg:col-span-2">
             <div className="flex items-center flex-wrap w-full justify-between mb-4">
               <PostComposer from={'product'} typeOfPosts={[
-                  { label: "Create Product", Icon: PlusCircle,hide:user?.accountType=="individual",type:'main'},
+                  { label: "Sell a product", Icon: PlusCircle,hide:user?.accountType=="individual",type:'main'},
                   { label: "Share Your Experience", Icon: PlusCircle,hide:user?.accountType=="company" },
-                  { label: "Ask About a Product", Icon: PlusCircle,hide:user?.accountType=="company" },
+                  { label: "Search for a Product", Icon: PlusCircle,hide:user?.accountType=="company" },
               ]}/>
             </div>
             <section className="space-y-4 overflow-hidden">

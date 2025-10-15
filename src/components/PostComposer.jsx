@@ -107,7 +107,8 @@ export default function PostComposer({typeOfPosts, from}) {
         {/* Action Buttons */}
         <div className="flex items-center justify-between _login_prompt">
           <div className="flex items-center gap-6">
-            <button
+           
+           {/** <button
               className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
               onClick={handlePhotoClick}
             >
@@ -121,7 +122,7 @@ export default function PostComposer({typeOfPosts, from}) {
             >
               <Video className="w-5 h-5" />
               <span className="text-sm font-medium max-md:hidden">Video</span>
-            </button>
+            </button>***/}
 
           
 
@@ -157,7 +158,7 @@ export default function PostComposer({typeOfPosts, from}) {
 
 
               {/* Main Post Type Button (Post Job Opportunity) - moved here */}
-            {typeOfPosts?.find(type => type.type === 'main') && (
+            {/*typeOfPosts?.find(type => type.type === 'main') && (
               <button
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
                 onClick={() => {
@@ -172,7 +173,24 @@ export default function PostComposer({typeOfPosts, from}) {
                   {typeOfPosts.find(type => type.type === 'main')?.short_label || typeOfPosts.find(type => type.type === 'main')?.label}
                 </span>
               </button>
-            )}
+            )*/}
+
+            {typeOfPosts?.map(item=>(
+               <button
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
+                  onClick={() => {
+                    if (!user?.id) {
+                      data._showPopUp?.("login_prompt");
+                      return;
+                    }
+                    handleTypeSelect(item);
+                  }}
+                >
+                  <span className="text-sm">
+                    {item.label}
+                  </span>
+                </button>
+            ))}
 
             
           </div>

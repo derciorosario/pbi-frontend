@@ -1119,6 +1119,154 @@ export default function FiltersCard({
         </>
       )}
 
+      {/* Jobs */}
+      {from === "jobs" && (
+        <>
+          {/* General Categories and Subcategories for Jobs */}
+          {generalTree && generalTree.length > 0 && selectedFilters.some(filter => generalTree.some(cat => cat.id === filter)) && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-500 block">Categories</label>
+                  <CountPill count={selectedGeneralCategoriesCount} />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setGeneralCategoriesExpanded(!generalCategoriesExpanded)}
+                  className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                >
+                  {generalCategoriesExpanded ? (
+                    <>
+                      <span>Collapse</span>
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Expand</span>
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </>
+                  )}
+                </button>
+              </div>
+              {generalCategoriesExpanded && (
+                <div className="space-y-3">
+                  {generalTree.map((category) => (
+                    // Only show the category if it's in selectedFilters
+                    selectedFilters.includes(category.id) && (
+                      <div key={category.id} className="rounded-xl border border-gray-200 bg-white p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedFilters.includes(category.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  // Add category to selectedFilters
+                                  if (setSelectedFilters && !selectedFilters.includes(category.id)) {
+                                    setSelectedFilters([...selectedFilters, category.id]);
+                                  }
+                                } else {
+                                  // Remove category from selectedFilters
+                                  if (setSelectedFilters) {
+                                    setSelectedFilters(selectedFilters.filter(f => f !== category.id));
+                                    data.setFiltersToClear([category.name]); // Keep name for UI display
+
+                                    // Deselect all subcategories for this category
+                                    const updatedSubcategories = { ...selectedSubcategories };
+                                    category.subcategories?.forEach(subcategory => {
+                                      const key = subcategory.id;
+                                      delete updatedSubcategories[key];
+                                    });
+                                    setSelectedSubcategories(updatedSubcategories);
+
+                                    // Call the callback if provided
+                                    if (onSubcategoryChange) {
+                                      onSubcategoryChange(updatedSubcategories);
+                                    }
+                                  }
+                                }
+                              }}
+                              className="h-4 w-4 accent-brand-600"
+                            />
+                            <label className="text-xs text-gray-500 block">{category.name}</label>
+                            <CountPill count={getSelectedSubcategoriesCount(category)} />
+                          </div>
+
+                          {/* Individual category expand/collapse button */}
+                          {category.subcategories && category.subcategories.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => toggleCategoryExpanded(category.id)}
+                              className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 p-1"
+                            >
+                              {categoryExpandedStates[category.id] !== false ? (
+                                <>
+                                  <span>Collapse</span>
+                                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                  </svg>
+                                </>
+                              ) : (
+                                <>
+                                  <span>Expand</span>
+                                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                  </svg>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Only show subcategories if category is selected and expanded */}
+                        {selectedFilters.includes(category.id) && category.subcategories && category.subcategories.length > 0 && categoryExpandedStates[category.id] !== false && (
+                          <div className="mt-1 rounded-xl border border-gray-200 bg-white p-3">
+                            <div className="grid grid-cols-1 gap-2">
+                              {category.subcategories.map((subcategory) => {
+                                const subcategoryKey = subcategory.id;
+                                const isChecked = selectedSubcategories[subcategoryKey] || false;
+
+                                return (
+                                  <label key={subcategory.id} className="flex items-center gap-2 text-sm">
+                                    <input
+                                      type="checkbox"
+                                      className="h-4 w-4 accent-brand-600"
+                                      checked={isChecked}
+                                      onChange={(e) => {
+                                        // Update the selected subcategories
+                                        const updatedSubcategories = {
+                                          ...selectedSubcategories,
+                                          [subcategoryKey]: e.target.checked
+                                        };
+                                        setSelectedSubcategories(updatedSubcategories);
+
+                                        // Call the callback if provided
+                                        if (onSubcategoryChange) {
+                                          onSubcategoryChange(updatedSubcategories);
+                                        }
+                                      }}
+                                    />
+                                    {subcategory.name}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
       {/* Products */}
       {from === "products" && (
         <>

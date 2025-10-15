@@ -1,5 +1,5 @@
 // src/api/profile.js
-import client from "./client";
+import client, { uploadClient } from "./client";
 
 // PERFIL
 export const getMe              = () => client.get("/profile/me");
@@ -24,6 +24,12 @@ export const getWorkSamples     = () => client.get("/profile/work-samples");
 export const createWorkSample   = (payload) => client.post("/profile/work-samples", payload);
 export const updateWorkSample   = (id, payload) => client.put(`/profile/work-samples/${id}`, payload);
 export const deleteWorkSample   = (id) => client.delete(`/profile/work-samples/${id}`);
+
+// GALLERY
+export const getGallery         = () => client.get("/profile/gallery");
+export const createGalleryItem  = (formData) => uploadClient.post("/profile/gallery", formData);
+export const updateGalleryItem  = (id, formData) => uploadClient.put(`/profile/gallery/${id}`, formData);
+export const deleteGalleryItem  = (id) => client.delete(`/profile/gallery/${id}`);
 
 // AVAILABILITY
 export const updateAvailability = (payload) => client.put("/profile/availability", payload);

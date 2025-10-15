@@ -24,17 +24,17 @@ export default function PostCreationDialog({ isOpen, onClose, postType, from, hi
         postType.label === 'Share Service Experience' ? 'service' :
         postType.label === 'Share Tourism Experience' ? 'tourism' : (postType.from || from)
       } triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} />;
-    } else if (postType.label === 'Share Job Need' || postType.label === 'Ask About an Event' || postType.label === 'Ask About a Product' || postType.label === 'Ask About a Service' || postType.label === 'Ask About Tourism') {
+    } else if (postType.label === 'Search for a job' || postType.label === 'Ask About an Event' || postType.label === 'Search for a Product' || postType.label === 'Ask About a Service' || postType.label === 'Ask About Tourism') {
       return <CreateNeedPage type={
         postType.label === 'Ask About an Event' ? 'event' :
-        postType.label === 'Ask About a Product' ? 'product' :
+        postType.label === 'Search for a Product' ? 'product' :
         postType.label === 'Ask About a Service' ? 'service' :
         postType.label === 'Ask About Funding' ? 'service' :
         postType.label === 'Ask About Tourism' ? 'tourism' : (postType.from || from)
       } triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} />;
     } else if (postType.label === 'Create Event') {
       return <CreateEventPage type={postType.from || from} triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
-    } else if (postType.label === 'Create Product') {
+    } else if (postType.label === 'Sell a product') {
       return <CreateProductPage triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
     } else if (postType.label === 'Create Service') {
       return <CreateServicePage triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;

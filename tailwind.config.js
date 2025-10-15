@@ -8,9 +8,13 @@ export default {
   theme: {
     extend: {
       colors: {
-       brand: {
+      
+        brand: {
           50:  "#d9e4f1",
           100: "#b3cae3",
+          200: "#8fb0d6",
+          300: "#6b96c8",
+          400: "#457cb5",
           500: "#034ea2", // primary
           600: "#03428a",
           700: "#023771", // gradient start

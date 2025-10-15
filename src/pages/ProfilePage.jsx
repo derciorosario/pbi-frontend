@@ -903,6 +903,10 @@ export default function PublicProfilePage() {
   const [categories, setCategories] = useState([]);
   const [showAllPosts, setShowAllPosts] = useState(false);
 
+  // Gallery images state
+  const [galleryImages, setGalleryImages] = useState([]);
+  const [loadingGallery, setLoadingGallery] = useState(false);
+
   // Tab state for Posts/Images/Videos
   const [activeTab, setActiveTab] = useState('posts');
 
@@ -1176,6 +1180,18 @@ export default function PublicProfilePage() {
   // Get valid images for the Images tab
   const validImages = extractValidImages(feedItems);
 
+  // Combine gallery images and feed images for the image slider
+  const allImages = useMemo(() => {
+    const galleryFormatted = galleryImages.map(img => ({
+      url: img.imageUrl,
+      alt: img.title || 'Gallery image',
+      type: 'gallery',
+      itemId: img.id,
+      itemTitle: img.title || 'Gallery image'
+    }));
+    return [...galleryFormatted, ...validImages];
+  }, [galleryImages, validImages]);
+
   // Add keyboard event listener for image slider
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -1196,11 +1212,11 @@ export default function PublicProfilePage() {
   };
 
   const goToNextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % validImages.length);
+    setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
   };
 
   const goToPrevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
+    setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
   };
 
   // Handle keyboard navigation
@@ -1340,6 +1356,27 @@ export default function PublicProfilePage() {
     }
 
     loadUserFeed();
+  }, [userId]);
+
+  // Load user's gallery images when profile loads
+  useEffect(() => {
+    if (!userId) return;
+
+    async function loadUserGallery() {
+      setLoadingGallery(true);
+
+      try {
+        const { data } = await client.get(`/users/${userId}/gallery`);
+        setGalleryImages(data.gallery || []);
+      } catch (error) {
+        console.error("Error loading user gallery:", error);
+        setGalleryImages([]);
+      } finally {
+        setLoadingGallery(false);
+      }
+    }
+
+    loadUserGallery();
   }, [userId]);
 
   // Test the new getUserItems API endpoint (for testing purposes only)
@@ -2240,7 +2277,7 @@ export default function PublicProfilePage() {
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      Images {validImages.length > 0 && `(${validImages.length})`}
+                      Images {(galleryImages.length + validImages.length) > 0 && `(${galleryImages.length + validImages.length})`}
                     </button>
                     <button
                       onClick={() => setActiveTab('videos')}
@@ -2291,35 +2328,106 @@ export default function PublicProfilePage() {
                       {/* Images Tab */}
                       {activeTab === 'images' && (
                         <>
-                          {validImages.length > 0 ? (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                              {validImages.map((image, index) => (
-                                <div
-                                  key={`${image.itemId}-${index}`}
-                                  className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
-                                  onClick={() => openImageSlider(index)}
-                                >
-                                  <img
-                                    src={image.url}
-                                    alt={image.alt}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                    loading="lazy"
-                                  />
-                                  {/* Overlay with item type and title on hover */}
-                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-end p-3">
-                                    <div className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <div className="font-medium capitalize">{image.type}</div>
-                                      <div className="truncate">{image.itemTitle}</div>
-                                    </div>
+                          {loadingGallery ? (
+                            <div className="text-sm text-gray-600">Loading gallery...</div>
+                          ) : (
+                            <>
+                              {/* Gallery Images Section */}
+                              {galleryImages.length > 0 && (
+                                <div className="mb-6">
+                                  <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                                    <span className="text-brand-600">📸</span>
+                                    Gallery ({galleryImages.length})
+                                  </h4>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {galleryImages.map((image, index) => (
+                                      <div
+                                        key={`gallery-${image.id}`}
+                                        className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
+                                        onClick={() => {
+                                          // Combine gallery images with feed images for the slider
+                                          const allImages = [...galleryImages.map(img => ({
+                                            url: img.imageUrl,
+                                            alt: img.title || 'Gallery image',
+                                            type: 'gallery',
+                                            itemId: img.id,
+                                            itemTitle: img.title || 'Gallery image'
+                                          })), ...validImages];
+                                          const galleryIndex = index;
+                                          openImageSlider(galleryIndex);
+                                        }}
+                                      >
+                                        <img
+                                          src={image.imageUrl}
+                                          alt={image.title || 'Gallery image'}
+                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                          loading="lazy"
+                                        />
+                                        {/* Overlay with title on hover */}
+                                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-end p-3">
+                                          <div className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="font-medium">Gallery</div>
+                                            <div className="truncate">{image.title || 'Gallery image'}</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-8 text-gray-500">
-                              <div className="text-sm">No images found</div>
-                              <div className="text-xs mt-1">Images from posts will appear here</div>
-                            </div>
+                              )}
+
+                              {/* Feed Images Section */}
+                              {validImages.length > 0 && (
+                                <div className="mb-6">
+                                  <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                                    <span className="text-brand-600">📱</span>
+                                    From Posts ({validImages.length})
+                                  </h4>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {validImages.map((image, index) => (
+                                      <div
+                                        key={`${image.itemId}-${index}`}
+                                        className="group relative aspect-square rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
+                                        onClick={() => {
+                                          // Combine gallery images with feed images for the slider
+                                          const allImages = [...galleryImages.map(img => ({
+                                            url: img.imageUrl,
+                                            alt: img.title || 'Gallery image',
+                                            type: 'gallery',
+                                            itemId: img.id,
+                                            itemTitle: img.title || 'Gallery image'
+                                          })), ...validImages];
+                                          const feedImageIndex = galleryImages.length + index;
+                                          openImageSlider(feedImageIndex);
+                                        }}
+                                      >
+                                        <img
+                                          src={image.url}
+                                          alt={image.alt}
+                                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                          loading="lazy"
+                                        />
+                                        {/* Overlay with item type and title on hover */}
+                                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-end p-3">
+                                          <div className="text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="font-medium capitalize">{image.type}</div>
+                                            <div className="truncate">{image.itemTitle}</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* No images message */}
+                              {galleryImages.length === 0 && validImages.length === 0 && (
+                                <div className="text-center py-8 text-gray-500">
+                                  <div className="text-sm">No images found</div>
+                                  <div className="text-xs mt-1">Images from posts and gallery will appear here</div>
+                                </div>
+                              )}
+                            </>
                           )}
                         </>
                       )}
@@ -2682,16 +2790,16 @@ export default function PublicProfilePage() {
       />
 
       {/* Image Slider Modal */}
-      {imageSliderOpen && validImages.length > 0 && (
+      {imageSliderOpen && allImages.length > 0 && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black bg-opacity-90">
           <div className="relative max-w-4xl max-h-[90vh] w-full mx-4">
             {/* Close button */}
             <button
               onClick={closeImageSlider}
-              className="absolute top-4 right-4 z-20 text-white hover:text-gray-300 transition-colors"
+              className="absolute top-4 right-4 z-20 text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-2"
               aria-label="Close image slider"
             >
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -2699,8 +2807,8 @@ export default function PublicProfilePage() {
             {/* Main image */}
             <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
               <img
-                src={validImages[currentImageIndex].url}
-                alt={validImages[currentImageIndex].alt}
+                src={allImages[currentImageIndex].url}
+                alt={allImages[currentImageIndex].alt}
                 className="w-full h-full object-contain"
               />
 
@@ -2708,34 +2816,34 @@ export default function PublicProfilePage() {
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-4">
                 <div className="text-white">
                   <div className="text-sm font-medium capitalize">
-                    {validImages[currentImageIndex].type}
+                    {allImages[currentImageIndex].type}
                   </div>
                   <div className="text-sm opacity-90 truncate">
-                    {validImages[currentImageIndex].itemTitle}
+                    {allImages[currentImageIndex].itemTitle}
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Navigation arrows */}
-            {validImages.length > 1 && (
+            {allImages.length > 1 && (
               <>
                 <button
                   onClick={goToPrevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-gray-300 transition-colors"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-2"
                   aria-label="Previous image"
                 >
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
 
                 <button
                   onClick={goToNextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-gray-300 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white hover:text-gray-300 transition-colors bg-black bg-opacity-50 hover:bg-opacity-70 rounded-full p-2"
                   aria-label="Next image"
                 >
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -2743,14 +2851,14 @@ export default function PublicProfilePage() {
             )}
 
             {/* Image counter */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full">
-              {currentImageIndex + 1} of {validImages.length}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 text-white text-sm bg-black bg-opacity-70 px-3 py-1 rounded-full">
+              {currentImageIndex + 1} of {allImages.length}
             </div>
 
             {/* Thumbnail strip */}
-            {validImages.length > 1 && (
+            {allImages.length > 1 && (
               <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 flex gap-2 max-w-2xl overflow-x-auto">
-                {validImages.map((image, index) => (
+                {allImages.map((image, index) => (
                   <button
                     key={`${image.itemId}-${index}`}
                     onClick={() => setCurrentImageIndex(index)}

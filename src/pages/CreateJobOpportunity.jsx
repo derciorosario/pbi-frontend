@@ -513,6 +513,7 @@ function extractMedia(job = {}) {
     });
   }
 
+ 
   const logoUrl = job.logoUrl || job.companyLogoUrl || null;
   const all = Array.from(urls);
   const coverImageUrl = job.coverImageUrl || job.bannerUrl || job.heroUrl || all[0] || null;
@@ -973,6 +974,8 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
     countries: [], // New field for multiple countries/cities
   });
 
+
+   console.log({form})
   // Support single or multi-country (comma-separated) selection
   const selectedCountries = useMemo(() => {
     if (!form.country) return [];
@@ -1054,6 +1057,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
 
         setForm({
           id:job.id,
+          createdAt:job.createdAt,
           title: job.title || "",
           companyId: user?.id || job.companyId || "",
           companyName: job.company?.name || job.companyName || "",
@@ -1118,6 +1122,14 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
             setCoverImage(API_URL+`/uploads/${job.coverImageBase64}`);
           }
         }
+
+
+         // If event already has general taxonomy set, prefill selectedGeneral
+        setSelectedGeneral({
+          categoryId: job.generalCategoryId || "",
+          subcategoryId: job.generalSubcategoryId || "",
+          subsubCategoryId: job.generalSubsubCategoryId || "",
+        });
 
         // Set industry selections if they exist
         setSelectedIndustry({
@@ -1196,6 +1208,24 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
     const cat = cats.find((c) => c.id === form.categoryId);
     return cat?.subcategories || [];
   }, [cats, form.categoryId]);
+
+    // Build options for searchable pickers
+    const generalCategoryOptions = useMemo(
+      () => generalTree.map((c) => ({ value: c.id, label: c.name || `Category ${c.id}` })),
+      [generalTree]
+    );
+
+    const generalSubcategoryOptions = useMemo(() => {
+      const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
+      return (c?.subcategories || []).map((sc) => ({ value: sc.id, label: sc.name || `Subcategory ${sc.id}` }));
+    }, [generalTree, selectedGeneral.categoryId]);
+    const generalSubsubCategoryOptions = useMemo(() => {
+      const c = generalTree.find((x) => x.id === selectedGeneral.categoryId);
+      const sc = c?.subcategories?.find((s) => s.id === selectedGeneral.subcategoryId);
+      return (sc?.subsubcategories || []).map((ssc) => ({ value: ssc.id, label: ssc.name || `Sub-sub ${ssc.id}` }));
+    }, [generalTree, selectedGeneral.categoryId, selectedGeneral.subcategoryId]);
+  
+
 
   // Build options for industry pickers
   const industryCategoryOptions = useMemo(
@@ -1304,18 +1334,19 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
   // Function to upload the cover image
   const uploadCoverImage = async (file) => {
     if (!file) return null;
-    
+
     const formData = new FormData();
     formData.append('coverImage', file);
-    
+
     try {
       const response = await client.post('/jobs/upload-cover', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
-      return response.data.filename;
+
+      // Return the S3 URL from the response
+      return response.data.url;
     } catch (error) {
       console.error('Error uploading cover image:', error);
       toast.error('Failed to upload cover image');
@@ -1375,6 +1406,11 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
         categoryIds,
         subcategoryIds: Array.from(audSel.subcategoryIds),
         subsubCategoryIds: Array.from(audSel.subsubCategoryIds),
+
+
+        generalCategoryId: selectedGeneral.categoryId || null,
+        generalSubcategoryId: selectedGeneral.subcategoryId || null,
+        generalSubsubCategoryId: selectedGeneral.subsubCategoryId || null,
 
         // Use the filename instead of base64 data
         coverImageBase64: !coverImage ? null :  imageFilename,
@@ -1480,7 +1516,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
               </div>
 
               {/* --- Replaced old input+select with InlineCompanyPicker --- */}
-              {companies.length!=0 && <div>
+              {(companies.length!=0 && user?.accountType=="company") && <div>
                 <Label required>Company</Label>
                 <div className="opacity-60 pointer-events-none">
                    <InlineCompanyPicker
@@ -1671,6 +1707,46 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
             </div>
 
 
+             <hr className="my-5 border-gray-200" />
+
+            
+             {/* General Classification (SEARCHABLE) */}
+            <section>
+              <h2 className="font-semibold text-brand-600">Classification</h2>
+              <p className="text-xs text-gray-600 mb-3">
+                Search and pick the category that best describes your event.
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">General Category</label>
+                  <SearchableSelect
+                    ariaLabel="General Category"
+                    value={selectedGeneral.categoryId}
+                    onChange={(val) =>
+                      setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
+                    }
+                    options={generalCategoryOptions}
+                    placeholder="Search & select category…"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+                  <SearchableSelect
+                    ariaLabel="General Subcategory"
+                    value={selectedGeneral.subcategoryId}
+                    onChange={(val) =>
+                      setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
+                    }
+                    options={generalSubcategoryOptions}
+                    placeholder="Search & select subcategory…"
+                    disabled={!selectedGeneral.categoryId}
+                  />
+                </div>
+
+              </div>
+            </section>
 
 
 
@@ -1797,7 +1873,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
                     name="applicationDeadline"
                     type="date"
                     value={form.applicationDeadline}
-                    min={new Date().toISOString().split('T')[0]}
+                    min={isEditMode ? form.createdAt?.split('T')?.[0] : new Date().toISOString().split('T')[0]}
                     onChange={onChange}
                     id="applicationDeadline"
                   />

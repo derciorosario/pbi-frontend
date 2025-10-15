@@ -10,9 +10,38 @@ export const API_URL = env=="dev"
 
 
 const client = axios.create({
-    baseURL: API_URL,
-    headers: { "Content-Type": "application/json" },
+     baseURL: API_URL,
+     headers: { "Content-Type": "application/json" },
+ });
+
+// Create a separate instance for file uploads
+const uploadClient = axios.create({
+     baseURL: API_URL,
+     // Don't set Content-Type - let axios set it automatically for FormData
 });
+
+// Ensure Authorization header is present on each upload request
+uploadClient.interceptors.request.use((config) => {
+  if (!config.headers?.Authorization) {
+    const t = getStoredToken();
+    if (t) config.headers.Authorization = `Bearer ${t}`;
+  }
+  return config;
+});
+
+// Handle 401s globally for upload client too
+uploadClient.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err?.response?.status === 401) {
+      setStoredToken(null); // clears storage + axios header
+      window.dispatchEvent(new Event("auth:unauthorized"));
+    }
+    return Promise.reject(err);
+  }
+);
+
+export { uploadClient };
 
 /** Helpers to read/write token consistently */
 export function getStoredToken() {  

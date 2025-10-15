@@ -284,7 +284,7 @@ return (
             { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
             { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
             { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),from:'job',hide:user?.accountType=="company"},
-            { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),from:'job', hide:user?.accountType=="company" },
+            { label: "Search for a job", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),from:'job', hide:user?.accountType=="company" },
             { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),from:'event', hide:user?.accountType=="company" },
             { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),from:'event', hide:user?.accountType=="company" },
           ]}
@@ -299,7 +299,7 @@ return (
               { label: "Post Job Opportunity", Icon: PlusCircle, hide:user?.accountType=="individual"},
               { label: "Create Event", Icon: PlusCircle, hide:user?.accountType=="individual"},
               { label: "Share Job Experience", Icon: PlusCircle, from:'job', hide:user?.accountType=="company"},
-              { label: "Share Job Need", Icon: PlusCircle, from:'job', hide:user?.accountType=="company" },
+              { label: "Search for a job", Icon: PlusCircle, from:'job', hide:user?.accountType=="company" },
               { label: "Share Event Experience", Icon: PlusCircle, from:'event', hide:user?.accountType=="company" },
               { label: "Ask About an Event", Icon: PlusCircle, from:'event', hide:user?.accountType=="company" },
             ]}/>

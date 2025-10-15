@@ -13,6 +13,10 @@ import {
   createWorkSample,
   updateWorkSample,
   deleteWorkSample,
+  getGallery,
+  createGalleryItem,
+  updateGalleryItem,
+  deleteGalleryItem as deleteGalleryItemAPI,
   getIdentityCatalog,
   updateDoSelections,
   updateInterestSelections,
@@ -37,6 +41,7 @@ const Tab = {
   PERSONAL: "personal",
   PROFESSIONAL: "professional",
   PORTFOLIO: "portfolio",
+  GALLERY: "gallery",
   DO: "do",
   INTERESTS: "interests",
   INDUSTRIES: "industries",
@@ -226,6 +231,19 @@ export default function ProfilePage() {
   const [skillTagInput, setSkillTagInput] = useState("");
   const [attachmentTitle, setAttachmentTitle] = useState("");
   const [editingAttachmentTitle, setEditingAttachmentTitle] = useState(null);
+
+  // Gallery state
+  const [gallery, setGallery] = useState([]);
+  const [loadingGallery, setLoadingGallery] = useState(false);
+  const [showGalleryUpload, setShowGalleryUpload] = useState(false);
+  const [savingGallery, setSavingGallery] = useState(false);
+  const [galleryForm, setGalleryForm] = useState({
+    title: "",
+    description: "",
+    isPublic: true,
+  });
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [editingGalleryItem, setEditingGalleryItem] = useState(null);
 
   // CV editing state
   const [editingCvIndex, setEditingCvIndex] = useState(null);
@@ -538,6 +556,21 @@ export default function ProfilePage() {
         loadMyEventRegistrations();
       }
     }, [!isCompany, me?.user?.id, active]);
+
+    // Load gallery for Gallery tab
+   useEffect(() => {
+     if (me?.user?.id && active === Tab.GALLERY) {
+       loadGallery();
+     }
+   }, [me?.user?.id, active]);
+
+   // Reload gallery when returning to gallery tab (in case of updates)
+   // Only reload if gallery is empty and we're not currently loading
+   useEffect(() => {
+     if (active === Tab.GALLERY && gallery.length === 0 && !loadingGallery && me?.user?.id) {
+       loadGallery();
+     }
+   }, [active, me?.user?.id]); // Removed gallery.length and loadingGallery dependencies
 
     // Load company data for Representative tab
     useEffect(() => {
@@ -1691,6 +1724,162 @@ const companyStages = ["Startup", "Small business", "Medium business", "Large en
     return attachment && typeof attachment.base64url === "string" && attachment.base64url.startsWith("data:image");
   }
 
+  // Gallery functions
+  async function loadGallery() {
+    try {
+      setLoadingGallery(true);
+      const { data } = await getGallery();
+      setGallery(Array.isArray(data?.gallery) ? data.gallery : []);
+    } catch (error) {
+      console.error('Failed to load gallery:', error);
+      toast.error('Failed to load gallery');
+    } finally {
+      setLoadingGallery(false);
+    }
+  }
+
+  async function handleGalleryImageUpload(event) {
+    const files = Array.from(event.target.files);
+    if (!files || files.length === 0) return;
+
+    // Validate file types and sizes
+    const validFiles = [];
+    const errors = [];
+
+    files.forEach((file, index) => {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        errors.push(`File ${index + 1}: Please select an image file`);
+        return;
+      }
+
+      // Validate file size (max 5MB to match multer config)
+      if (file.size > 5 * 1024 * 1024) {
+        errors.push(`File ${index + 1}: Image size must be less than 5MB`);
+        return;
+      }
+
+      validFiles.push(file);
+    });
+
+    // Show errors if any
+    if (errors.length > 0) {
+      errors.forEach(error => toast.error(error));
+      return;
+    }
+
+    // Show success message
+    if (validFiles.length > 0) {
+      toast.success(`${validFiles.length} image(s) selected for upload`);
+    }
+
+    setSelectedFiles(validFiles);
+  }
+
+  async function saveGalleryItem() {
+    // For new items, require at least one file
+    if (!editingGalleryItem && (!selectedFiles || selectedFiles.length === 0)) {
+      toast.error('Please select at least one image');
+      return;
+    }
+
+    // For editing existing items, file is optional (can update metadata only)
+    if (editingGalleryItem && selectedFiles.length === 0) {
+      console.log('Updating gallery item metadata only (no new files)');
+    }
+
+    // Set loading state
+    setSavingGallery(true);
+
+    try {
+      const formData = new FormData();
+
+      // Append multiple files if any are selected
+      if (selectedFiles && selectedFiles.length > 0) {
+        selectedFiles.forEach((file, index) => {
+          formData.append('imageBase64', file); // Field name matches multer expectation
+          console.log(`File ${index + 1}:`, file.name, file.size, file.type);
+        });
+      }
+
+      formData.append('title', galleryForm.title || '');
+      formData.append('description', galleryForm.description || '');
+      formData.append('isPublic', galleryForm.isPublic.toString());
+
+      console.log('FormData contents:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + (pair[1] instanceof File ? `File(${pair[1].name})` : pair[1]));
+      }
+
+      if (editingGalleryItem) {
+        console.log('Updating existing gallery item:', editingGalleryItem.id);
+        await updateGalleryItem(editingGalleryItem.id, formData);
+        toast.success('Gallery item updated successfully');
+      } else {
+        console.log(`Creating ${selectedFiles.length} new gallery item(s)`);
+        const response = await createGalleryItem(formData);
+        const count = response.data?.galleryItems?.length || response.data?.length || selectedFiles.length;
+        toast.success(`${count} image(s) added to gallery successfully`);
+      }
+
+      // Reload gallery and reset form
+      await loadGallery();
+      cancelEditingGalleryItem();
+      setShowGalleryUpload(false);
+      setSelectedFiles([]);
+      setSavingGallery(false); // Ensure loading state is cleared
+    } catch (error) {
+      console.error('Failed to save gallery item:', error);
+      console.error('Error response:', error.response?.data);
+      toast.error(`Failed to save gallery item: ${error.response?.data?.message || error.message}`);
+    } finally {
+      // Clear loading state
+      setSavingGallery(false);
+    }
+  }
+
+  async function deleteGalleryItem(item) {
+    console.log('deleteGalleryItem called with:', item);
+
+    if (!item || !item.id) {
+      console.error('Invalid gallery item:', item);
+      toast.error('Invalid gallery item');
+      return;
+    }
+
+    try {
+      console.log('Deleting gallery item:', item.id, item);
+      await deleteGalleryItemAPI(item.id);
+      // Refresh gallery from server to ensure consistency
+      await loadGallery();
+      toast.success('Gallery item deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete gallery item:', error);
+      toast.error(`Failed to delete gallery item: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  function startEditingGalleryItem(item) {
+    setEditingGalleryItem(item);
+    setShowGalleryUpload(true);
+    setGalleryForm({
+      title: item.title || "",
+      description: item.description || "",
+      isPublic: item.isPublic !== false,
+    });
+    setSelectedFiles([]); // No files selected for editing, unless user chooses new ones
+  }
+
+  function cancelEditingGalleryItem() {
+    setEditingGalleryItem(null);
+    setGalleryForm({
+      title: "",
+      description: "",
+      isPublic: true,
+    });
+    setSelectedFiles([]);
+  }
+
   async function saveDo() {
     try {
       setSaving(true);
@@ -2746,6 +2935,9 @@ const toggleIdentityWant = (identityKey) => {
           <button className={`px-4 py-2 rounded-lg border ${active===Tab.PORTFOLIO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PORTFOLIO)}>
             {isCompany ? "Company Portfolio" : "Portfolio"}
           </button>
+          <button className={`px-4 py-2 rounded-lg border ${active===Tab.GALLERY ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.GALLERY)}>
+            Gallery
+          </button>
           <button className={`px-4 py-2 rounded-lg border ${active===Tab.DO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.DO)}>
             {isCompany ? "What We Offer" : "What I DO"}
           </button>
@@ -3043,6 +3235,298 @@ const toggleIdentityWant = (identityKey) => {
               <div className="flex justify-end gap-3">
                 <button disabled={saving} onClick={saveProfessional} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
               </div>
+            </div>
+          )}
+
+          {/* GALLERY */}
+          {active === Tab.GALLERY && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold">Gallery</h3>
+                  <p className="text-gray-600 text-sm">
+                    Showcase your images and photos
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  {gallery.length > 0 && (
+                    <button
+                      onClick={loadGallery}
+                      disabled={loadingGallery}
+                      className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                      title="Refresh gallery"
+                    >
+                      {loadingGallery ? (
+                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                        </svg>
+                      ) : (
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowGalleryUpload(true)}
+                    className="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800"
+                  >
+                    Add Image
+                  </button>
+                </div>
+              </div>
+
+              {/* Gallery Upload Form */}
+              {showGalleryUpload && (
+                <div className="border rounded-lg p-6 bg-gray-50">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-medium text-lg">
+                      {editingGalleryItem ? "Edit Image" : "Add New Image"}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        cancelEditingGalleryItem();
+                        setShowGalleryUpload(false);
+                      }}
+                      className="text-gray-400 hover:text-gray-600 p-1"
+                      title="Close"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium mb-1">Title (Optional)</label>
+                      <input
+                        type="text"
+                        placeholder="Enter image title"
+                        className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                        value={galleryForm.title}
+                        onChange={(e) => setGalleryForm(prev => ({ ...prev, title: e.target.value }))}
+                      />
+                    </div>
+
+                    {/* Description field hidden as requested */}
+                    <input
+                      type="hidden"
+                      value={galleryForm.description}
+                      onChange={(e) => setGalleryForm(prev => ({ ...prev, description: e.target.value }))}
+                    />
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium mb-1">
+                        {editingGalleryItem ? "Replace Image (Optional)" : "Images"}
+                      </label>
+                      <div className="space-y-3">
+                        {/* Hidden file input for multiple selection */}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleGalleryImageUpload}
+                          className="hidden"
+                          id="gallery-file-input"
+                        />
+
+                        {/* Custom upload button */}
+                        <label
+                          htmlFor="gallery-file-input"
+                          className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          {editingGalleryItem ? "Choose New Image" : "Choose Images"}
+                        </label>
+
+                        {/* Selected files display */}
+                        {selectedFiles.length > 0 && (
+                          <div className="mt-3 space-y-2">
+                            <div className="text-sm font-medium text-gray-700">
+                              {selectedFiles.length} file(s) selected:
+                            </div>
+                            {selectedFiles.map((file, index) => (
+                              <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-medium text-sm">{file.name}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type}
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
+                                  className="text-red-500 hover:text-red-700 p-1"
+                                  title="Remove file"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Show current image info when editing */}
+                        {editingGalleryItem && selectedFiles.length === 0 && (
+                          <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                            <div className="text-sm text-blue-800">
+                              Current image: <span className="font-medium">{editingGalleryItem.imageFileName}</span>
+                            </div>
+                            <div className="text-xs text-blue-600 mt-1">
+                              Leave empty to keep current image, or select new file(s) to replace it.
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Helper text */}
+                        <div className="text-xs text-gray-500">
+                          {editingGalleryItem
+                            ? "Select new image(s) to replace the current one, or leave empty to keep existing image"
+                            : "Select multiple images to upload at once. Max 5MB per image."
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={galleryForm.isPublic}
+                          onChange={(e) => setGalleryForm(prev => ({ ...prev, isPublic: e.target.checked }))}
+                        />
+                        <span className="text-sm">Make this image public</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        cancelEditingGalleryItem();
+                        setShowGalleryUpload(false);
+                      }}
+                      className="px-6 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={saveGalleryItem}
+                      disabled={savingGallery}
+                      className={`px-6 py-2 rounded-lg text-white transition-all ${
+                        savingGallery
+                          ? "bg-gray-500 cursor-not-allowed"
+                          : "bg-brand-700 hover:bg-brand-800"
+                      }`}
+                    >
+                      {savingGallery ? (
+                        <div className="flex items-center gap-2">
+                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                          </svg>
+                          {editingGalleryItem ? "Updating..." : "Uploading..."}
+                        </div>
+                      ) : (
+                        editingGalleryItem ? "Update Image" : "Add Image"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Gallery Grid */}
+              {loadingGallery ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600 mx-auto"></div>
+                  <p className="text-gray-500 mt-2">Loading gallery...</p>
+                </div>
+              ) : gallery.length === 0 && !loadingGallery ? (
+                <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No images yet</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Start building your gallery by adding your first image.
+                  </p>
+                  <div className="mt-6">
+                    <button
+                      onClick={() => setShowGalleryUpload(true)}
+                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-brand-600 hover:bg-brand-700"
+                    >
+                      <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      Add Your First Image
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                  {gallery.map((item) => (
+                    <div key={item.id} className="border rounded-lg overflow-hidden bg-white">
+                      <div className="relative">
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title || "Gallery image"}
+                          className="w-full h-48 object-cover"
+                        />
+                        <div className="absolute top-2 right-2 flex gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingGalleryItem(item);
+                            }}
+                            className="p-1 bg-white rounded-full shadow-sm hover:bg-gray-50"
+                            title="Edit"
+                          >
+                            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if(item)  deleteGalleryItem(item);
+                            }}
+                            className="p-1 bg-white rounded-full shadow-sm hover:bg-gray-50"
+                            title="Delete"
+                          >
+                            <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="p-4">
+                        {item.title && (
+                          <h4 className="font-medium text-sm mb-1">{item.title}</h4>
+                        )}
+                        {item.description && (
+                          <p className="text-xs text-gray-600 line-clamp-2">{item.description}</p>
+                        )}
+                        <div className="mt-2 text-xs text-gray-500">
+                          {item.isPublic ? "Public" : "Private"} • Added {new Date(item.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

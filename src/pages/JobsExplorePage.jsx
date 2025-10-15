@@ -16,7 +16,6 @@ import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
@@ -38,6 +37,23 @@ export default function PeopleFeedPage() {
   const [activeTab, setActiveTab] = useState("Posts");
   const tabs = useMemo(() => ["Posts", "Job Seeker","Job Offers"], []);
   let view_types=['grid','list']
+   const from = "jobs"; // Define the 'from' variable
+
+  const [generalTree, setGeneralTree] = useState([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState({});
+
+  useEffect(() => {
+      (async () => {
+        try {
+          const { data } = await client.get("/general-categories/tree?type=job");
+          setGeneralTree(data.generalCategories || []);
+        } catch (err) {
+          console.error("Failed to load general categories", err);
+        }
+      })();
+  }, []);
+
+
   const navigate=useNavigate()
   const [view,setView]=useState('list')
   const data=useData()
@@ -135,6 +151,8 @@ export default function PeopleFeedPage() {
 
   // Selected filters for TopFilterButtons
   const [selectedFilters,setSelectedFilters]=useState([])
+   const [filterOptions,setFilterOptions]=useState([])
+  
 
   // Fetch meta
   useEffect(() => {
@@ -221,6 +239,15 @@ export default function PeopleFeedPage() {
         date: date || undefined,
         registrationType: registrationType || undefined,
 
+
+        generalCategoryIds: selectedFilters.filter(id =>
+          generalTree.some(category => category.id === id)
+        ).join(',') || undefined,
+
+        generalSubcategoryIds: Object.keys(selectedSubcategories)
+          .filter(key => selectedSubcategories[key])
+          .join(',') || undefined,
+
         limit: 40,
         offset: 0,
       };
@@ -242,6 +269,8 @@ export default function PeopleFeedPage() {
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,
     selectedFilters,
     audienceSelections,
+
+
     // NEW deps:
     price,
     serviceType,
@@ -266,7 +295,9 @@ export default function PeopleFeedPage() {
     eventType,
     date,
     registrationType,
-    selectedIndustries,]);
+    selectedIndustries,
+    generalTree,
+    selectedSubcategories,]);
 
   const isFetchingRef = useRef(false);
   const hasLoadedOnce = useRef(false);
@@ -313,6 +344,7 @@ export default function PeopleFeedPage() {
       date,
       registrationType,
       selectedIndustries,
+      selectedSubcategories,
     };
 
     if (JSON.stringify(currentParams) === JSON.stringify(lastParamsRef.current)) return;
@@ -354,7 +386,8 @@ export default function PeopleFeedPage() {
     date,
     registrationType,
     selectedIndustries,
-    jobsView]);
+  jobsView,
+  selectedSubcategories]);
 
   // Update audienceSelections when selectedFilters changes (but don't trigger fetch)
   useEffect(() => {
@@ -404,8 +437,14 @@ export default function PeopleFeedPage() {
     })();
   }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, selectedIndustries]);
 
+   const handleSubcategoryChange = (subcategories) => {
+     setSelectedSubcategories(subcategories);
+     // No need to trigger fetchFeed here, it will be triggered by the dependency array
+   };
+
   const filtersProps = {
     setShowTotalCount,
+    onSubcategoryChange: handleSubcategoryChange,
     query,
     setQuery,
     country,
@@ -492,6 +531,24 @@ export default function PeopleFeedPage() {
 
     onApply: () => setMobileFiltersOpen(false),
   };
+
+
+  //Create a mapping of category IDs to names for display
+  const [categoryIdToNameMap, setCategoryIdToNameMap] = useState({});
+
+  useEffect(() => {
+    // Map category IDs to names for display in buttons
+    const idToNameMap = {};
+    generalTree.forEach(category => {
+      idToNameMap[category.id] = category.name;
+    });
+
+    setCategoryIdToNameMap(idToNameMap);
+    // Set filter options as category IDs
+    setFilterOptions(generalTree.map(i => i.id));
+  }, [generalTree]);
+    
+
 
   const renderMiddle = () => {
     if (activeTab !== "Posts") {
@@ -593,20 +650,39 @@ export default function PeopleFeedPage() {
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
          
           <div className="_sticky top-0 z-10 _bg-white">
-              <FiltersCard catComponent={<TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
+
+             {/** <FiltersCard catComponent={<TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
                                     buttons={
                                       [
                                       "Executives",
                                       "Professionals",
                                       "Freelancers",
                                       "Students"
-              ]}/>}  showAudienceFilters={true}   selectedFilters={selectedFilters} {...filtersProps} from="jobs"/>
+              ]}/>}  showAudienceFilters={true}   selectedFilters={selectedFilters} {...filtersProps} from="jobs"/> */}
+
+
+              <FiltersCard
+                  selectedFilters={selectedFilters}
+                  setSelectedFilters={setSelectedFilters}
+                  generalTree={generalTree}
+                  {...filtersProps}
+                  from={"jobs"}
+                  catComponent={ <TopFilterButtons
+                  selected={selectedFilters}
+                  setSelected={setSelectedFilters}
+                  buttons={filterOptions}
+                  buttonLabels={categoryIdToNameMap}
+                  from={from}
+                  loading={loadingFeed}
+              />}
+            />
+
           </div>
            <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
               { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
               { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
-              { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+              { label: "Search for a job", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
             ]} />
            <ProfileCard />
         </aside>
@@ -619,7 +695,7 @@ export default function PeopleFeedPage() {
               <PostComposer from={'job'} typeOfPosts={[
                   { label: "Post Job Opportunity",short_label:'Post Job', Icon: PlusCircle,hide:user?.accountType=="individual",type:'main'},
                   { label: "Share Job Experience", Icon: PlusCircle,hide:user?.accountType=="company"},
-                  { label: "Share Job Need", Icon: PlusCircle,hide:user?.accountType=="company"},
+                  { label: "Search for a job", Icon: PlusCircle,hide:user?.accountType=="company"},
               ]}/>
             </div>
             <section className="space-y-4 overflow-hidden">
