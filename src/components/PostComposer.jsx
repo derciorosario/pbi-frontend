@@ -127,35 +127,7 @@ export default function PostComposer({typeOfPosts, from}) {
           
 
             {/* Experience Button */}
-            {user?.accountType!="company" &&<button
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-              onClick={() => {
-                if (!user?.id) {
-                  data._showPopUp?.("login_prompt");
-                  return;
-                }
-                handleTypeSelect(typeOfPosts?.find(type => type.label === "Share Job Experience") || { label: "Share Job Experience" });
-              }}
-            >
-              <Star className="w-5 h-5" />
-              <span className="text-sm font-medium max-md:hidden">Experience</span>
-            </button>}
-
-            {/* Need Button */}
-            {user?.accountType!="company" && <button
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-              onClick={() => {
-                if (!user?.id) {
-                  data._showPopUp?.("login_prompt");
-                  return;
-                }
-                handleTypeSelect(typeOfPosts?.find(type => type.label === "Share Job Need") || { label: "Share Job Need" });
-              }}
-            >
-              <Search className="w-5 h-5" />
-              <span className="text-sm font-medium max-md:hidden">Need</span>
-            </button>}
-
+      
 
               {/* Main Post Type Button (Post Job Opportunity) - moved here */}
             {/*typeOfPosts?.find(type => type.type === 'main') && (
