@@ -3228,7 +3228,6 @@ function CategoryTree({
                     value={personal.country}
                     onChange={(value) => setPersonal({...personal, country: value})}
                     placeholder="Select country of birth"
-                    className="bg-blue-50 border-blue-200"
                   />
                 </div>}
 
