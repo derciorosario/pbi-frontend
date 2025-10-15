@@ -375,9 +375,9 @@ export default function PeopleProfileCard({
   const isCompany = accountType === "company";
   
   const containerBase =
-    `group relative rounded-2xl border-2 ${isCompany ? 'border-blue-100' : 'border-gray-100'} ${isCompany ? 'bg-blue-50/20' : 'bg-white'}  overflow-hidden transition-all duration-300 ease-out`;
+    `group relative rounded-2xl border-2 ${isCompany ? 'border-gray-100 shadow-sm' : 'border-gray-100'} ${isCompany ? 'bg-white' : 'bg-white'}  overflow-hidden transition-all duration-300 ease-out`;
   const containerLayout = isList
-    ? "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch"
+    ? "flex"
     : "flex flex-col";
 
   return (
@@ -395,35 +395,40 @@ export default function PeopleProfileCard({
 
       {/* MEDIA: left column ONLY when list; otherwise top hero in grid */}
       {isList ? (
-        <div className="relative h-full w-full min-h-[160px] md:min-h-[176px] overflow-hidden">
-          {avatarUrl ? (
-            <>
-              <img
-                src={avatarUrl}
-                alt={name}
-                className="absolute inset-0 w-full h-full transition-transform duration-300"
-                style={{ objectFit: isCompany ? 'contain' : 'cover' }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </>
-          ) : (
-            <div className={`absolute inset-0 w-full h-full ${isCompany ? 'bg-blue-50' : 'bg-gradient-to-br from-brand-50 to-brand-100'} flex items-center justify-center`}>
-              <span className={`text-2xl font-bold ${isCompany ? 'text-blue-600' : 'text-brand-600'}`}>
-                {getInitials(name)}
-              </span>
-            </div>
-          )}
-
-          {/* Quick actions on image */}
-          <div className="absolute top-3 right-3 flex items-center gap-2">
+        <div className="relative overflow-hidden">
           
+              <div className="p-5 pr-0">
+                  {avatarUrl ? (
+                  <div
+                    className={`flex bg-brand-300 items-center justify-center w-24 h-24 shadow-xl ${isCompany ? 'border-4 border-white rounded-2xl' : 'border-4 border-white rounded-2xl'} overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-200`}
+                    onClick={() => {
+                      navigate(`/profile/${id}`)
+                    }}
+                    title={`View ${name}'s profile`}
+                  >
+                    <img
+                      src={avatarUrl}
+                      alt={name}
+                      className="w-full h-full"
+                      style={{ objectFit: isCompany ? 'contain' : 'cover' }}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={`w-24 h-24 rounded-2xl shadow-xl ${isCompany ? 'border-4 border-white bg-gradient-to-br from-blue-100 to-blue-200' : 'border-4 border-white bg-gradient-to-br from-brand-100 to-brand-200'} flex items-center justify-center cursor-pointer hover:shadow-2xl transition-all duration-200`}
+                    onClick={() => {
+                      navigate(`/profile/${id}`)
+                    }}
+                    title={`View ${name}'s profile`}
+                  >
+                    <span className={`${isCompany ? 'text-blue-700' : 'text-brand-700'} font-bold text-3xl`}>
+                      {getInitials(name)}
+                    </span>
+                  </div>
+                )}
+              </div>
 
-            {matchPercentage != 0 && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-white/95 backdrop-blur-sm text-brand-600 shadow-md border border-brand-200">
-                {matchPercentage}% match
-              </span>
-            )}
-          </div>
+         
         </div>
       ) : 
       (
@@ -581,11 +586,30 @@ export default function PeopleProfileCard({
 
       {/* CONTENT */}
       <div className={`${isList ? "pb-5 pl-5 pr-5 md:pb-6 md:pl-6 md:pr-6" : "pb-6 pl-6 pr-6"} mt-1 flex flex-col flex-1`}>
+             { type=="list" && <>
+
+          {/* Quick actions on image */}
+        
+<div className="mt-6">
+        <h3 className={`font-bold text-sm mb-2 ${isCompany ? 'text-gray-900' : 'text-gray-900'} group-hover/name:text-brand-600 transition-colors leading-tight break-words`} title={name}>
+                    {name || "Anonymous User"}
+        </h3>
+        </div>
+          <div className="absolute top-3 right-3 flex items-center gap-2">
+          
+            {matchPercentage != 0 && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-white/95 backdrop-blur-sm text-brand-600 border border-brand-200">
+                {matchPercentage}% match
+              </span>
+            )}
+          </div>
+         
+         </> }
         {/* Tags */}
         {!!visibleTags.length && (
           <div className="mb-4 flex flex-wrap gap-2">
             {visibleTags.map((t) => (
-              <span key={t} className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold ${isCompany ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-brand-50 text-brand-600 border border-brand-200'}`}>
+              <span key={t} className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold ${false ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-brand-50 text-brand-400 border _border-brand-200'}`}>
                 {t}
               </span>
             ))}
@@ -598,11 +622,7 @@ export default function PeopleProfileCard({
         )}
 
 
-         { type=="list" && <div className="mt-5">
-          <h3 className={`font-bold text-sm ${isCompany ? 'text-gray-900' : 'text-gray-900'} group-hover/name:text-brand-600 transition-colors leading-tight break-words`} title={name}>
-                    {name || "Anonymous User"}
-        </h3>
-        </div>}
+     
         {/* About */}
         {about && (
           <div className="mb-4">
@@ -623,9 +643,9 @@ export default function PeopleProfileCard({
      
 
         {/* Actions */}
-        <div className="mt-auto pt-3 flex items-center gap-3">
+        <div className={`mt-auto ${!isCompany ? 'pt-3':''} flex items-center gap-3`}>
           {/* Message */}
-          {user?.id != id && (
+          {(user?.id != id && !isCompany)  && (
             <button
               onClick={() => {
                 if (!user) {
@@ -774,7 +794,7 @@ export default function PeopleProfileCard({
     return (
       <button
         onClick={() => setModalOpen(true)}
-        className={`rounded-xl px-4 py-2.5 text-sm font-semibold border-2 border-gray-200 bg-white text-gray-500 hover:border-brand-300 hover:text-brand-600 transition-all duration-200 ${
+        className={`rounded-xl px-4 py-2.5 text-sm font-semibold border-2  hover:border-brand-300 hover:text-brand-600 transition-all duration-200 ${
           type === "grid" ? "w-full" : ""
         }`}
       >

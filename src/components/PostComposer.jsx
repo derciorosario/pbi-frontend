@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Image, Heart, Search, X, Video, Star } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Image, Heart, Search, X, Video, Star, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 import PostTypeSelector from './PostTypeSelector';
@@ -15,14 +15,29 @@ function getInitials(name) {
 }
 
 export default function PostComposer({typeOfPosts, from}) {
-  const [postText, setPostText] = useState('');
-  const [showTypeSelector, setShowTypeSelector] = useState(false);
-  const [selectedPostType, setSelectedPostType] = useState(null);
-  const [showCreationDialog, setShowCreationDialog] = useState(false);
-  const [pendingImageSelection, setPendingImageSelection] = useState(false);
-  const navigate=useNavigate()
-  const {user} = useAuth()
-  const data = useData()
+   const [postText, setPostText] = useState('');
+   const [showTypeSelector, setShowTypeSelector] = useState(false);
+   const [selectedPostType, setSelectedPostType] = useState(null);
+   const [showCreationDialog, setShowCreationDialog] = useState(false);
+   const [pendingImageSelection, setPendingImageSelection] = useState(false);
+   const [showMoreDropdown, setShowMoreDropdown] = useState(false);
+   const navigate=useNavigate()
+   const {user} = useAuth()
+   const data = useData()
+   const moreButtonRef = useRef(null)
+   const dropdownRef = useRef(null)
+
+   // Close dropdown when clicking outside
+   useEffect(() => {
+     function handleClickOutside(e) {
+       if (moreButtonRef.current && !moreButtonRef.current.contains(e.target) &&
+           dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+         setShowMoreDropdown(false)
+       }
+     }
+     document.addEventListener("mousedown", handleClickOutside)
+     return () => document.removeEventListener("mousedown", handleClickOutside)
+   }, [])
 
   const handleInputClick = () => {
     if (!user?.id) {
@@ -106,65 +121,64 @@ export default function PostComposer({typeOfPosts, from}) {
 
         {/* Action Buttons */}
         <div className="flex items-center justify-between _login_prompt">
-          <div className="flex items-center gap-6">
-           
-           {/** <button
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-              onClick={handlePhotoClick}
-            >
-              <Image className="w-5 h-5" />
-              <span className="text-sm font-medium max-md:hidden">Photo</span>
-            </button>
-
-            <button
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
-              onClick={handleVideoClick}
-            >
-              <Video className="w-5 h-5" />
-              <span className="text-sm font-medium max-md:hidden">Video</span>
-            </button>***/}
-
-          
-
-            {/* Experience Button */}
-      
-
-              {/* Main Post Type Button (Post Job Opportunity) - moved here */}
-            {/*typeOfPosts?.find(type => type.type === 'main') && (
+          <div className="flex items-center gap-4 relative">
+            {/* Show only first 3 post types */}
+            {typeOfPosts?.slice(0, 3).map(item => (
               <button
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
+                key={item.type || item.id}
+                className="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-all duration-200 font-medium px-3 py-2 rounded-lg hover:bg-brand-50"
                 onClick={() => {
                   if (!user?.id) {
                     data._showPopUp?.("login_prompt");
                     return;
                   }
-                  handleTypeSelect(typeOfPosts.find(type => type.type === 'main'));
+                  handleTypeSelect(item);
                 }}
               >
                 <span className="text-sm">
-                  {typeOfPosts.find(type => type.type === 'main')?.short_label || typeOfPosts.find(type => type.type === 'main')?.label}
+                  {item.label}
                 </span>
               </button>
-            )*/}
-
-            {typeOfPosts?.map(item=>(
-               <button
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors font-medium"
-                  onClick={() => {
-                    if (!user?.id) {
-                      data._showPopUp?.("login_prompt");
-                      return;
-                    }
-                    handleTypeSelect(item);
-                  }}
-                >
-                  <span className="text-sm">
-                    {item.label}
-                  </span>
-                </button>
             ))}
 
-            
+            {/* More button for remaining items */}
+            {typeOfPosts && typeOfPosts.length > 3 && (
+              <div className="relative">
+                <button
+                  ref={moreButtonRef}
+                  className={`flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-all duration-200 font-medium px-3 py-2 rounded-lg hover:bg-brand-50 ${showMoreDropdown ? 'bg-brand-50 text-brand-600' : ''}`}
+                  onClick={() => setShowMoreDropdown(!showMoreDropdown)}
+                >
+                  <span className="text-sm">More</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showMoreDropdown ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Dropdown for remaining items */}
+                {showMoreDropdown && (
+                  <div
+                    ref={dropdownRef}
+                    className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50"
+                  >
+                    {typeOfPosts.slice(3).map(item => (
+                      <button
+                        key={item.type || item.id}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-600 transition-colors duration-200 flex items-center gap-2"
+                        onClick={() => {
+                          if (!user?.id) {
+                            data._showPopUp?.("login_prompt");
+                            return;
+                          }
+                          handleTypeSelect(item);
+                          setShowMoreDropdown(false);
+                        }}
+                      >
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
        </div>
