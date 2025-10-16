@@ -14,15 +14,15 @@ import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
-import { Pencil, PlusCircle, Rocket } from "lucide-react";
+import { Briefcase, FileText, Pencil, PlusCircle, Rocket, SearchIcon, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
 import { useData } from "../contexts/DataContext";
 import CardSkeletonLoader from "../components/ui/SkeletonLoader";
 import PageTabs from "../components/PageTabs";
 import TopFilterButtons from "../components/TopFilterButtons";
 import { useAuth } from "../contexts/AuthContext";
+import PostComposer from "../components/PostComposer";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -37,8 +37,25 @@ export default function PeopleFeedPage() {
   const [activeTab, setActiveTab] = useState("Posts");
   const tabs = useMemo(() => ["Posts", "Job Seeker","Job Offers"], []);
   let view_types=['grid','list']
+   const from = "jobs"; // Define the 'from' variable
+
+  const [generalTree, setGeneralTree] = useState([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState({});
+
+  useEffect(() => {
+      (async () => {
+        try {
+          const { data } = await client.get("/general-categories/tree?type=job");
+          setGeneralTree(data.generalCategories || []);
+        } catch (err) {
+          console.error("Failed to load general categories", err);
+        }
+      })();
+  }, []);
+
+
   const navigate=useNavigate()
-  const [view,setView]=useState('grid')
+  const [view,setView]=useState('list')
   const data=useData()
   const {user}=useAuth()
 
@@ -134,6 +151,8 @@ export default function PeopleFeedPage() {
 
   // Selected filters for TopFilterButtons
   const [selectedFilters,setSelectedFilters]=useState([])
+   const [filterOptions,setFilterOptions]=useState([])
+  
 
   // Fetch meta
   useEffect(() => {
@@ -220,7 +239,16 @@ export default function PeopleFeedPage() {
         date: date || undefined,
         registrationType: registrationType || undefined,
 
-        limit: 20,
+
+        generalCategoryIds: selectedFilters.filter(id =>
+          generalTree.some(category => category.id === id)
+        ).join(',') || undefined,
+
+        generalSubcategoryIds: Object.keys(selectedSubcategories)
+          .filter(key => selectedSubcategories[key])
+          .join(',') || undefined,
+
+        limit: 40,
         offset: 0,
       };
       const { data } = await client.get("/feed", { params });
@@ -241,6 +269,8 @@ export default function PeopleFeedPage() {
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,
     selectedFilters,
     audienceSelections,
+
+
     // NEW deps:
     price,
     serviceType,
@@ -265,7 +295,9 @@ export default function PeopleFeedPage() {
     eventType,
     date,
     registrationType,
-    selectedIndustries,]);
+    selectedIndustries,
+    generalTree,
+    selectedSubcategories,]);
 
   const isFetchingRef = useRef(false);
   const hasLoadedOnce = useRef(false);
@@ -312,6 +344,7 @@ export default function PeopleFeedPage() {
       date,
       registrationType,
       selectedIndustries,
+      selectedSubcategories,
     };
 
     if (JSON.stringify(currentParams) === JSON.stringify(lastParamsRef.current)) return;
@@ -353,7 +386,8 @@ export default function PeopleFeedPage() {
     date,
     registrationType,
     selectedIndustries,
-    jobsView]);
+  jobsView,
+  selectedSubcategories]);
 
   // Update audienceSelections when selectedFilters changes (but don't trigger fetch)
   useEffect(() => {
@@ -390,7 +424,7 @@ export default function PeopleFeedPage() {
           subcategoryId: subcategoryId || undefined,
           goalId: goalId || undefined,
           industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
-          limit: 10,
+          limit: 40,
         };
         const { data } = await client.get("/feed/suggestions", { params });
         setMatches(data.matches || []);
@@ -403,8 +437,14 @@ export default function PeopleFeedPage() {
     })();
   }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, selectedIndustries]);
 
+   const handleSubcategoryChange = (subcategories) => {
+     setSelectedSubcategories(subcategories);
+     // No need to trigger fetchFeed here, it will be triggered by the dependency array
+   };
+
   const filtersProps = {
     setShowTotalCount,
+    onSubcategoryChange: handleSubcategoryChange,
     query,
     setQuery,
     country,
@@ -492,6 +532,24 @@ export default function PeopleFeedPage() {
     onApply: () => setMobileFiltersOpen(false),
   };
 
+
+  //Create a mapping of category IDs to names for display
+  const [categoryIdToNameMap, setCategoryIdToNameMap] = useState({});
+
+  useEffect(() => {
+    // Map category IDs to names for display in buttons
+    const idToNameMap = {};
+    generalTree.forEach(category => {
+      idToNameMap[category.id] = category.name;
+    });
+
+    setCategoryIdToNameMap(idToNameMap);
+    // Set filter options as category IDs
+    setFilterOptions(generalTree.map(i => i.id));
+  }, [generalTree]);
+    
+
+
   const renderMiddle = () => {
     if (activeTab !== "Posts") {
       return (
@@ -505,7 +563,7 @@ export default function PeopleFeedPage() {
       <>
         {loadingFeed && (
           <div className="min-h-[160px] grid  text-gray-600">
-             <CardSkeletonLoader/>
+             <CardSkeletonLoader columns={1}/>
           </div>
         )}
 
@@ -522,10 +580,11 @@ export default function PeopleFeedPage() {
         {!loadingFeed && (
         <div
           className={`grid grid-cols-1 ${
-            view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-2 xl:grid-cols-3"
+            view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"
           } gap-6`}
         >
           {items?.map((item) => {
+
             if (item.kind === "job") {
               return (
                 <JobCard
@@ -536,43 +595,44 @@ export default function PeopleFeedPage() {
                 />
               );
             }
+
             if (item.kind === "need") {
-              return (
-                <NeedCard
-                  type={view}
-                  key={`need-${item.id}`}
-                  matchPercentage={item.matchPercentage}
-                  need={{
-                    ...item,
-                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
-                    subcategoryName: categories
-                      .find((c) => String(c.id) === String(item.categoryId))
-                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
-                  }}
-                />
-              );
-            }
-            if (item.kind === "moment") {
-              return (
-                <MomentCard
-                  type={view}
-                  key={`moment-${item.id}`}
-                  matchPercentage={item.matchPercentage}
-                  moment={{
-                    ...item,
-                    categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
-                    subcategoryName: categories
-                      .find((c) => String(c.id) === String(item.categoryId))
-                      ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
-                  }}
-                />
-              );
-            }
-            if (item.kind === "event") {
-              return <EventCard key={`event-${item.id}`} e={item} />;
+                return (
+                  <NeedCard
+                    type={view}
+                    key={`need-${item.id}`}
+                    matchPercentage={item.matchPercentage}
+                    need={{
+                      ...item,
+                      categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                      subcategoryName: categories
+                        .find((c) => String(c.id) === String(item.categoryId))
+                        ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                    }}
+                  />
+                );
+              }
+              if (item.kind === "moment") {
+                return (
+                  <MomentCard
+                    type={view}
+                    key={`moment-${item.id}`}
+                    matchPercentage={item.matchPercentage}
+                    moment={{
+                      ...item,
+                      categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+                      subcategoryName: categories
+                        .find((c) => String(c.id) === String(item.categoryId))
+                        ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+                    }}
+                  />
+                );
             }
             return null;
           })}
+
+          
+
         </div>
       )}
 
@@ -588,56 +648,62 @@ export default function PeopleFeedPage() {
         <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
+         
           <div className="_sticky top-0 z-10 _bg-white">
-              <FiltersCard    selectedFilters={selectedFilters} {...filtersProps} from="jobs"/>
+
+             {/** <FiltersCard catComponent={<TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
+                                    buttons={
+                                      [
+                                      "Executives",
+                                      "Professionals",
+                                      "Freelancers",
+                                      "Students"
+              ]}/>}  showAudienceFilters={true}   selectedFilters={selectedFilters} {...filtersProps} from="jobs"/> */}
+
+
+              <FiltersCard
+                  selectedFilters={selectedFilters}
+                  setSelectedFilters={setSelectedFilters}
+                  generalTree={generalTree}
+                  {...filtersProps}
+                  from={"jobs"}
+                  catComponent={ <TopFilterButtons
+                  selected={selectedFilters}
+                  setSelected={setSelectedFilters}
+                  buttons={filterOptions}
+                  buttonLabels={categoryIdToNameMap}
+                  from={from}
+                  loading={loadingFeed}
+              />}
+            />
+
           </div>
            <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
-              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
               { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
-              { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+              { label: "Search for a job", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
+           
             ]} />
            <ProfileCard />
         </aside>
 
     
-        <div className="lg:col-span-9 grid lg:grid-cols-4 gap-6">
-          <section className="lg:col-span-4 space-y-4 mt-4 overflow-hidden">
-              <TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
-                                    buttons={
-                                   [
-                                      "Executives",
-                                      "Professionals",
-                                      "Freelancers",
-                                      "Students"
-                                   ]}/>
-            <div className="flex items-center justify-between gap-y-2 flex-wrap">
-              
-              <h3 className="font-semibold text-2xl mt-1 hidden">Find Your Next Opportunity</h3>
-              
-              <PageTabs view={view} loading={loadingFeed || !items.length} setView={setView} view_types={view_types}/>
+        <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
 
-              <TabsAndAdd
-               tabs={[]}
-               items={[
-                    { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
-                    { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
-                    { label: "Share Job Need", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
-              ]}
-              activeTab={activeTab} setActiveTab={setActiveTab} />
+          <div className="lg:col-span-2">
+            <div className="flex items-center flex-wrap w-full justify-between mb-4">
+         
+
+            <PostComposer from={'job'} typeOfPosts={[ { label: "Post Job Opportunity",short_label:'Post Job', Icon: Briefcase,hide:user?.accountType=="individual",type:'main'}, { label: "Share Job Experience", Icon: Star,hide:user?.accountType=="company"}, { label: "Search for a job", Icon: SearchIcon,hide:user?.accountType=="company"}, ]}/>
             </div>
-            {renderMiddle()}
-          </section>
-
-          {/**<aside className="lg:col-span-2 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
-            {loadingSuggestions ? (
-              <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 text-sm text-gray-600">
-                Loading suggestions…
-              </div>
-            ) : (
-              <SuggestedMatches matches={matches} nearby={nearby} />
-            )}
-          </aside> */}
+            <section className="space-y-4 overflow-hidden">
+              {renderMiddle()}
+            </section>
+          </div>
+          <aside className="lg:col-span-1 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto">
+            <SuggestedMatches loading={loadingSuggestions} matches={matches} nearby={nearby} />
+          </aside>
         </div>
       </main>
 

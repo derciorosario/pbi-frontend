@@ -501,7 +501,16 @@ export default function CrowdfundingPage() {
               generalTree={generalTree}
               {...filtersProps}
               from={"funding"}
-            />
+              catComponent={ <TopFilterButtons
+                                selected={selectedFilters}
+                                setSelected={setSelectedFilters}
+                                buttons={filterOptions}
+                                buttonLabels={categoryIdToNameMap}
+                                from={'funding'}
+                                loading={loadingFeed}
+                            />}
+            /> 
+            
           </div>
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
