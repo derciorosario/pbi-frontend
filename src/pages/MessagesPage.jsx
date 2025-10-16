@@ -651,7 +651,7 @@ export default function MessagesPage() {
           <div className="flex h-full min-h-0">
             {/* Sidebar */}
             <aside
-              className={`w-80 border-r ${activeConversation ? "hidden md:flex" : "flex"} flex-col min-h-0`}
+              className={`w-80 border-r max-md:w-full ${activeConversation ? "hidden md:flex" : "flex"} flex-col min-h-0`}
             >
               <div className="p-4 border-b">
                 <button
@@ -1064,7 +1064,7 @@ export default function MessagesPage() {
                 </div>
               </section>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-500">
+              <div className="flex-1 flex items-center justify-center text-gray-500 max-md:hidden">
                 <div className="text-center">
                   <div className="mb-2 mx-auto h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
                     <Send size={24} className="text-gray-400" />
