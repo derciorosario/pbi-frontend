@@ -271,7 +271,7 @@ export default function PeopleFeedPage() {
         date: date || undefined,
         registrationType: registrationType || undefined,
 
-        limit: 20,
+        limit: 50,
         offset: 0,
       };
       
