@@ -30,7 +30,7 @@ export default function LeftPanel() {
         <h1 className="mt-6 text-[2rem] md:text-[2rem] font-bold leading-tight">
          Connect. Collaborate.
           <br />
-          Grow.
+          and Grow.
         </h1>
         <p className="mt-8 tracking-wide uppercase text-sm text-white/80">
           &copy; 2025 54Links

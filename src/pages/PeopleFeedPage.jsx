@@ -133,6 +133,14 @@ export default function PeopleFeedPage() {
   // Selected filters for TopFilterButtons
   const [selectedFilters, setSelectedFilters] = useState([]);
 
+  // Request cancellation refs
+  const abortControllerRef = useRef(null);
+  const lastRequestIdRef = useRef(0);
+  const isFetchingRef = useRef(false);
+  const hasLoadedOnce = useRef(false);
+  const lastParamsRef = useRef({});
+  const fetchTimeoutRef = useRef(null);
+
   // Map button labels to identity IDs
   const getIdentityIdFromLabel = useCallback(
     (label) => {
@@ -180,15 +188,27 @@ export default function PeopleFeedPage() {
     })();
   }, [currentPage]);
 
-  const isFetchingRef = useRef(false);
-  const hasLoadedOnce = useRef(false);
-  const lastParamsRef = useRef({});
-  const fetchTimeoutRef = useRef(null);
-
+  // Fixed fetchFeed with request cancellation
   const fetchFeed = useCallback(async () => {
-    if (isFetchingRef.current) return;
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
+    
+    // Use a request ID to track the most recent request
+    const requestId = Date.now();
+    lastRequestIdRef.current = requestId;
+    
+    if (isFetchingRef.current) {
+      console.log('Canceling previous request');
+    }
+    
     isFetchingRef.current = true;
     setLoadingFeed(true);
+    
     try {
       // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre "all"
       const params = {
@@ -254,25 +274,47 @@ export default function PeopleFeedPage() {
         limit: 20,
         offset: 0,
       };
-      const { data } = await client.get("/people", { params });
-      const incomingItems = Array.isArray(data.items) ? data.items : [];
-      setItems(incomingItems);
-      setTotalCount(
-        typeof data.total === "number"
-          ? data.total
-          : Array.isArray(data.items)
-          ? data.items.length
-          : 0
-      );
-      setHasFetchedOnce(true);
-    } catch (e) {
-      console.error("Failed to load feed:", e);
-      setItems([]);
+      
+      const { data } = await client.get("/people", { 
+        params,
+        signal: abortControllerRef.current.signal 
+      });
+      
+      // Only update state if this is the most recent request
+      if (requestId === lastRequestIdRef.current) {
+        const incomingItems = Array.isArray(data.items) ? data.items : [];
+        setItems(incomingItems);
+        setTotalCount(
+          typeof data.total === "number"
+            ? data.total
+            : Array.isArray(data.items)
+            ? data.items.length
+            : 0
+        );
+        setHasFetchedOnce(true);
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log('Request was canceled');
+        return;
+      }
+      console.error("Failed to load feed:", error);
+      // Only update state if this is the most recent request
+      if (requestId === lastRequestIdRef.current) {
+        setItems([]);
+      }
     } finally {
-      isFetchingRef.current = false;
-      setLoadingFeed(false);
+      // Only reset fetching state if this is the most recent request
+      if (requestId === lastRequestIdRef.current) {
+        isFetchingRef.current = false;
+        setLoadingFeed(false);
+        abortControllerRef.current = null;
+      }
     }
-    data._scrollToSection("top", true);
+    
+    if (requestId === lastRequestIdRef.current) {
+      data._scrollToSection("top", true);
+    }
   }, [
     activeTab,
     debouncedQ,
@@ -308,9 +350,9 @@ export default function PeopleFeedPage() {
     data,
   ]);
 
-  // Trigger fetches (initial + debounced updates)
+  // Improved useEffect for triggering fetches
   useEffect(() => {
-    const currentParams = {
+    const currentParams = JSON.stringify({
       activeTab,
       debouncedQ,
       country,
@@ -321,10 +363,10 @@ export default function PeopleFeedPage() {
       role,
       showPendingRequests,
       audienceSelections: {
-        identityIds: Array.from(audienceSelections.identityIds),
-        categoryIds: Array.from(audienceSelections.categoryIds),
-        subcategoryIds: Array.from(audienceSelections.subcategoryIds),
-        subsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds),
+        identityIds: [...audienceSelections.identityIds].sort(),
+        categoryIds: [...audienceSelections.categoryIds].sort(),
+        subcategoryIds: [...audienceSelections.subcategoryIds].sort(),
+        subsubCategoryIds: [...audienceSelections.subsubCategoryIds].sort(),
       },
       price,
       serviceType,
@@ -345,30 +387,36 @@ export default function PeopleFeedPage() {
       eventType,
       date,
       registrationType,
-      selectedIndustries,
-    };
+      selectedIndustries: [...selectedIndustries].sort(),
+    });
 
-    if (JSON.stringify(currentParams) === JSON.stringify(lastParamsRef.current))
-      return;
+    if (currentParams === lastParamsRef.current) return;
     lastParamsRef.current = currentParams;
+
+    // Clear any pending timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
     if (!hasLoadedOnce.current) {
       hasLoadedOnce.current = true;
-      // Immediate fetch for initial load
       fetchFeed();
     } else {
-      // Debounced re-fetch
-      clearTimeout(fetchTimeoutRef.current);
-      setLoadingFeed(true);
       fetchTimeoutRef.current = setTimeout(() => {
         fetchFeed();
-      }, 100);
+      }, 300); // Slightly longer debounce for better UX
     }
 
-    // Cleanup: ONLY clear the timeout.
-    // DO NOT flip loadingFeed to false here (that caused the blank gap).
+    // Cleanup function
     return () => {
-      clearTimeout(fetchTimeoutRef.current);
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
     };
   }, [
     activeTab,
@@ -425,6 +473,32 @@ export default function PeopleFeedPage() {
       }));
     }
   }, [selectedFilters, audienceTree, getIdentityIdFromLabel]);
+
+  // Fetch suggestions (sempre mostramos na direita)
+  useEffect(() => {
+    (async () => {
+      setLoadingSuggestions(true);
+      try {
+        const params = {
+          q: debouncedQ || undefined,
+          country: country || undefined,
+          city: city || undefined,
+          categoryId: categoryId || undefined,
+          subcategoryId: subcategoryId || undefined,
+          goalId: goalId || undefined,
+          industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
+          limit: 40,
+        };
+        const { data } = await client.get("/feed/suggestions", { params });
+        setMatches(data.matches || []);
+        setNearby(data.nearby || []);
+      } catch (e) {
+        console.error("Failed to load suggestions:", e);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    })();
+  }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, selectedIndustries]);
 
   const filtersProps = {
     setShowTotalCount,

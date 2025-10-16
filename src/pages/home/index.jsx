@@ -509,13 +509,12 @@ export default function HomePage() {
                  </div>
 
                  <h1 className="text-6xl md:text-7xl font-black leading-[0.9] mb-8">
-                   <span className="block"><label className="text-accent-100">Connect. </label> Collaborate. Grow.</span>
+                   <span className="block"><label className="text-accent-100">Connect. </label> Collaborate. and Grow.</span>
                  
                  </h1>
 
                  <p className="text-xl text-white/90 leading-relaxed mb-10 max-w-2xl">
-                   <strong className="text-white">54Links</strong> is where entrepreneurs, professionals, and businesses meet to build real connections, unlock new opportunities, and grow together.
-Whether you're a startup founder, freelancer, or corporate leader, 54Links gives you the network you need to succeed.
+                   <strong className="text-white">54Links</strong> is where founders, professionals, and teams connect to build meaningful relationships, discover new opportunities, and grow together. Whether you're just starting out or leading an established business, 54Links helps you meet the right people to move forward.
 
                  </p>
 
@@ -524,7 +523,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                      onClick={() => setLoginDialogOpen(true)}
                      className="px-10 py-4 bg-white text-brand-600 font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 text-lg"
                    >
-                    Join the Network
+                    Join Our Growing Network
                    </button>
                    <button
                      onClick={() => navigate("/people")}
@@ -537,29 +536,29 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                  {/* Key Benefits */}
                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-white/90">
                    <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 bg-accent-500 rounded-lg flex items-center justify-center">
-                       <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                     <div className="w-10 h-10 flex-shrink-0 bg-accent-500 rounded-lg flex items-center justify-center">
+                       <svg className="w-5 h-5 flex-shrink-0 text-white" fill="currentColor" viewBox="0 0 24 24">
                          <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
                        </svg>
                      </div>
                      <div>
-                       <div className="font-semibold text-white">Smart Matching</div>
+                       <div className="font-semibold text-white">Intelligent Matching System</div>
                        <div className="text-sm">AI-powered connections</div>
                      </div>
                    </div>
                    <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 bg-accent-600 rounded-lg flex items-center justify-center">
+                     <div className="w-10 h-10 flex-shrink-0 bg-accent-600 rounded-lg flex items-center justify-center">
                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                          <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/>
                        </svg>
                      </div>
                      <div>
                        <div className="font-semibold text-white">Job Opportunities</div>
-                       <div className="text-sm">Find your next career move</div>
+                       <div className="text-sm">Discover your next big opportunity or hire top talents</div>
                      </div>
                    </div>
                    <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 bg-accent-700 rounded-lg flex items-center justify-center">
+                     <div className="w-10 h-10 flex-shrink-0 bg-accent-700 rounded-lg flex items-center justify-center">
                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                          <path d="M7 4V2C7 1.45 7.45 1 8 1h8c.55 0 1 .45 1 1v2h4c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H3c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2h4zM9 2v2h6V2H9z"/>
                        </svg>
@@ -594,14 +593,13 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
              <div className="text-center mb-20">
                <h2 className="text-5xl font-bold text-gray-900 mb-6">
-                 How <span className="text-brand-600">54Links</span> Works
+                 How It Works
                </h2>
                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Join our growing business network in just 3 simple steps and start unlocking unlimited opportunities.
+                Get started in three simple steps and start building meaningful connections.
                </p>
              </div>
-
-           
+             
            <div className="grid md:grid-cols-3 gap-12">
   {/* Step 1 */}
   <div className="text-center group">
@@ -615,9 +613,9 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
         </svg>
       </div>
     </div>
-    <h3 className="text-2xl font-bold text-gray-900 mb-4">Sign Up & Create Your Profile</h3>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Step 1: Create Your Profile</h3>
     <p className="text-gray-600 text-lg leading-relaxed">
-      Tell us who you are, what you do, and what you're looking for. Whether you're a founder, freelancer, or job seeker — your journey starts here.
+      Tell us about yourself, what you do, and what you hope to find. Whether you're a founder, freelancer, or professional — your journey starts here.
     </p>
   </div>
 
@@ -635,7 +633,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
     </div>
     <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Matched Instantly</h3>
     <p className="text-gray-600 text-lg leading-relaxed">
-      Our smart AI connects you with the right people, jobs, and businesses based on your profile and interests.
+      Our AI instantly connects you with people, jobs, and opportunities that fit your goals and interests.
     </p>
   </div>
 
@@ -672,8 +670,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
         See <span className="text-brand-600">54Links</span> in Action
       </h2>
       <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-        Experience how easy it is to find opportunities, connect with professionals,
-        and grow your network — all in one powerful platform.
+        See how simple it is to discover opportunities, connect with professionals, and grow — all in one smart platform.
       </p>
     </div>
 
@@ -697,7 +694,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
           <div>
             <div className="text-xl font-bold">Build Meaningful Business Connections</div>
             <div className="text-white/80 max-md:hidden">
-              Connect with professionals, entrepreneurs, and businesses — all in one smart, secure platform.
+              Meet professionals, entrepreneurs, and businesses in one trusted and secure space.
             </div>
           </div>
         </div>
@@ -710,11 +707,11 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
           </div>
           <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
             <div className="font-semibold">Connect Instantly</div>
-            <div className="text-sm text-white/80">Like-minded Professionals</div>
+            <div className="text-sm text-white/80">Meet Like-minded Professionals</div>
           </div>
           <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/30">
-            <div className="font-semibold">Smart & Effective</div>
-            <div className="text-sm text-white/80">Simple. Secure. Powerful.</div>
+            <div className="font-semibold">Smart. Simple. Effective.</div>
+            <div className="text-sm text-white/80">Simple. Secure. Powerful connections that work.</div>
           </div>
         </div>
       </div>
@@ -733,7 +730,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                  Everything You Need to <span className="text-brand-600">Succeed</span>
                </h2>
                <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-               From career growth to business partnerships, 54Links gives you the tools, connections, and community to thrive in today’s global economy.
+                 From career growth to business partnerships, 54Links connects you with the people, tools, and community to thrive globally.
                </p>
              </div>
 
@@ -749,9 +746,9 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
         <path d="M16 4a4 4 0 1 1-8 0 4 4 0 0 1 8 0zM4 18a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2H4v-2z"/>
       </svg>
     </div>
-    <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart People Network</h3>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Real Connections</h3>
     <p className="text-gray-600 mb-6 leading-relaxed">
-      Connect with the right people, effortlessly. Our AI-powered matching algorithm links you with professionals, entrepreneurs, and business leaders based on your goals, interests, and location.
+      Easily connect with the right people. Our smart matching system introduces you to professionals, founders, and business leaders who align with your goals and interests.
     </p>
     <button
       onClick={() => navigate("/people")}
@@ -774,9 +771,9 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
         <path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/>
       </svg>
     </div>
-    <h3 className="text-2xl font-bold text-gray-900 mb-4">Premium Job Market</h3>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Explore Top Job Opportunities</h3>
     <p className="text-gray-600 mb-6 leading-relaxed">
-      Find your next opportunity or the talent you need. Discover exclusive job openings or hire top professionals with smart filters that make matching easy.
+      Find your next role or discover great talent. Explore exclusive opportunities with filters that help you match faster.
     </p>
     <button
       onClick={() => navigate("/jobs")}
@@ -801,7 +798,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
     </div>
     <h3 className="text-2xl font-bold text-gray-900 mb-4">Business Marketplace</h3>
     <p className="text-gray-600 mb-6 leading-relaxed">
-      Buy, sell, and grow with confidence. Trade products and services with verified businesses. Support entrepreneurs, discover suppliers, and scale your network securely.
+      Buy, sell, or collaborate with trusted businesses. Discover suppliers, support entrepreneurs, and grow your network with confidence.
     </p>
     <button
       onClick={() => navigate("/products")}
@@ -826,7 +823,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
     </div>
     <h3 className="text-2xl font-bold text-gray-900 mb-4">Events & Communities</h3>
     <p className="text-gray-600 mb-6 leading-relaxed">
-      Learn. Network. Lead. Join exclusive events, conferences, and industry-specific communities. Engage with global leaders and stay ahead of the curve.
+      Join events and communities built for growth. Learn, connect, and lead alongside global professionals and innovators.
     </p>
     <button
       onClick={() => navigate("/events")}
@@ -851,7 +848,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
     </div>
     <h3 className="text-2xl font-bold text-gray-900 mb-4">Tourism & Culture</h3>
     <p className="text-gray-600 mb-6 leading-relaxed">
-      Explore the world through business. Connect with tourism entrepreneurs, promote destinations, and celebrate cultural heritage across borders.
+      Discover the world through business connections. Promote destinations, connect with tourism innovators, and celebrate culture across borders.
     </p>
     <button
       onClick={() => navigate("/tourism")}
@@ -874,9 +871,9 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
       </svg>
     </div>
-    <h3 className="text-2xl font-bold text-gray-900 mb-4">Funding & Investment</h3>
+    <h3 className="text-2xl font-bold text-gray-900 mb-4">Funding & Investment Opportunities</h3>
     <p className="text-gray-600 mb-6 leading-relaxed">
-      Fuel your ideas with funding. Access crowdfunding, connect with investors, and join a vibrant startup ecosystem.
+      Turn your ideas into reality. Find investors, access funding, and grow within a vibrant startup ecosystem.
     </p>
     <button
       onClick={() => navigate("/funding")}
@@ -899,10 +896,10 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                   <div className="text-center mb-20">
                     <h2 className="text-5xl font-bold text-gray-900 mb-6">
-                      Why Choose <span className="text-brand-600">54Links</span>
+                      Why Professionals Choose <span className="text-brand-600">54Links</span>
                     </h2>
                     <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                      Join a platform designed to help you build meaningful business connections and accelerate your growth
+                      Join a trusted platform built to help you form real connections and grow faster.
                     </p>
                   </div>
 
@@ -920,11 +917,11 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-4">Verified Network</h3>
           <p className="text-gray-600 leading-relaxed">
-            Every member is verified, ensuring you connect with genuine professionals and businesses you can trust.
+            Every member is verified — helping you connect confidently with real professionals and trusted businesses.
           </p>
         </div>
 
-        {/* Smart Matching */}
+        {/* Intelligent Matching System */}
         <div
           onClick={() => navigate("/people")}
           className="text-center cursor-pointer hover:transform hover:scale-105 transition-transform"
@@ -934,7 +931,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
               <path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.1 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/>
             </svg>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart Matching</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Smart Matching Technology</h3>
           <p className="text-gray-600 leading-relaxed">
             Our intelligent algorithm connects you with the most relevant people and opportunities.
           </p>
@@ -950,9 +947,9 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Secure & Private</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Safe and Secure</h3>
           <p className="text-gray-600 leading-relaxed">
-            Your data is protected with enterprise-grade security. You control your visibility and connections.
+            Your information is always protected with top-tier security — and you decide who sees your profile.
           </p>
         </div>
       </div>
@@ -998,7 +995,7 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                    </svg>
                  </div>
-                 <div className="text-white font-semibold mb-2">Smart Matching</div>
+                 <div className="text-white font-semibold mb-2">Intelligent Matching System</div>
                  <div className="text-white/80 text-sm">Get connected to the right people — automatically.</div>
                </div>
              
@@ -1011,10 +1008,10 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12">
                 <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                  Ready to Get Started?
+                  Ready to Begin?
                 </h2>
                 <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                  Join our platform today and start building meaningful business connections
+                  Create your free account today and start building connections that make a difference.
                 </p>
               </div>
 
@@ -1049,10 +1046,10 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
            <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
              <div className="text-center mb-12">
                <h2 className="text-4xl font-bold text-gray-900 mb-4">
-                  Ready to Get Started?
+                  Ready to Begin?
                </h2>
                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                Create your account and start building connections that matter.
+                Create your free account today and start building connections that make a difference.
                </p>
              </div>
 
@@ -1722,10 +1719,10 @@ Whether you're a startup founder, freelancer, or corporate leader, 54Links gives
                </svg>
              </div>
              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-               Need Help or Have <span className="text-brand-600">Questions?</span>
+               Got Questions? We're Here to Help.
              </h2>
              <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
-               Get in touch with our team. We're here to help you growth.
+               Reach out to our team — we're here to help you grow.
              </p>
              <button
                onClick={() => setContactDialogOpen(true)}

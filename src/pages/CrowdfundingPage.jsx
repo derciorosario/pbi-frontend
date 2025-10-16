@@ -169,7 +169,7 @@ export default function CrowdfundingPage() {
     if (activeTab !== "Suggested for You") return;
     setLoadingFeed(true);
     try {
-      // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre “all”
+      // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre "all"
       const params = {
         tab: "funding",
         q: debouncedQ || undefined,
@@ -552,4 +552,3 @@ export default function CrowdfundingPage() {
    </DefaultLayout>
   );
 }
-

@@ -33,7 +33,7 @@ function useDebounce(v, ms = 400) {
   return val;
 }
 
-export default function JobsExplorePage() {
+export default function PeopleFeedPage() {
   const [activeTab, setActiveTab] = useState("Posts");
   const tabs = useMemo(() => ["Posts", "Job Seeker","Job Offers"], []);
   let view_types=['grid','list']
@@ -153,13 +153,6 @@ export default function JobsExplorePage() {
   const [selectedFilters,setSelectedFilters]=useState([])
    const [filterOptions,setFilterOptions]=useState([])
   
-  // Request cancellation refs
-  const abortControllerRef = useRef(null);
-  const lastRequestIdRef = useRef(0);
-  const isFetchingRef = useRef(false);
-  const hasLoadedOnce = useRef(false);
-  const lastParamsRef = useRef({});
-  const fetchTimeoutRef = useRef(null);
 
   // Fetch meta
   useEffect(() => {
@@ -191,46 +184,14 @@ export default function JobsExplorePage() {
    }, []);
 
 
-  // Fetch feed (somente na aba Posts) - FIXED VERSION
+  // Fetch feed (somente na aba Posts)
   const fetchFeed = useCallback(async () => {
     if (activeTab !== "Posts") return;
-    
-    // Cancel previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    
-    // Create new abort controller
-    abortControllerRef.current = new AbortController();
-    
-    // Use a request ID to track the most recent request
-    const requestId = Date.now();
-    lastRequestIdRef.current = requestId;
-    
-    if (isFetchingRef.current) {
-      console.log('Canceling previous request');
-    }
-    
+    if (isFetchingRef.current) return;
     isFetchingRef.current = true;
     setLoadingFeed(true);
-    
     try {
-      // Capture current filter state for consistency
-      const currentFilterState = {
-        debouncedQ,
-        country,
-        city,
-        selectedFilters: [...selectedFilters],
-        audienceSelections: {
-          identityIds: [...audienceSelections.identityIds],
-          categoryIds: [...audienceSelections.categoryIds],
-          subcategoryIds: [...audienceSelections.subcategoryIds],
-          subsubCategoryIds: [...audienceSelections.subsubCategoryIds],
-        },
-        selectedIndustries: [...selectedIndustries],
-        selectedSubcategories: { ...selectedSubcategories }
-      };
-
+      // PeoplePage não tem hero tabs All/Events/Jobs; aqui sempre "all"
       const params = {
         tab: "jobs",
         q: debouncedQ || undefined,
@@ -278,6 +239,7 @@ export default function JobsExplorePage() {
         date: date || undefined,
         registrationType: registrationType || undefined,
 
+
         generalCategoryIds: selectedFilters.filter(id =>
           generalTree.some(category => category.id === id)
         ).join(',') || undefined,
@@ -289,47 +251,27 @@ export default function JobsExplorePage() {
         limit: 40,
         offset: 0,
       };
-
-      const { data } = await client.get("/feed", { 
-        params,
-        signal: abortControllerRef.current.signal 
-      });
-      
-      // Only update state if this is the most recent request
-      if (requestId === lastRequestIdRef.current) {
-        setItems(Array.isArray(data.items) ? data.items : []);
-        setTotalCount(
-          typeof data.total === "number"
-            ? data.total
-            : Array.isArray(data.items) ? data.items.length : 0
-        );
-      }
-      
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        console.log('Request was canceled');
-        return;
-      }
-      console.error("Failed to load feed:", error);
-      // Only update state if this is the most recent request
-      if (requestId === lastRequestIdRef.current) {
-        setItems([]);
-      }
+      const { data } = await client.get("/feed", { params });
+      setItems(Array.isArray(data.items) ? data.items : []);
+      setTotalCount(
+        typeof data.total === "number"
+          ? data.total
+          : Array.isArray(data.items) ? data.items.length : 0
+      );
+    } catch (e) {
+      console.error("Failed to load feed:", e);
+      setItems([]);
     } finally {
-      // Only reset fetching state if this is the most recent request
-      if (requestId === lastRequestIdRef.current) {
-        isFetchingRef.current = false;
-        setLoadingFeed(false);
-        abortControllerRef.current = null;
-      }
+      isFetchingRef.current = false;
+      setLoadingFeed(false);
     }
-    
-    if (requestId === lastRequestIdRef.current) {
-      data._scrollToSection('top',true);
-    }
+    data._scrollToSection('top',true);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,
     selectedFilters,
     audienceSelections,
+
+
+    // NEW deps:
     price,
     serviceType,
     priceType,
@@ -357,9 +299,13 @@ export default function JobsExplorePage() {
     generalTree,
     selectedSubcategories,]);
 
-  // Improved useEffect for triggering fetches
+  const isFetchingRef = useRef(false);
+  const hasLoadedOnce = useRef(false);
+  const lastParamsRef = useRef({});
+  const fetchTimeoutRef = useRef(null);
+
   useEffect(() => {
-    const currentParams = JSON.stringify({
+    const currentParams = {
       activeTab,
       debouncedQ,
       country,
@@ -367,12 +313,12 @@ export default function JobsExplorePage() {
       categoryId,
       subcategoryId,
       goalId,
-      selectedFilters: [...selectedFilters].sort(),
+      selectedFilters,
       audienceSelections: {
-        identityIds: [...audienceSelections.identityIds].sort(),
-        categoryIds: [...audienceSelections.categoryIds].sort(),
-        subcategoryIds: [...audienceSelections.subcategoryIds].sort(),
-        subsubCategoryIds: [...audienceSelections.subsubCategoryIds].sort(),
+        identityIds: Array.from(audienceSelections.identityIds),
+        categoryIds: Array.from(audienceSelections.categoryIds),
+        subcategoryIds: Array.from(audienceSelections.subcategoryIds),
+        subsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds),
       },
       price,
       serviceType,
@@ -397,38 +343,22 @@ export default function JobsExplorePage() {
       eventType,
       date,
       registrationType,
-      selectedIndustries: [...selectedIndustries].sort(),
-      selectedSubcategories: JSON.stringify(selectedSubcategories),
-    });
+      selectedIndustries,
+      selectedSubcategories,
+    };
 
-    if (currentParams === lastParamsRef.current) return;
+    if (JSON.stringify(currentParams) === JSON.stringify(lastParamsRef.current)) return;
     lastParamsRef.current = currentParams;
-
-    // Clear any pending timeout
-    if (fetchTimeoutRef.current) {
-      clearTimeout(fetchTimeoutRef.current);
-    }
-
-    // Cancel any in-flight request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
 
     if (!hasLoadedOnce.current) {
       hasLoadedOnce.current = true;
-      fetchFeed();
+      fetchFeed(); // Immediate fetch for initial load
     } else {
+      clearTimeout(fetchTimeoutRef.current);
       fetchTimeoutRef.current = setTimeout(() => {
         fetchFeed();
-      }, 300); // Slightly longer debounce for better UX
+      }, 200);
     }
-
-    // Cleanup function
-    return () => {
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
-    };
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,
     selectedFilters,
     audienceSelections,
@@ -456,8 +386,8 @@ export default function JobsExplorePage() {
     date,
     registrationType,
     selectedIndustries,
-    selectedSubcategories,
-    fetchFeed]);
+  jobsView,
+  selectedSubcategories]);
 
   // Update audienceSelections when selectedFilters changes (but don't trigger fetch)
   useEffect(() => {
@@ -720,6 +650,16 @@ export default function JobsExplorePage() {
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
          
           <div className="_sticky top-0 z-10 _bg-white">
+
+             {/** <FiltersCard catComponent={<TopFilterButtons from={'jobs'} loading={loadingFeed}  selected={selectedFilters} setSelected={setSelectedFilters}
+                                    buttons={
+                                      [
+                                      "Executives",
+                                      "Professionals",
+                                      "Freelancers",
+                                      "Students"
+              ]}/>}  showAudienceFilters={true}   selectedFilters={selectedFilters} {...filtersProps} from="jobs"/> */}
+
 
               <FiltersCard
                   selectedFilters={selectedFilters}
