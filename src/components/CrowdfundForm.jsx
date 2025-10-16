@@ -919,10 +919,8 @@ function removeTag(idx) {
           <ReadOnlyCrowdfundView form={form} images={images} audSel={audSel} audTree={audTree} />
         ) : (
           <div className="rounded-2xl border border-gray-100 bg-white p-5 md:p-6 shadow-sm">
-            <h2 className="text-xl font-semibold">{isEditMode ? "Edit Funding Project" : "Create Funding Project"}</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Present your idea, set goals, and raise funds from the 54Links community.
-            </p>
+{isEditMode &&   <h2 className="text-xl font-semibold">{isEditMode ? "Edit Funding Project" : "Create Funding Project"}</h2>}
+         
 
             {/* Title & Category */}
             <div className="mt-4 grid md:grid-cols-2 gap-4">
@@ -952,13 +950,12 @@ function removeTag(idx) {
 
              {/* Pitch / Description */}
             <div className="mt-4">
-              <Label required>Pitch / Description</Label>
               <Textarea
                 name="pitch"
                 value={form.pitch}
                 onChange={change}
                 rows={6}
-                placeholder="Example: We're building a mobile payment platform specifically for small businesses in rural areas. Our solution addresses the lack of banking infrastructure by enabling digital transactions through basic feature phones. Funds will be used to expand our merchant network and develop additional financial services."
+                placeholder="Pitch: We're building a mobile payment platform specifically for small businesses in rural areas. Our solution addresses the lack of banking infrastructure by enabling digital transactions through basic feature phones. Funds will be used to expand our merchant network and develop additional financial services."
                 _placeholder="Explain the problem, your solution, market, traction, and how funds will be used."
                 required
               />
@@ -968,7 +965,7 @@ function removeTag(idx) {
             {/* Location */}
             <div className="mt-4 grid md:grid-cols-2 gap-4">
               <div>
-                <Label required>Country</Label>
+                <Label>Country</Label>
                 <SearchableSelect
                   value={form.country}
                   onChange={(value) => setForm({ ...form, country: value })}
@@ -1230,10 +1227,6 @@ function removeTag(idx) {
             
             {/* ===== General Classification (SEARCHABLE) ===== */}
             <div className="mt-5">
-              <h2 className="font-semibold text-brand-600">Classification</h2>
-              <p className="text-xs text-gray-600 mb-3">
-                Search and pick the category that best describes your crowdfunding project.
-              </p>
             
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -1332,7 +1325,7 @@ function removeTag(idx) {
                     Define Target Audience (optional)
                   </button>
                   <p className="text-xs text-gray-500">
-                    Select specific identities and industries to target your funding project to relevant audiences
+                    Target your post to specific audiences
                   </p>
                 </div>
               ) : (

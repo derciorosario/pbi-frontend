@@ -909,13 +909,11 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
           </button>
         )}
 
-       {user && <>
+       {isEditMode && <>
         <h1 className="text-2xl font-bold mt-3">
           {isEditMode ? "Edit Service" : "Create Service Post"}
         </h1>
-        <p className="text-sm text-gray-600">
-          Share your professional services with the 54Links community.
-        </p></>}
+       </>}
 
         {/* Non-owner summary view (with images) */}
         {readOnly ? (
@@ -925,9 +923,38 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
             onSubmit={onSubmit}
             className="mt-6 rounded-2xl bg-white border p-6 shadow-sm space-y-8"
           >
-            {/* Service Type */}
+        
+            {/* Basic Info */}
             <section>
-              <h2 className="font-semibold text-brand-600">Service Type</h2>
+               <div className="mt-3 grid gap-4">
+                <div>
+                  <Label required>Title</Label>
+                  <input
+                    type="text"
+                    value={form.title}
+                    onChange={(e) => setField("title", e.target.value)}
+                    placeholder="e.g., Growth Marketing Strategy Sprint"
+                    className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                    required
+                  />
+                </div>
+                <div>
+                 <textarea
+                    value={form.description}
+                    onChange={(e) => setField("description", e.target.value)}
+                    _placeholder="Describe your service in detail. What problems do you solve? What value do you provide?"
+                    placeholder="Describe your service in detail: I provide comprehensive digital marketing strategy consulting for small businesses. I'll analyze your current marketing efforts, identify growth opportunities..."
+                    className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                    rows={4}
+                    required
+                  />
+                </div>
+              </div>
+            </section>
+
+                {/* Service Type */}
+            <section>
+              <h2 className="text-[12px] font-medium text-gray-700">Service Type</h2>
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { label: "Consulting", desc: "Professional advice and expertise" },
@@ -951,40 +978,10 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
               </div>
             </section>
 
-            {/* Basic Info */}
-            <section>
-              <h2 className="font-semibold text-brand-600">Basic Information</h2>
-              <div className="mt-3 grid gap-4">
-                <div>
-                  <Label required>Title</Label>
-                  <input
-                    type="text"
-                    value={form.title}
-                    onChange={(e) => setField("title", e.target.value)}
-                    placeholder="e.g., Growth Marketing Strategy Sprint"
-                    className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label required>Description</Label>
-                  <textarea
-                    value={form.description}
-                    onChange={(e) => setField("description", e.target.value)}
-                    _placeholder="Describe your service in detail. What problems do you solve? What value do you provide?"
-                    placeholder="Example: I provide comprehensive digital marketing strategy consulting for small businesses. I'll analyze your current marketing efforts, identify growth opportunities, and create a customized 3-month action plan to increase your online presence and customer engagement."
-                    className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                    rows={4}
-                    required
-                  />
-                </div>
-              </div>
-            </section>
 
             {/* Pricing */}
             <section>
-              <h2 className="font-semibold text-brand-600">Pricing (optional)</h2>
-              <div className="mt-3 grid gap-4 sm:grid-cols-3">
+            <div className="mt-3 grid gap-4 sm:grid-cols-3">
                 <div>
                   <Label>Amount</Label>
                   <input
@@ -1045,8 +1042,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
 
             {/* Location & Experience */}
             <section>
-              <h2 className="font-semibold text-brand-600">Location</h2>
-              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+             <div className="mt-3 grid gap-4 sm:grid-cols-2">
                 <div className="relative">
                   <Label>Location Type</Label>
                   <select
@@ -1158,10 +1154,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
 
             {/* ===== General Classification (SEARCHABLE) ===== */}
 <section>
- <h2 className="font-semibold text-brand-600">Classification</h2>
- <p className="text-xs text-gray-600 mb-3">
-   Search and pick the category that best describes your service.
- </p>
+
 
  <div className="grid md:grid-cols-2 gap-4">
    <div>
@@ -1235,13 +1228,8 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
 
   {/* Portfolio / Attachments */}
             <section>
-              <h2 className="font-semibold text-brand-600">Portfolio Samples (Optional)</h2>
               <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
-                <div className="mb-2">
-                  <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M12 4v16m8-8H4" />
-                  </svg>
-                </div>
+              
                 Upload images or documents showcasing your work (max 5MB per file)
                 <div className="mt-3">
                   <input
@@ -1338,7 +1326,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                     Define Target Audience (optional)
                   </button>
                   <p className="text-xs text-gray-500">
-                    Select specific identities and industries to target your service to relevant audiences
+                   Target your post to specific audiences
                   </p>
                 </div>
               ) : (
@@ -1360,7 +1348,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                     </button>
                   </div>
                   <p className="text-xs text-gray-600 mb-3">
-                    Select who should see this service. Choose multiple identities, categories, subcategories, and sub-subs.
+                    Select who should see this service.
                   </p>
 
                   <AudienceTree

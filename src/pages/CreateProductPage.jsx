@@ -834,21 +834,45 @@ const industrySubcategoryOptions = useMemo(() => {
               onSubmit={onSubmit}
               className="rounded-2xl bg-white border border-gray-100 p-6 shadow-sm space-y-6"
             >
-              <div className="flex items-center justify-between">
+             {isEditMode  && <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-xl font-bold">
                     {isEditMode ? "Edit Product" : "Create New Product Post"}
                   </h1>
-                  <p className="text-sm text-gray-600">
-                    Share your product with the Pan-African community
-                  </p>
+                
                 </div>
               
+              </div>}
+
+              {/* Product Title */}
+              <div>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) => setField("title", e.target.value)}
+                  placeholder="Enter your product title..."
+                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  required
+                />
+              </div>
+
+              
+              {/* Description */}
+              <div>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setField("description", e.target.value)}
+                   placeholder="Describe your product in detail: Handcrafted leather bag made with premium materials. Features multiple compartments, adjustable strap, and water-resistant lining. Perfect for everyday use or special occasions."
+                  _placeholder="Describe your product in detail..."
+                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  rows={4}
+                  required
+                />
               </div>
 
               {/* Product Images */}
               <section>
-                <h2 className="font-semibold">Product Images <label className="text-[crimson] text-[14px]">*</label></h2>
+                <h2 className="text-[12px] font-medium text-gray-700">Product Images <label className="text-[crimson] text-[14px]">*</label></h2>
                 <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
                   <div className="mb-2">
                     <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -934,38 +958,12 @@ const industrySubcategoryOptions = useMemo(() => {
                 </div>
               </section>
 
-              {/* Product Title */}
-              <div>
-                <h2 className="font-semibold">Product Name  <label className="text-[crimson] text-[14px]">*</label></h2>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={(e) => setField("title", e.target.value)}
-                  placeholder="Enter your product title..."
-                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  required
-                />
-              </div>
-
               
-              {/* Description */}
-              <div>
-                <h2 className="font-semibold">Product Description <label className="text-[crimson] text-[14px]">*</label></h2>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setField("description", e.target.value)}
-                   placeholder="Example: Handcrafted leather bag made with premium materials. Features multiple compartments, adjustable strap, and water-resistant lining. Perfect for everyday use or special occasions."
-                  _placeholder="Describe your product in detail..."
-                  className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  rows={4}
-                  required
-                />
-              </div>
 
               {/* Price + Quantity */}
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <h2 className="font-semibold">Price</h2>
+                  <h2 className="text-[12px] font-medium text-gray-700">Price</h2>
                   <input
                     type="number"
                     min="0"
@@ -977,7 +975,7 @@ const industrySubcategoryOptions = useMemo(() => {
                   />
                 </div>
                 <div>
-                  <h2 className="font-semibold">Currency</h2>
+                  <h2 className="text-[12px] font-medium text-gray-700">Currency</h2>
                   <select 
                     className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                 
@@ -986,7 +984,7 @@ const industrySubcategoryOptions = useMemo(() => {
                   </select>
                 </div>
                 <div>
-                  <h2 className="font-semibold">Quantity Available</h2>
+                  <h2 className="text-[12px] font-medium text-gray-700">Quantity Available</h2>
                   <input
                     type="number"
                     min="0"
@@ -1001,7 +999,6 @@ const industrySubcategoryOptions = useMemo(() => {
 
               {/* Location */}
               <div>
-                <h2 className="font-semibold">Location</h2>
                 <div className="mt-3 grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-[12px] font-medium text-gray-700">Country</label>
@@ -1085,10 +1082,6 @@ const industrySubcategoryOptions = useMemo(() => {
 
 {/* ===== General Classification (SEARCHABLE) ===== */}
 <section>
-  <h2 className="font-semibold text-brand-600">Classification</h2>
-  <p className="text-xs text-gray-600 mb-3">
-    Search and pick the category that best describes your product.
-  </p>
 
   <div className="grid md:grid-cols-2 gap-4">
     <div>
@@ -1175,7 +1168,7 @@ const industrySubcategoryOptions = useMemo(() => {
           Define Target Audience (optional)
         </button>
         <p className="text-xs text-gray-500">
-          Select specific identities and industries to target your product to relevant audiences
+          Target your post to specific audiences
         </p>
       </div>
     ) : (
@@ -1197,7 +1190,7 @@ const industrySubcategoryOptions = useMemo(() => {
           </button>
         </div>
         <p className="text-xs text-gray-600 mb-3">
-          Select who should see this product. Choose multiple identities, categories, subcategories, and sub-subs.
+          Select who should see this product. 
         </p>
 
         <AudienceTree

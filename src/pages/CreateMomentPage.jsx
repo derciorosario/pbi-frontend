@@ -883,17 +883,11 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           </button>}
 
   
-          {!isEditMode && (
+          {isEditMode && (
             <div>
               <h1 className="text-2xl font-bold mt-3">
                 {isEditMode ? "Edit Experience" : "Share Experience"}
               </h1>
-              <p className="text-sm text-gray-600">
-                {form.relatedEntityType
-                  ? `Share an experience of ${form.relatedEntityType} — an achievement, milestone, or learning — and classify it for better discovery.`
-                  : "Share an experience — an achievement, milestone, or learning — and classify it for better discovery."
-                }
-              </p>
             </div>
           )}
   
@@ -927,16 +921,29 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
             </div>
           </section>}
 
+               {/* Description */}
+          <section>
+            <textarea
+              value={form.description}
+              onChange={(e) => setField("description", e.target.value)}
+              placeholder={form.relatedEntityType
+                  ? `Share an experience of ${form.relatedEntityType} — an achievement, milestone, or learning`
+                  : "Share an experience — an achievement, milestone, or learning"
+                }
+              __placeholder="Example: Just launched our new product! Learned valuable lessons about scaling and user onboarding."
+              _placeholder="Describe what happened, what you learned, challenges faced, outcomes…"
+              className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+              rows={5}
+              required
+            />
+          </section>
+
             {/* Photos */}
           <section>
-            <h2 className="font-semibold">Photos</h2>
+            <h2 className="font-semibold text-[12px] text-gray-700">Photos</h2>
             <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
-              <div className="mb-2">
-                <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              Upload images showcasing your experience (max 5MB per file)
+            
+              Upload images showcasing your experience
               <div className="mt-3">
                 <input
                   ref={fileInputRef}
@@ -998,7 +1005,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
               )}
 
               <p className="mt-2 text-[11px] text-gray-400">
-                Formats: JPG, PNG, WebP, GIF — up to 5MB each, max 20 images.
+                  Up to 5MB each.
               </p>
             </div>
           </section>
@@ -1008,7 +1015,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
      
 
 <section>
-  <h2 className="font-semibold">Experience Type</h2>
+  <h2 className="text-[12px] font-medium text-gray-700">Experience Type</h2>
   <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
     {["Achievement", "Learning", "Challenge", "Opportunity"].map((label) => (
       <button
@@ -1040,7 +1047,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
                   <path d="M12 4v16m8-8H4" />
                 </svg>
               </div>
-              Upload documents or other files to support your experience (max 5MB per file)
+              Upload documents or other files to support your experience
               <div className="mt-3">
                 <input
                   ref={attachmentInputRef}
@@ -1116,19 +1123,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
             />
           </section>
 
-            {/* Description */}
-          <section>
-            <h2 className="font-semibold">Description *</h2>
-            <textarea
-              value={form.description}
-              onChange={(e) => setField("description", e.target.value)}
-              placeholder="Example: Just launched our new product! Learned valuable lessons about scaling and user onboarding."
-              _placeholder="Describe what happened, what you learned, challenges faced, outcomes…"
-              className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-              rows={5}
-              required
-            />
-          </section>
+       
 
           {/* Date & Location */}
           <section>
@@ -1233,7 +1228,6 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
 
          
           <section className={`${form.relatedEntityType=="_job" ? 'hidden':''}`}>
-            <h2 className="font-semibold text-brand-600">General Classification</h2>
             <div className="grid md:grid-cols-2 gap-4 mt-2">
               <div>
                 <label className="text-[12px] font-medium text-gray-700">Category</label>
@@ -1332,7 +1326,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           Define Audience (optional)
         </button>
         <p className="text-xs text-gray-500">
-          Select specific identities and industries to target your experience to relevant audiences
+        Target your post to specific audiences
         </p>
       </div>
     ) : (
@@ -1354,7 +1348,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           </button>
         </div>
         <p className="text-xs text-gray-600 mb-3">
-          Select who should see this experience. Choose multiple identities, categories, subcategories, and sub-subs.
+          Select who should see this experience.
         </p>
 
         <AudienceTree

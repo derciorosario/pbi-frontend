@@ -272,9 +272,7 @@ const CountryCitySelector = ({ value, onChange, error }) => {
       )}
 
       {error && <p className="text-xs text-red-600">{error}</p>}
-      <p className="text-xs text-gray-500">
-        Select additional countries where this job opportunity is available (optional)
-      </p>
+    
     </div>
   );
 };
@@ -795,7 +793,6 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border p-4">
-            <div className="text-gray-700 font-medium flex items-center gap-2"><I.doc/> Job Details</div>
             <div className="mt-2 text-sm text-gray-700 space-y-1">
               <div>Department: {form.department || "—"}</div>
               <div>Experience: {form.experienceLevel || "—"}</div>
@@ -1284,7 +1281,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
 
 
     if (!form.description.trim()) {
-      next.description = "Job description is required.";
+      next.description = "Add Job description";
     } else if (form.description.trim().length < 10) {
       next.description = "Job description must be at least 10 characters long.";
     }
@@ -1471,16 +1468,12 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
           </div>
         )}
 
-        {user?.id && (
+        {isEditMode && (
           <div>
             <h1 className="text-[20px] font-bold">
               {isEditMode ? "Edit Job Opportunity" : "Create Job Opportunity"}
             </h1>
-            <p className="mt-1 text-sm text-gray-600">
-              {isEditMode
-                ? "Update your job posting details below."
-                : "Post a new job opening and choose exactly who should see it."}
-            </p>
+           
           </div>
         )}
 
@@ -1504,26 +1497,9 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
           <form onSubmit={onSubmit} className="mt-6 rounded-2xl bg-white border border-gray-100 shadow-sm p-5 md:p-6">
 
 
-            <div className="flex items-center gap-2"><I.doc /><h3 className="font-semibold">Cover Image</h3></div>
-            <p className="text-xs text-gray-600 mb-3">
-              Optional hero image for the job (shown at the top of the posting).
-            </p>
-
-
-            <CoverImagePicker
-              ref={imagePickerRef}
-              label="Upload a cover image (optional)"
-              value={coverImage}
-              preview={typeof coverImage === 'string' ? coverImage : null}
-              onChange={setCoverImage}
-            />
-
-               {/* ===== Cover Image (optional) ===== */}
-            <hr className="my-5 border-gray-200" />
-          
+  
 
             {/* ===== Basic Information ===== */}
-            <div className="flex items-center gap-2"><I.briefcase /><h3 className="font-semibold">Basic Information</h3></div>
             <div className="mt-3 grid md:grid-cols-2 gap-4">
               <div>
                 <Label required>Job Title</Label>
@@ -1536,11 +1512,12 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
               </div>
 
               {/* --- Replaced old input+select with InlineCompanyPicker --- */}
-              {(companies.length!=0 && user?.accountType=="company") && <div>
+              {((companies.length!=0 && user?.accountType=="company") || user?.accountType=="company") && <div>
                 <Label required>Company</Label>
                 <div className="opacity-60 pointer-events-none">
                    <InlineCompanyPicker
-                  companies={companies}
+                  ___companies={companies}
+                  companies={[{name:user?.name,id:user?.id}]}
                   value={form.companyId}
                   onChange={(picked) => {
                     setForm((f) => ({
@@ -1580,11 +1557,57 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
               </div>
             </div>
 
-            <hr className="my-5 border-gray-200"/>
 
-            {/* ===== Job Details ===== */}
-            <div className="flex items-center gap-2"><I.doc /><h3 className="font-semibold">Job Details</h3></div>
-            <div className="mt-3 grid md:grid-cols-2 gap-4 hidden">
+            <div className="md:col-span-3 mt-6">
+                <ReactQuill
+                  theme="snow"
+                  value={form.description || ''}
+                  onChange={(value) => {
+                    console.log('ReactQuill onChange - Raw value:', value);
+                    console.log('ReactQuill onChange - Is HTML?', value.includes('<'));
+                    setForm({ ...form, description: value });
+                  }}
+                  placeholder="Describe the role, responsibilities, and what you're looking for…"
+                  modules={{
+                    toolbar: [
+                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ 'color': [] }, { 'background': [] }],
+                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                      [{ 'align': [] }],
+                      ['link'],
+                      ['clean']
+                    ],
+                  }}
+                  formats={[
+                    'header', 'bold', 'italic', 'underline', 'strike',
+                    'color', 'background',
+                    'list', 'bullet', 'align',
+                    'link'
+                  ]}
+                  className="bg-white rounded-xl border border-gray-200"
+                  style={{ minHeight: '80px' }}
+                  preserveWhitespace={true}
+                
+                />
+              </div>
+
+
+
+            
+               {/* ===== Cover Image (optional) ===== */}
+            <hr className="my-5 border-gray-200" />
+        
+
+            <CoverImagePicker
+              ref={imagePickerRef}
+              label="Cover image (optional)"
+              value={coverImage}
+              preview={typeof coverImage === 'string' ? coverImage : null}
+              onChange={setCoverImage}
+            />
+
+             <div className="mt-3 grid md:grid-cols-2 gap-4 hidden">
             <div>
               <Label>Job Type</Label>
               <Select name="jobType" value={form.jobType} onChange={onChange}>
@@ -1639,40 +1662,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
             
             <div className="mt-3 grid md:grid-cols-3 gap-4">
 
-              <div className="md:col-span-3">
-                <Label required>Job Description</Label>
-                <ReactQuill
-                  theme="snow"
-                  value={form.description || ''}
-                  onChange={(value) => {
-                    console.log('ReactQuill onChange - Raw value:', value);
-                    console.log('ReactQuill onChange - Is HTML?', value.includes('<'));
-                    setForm({ ...form, description: value });
-                  }}
-                  placeholder="Describe the role, responsibilities, and what you're looking for…"
-                  modules={{
-                    toolbar: [
-                      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                      ['bold', 'italic', 'underline', 'strike'],
-                      [{ 'color': [] }, { 'background': [] }],
-                      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                      [{ 'align': [] }],
-                      ['link'],
-                      ['clean']
-                    ],
-                  }}
-                  formats={[
-                    'header', 'bold', 'italic', 'underline', 'strike',
-                    'color', 'background',
-                    'list', 'bullet', 'align',
-                    'link'
-                  ]}
-                  className="bg-white rounded-xl border border-gray-200"
-                  style={{ minHeight: '80px' }}
-                  preserveWhitespace={true}
-                
-                />
-              </div>
+
               
               <div className="md:col-span-3 hidden">
                 <Label>Required Skills & Qualifications</Label>
@@ -1725,10 +1715,8 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
             
 
             <div>
-                <hr className="my-5 border-gray-200" />
-
+           
             {/* ===== Location & Compensation ===== */}
-            <div className="flex items-center gap-2"><I.pin /><h3 className="font-semibold">Location & Compensation</h3></div>
            {/***Hide For now***/}
            {/**
             *  <div className="mt-3 grid md:grid-cols-2 gap-4">
@@ -1769,14 +1757,10 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
              
              {/* General Classification (SEARCHABLE) */}
             <section>
-              <h2 className="font-semibold text-brand-600">Classification</h2>
-              <p className="text-xs text-gray-600 mb-3">
-                Search and pick the category that best describes your event.
-              </p>
-
+           
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Category</label>
+                  <label className="text-[12px] font-medium text-gray-700">General Category <span className="text-gray-400 font-normal">(optional)</span></label>
                   <SearchableSelect
                     ariaLabel="General Category"
                     value={selectedGeneral.categoryId}
@@ -1789,7 +1773,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
                 </div>
 
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+                  <label className="text-[12px] font-medium text-gray-700">General Subcategory <span className="text-gray-400 font-normal">(optional)</span></label>
                   <SearchableSelect
                     ariaLabel="General Subcategory"
                     value={selectedGeneral.subcategoryId}
@@ -1873,7 +1857,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
         Define Audience (optional)
       </button>
       <p className="text-xs text-gray-500">
-        Select specific identities and industries to target your job posting to relevant audiences
+       Target your post to specific audiences
       </p>
     </div>
   ) : (
@@ -1895,7 +1879,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
         </button>
       </div>
       <p className="text-xs text-gray-600 mb-3">
-        Pick who should see this job. You can select multiple identities, industries and roles.
+        Pick who should see this job. 
       </p>
 
       <AudienceTree

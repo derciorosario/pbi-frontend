@@ -522,7 +522,7 @@ export default function PeopleProfileCard({
                       key={membership.companyId}
                       src={membership.company.avatarUrl}
                       alt={membership.company.name}
-                      className={`h-7 w-7 rounded-full border-2 border-white shadow-md object-cover ${
+                      className={`h-7 w-7 rounded-full border-2 border-white bg-white shadow-md object-cover ${
                         membership.isMain ? 'ring-2 ring-brand-400' : ''
                       }`}
                       title={`${membership.company.name} (${membership.role})`}
@@ -625,23 +625,7 @@ export default function PeopleProfileCard({
             </div>
           )}
 
-        {/* Tags */}
-        {!!visibleTags.length && (
-          <div className="mb-4 flex flex-wrap gap-2">
-            {visibleTags.map((t) => (
-              <span key={t} className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold ${false ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-brand-50 text-brand-400 border _border-brand-200'}`}>
-                {t}
-              </span>
-            ))}
-            {extraCount > 0 && (
-              <span className="inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-600">
-                +{extraCount} more
-              </span>
-            )}
-          </div>
-        )}
-
-
+      
      
         {/* About */}
         {about && (
@@ -660,7 +644,37 @@ export default function PeopleProfileCard({
           </div>
         )}
 
-     
+          {/* Tags */}
+        {!!visibleTags.length && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {visibleTags.map((t) => (
+              <span key={t} className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold ${false ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-brand-50 text-brand-400 border _border-brand-200'}`}>
+                {t}
+              </span>
+            ))}
+            {extraCount > 0 && (
+              <div className="relative inline-block group/tags">
+                <span className="inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-600 cursor-help">
+                  +{extraCount} more
+                </span>
+
+                {/* Tooltip with remaining tags */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tags:opacity-100 group-hover/tags:visible z-10 whitespace-nowrap max-w-xs">
+                  <div className="flex flex-wrap gap-1">
+                    {allTags.slice(visibleTags.length).map((tag, i) => (
+                      <span key={i} className="inline-block">
+                        {tag}
+                        {i < allTags.length - visibleTags.length - 1 ? "," : ""}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
 
         {/* Actions */}
         <div className={`mt-auto ${!isCompany ? 'pt-3':''} flex items-center gap-3`}>

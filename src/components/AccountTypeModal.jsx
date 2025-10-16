@@ -3,7 +3,7 @@ import { toast } from '../lib/toast';
 import client from '../api/client';
 
 const AccountTypeModal = ({ isOpen, onClose, userInfo, accessToken, onSuccess }) => {
-  const [selectedType, setSelectedType] = useState('individual');
+  const [selectedType, setSelectedType] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showBirthDateInput, setShowBirthDateInput] = useState(false);
   const [birthDate, setBirthDate] = useState('');
@@ -58,7 +58,7 @@ const AccountTypeModal = ({ isOpen, onClose, userInfo, accessToken, onSuccess })
       const response = await client.post('/auth/google', {
         accessToken,
         accountType: selectedType,
-        birthDate: selectedType === 'individual' ? birthDate : undefined
+        birthDate: selectedType === 'individual' ? birthDate : null
       });
 
       const token = response?.data?.token;
@@ -174,7 +174,7 @@ const AccountTypeModal = ({ isOpen, onClose, userInfo, accessToken, onSuccess })
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading || (selectedType === 'individual' && !birthDate)}
+            disabled={loading || (selectedType === 'individual' && !birthDate) || !selectedType}
             className="flex-1 px-4 py-3 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-xl hover:opacity-95 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading && (

@@ -3,12 +3,16 @@ import { useAuth } from "../contexts/AuthContext";
 import { toast } from "../lib/toast";
 import Header from "../components/Header";
 import { getSettings, updateSettings } from "../api/settings";
+import { requestAccountDeletion } from "../api/auth";
 
 export default function SettingsPage() {
   const userAuth = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("notifications");
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [settings, setSettings] = useState({
     notifications: {
       jobOpportunities: {
@@ -173,6 +177,21 @@ export default function SettingsPage() {
     }));
   };
 
+  // Handle account deletion request
+  const handleDeleteAccount = async () => {
+    try {
+      setDeleteLoading(true);
+      await requestAccountDeletion({ email: userAuth.user.email });
+      setShowDeleteModal(false);
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error("Error requesting account deletion:", error);
+      toast.error("Failed to send deletion email. Please try again.");
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div>
@@ -196,8 +215,11 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: "notifications", label: "Notifications", icon: "🔔" },
-    { id: "privacy", label: "Privacy & Display", icon: "🔒" }
+    { id: "privacy", label: "Privacy & Display", icon: "🔒" },
+    { id: "account", label: "Account", icon: "👤" }
   ];
+
+  console.log({activeTab})
 
   return (
     <div>
@@ -490,16 +512,6 @@ export default function SettingsPage() {
                         />
                         <span className="ml-2 text-sm">Text only</span>
                       </label>
-                     {/** <label className="flex items-center">
-                        <input
-                          type="radio"
-                          name="contentType"
-                          className="h-5 w-5 text-brand-600 focus:ring-brand-500"
-                          checked={settings.contentType === "images"}
-                          onChange={() => setContentType("images")}
-                        />
-                        <span className="ml-2 text-sm">Images only</span>
-                      </label> */}
                     </div>
                   </div>
 
@@ -581,6 +593,109 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+
+            {activeTab === "account" && (
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Account Management</h2>
+                <p className="text-gray-500 mb-6">Manage your account settings and data</p>
+
+                <div className="space-y-6">
+                  {/* Account Information */}
+                  <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                    <div className="mb-4">
+                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <span className="text-lg">👤</span>
+                        Account Information
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1">Your current account details</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-700 mb-1">Name</span>
+                        <span className="text-gray-900 bg-white px-3 py-2 rounded-lg border border-gray-200">
+                          {userAuth.user.name}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-700 mb-1">Email</span>
+                        <span className="text-gray-900 bg-white px-3 py-2 rounded-lg border border-gray-200">
+                          {userAuth.user.email}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-700 mb-1">Account Type</span>
+                        <span className="text-gray-900 bg-white px-3 py-2 rounded-lg border border-gray-200 capitalize">
+                          {userAuth.user.accountType}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-700 mb-1">Member Since</span>
+                        <span className="text-gray-900 bg-white px-3 py-2 rounded-lg border border-gray-200">
+                          {new Date(userAuth.user.createdAt).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Danger Zone */}
+                  <div className="border border-red-200 rounded-2xl p-6 bg-red-50">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                        <span className="text-red-600 text-sm">⚠️</span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-red-800">Danger Zone</h3>
+                        <p className="text-sm text-red-600 mt-1">Irreversible actions that will affect your account</p>
+                      </div>
+                    </div>
+
+                    {/* Delete Account */}
+                    <div className="bg-white rounded-xl p-5 border border-red-200">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-red-800">Delete Account</h4>
+                            <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-medium">
+                              Permanent
+                            </span>
+                          </div>
+                          <p className="text-sm text-red-600 mb-3">
+                            Permanently delete your account and all associated data. This action cannot be undone.
+                          </p>
+                          <div className="space-y-1 text-xs text-red-500">
+                            <div className="flex items-center gap-2">
+                              <div className="w-1 h-1 bg-red-400 rounded-full"></div>
+                              <span>All your posts, connections, and profile data will be removed</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-1 h-1 bg-red-400 rounded-full"></div>
+                              <span>This action is permanent and cannot be reversed</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-1 h-1 bg-red-400 rounded-full"></div>
+                              <span>You'll need to create a new account to use the platform again</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <button
+                            onClick={() => setShowDeleteModal(true)}
+                            className="px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium flex items-center gap-2 min-w-[140px] justify-center"
+                          >
+                            <span>🗑️</span>
+                            Delete Account
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -593,6 +708,118 @@ export default function SettingsPage() {
           >
             {saving ? "Saving..." : "Save Settings"}
           </button>
+        </div>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <DeleteConfirmationModal
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteAccount}
+          loading={deleteLoading}
+        />
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <SuccessModal
+          onClose={() => setShowSuccessModal(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// Delete Confirmation Modal Component
+function DeleteConfirmationModal({ onClose, onConfirm, loading }) {
+  return (
+    <div style={{marginTop:0}} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Confirm Account Deletion</h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              &times;
+            </button>
+          </div>
+          
+          <p className="mb-6 text-gray-600">
+            Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed.
+          </p>
+          
+          <div className="space-y-3 text-sm text-red-600 bg-red-50 p-3 rounded-lg mb-6">
+            <p className="font-medium">This will permanently:</p>
+            <ul className="list-disc list-inside space-y-1 ml-2">
+              <li>Delete your profile and all personal information</li>
+              <li>Remove all your posts, connections, and messages</li>
+              <li>Cancel any pending meetings or requests</li>
+              <li>Remove your access to the platform</li>
+            </ul>
+          </div>
+          
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={loading}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? 'Sending Email...' : 'Delete Account'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Success Modal Component
+function SuccessModal({ onClose }) {
+  return (
+    <div style={{marginTop:0}} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+        <div className="p-6">
+          <div className="flex justify-center mb-4">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <span className="text-green-600 text-xl">✓</span>
+            </div>
+          </div>
+          
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Deletion Email Sent</h2>
+            <p className="text-gray-600 mb-4">
+              We've sent a confirmation email to your inbox with a link to permanently delete your account.
+            </p>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+              <h3 className="font-semibold text-blue-900 mb-2">Next Steps:</h3>
+              <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
+                <li>Check your email inbox (and spam folder)</li>
+                <li>Click the account deletion link in the email</li>
+                <li>Confirm deletion on the following page</li>
+                <li>Your account will be permanently deleted</li>
+              </ol>
+            </div>
+            
+            <p className="text-sm text-gray-500 mt-4">
+              The deletion link will expire in 24 hours for security reasons.
+            </p>
+          </div>
+          
+          <div className="flex justify-center">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800 transition-colors"
+            >
+              Understood
+            </button>
+          </div>
         </div>
       </div>
     </div>

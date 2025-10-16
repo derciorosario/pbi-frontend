@@ -8,6 +8,7 @@ import Signup from './pages/signup'
 import Dashboard from './pages/dashboard';
 import VerifyEmailSent from "./pages/VerifyEmailSent.jsx";
 import VerifyEmail from "./pages/VerifyEmail.jsx";
+import DeleteAccount from "./pages/DeleteAccount.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";       // NEW
 import ResetEmailSent from "./pages/ResetEmailSent.jsx";       // NEW
 import ResetPassword from "./pages/ResetPassword.jsx";  
@@ -75,6 +76,7 @@ function App() {
          <Route path="*" element={<NotFound />} />
          <Route path="/verify-email-sent" element={<VerifyEmailSent />} />
          <Route path="/verify/:token" element={<VerifyEmail />} />
+         <Route path="/delete-account/:token" element={<DeleteAccount />} />
          
       
          {/* Forgot / Reset password */}

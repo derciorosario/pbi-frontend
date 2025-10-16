@@ -1765,8 +1765,8 @@ export default function PublicProfilePage() {
           )}
 
           {(profile.city || profile.country) && (
-            <div className="flex items-center gap-1 text-sm text-white drop-shadow-lg">
-              <MapPin size={14} className="text-white drop-shadow-lg" />
+            <div className="flex items-center gap-1 text-sm">
+              <MapPin size={14} className="" />
               <span>{fmtLoc(profile.city, profile.country)}</span>
             </div>
           )}

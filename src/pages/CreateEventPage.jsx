@@ -854,11 +854,9 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
           </button>
         )}
 
-        {user?.id && <>
+        {isEditMode && <>
           <h1 className="text-2xl font-bold mt-3">{isEditMode ? "Edit Event" : "Create Event"}</h1>
-          <p className="text-sm text-gray-600">
-            {isEditMode ? "Update your event details" : "Share your event with the community"}
-          </p>
+        
         </>}
 
         {/* Non-owner gets a friendly read-only presentation */}
@@ -876,9 +874,35 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
             className="mt-6 rounded-2xl bg-white border p-6 shadow-sm space-y-8"
           >
 
+               {/* Basic Info */}
+            <section>
+             <div className="mt-3 grid gap-4">
+                {/*** <label className="text-[12px] font-medium text-gray-700">Enter event title</label> */}
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) => setField("title", e.target.value)}
+                  _placeholder="Enter event title"
+                  placeholder="Event title: Annual Marketing Conference 2024"
+                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  required
+                />
+                {/***<label className="text-[12px] font-medium text-gray-700">Description</label> */}
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setField("description", e.target.value)}
+                  _placeholder="Describe your event..."
+                   placeholder="Describe your event: Join us for a day of networking and learning about the latest marketing trends. Featuring industry experts and hands-on workshops."
+                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  rows={4}
+                  required
+                />
+              </div>
+            </section>
+
+
                {/* Cover */}
             <section>
-              <h2 className="font-semibold text-brand-600 mt-8">Cover Image</h2>
               <CoverImagePicker
                 ref={imagePickerRef}
                 label="Cover Image (optional)"
@@ -918,33 +942,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
 
            
 
-            {/* Basic Info */}
-            <section>
-              <h2 className="font-semibold text-brand-600">Basic Information <label className="text-[crimson]">*</label></h2>
-              <div className="mt-3 grid gap-4">
-                {/*** <label className="text-[12px] font-medium text-gray-700">Enter event title</label> */}
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={(e) => setField("title", e.target.value)}
-                  _placeholder="Enter event title"
-                  placeholder="Event title: Annual Marketing Conference 2024"
-                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  required
-                />
-                {/***<label className="text-[12px] font-medium text-gray-700">Description</label> */}
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setField("description", e.target.value)}
-                  _placeholder="Describe your event..."
-                   placeholder="Describe your event: Join us for a day of networking and learning about the latest marketing trends. Featuring industry experts and hands-on workshops."
-                  className="rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                  rows={4}
-                  required
-                />
-              </div>
-            </section>
-
+         
            
            {/* Date & Time */}
           <section>
@@ -1173,14 +1171,11 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
 
             {/* General Classification (SEARCHABLE) */}
             <section>
-              <h2 className="font-semibold text-brand-600">Classification</h2>
-              <p className="text-xs text-gray-600 mb-3">
-                Search and pick the category that best describes your event.
-              </p>
+            
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Category</label>
+                  <label className="text-[12px] font-medium text-gray-700">General Category <span className="text-gray-400 font-normal">(optional)</span></label>
                   <SearchableSelect
                     ariaLabel="General Category"
                     value={selectedGeneral.categoryId}
@@ -1193,7 +1188,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
                 </div>
 
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+                  <label className="text-[12px] font-medium text-gray-700">General Subcategory <span className="text-gray-400 font-normal">(optional)</span></label>
                   <SearchableSelect
                     ariaLabel="General Subcategory"
                     value={selectedGeneral.subcategoryId}
@@ -1262,7 +1257,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
                     Define Target Audience (optional)
                   </button>
                   <p className="text-xs text-gray-500">
-                    Select specific identities and industries to target your event to relevant audiences
+                   Target your post to specific audiences
                   </p>
                 </div>
               ) : (
@@ -1284,7 +1279,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
                     </button>
                   </div>
                   <p className="text-xs text-gray-600 mb-3">
-                    Select who should see this event. You can choose multiple identities, categories, subcategories, and sub-subcategories.
+                    Select who should see this event.
                   </p>
 
                   <AudienceTree tree={audTree} selected={audSel} onChange={(next) => setAudSel(next)} />

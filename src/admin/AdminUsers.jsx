@@ -512,6 +512,13 @@ export default function AdminUsers() {
                       >
                         {user.isVerified ? <UserX size={16} /> : <UserCheck size={16} />}
                       </button>
+                      <button
+                        onClick={() => handleDeleteClick(user)}
+                        className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete user"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -692,7 +699,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
   };
 
   return (
-    <div className="fixed  inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4 z-50">
+    <div style={{marginTop:0}} className="fixed  inset-0 bg-black bg-opacity-50 flex items-center justify-center px-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
@@ -849,7 +856,7 @@ function EditUserModal({ user, onClose, onSave, loading }) {
 // Delete Confirmation Modal Component
 function DeleteConfirmationModal({ user, onClose, onConfirm, loading }) {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div style={{marginTop:0}} className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">

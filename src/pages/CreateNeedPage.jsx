@@ -866,17 +866,12 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
         </button>}
 
 
-          {!isEditMode && (
+          {isEditMode && (
             <div>
               <h1 className="text-2xl font-bold mt-3">
                 {isEditMode ? "Edit Need" : "Post What You Need"}
               </h1>
-              <p className="text-sm text-gray-600">
-                {form.relatedEntityType
-                  ? `Share what you're looking for related to ${form.relatedEntityType} and connect with people who can help.`
-                  : "Share what you're looking for and connect with people who can help."
-                }
-              </p>
+             
             </div>
           )}
 
@@ -922,7 +917,6 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
 
           {/* Basic Info */}
           <section>
-            <h2 className="font-semibold text-brand-600">Basic Information</h2>
             <div className="mt-3 grid gap-4">
               <div className="hidden">
                 <Label required>Title</Label>
@@ -935,11 +929,14 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
                 />
               </div>
               <div>
-                <Label required>Description</Label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setField("description", e.target.value)}
-                   placeholder="Example: Looking for a graphic designer to create branding materials for our new restaurant opening next month."
+                  placeholder={form.relatedEntityType
+                    ? `Share what you're looking for related to ${form.relatedEntityType} and connect with people who can help.`
+                     : "Share what you're looking for and connect with people who can help."
+                   }
+                   __placeholder="Example: Looking for a graphic designer to create branding materials for our new restaurant opening next month."
                   _placeholder="Describe what you're looking for in detail. What do you need and why?"
                   className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                   rows={4}
@@ -985,7 +982,6 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
 
           {/* Location */}
           <section>
-            <h2 className="font-semibold text-brand-600">Location</h2>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
               <div>
                 <Label>Country</Label>
@@ -1062,7 +1058,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
 
           {/* Attachments */}
           <section>
-            <h2 className="font-semibold text-brand-600">Attachments (Optional)</h2>
+            <Label>Attachments (Optional)</Label>
             <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
               <div className="mb-2">
                 <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -1150,10 +1146,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
           {/* Classification (General) - Hidden when relatedEntityType is "information", "other", or "job" */}
           {form.relatedEntityType !== "information" && form.relatedEntityType !== "other" && form.relatedEntityType !== "job" && form.relatedEntityType !== "partnership" && (
             <section>
-              <h2 className="font-semibold text-brand-600">Classification</h2>
-              <p className="text-xs text-gray-600 mb-3">
-                Search and pick the category that best describes what you're looking for.
-              </p>
+             
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
@@ -1241,7 +1234,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
           Define Target Audience (optional)
         </button>
         <p className="text-xs text-gray-500">
-          Select specific identities and industries to target your post to relevant audiences
+         Target your post to specific audiences
         </p>
       </div>
     ) : (
@@ -1263,7 +1256,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
           </button>
         </div>
         <p className="text-xs text-gray-600 mb-3">
-          Select who should see this post. Choose multiple identities, categories, subcategories, and sub-subs.
+          Select who should see this post.
         </p>
 
         <AudienceTree
