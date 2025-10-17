@@ -332,7 +332,9 @@ return (
       </div>
     </main>
 
-    <MobileFiltersBottomSheet isOpen={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)} filtersProps={filtersProps} />
+    <MobileFiltersBottomSheet isOpen={mobileFiltersOpen} onClose={() => setMobileFiltersOpen(false)}
+    
+    {...filtersProps} />
   </DefaultLayout>
 );
 }
