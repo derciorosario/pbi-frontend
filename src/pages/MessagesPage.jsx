@@ -165,10 +165,12 @@ export default function MessagesPage() {
         const { data } = await messageApi.getMessagesWithUser(selectedUserId);
 
         let userName = data.conversation.otherUser?.name;
+        let avatarUrl
         if (!userName || userName === "User") {
           try {
-            const { data: userData } = await client.get(`/users/${selectedUserId}/public`);
+            const { data: userData } = await client.get(`/users/${selectedUserId}/public/basic`);
             userName = userData.name || "User";
+            avatarUrl=userData.avatarUrl
           } catch {}
         }
 
@@ -177,7 +179,7 @@ export default function MessagesPage() {
           otherUser: {
             id: selectedUserId,
             name: userName || "User",
-            avatarUrl: data.conversation.otherUser?.avatarUrl,
+            avatarUrl,
           },
         });
 

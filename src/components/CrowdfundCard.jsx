@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import { toast } from "../lib/toast";
 import * as socialApi from "../api/social";
+import client, { API_URL } from "../api/client";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import {
@@ -62,6 +63,7 @@ export default function CrowdfundCard({
   item,
   matchPercentage = 20, // optional match chip
   type = "grid", // "grid" | "list"
+  onDelete, // Add onDelete prop
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(item?.connectionStatus || "none");
@@ -88,8 +90,10 @@ export default function CrowdfundCard({
   const shareMenuRef = useRef(null);
   const cardRef = useRef(null);
 
-  // Options menu
+  // Options menu and delete state
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
   const optionsMenuRef = useRef(null);
 
   // Description toggle
@@ -113,12 +117,14 @@ export default function CrowdfundCard({
         !optionsMenuRef.current.contains(e.target)
       ) {
         setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
       }
     }
     function onEsc(e) {
       if (e.key === "Escape") {
         setShareOpen(false);
         setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
       }
     }
     document.addEventListener("mousedown", onDown);
@@ -252,16 +258,62 @@ export default function CrowdfundCard({
       role="dialog"
       aria-label="Options menu"
     >
-      <button
-        onClick={() => {
-          navigate(`/funding/${item.id}`);
-          setOptionsMenuOpen(false);
-        }}
-        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
-      >
-        <Edit size={16} />
-        Edit
-      </button>
+      {showDeleteConfirm ? (
+        <>
+          <div className="px-3 py-2 text-sm font-medium text-gray-900 border-b border-gray-200 mb-2">
+            Delete this project?
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                await client.delete(`/funding/projects/${item.id}`);
+                toast.success("Project deleted successfully");
+                setIsDeleted(true);
+                if (onDelete) {
+                  onDelete(item);
+                }
+              } catch (error) {
+                console.error("Failed to delete project:", error);
+                toast.error(
+                  error?.response?.data?.message || "Failed to delete project"
+                );
+              }
+              setOptionsMenuOpen(false);
+              setShowDeleteConfirm(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mb-1"
+          >
+            <Trash2 size={16} />
+            Confirm Delete
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(false)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            onClick={() => {
+              navigate(`/funding/${item.id}`);
+              setOptionsMenuOpen(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+          >
+            <Edit size={16} />
+            Edit
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <Trash2 size={16} />
+            Delete
+          </button>
+        </>
+      )}
     </div>
   );
 
@@ -382,7 +434,9 @@ export default function CrowdfundCard({
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${
+        isDeleted ? "hidden" : ""
+      }`}>
         {/* HEADER - Creator/User Info */}
         <div className="px-4 pt-3 pb-2 flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">

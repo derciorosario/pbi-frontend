@@ -15,7 +15,7 @@ import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
-import { AlarmClock, Calendar, DollarSign, Pencil, PlusCircle, Rocket, Search } from "lucide-react";
+import { AlarmClock, Calendar, DollarSign, HelpCircle, Pencil, PlusCircle, Rocket, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
@@ -531,6 +531,7 @@ export default function CrowdfundingPage() {
                   typeOfPosts={[
                     { label: "Share a Funding Opportunity", Icon: DollarSign, hide: user?.accountType === "individual", type: "main" }, // 💰 Sharing funding
                     { label: "Search for a Fund/Sponsorship", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for funding
+                    { label: "Share Funding Experience", Icon: HelpCircle, onClick: () => navigate("/need/funding/create"),hide:user?.accountType=="company" },
                   ]}
                 />
             </div>

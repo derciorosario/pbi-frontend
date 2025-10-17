@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { toast } from "../lib/toast";
 import * as socialApi from "../api/social";
+import client, { API_URL } from "../api/client";
 import {
   Edit,
   Eye,
@@ -338,7 +339,7 @@ export default function NeedCard({
           <button
             onClick={async () => {
               try {
-                await socialApi.deleteNeed(need.id);
+                await client.delete(`/needs/${need.id}`);
                 toast.success("Need deleted successfully");
                 setIsDeleted(true);
                 if (onDelete) {

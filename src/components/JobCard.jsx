@@ -170,9 +170,6 @@ export default function JobCard({
       : imageUrl;
 
 
- console.log({img2:imageUrl,id:job.id})
-
-
   const allTags = [
     "Job Offer",
     ...(Array.isArray(job?.audienceCategories)

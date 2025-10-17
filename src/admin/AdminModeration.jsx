@@ -221,8 +221,9 @@ export default function AdminModeration() {
         <Stat icon={<span>🚩</span>} title="Pending Reports" value={stats.reported} tone="rose" loading={statsLoading && stats.reported === 0} />
         <Stat icon={<span>🟡</span>} title="Under Review" value={stats.underReview} tone="amber" loading={statsLoading && stats.underReview === 0} />
         <Stat icon={<span>✅</span>} title="Approved Today" value={stats.today.approved} tone="green" loading={statsLoading && stats.today.approved === 0} />
-        <Stat icon={<span>⛔</span>} title="Removed Today" value={stats.today.removed} tone="brand" loading={statsLoading && stats.today.removed === 0} />
-      </div>
+        {/**    <Stat icon={<span>⛔</span>} title="Removed Today" value={stats.today.removed} tone="brand" loading={statsLoading && stats.today.removed === 0} />
+    */}
+       </div>
 
       {/* Filters */}
       <div className="rounded-xl border border-gray-200 bg-white p-4">
@@ -260,7 +261,7 @@ export default function AdminModeration() {
               <option value="approved">Approved</option>
               <option value="reported">Reported</option>
               <option value="under_review">Under Review</option>
-              <option value="removed">Removed</option>
+              {/**<option value="removed">Removed</option> */}
               <option value="suspended">Suspended</option>
             </select>
 
@@ -370,7 +371,7 @@ export default function AdminModeration() {
                           </button>
                         </div>
                         <div className="flex gap-2">
-                          <button
+                         {/**  <button
                             onClick={() => handleUpdateStatus(item.id, "removed",item.contentType)}
                             className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex-1 sm:flex-none"
                             title="Remove content"
@@ -378,7 +379,7 @@ export default function AdminModeration() {
                             <span className="hidden sm:inline">✕</span>
                             <span className="sm:hidden">✕</span>
                             Remove
-                          </button>
+                          </button> */}
                           <button
                             onClick={() => handleUpdateStatus(item.id, "suspended",item.contentType)}
                             className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors flex-1 sm:flex-none"

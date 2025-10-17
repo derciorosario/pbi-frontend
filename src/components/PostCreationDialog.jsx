@@ -18,7 +18,7 @@ export default function PostCreationDialog({ isOpen, onClose, postType, from, hi
   const renderForm = () => {
     if (postType.label == 'Post Job Opportunity') {
       return <CreateJobOpportunity triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
-    } else if (postType.label == 'Share Job Experience' || postType.label == 'Share Event Experience' || postType.label == 'Share Product Experience' || postType.label == 'Share Service Experience' || postType.label == 'Share a Tourism Activity') {
+    } else if (postType.label=="Share Funding Experience" || postType.label == 'Share Job Experience' || postType.label == 'Share Event Experience' || postType.label == 'Share Product Experience' || postType.label == 'Share Service Experience' || postType.label == 'Share a Tourism Activity') {
       return <CreateMomentPage type={
         postType.label == 'Share Event Experience' ? 'event' :
         postType.label == 'Share Product Experience' ? 'product' :

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useData } from "../contexts/DataContext";
 import { toast } from "../lib/toast";
 import * as socialApi from "../api/social";
+import client, { API_URL } from "../api/client";
 import {
   Edit,
   Eye,
@@ -95,8 +96,10 @@ export default function MomentCard({
   // Image slider state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Options menu
+  // Options menu and delete state
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
   const optionsMenuRef = useRef(null);
 
   // Description toggle
@@ -117,12 +120,14 @@ export default function MomentCard({
         !optionsMenuRef.current.contains(e.target)
       ) {
         setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
       }
     }
     function onEsc(e) {
       if (e.key === "Escape") {
         setShareOpen(false);
         setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
       }
     }
     document.addEventListener("mousedown", onDown);
@@ -190,10 +195,6 @@ export default function MomentCard({
   const validImages = getValidImages();
   const hasMultipleImages = validImages.length > 1;
 
-
-
-
-
   const locationLabel = useMemo(() => {
       const city = moment?.city?.trim();
       const country = moment?.country?.trim();
@@ -203,7 +204,6 @@ export default function MomentCard({
       return "";
   }, [moment?.city, moment?.country]);
   
-
 
   const allTags = useMemo(() => {
     const apiTags = Array.isArray(moment?.tags) ? moment.tags : [];
@@ -279,6 +279,23 @@ export default function MomentCard({
       toast.success("Report submitted. Thank you.");
     } catch (e) {
       toast.success("Report submitted. Thank you.");
+    }
+  };
+
+  /* ----------------------- Delete handler ----------------------- */
+  const deleteMoment = async () => {
+    try {
+      await client.delete(`/moments/${moment.id}`);
+      toast.success("Moment deleted successfully");
+      setIsDeleted(true);
+      if (onDelete) {
+        onDelete(moment);
+      }
+    } catch (error) {
+      console.error("Failed to delete moment:", error);
+      toast.error(
+        error?.response?.data?.message || "Failed to delete moment"
+      );
     }
   };
 
@@ -388,16 +405,50 @@ export default function MomentCard({
       role="dialog"
       aria-label="Options menu"
     >
-      <button
-        onClick={() => {
-          navigate(`/moment/${moment.id}`);
-          setOptionsMenuOpen(false);
-        }}
-        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
-      >
-        <Edit size={16} />
-        Edit
-      </button>
+      {showDeleteConfirm ? (
+        <>
+          <div className="px-3 py-2 text-sm font-medium text-gray-900 border-b border-gray-200 mb-2">
+            Delete this moment?
+          </div>
+          <button
+            onClick={async () => {
+              await deleteMoment();
+              setOptionsMenuOpen(false);
+              setShowDeleteConfirm(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mb-1"
+          >
+            <Trash2 size={16} />
+            Confirm Delete
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(false)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            onClick={() => {
+              navigate(`/moment/${moment.id}`);
+              setOptionsMenuOpen(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+          >
+            <Edit size={16} />
+            Edit
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <Trash2 size={16} />
+            Delete
+          </button>
+        </>
+      )}
     </div>
   );
 
@@ -405,7 +456,9 @@ export default function MomentCard({
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${
+        isDeleted ? "hidden" : ""
+      }`}>
         {/* HEADER - Creator/User Info */}
         <div className="px-4 pt-3 pb-2 flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">
@@ -740,10 +793,7 @@ export default function MomentCard({
 
               {connectionStatus !== "connected" && renderConnectButton()}
             </div>  )}
-
-
           </div>
-      
       </div>
 
       {/* Modals */}
