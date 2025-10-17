@@ -547,8 +547,20 @@ export default function CrowdfundingPage() {
       <MobileFiltersBottomSheet
         isOpen={mobileFiltersOpen}
         onClose={() => setMobileFiltersOpen(false)}
-        filtersProps={filtersProps}
-      />
+             selectedFilters={selectedFilters}
+              setSelectedFilters={setSelectedFilters}
+              generalTree={generalTree}
+              {...filtersProps}
+              from={"funding"}
+              catComponent={ <TopFilterButtons
+                                selected={selectedFilters}
+                                setSelected={setSelectedFilters}
+                                buttons={filterOptions}
+                                buttonLabels={categoryIdToNameMap}
+                                from={'funding'}
+                                loading={loadingFeed}
+                            />}
+            /> 
    </DefaultLayout>
   );
 }

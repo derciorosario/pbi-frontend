@@ -137,7 +137,7 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
         onClick={handleButtonClick}
         className={`bg-brand-600 rounded-full p-1 flex cursor-pointer hover:opacity-60 transition-opacity ${
           type === "avatar" 
-            ? "absolute -bottom-1 -right-2" 
+            ? "absolute -bottom-1 -right-2 max-md:right-auto max-md:left-0" 
             : "absolute top-2 right-2"
         }`}
       >

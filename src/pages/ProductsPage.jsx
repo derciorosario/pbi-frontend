@@ -517,16 +517,14 @@ export default function ProductsPage() {
               generalTree={generalTree}
               {...filtersProps}
               from={"products"}
-
-
                catComponent={ <TopFilterButtons
-                            selected={selectedFilters}
-                            setSelected={setSelectedFilters}
-                            buttons={filterOptions}
-                            buttonLabels={categoryIdToNameMap}
-                            from={from}
-                            loading={loadingFeed}
-                          />}
+                selected={selectedFilters}
+                setSelected={setSelectedFilters}
+                buttons={filterOptions}
+                buttonLabels={categoryIdToNameMap}
+                from={from}
+                loading={loadingFeed}
+              />}
             />
           </div>
            <QuickActions title="Quick Actions" items={[
@@ -568,8 +566,20 @@ export default function ProductsPage() {
       <MobileFiltersBottomSheet
         isOpen={mobileFiltersOpen}
         onClose={() => setMobileFiltersOpen(false)}
-        filtersProps={filtersProps}
-      />
+             selectedFilters={selectedFilters}
+              setSelectedFilters={setSelectedFilters}
+              generalTree={generalTree}
+              {...filtersProps}
+              from={"products"}
+               catComponent={ <TopFilterButtons
+                selected={selectedFilters}
+                setSelected={setSelectedFilters}
+                buttons={filterOptions}
+                buttonLabels={categoryIdToNameMap}
+                from={from}
+                loading={loadingFeed}
+              />}
+            />
    </DefaultLayout>
   );
 }

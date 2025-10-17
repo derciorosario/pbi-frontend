@@ -554,7 +554,6 @@ export default function PeopleFeedPage() {
   return (
     <DefaultLayout>
       <Header />
-
       <main
         className={`mx-auto ${
           data._openPopUps.profile ? "relative z-50" : ""
@@ -565,8 +564,8 @@ export default function PeopleFeedPage() {
         <aside className="scrollable-container lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
           <div className="_sticky top-0 z-10 _bg-white">
             <FiltersCard
-              selectedFilters={selectedFilters}
               {...filtersProps}
+              selectedFilters={selectedFilters}
               from={"people"}
               showAudienceFilters={true}
               catComponent={   <TopFilterButtons
@@ -598,7 +597,9 @@ export default function PeopleFeedPage() {
                     ]
               }
             />
-}
+           }
+
+           
             />
           </div>
 
@@ -666,8 +667,42 @@ export default function PeopleFeedPage() {
 
       <MobileFiltersBottomSheet
         isOpen={mobileFiltersOpen}
-        onClose={() => setMobileFiltersOpen(false)}
-        filtersProps={filtersProps}
+              onClose={() => setMobileFiltersOpen(false)}
+              {...filtersProps}
+              selectedFilters={selectedFilters}
+              from={"people"}
+              showAudienceFilters={true}
+              catComponent={   <TopFilterButtons
+              from={"people"}
+              loading={loadingFeed}
+              selected={selectedFilters}
+              setSelected={setSelectedFilters}
+              buttons={
+                currentPage == "people"
+                  ? [
+                      "Entrepreneurs",
+                      "Business Owners / Businesses",
+                      "Social Entrepreneurs",
+                      "Professionals",
+                      "Freelancers",
+                      "Students",
+                      "Government Officials",
+                      "Investors",
+                      "Executives",
+                    ]
+                  : [
+                      "Companies",
+                      "NGOs/NPOs",
+                      "Government / Public Sector",
+                      "Educational & Research",
+                      "Healthcare",
+                      "International / Intergovernmental",
+                      "Hybrid / Special",
+                    ]
+              }
+            />
+           }
+
       />
     </DefaultLayout>
   );

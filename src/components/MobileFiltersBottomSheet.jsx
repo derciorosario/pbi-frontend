@@ -5,8 +5,9 @@ import FiltersCard from "./FiltersCard.jsx";
 export default function MobileFiltersBottomSheet({
   isOpen,
   onClose,
-  filtersProps
+  ...filtersProps
 }) {
+
   if (!isOpen) return null;
 
   return (

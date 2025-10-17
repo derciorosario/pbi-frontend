@@ -1944,11 +1944,11 @@ export default function PublicProfilePage() {
                     Specialties
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {profile.subsubs.map((s3, i) => (
-                      <span key={`s3-${i}`} className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-sm">
-                        {s3}
-                      </span>
-                    ))}
+                    {[...new Set(profile.subsubs)].map((s3, i) => (
+                        <span key={`s3-${i}`} className="bg-amber-50 text-amber-700 px-3 py-1 rounded-full text-sm">
+                          {s3}
+                        </span>
+                      ))}
                   </div>
                 </div>
               )}

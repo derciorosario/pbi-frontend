@@ -522,8 +522,7 @@ export default function ServicesPage() {
               generalTree={generalTree}
               {...filtersProps}
               from={"services"}
-
-               catComponent={ <TopFilterButtons
+              catComponent={ <TopFilterButtons
               selected={selectedFilters}
               setSelected={setSelectedFilters}
               buttons={filterOptions}
@@ -574,7 +573,19 @@ export default function ServicesPage() {
       <MobileFiltersBottomSheet
         isOpen={mobileFiltersOpen}
         onClose={() => setMobileFiltersOpen(false)}
-        filtersProps={filtersProps}
+        selectedFilters={selectedFilters}
+        setSelectedFilters={setSelectedFilters}
+        generalTree={generalTree}
+        {...filtersProps}
+        from={"services"}
+        catComponent={ <TopFilterButtons
+        selected={selectedFilters}
+        setSelected={setSelectedFilters}
+        buttons={filterOptions}
+        buttonLabels={categoryIdToNameMap}
+        from={from}
+        loading={loadingFeed}
+      />}
       />
    </DefaultLayout>
   );

@@ -3028,7 +3028,7 @@ function CategoryTree({
   </div>
 
   {/* Professional Title with background */}
-  <div className="mb-2 px-4 py-2 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-sm border border-white border-opacity-20">
+  <div className="mb-2 md:px-4 py-2 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-sm border border-white border-opacity-20">
     <p className="text-gray-900 text-lg font-semibold">
       {personal.professionalTitle || (isCompany ? "Company" : "Professional")}
     </p>
@@ -3045,13 +3045,13 @@ function CategoryTree({
       </div>
 
       {/* Progress Section */}
-      <div className="flex flex-col items-end gap-3 pt-5">
+      <div className="flex flex-col md:items-end gap-3 pt-5">
         <div className="text-right flex items-center gap-2">
           <div className="text-sm font-medium text-gray-700">Profile Completion</div>
           <div className="text-sm font-bold text-gray-700"> ({progress}%) </div>
         </div>
         <div>
-          <div className="w-[10.5rem] h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-[10.5rem] max-md:w-full h-3 bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-3 bg-gradient-to-r from-brand-500 to-brand-500 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
@@ -3104,33 +3104,33 @@ function CategoryTree({
 
         {/* Tabs */}
         <div className="mt-6 flex gap-2 flex-wrap">
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.PERSONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PERSONAL)}>
+          <button className={`px-4 py-2 rounded-full border ${active===Tab.PERSONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PERSONAL)}>
             {isCompany ? "Company Info" : "Personal"}
           </button>
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.PROFESSIONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PROFESSIONAL)}>
+          <button className={`px-4 py-2 rounded-full border ${active===Tab.PROFESSIONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PROFESSIONAL)}>
             {isCompany ? "Company Details" : "Professional"}
           </button>
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.PORTFOLIO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PORTFOLIO)}>
+          <button className={`px-4 py-2 rounded-full border ${active===Tab.PORTFOLIO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PORTFOLIO)}>
             {isCompany ? "Company Portfolio" : "Portfolio"}
           </button>
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.GALLERY ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.GALLERY)}>
+          <button className={`px-4 py-2 rounded-full border ${active===Tab.GALLERY ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.GALLERY)}>
             Gallery
           </button>
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.DO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.DO)}>
+          <button className={`px-4 py-2 rounded-full border ${active===Tab.DO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.DO)}>
             {isCompany ? "What We Offer" : "What I DO"}
           </button>
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.INTERESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INTERESTS)}>
+          <button className={`px-4 py-2 rounded-full border ${active===Tab.INTERESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INTERESTS)}>
             {isCompany ? "What We're LOOKING FOR" : "What I'm LOOKING FOR"}
           </button>
-          <button className={`px-4 py-2 rounded-lg border ${active===Tab.INDUSTRIES ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INDUSTRIES)}>
+          <button className={`px-4 py-2 rounded-full border ${active===Tab.INDUSTRIES ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INDUSTRIES)}>
             {isCompany ? "Company Industries" : "Industries"}
           </button>
           {isCompany && (
              <>
-               <button className={`px-4 py-2 rounded-lg border ${active===Tab.REPRESENTATIVE ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.REPRESENTATIVE)}>
+               <button className={`px-4 py-2 rounded-full border ${active===Tab.REPRESENTATIVE ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.REPRESENTATIVE)}>
                  Representative
                </button>
-               <button className={`px-4 py-2 rounded-lg border ${active===Tab.STAFF ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.STAFF)}>
+               <button className={`px-4 py-2 rounded-full border ${active===Tab.STAFF ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.STAFF)}>
                  <label> Staff </label>
                  {/** {staff.length > 0 && (
                    <span>  
@@ -3138,13 +3138,13 @@ function CategoryTree({
                    </span>
                  )} */}
                </button>
-               <button className={`px-4 py-2 rounded-lg border ${active===Tab.JOB_APPLICATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.JOB_APPLICATIONS)}>
+               <button className={`px-4 py-2 rounded-full border ${active===Tab.JOB_APPLICATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.JOB_APPLICATIONS)}>
                  Job Applications
                </button>
-               <button className={`px-4 py-2 rounded-lg border ${active===Tab.EVENT_REGISTRATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.EVENT_REGISTRATIONS)}>
+               <button className={`px-4 py-2 rounded-full border ${active===Tab.EVENT_REGISTRATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.EVENT_REGISTRATIONS)}>
                  Event Registrations
                </button>
-               <button className={`px-4 py-2 rounded-lg border relative ${active===Tab.JOIN_REQUESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.JOIN_REQUESTS)}>
+               <button className={`px-4 py-2 rounded-full border relative ${active===Tab.JOIN_REQUESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.JOIN_REQUESTS)}>
                  Join Requests
                  {pendingRequestsCount > 0 && (
                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -3156,13 +3156,13 @@ function CategoryTree({
            )}
            {!isCompany && (
              <>
-               <button className={`px-4 py-2 rounded-lg border ${active===Tab.APPLICATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.APPLICATIONS)}>
+               <button className={`px-4 py-2 rounded-full border ${active===Tab.APPLICATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.APPLICATIONS)}>
                  My Applications
                </button>
-               <button className={`px-4 py-2 rounded-lg border ${active===Tab.EVENTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.EVENTS)}>
+               <button className={`px-4 py-2 rounded-full border ${active===Tab.EVENTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.EVENTS)}>
                  My Events
                </button>
-               <button className={`px-4 py-2 rounded-lg border ${active===Tab.ORGANIZATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.ORGANIZATIONS)}>
+               <button className={`px-4 py-2 rounded-full border ${active===Tab.ORGANIZATIONS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.ORGANIZATIONS)}>
                  Organizations
                </button>
              </>
