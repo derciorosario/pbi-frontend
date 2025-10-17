@@ -37,6 +37,95 @@ const I = {
   ),
 };
 
+/* Image Slider Component */
+function ImageSlider({ images, className = "" }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextSlide = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === images.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === 0 ? images.length - 1 : prevIndex - 1
+    );
+  };
+
+  const goToSlide = (index) => {
+    setCurrentIndex(index);
+  };
+
+  if (!images || images.length === 0) {
+    return (
+      <div className={`w-full h-64 bg-gray-100 flex items-center justify-center text-gray-400 ${className}`}>
+        No Images
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative w-full h-64 bg-gray-100 rounded-lg overflow-hidden ${className}`}>
+      {/* Main Image */}
+      <div className="w-full h-full">
+        <img
+          src={images[currentIndex].startsWith('http') 
+            ? images[currentIndex] 
+            : `${API_URL}/uploads/${images[currentIndex]}`
+          }
+          alt={`Slide ${currentIndex + 1}`}
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {/* Navigation Arrows */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={prevSlide}
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-all"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-all"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
+      )}
+
+      {/* Slide Indicators */}
+      {images.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                index === currentIndex ? 'bg-white' : 'bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Image Counter */}
+      {images.length > 1 && (
+        <div className="absolute top-4 right-4 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
+          {currentIndex + 1} / {images.length}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* File → data URL */
 function fileToDataURL(file) {
   return new Promise((resolve, reject) => {
@@ -82,7 +171,7 @@ const CURRENCY_OPTIONS = [
 ];
 
 /* ---------- Read-only summary for non-owners ---------- */
-function ReadOnlyProductView({ form, images, audSel, audTree }) {
+function ReadOnlyProductView({ form, images, audSel, audTree, hideHeader }) {
   const maps = useMemo(() => buildAudienceMaps(audTree), [audTree]);
   const identities = Array.from(audSel.identityIds || []).map((k) => maps.ids.get(String(k))).filter(Boolean);
   const categories = Array.from(audSel.categoryIds || []).map((k) => maps.cats.get(String(k))).filter(Boolean);
@@ -95,23 +184,20 @@ function ReadOnlyProductView({ form, images, audSel, audTree }) {
       ? form.tags.split(",").map((t) => t.trim()).filter(Boolean)
       : []);
 
-
   return (
     <div className="mt-6 rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
-      {/* Gallery */}
+      {/* Gallery - Using Image Slider */}
       {images?.length ? (
-        <div className="grid gap-2 p-2 sm:grid-cols-2 md:grid-cols-3">
-          {images.slice(0, 6).map((img, i) => {
-            // Handle both filename strings and full URLs
-            const src = img.startsWith('http') ? img : `${API_URL}/uploads/${img}`;
-            return (
-              <div key={i} className="aspect-[4/3] w-full bg-gray-100 overflow-hidden rounded-lg">
-                <img src={src} alt={`Image ${i + 1}`} className="h-full w-full object-cover" />
-              </div>
-            );
-          })}
+        <div className="p-4">
+          <ImageSlider images={images} className="w-full" />
         </div>
-      ) : null}
+      ) : (
+        <div className="p-4">
+          <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+            No Images Available
+          </div>
+        </div>
+      )}
 
       <div className="p-6 space-y-6">
         {/* Header */}
@@ -122,24 +208,21 @@ function ReadOnlyProductView({ form, images, audSel, audTree }) {
               {form.description || "No description provided."}
             </p>
           </div>
-         
         </div>
 
         {/* Quick facts */}
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border p-4 text-sm text-gray-700">
             <div className="text-gray-800 font-medium">Pricing</div>
-            <div className="mt-2">Price: {form.price !== "" ? form.price : "—"} {form.currency ? `(${form.form.currency})`:''}</div>
+            <div className="mt-2">Price: {form.price !== "" ? form.price : "—"} {form.currency ? `(${form.currency})`:''}</div>
             <div>Quantity: {form.quantity !== "" ? form.quantity : "—"}</div>
           </div>
           <div className="rounded-xl border p-4 text-sm text-gray-700">
             <div className="text-gray-800 font-medium">Location</div>
-            <div className="mt-2">{form.country || "—"}</div>
-          </div>
-          <div className="rounded-xl border p-4 text-sm text-gray-700">
-            <div className="text-gray-800 font-medium">Category</div>
-            <div className="mt-2">{form.categoryId || "—"}</div>
-            <div className="mt-1 text-xs text-gray-500">Subcategory: {form.subcategoryId || "—"}</div>
+            <div className="mt-2">
+              {form.city ? `${form.city}, ` : ""}
+              {form.country || "-"}
+            </div>
           </div>
         </div>
 
@@ -163,12 +246,6 @@ function ReadOnlyProductView({ form, images, audSel, audTree }) {
               <span className="text-sm text-gray-500">Everyone</span>
             )}
           </div>
-        </div>
-
-        <div className="flex justify-end">
-          <button type="button" onClick={() => history.back()} className={styles.ghost}>
-            Back
-          </button>
         </div>
       </div>
     </div>
@@ -197,8 +274,6 @@ export default function CreateProductPage({ triggerImageSelection = false, hideH
     subcategoryIds: new Set(),
     subsubCategoryIds: new Set(),
   });
-
-
 
   // General taxonomy
   const [generalTree, setGeneralTree] = useState([]);
@@ -246,8 +321,6 @@ export default function CreateProductPage({ triggerImageSelection = false, hideH
       }
     })();
   }, []);
-
-
 
 /* ---------- Reusable SearchableSelect (combobox) ---------- */
 function SearchableSelect({
@@ -426,7 +499,6 @@ function SearchableSelect({
   );
 }
 
-
   // Form state
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -516,25 +588,23 @@ const industrySubcategoryOptions = useMemo(() => {
 
   const readOnly = isEditMode  && ownerUserId && user?.id !== ownerUserId;
 
+  function addTag() {
+    if (readOnly) return;
+    const v = (tagInput || "").trim();
+    if (!v) return;
+    setForm((f) =>
+      f.tags.includes(v) ? f : { ...f, tags: [...f.tags, v] }
+    );
+    setTagInput("");
+  }
 
-      function addTag() {
-      if (readOnly) return;
-      const v = (tagInput || "").trim();
-      if (!v) return;
-      setForm((f) =>
-        f.tags.includes(v) ? f : { ...f, tags: [...f.tags, v] }
-      );
-      setTagInput("");
-    }
-
-    function removeTag(idx) {
-      if (readOnly) return;
-      setForm((f) => ({
-        ...f,
-        tags: f.tags.filter((_, i) => i !== idx),
-      }));
-    }
-
+  function removeTag(idx) {
+    if (readOnly) return;
+    setForm((f) => ({
+      ...f,
+      tags: f.tags.filter((_, i) => i !== idx),
+    }));
+  }
 
   // Load identities for AudienceTree
   useEffect(() => {
@@ -768,7 +838,7 @@ const industrySubcategoryOptions = useMemo(() => {
         country: form.country || undefined,
         city: (form.country === "All countries") ? undefined : (form.city || undefined),
         tags: form.tags,
-        images: images.map(img => `${API_URL}/uploads/${img}`),
+        images: images.map(img => img.includes('http') ? img : `${API_URL}/uploads/${img}`),
         currency:form.currency,
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
@@ -805,13 +875,11 @@ const industrySubcategoryOptions = useMemo(() => {
     }
   }
 
-
    if (isLoading && id) {
         return (
           <FullPageLoader message="Loading product…" tip="Fetching..." />
         );
       }
-    
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
@@ -821,11 +889,27 @@ const industrySubcategoryOptions = useMemo(() => {
       {/* ===== Content ===== */}
       <main className={`mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'} fle justify-center gap-6`}>
         {/* Left/Main Form OR Read-only */}
+
+          {!hideHeader && (
+          <button
+            onClick={() => navigate("/products")}
+            className="flex items-center gap-2 mb-2 text-sm text-gray-600 hover:text-brand-600"
+          >
+            ← Go to Products
+          </button>
+        )}
+
         <section className="lg:col-span-8">
           {!isEditMode ? null : isLoading ? (
             <LoaderCard message="Loading product…" />
           ) : readOnly ? (
-            <ReadOnlyProductView form={form} images={images} audSel={audSel} audTree={audTree} />
+            <ReadOnlyProductView 
+              form={form} 
+              hideHeader={hideHeader} 
+              images={images} 
+              audSel={audSel} 
+              audTree={audTree} 
+            />
           ) : null}
 
           {/* Editable form (for owners or when creating) */}
@@ -898,7 +982,6 @@ const industrySubcategoryOptions = useMemo(() => {
                     </button>
                   </div>
 
-
                   {(images.length > 0 || uploadingCount > 0) && (
                     <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                       {images.map((img, idx) => {
@@ -954,11 +1037,8 @@ const industrySubcategoryOptions = useMemo(() => {
                     </div>
                   )}
 
-
                 </div>
               </section>
-
-              
 
               {/* Price + Quantity */}
               <div className="grid sm:grid-cols-2 gap-4">
@@ -995,7 +1075,6 @@ const industrySubcategoryOptions = useMemo(() => {
                   />
                 </div>
               </div>
-
 
               {/* Location */}
               <div>
@@ -1202,7 +1281,6 @@ const industrySubcategoryOptions = useMemo(() => {
     )}
   </div>
 </section>
-
 
               {/* Buttons */}
               <div className="flex justify-end gap-3">

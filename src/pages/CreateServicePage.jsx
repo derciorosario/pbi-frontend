@@ -24,6 +24,95 @@ const styles = {
     "inline-flex items-center rounded-full bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1 text-xs",
 };
 
+/* Image Slider Component */
+function ImageSlider({ images, className = "" }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextSlide = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === images.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prevIndex) => 
+      prevIndex === 0 ? images.length - 1 : prevIndex - 1
+    );
+  };
+
+  const goToSlide = (index) => {
+    setCurrentIndex(index);
+  };
+
+  if (!images || images.length === 0) {
+    return (
+      <div className={`w-full h-64 bg-gray-100 flex items-center justify-center text-gray-400 ${className}`}>
+        No Images
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative w-full h-64 bg-gray-100 rounded-lg overflow-hidden ${className}`}>
+      {/* Main Image */}
+      <div className="w-full h-full">
+        <img
+          src={images[currentIndex].startsWith('http') 
+            ? images[currentIndex] 
+            : `${API_URL}/uploads/${images[currentIndex]}`
+          }
+          alt={`Slide ${currentIndex + 1}`}
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {/* Navigation Arrows */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={prevSlide}
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-all"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-all"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
+      )}
+
+      {/* Slide Indicators */}
+      {images.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`w-2 h-2 rounded-full transition-all ${
+                index === currentIndex ? 'bg-white' : 'bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Image Counter */}
+      {images.length > 1 && (
+        <div className="absolute top-4 right-4 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
+          {currentIndex + 1} / {images.length}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* -------------- Small helpers -------------- */
 const Label = ({ children, required }) => (
   <label className="text-[12px] font-medium text-gray-700">
@@ -182,7 +271,6 @@ function ReadOnlyServiceView({ form, audSel, audTree, media }) {
             <h1 className="text-xl font-bold">{form.title || "Untitled Service"}</h1>
             <p className="mt-1 text-sm text-gray-700">{form.description || "No description provided."}</p>
           </div>
-         
         </div>
 
         {/* Quick facts */}
@@ -212,23 +300,18 @@ function ReadOnlyServiceView({ form, audSel, audTree, media }) {
           </div>
         </div>
 
-        {/* Gallery */}
-        {(images?.length || 0) > 0 ? (
+        {/* Gallery - Using Image Slider */}
+        {images?.length > 0 ? (
           <div>
             <h3 className="text-sm font-semibold text-gray-700">Images</h3>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {images.map((src, idx) => (
-                <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
-                  {/* eslint-disable-next-line jsx-a11y/alt-text */}
-                  <img src={src} alt={`Service image ${idx + 1}`} className="h-full w-full object-cover" />
-                </div>
-              ))}
+            <div className="mt-3">
+              <ImageSlider images={images} className="w-full" />
             </div>
           </div>
         ) : null}
 
         {/* Non-image attachments */}
-        {(docs?.length || 0) > 0 ? (
+        {docs?.length > 0 ? (
           <div>
             <h3 className="text-sm font-semibold text-gray-700">Attachments</h3>
             <div className="mt-3 grid sm:grid-cols-2 gap-3">
@@ -274,12 +357,6 @@ function ReadOnlyServiceView({ form, audSel, audTree, media }) {
               <span className="text-sm text-gray-500">Everyone</span>
             )}
           </div>
-        </div>
-
-        <div className="flex justify-end">
-          <button type="button" className={styles.ghost} onClick={() => history.back()}>
-            Back
-          </button>
         </div>
       </div>
     </div>
@@ -535,9 +612,6 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
     return null;
   }
 
-
-
-
   // General taxonomy
   const [generalTree, setGeneralTree] = useState([]);
   const [selectedGeneral, setSelectedGeneral] = useState({
@@ -639,8 +713,6 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
     const c = industryTree.find((x) => x.id === selectedIndustry.categoryId);
     return (c?.subcategories || []).map((sc) => ({ value: sc.id, label: sc.name || `Subcategory ${sc.id}` }));
   }, [industryTree, selectedIndustry.categoryId]);
-  
-  
   
   /* ---------- Reusable SearchableSelect (combobox) ---------- */
   function SearchableSelect({
@@ -818,8 +890,6 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
       </div>
     );
   }
-  
-
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -858,11 +928,6 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
         industryCategoryId: selectedIndustry.categoryId || null,
         industrySubcategoryId: selectedIndustry.subcategoryId || null,
       };
-
-     /* if (form.locationType === "Remote") {
-        delete payload.country;
-        delete payload.city;
-      }*/
 
       if (isEditMode) {
         await client.put(`/services/${id}`, payload);
@@ -909,7 +974,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
           </button>
         )}
 
-       {isEditMode && <>
+       {(isEditMode && !readOnly) && <>
         <h1 className="text-2xl font-bold mt-3">
           {isEditMode ? "Edit Service" : "Create Service Post"}
         </h1>
@@ -978,7 +1043,6 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
               </div>
             </section>
 
-
             {/* Pricing */}
             <section>
             <div className="mt-3 grid gap-4 sm:grid-cols-3">
@@ -1004,7 +1068,6 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                     {CURRENCY_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-
 
                 <div className="relative">
                   <Label>Price Type</Label>
@@ -1151,85 +1214,78 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
               )}
             </section>
 
-
             {/* ===== General Classification (SEARCHABLE) ===== */}
-<section>
+            <section>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">General Category</label>
+                  <SearchableSelect
+                    ariaLabel="Category"
+                    value={selectedGeneral.categoryId}
+                    onChange={(val) =>
+                      setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
+                    }
+                    options={generalCategoryOptions}
+                    placeholder="Search & select category…"
+                  />
+                </div>
 
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+                  <SearchableSelect
+                    ariaLabel="Subcategory"
+                    value={selectedGeneral.subcategoryId}
+                    onChange={(val) =>
+                      setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
+                    }
+                    options={generalSubcategoryOptions}
+                    placeholder="Search & select subcategory…"
+                    disabled={!selectedGeneral.categoryId}
+                  />
+                </div>
+              </div>
+            </section>
 
- <div className="grid md:grid-cols-2 gap-4">
-   <div>
-     <label className="text-[12px] font-medium text-gray-700">General Category</label>
-     <SearchableSelect
-       ariaLabel="Category"
-       value={selectedGeneral.categoryId}
-       onChange={(val) =>
-         setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
-       }
-       options={generalCategoryOptions}
-       placeholder="Search & select category…"
-     />
-   </div>
+            {/* ===== Industry Classification ===== */}
+            <section className="hidden">
+              <h2 className="font-semibold text-brand-600">Industry Classification</h2>
+              <p className="text-xs text-gray-600 mb-3">
+                Select the industry category and subcategory that best describes your service.
+              </p>
 
-   <div>
-     <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
-     <SearchableSelect
-       ariaLabel="Subcategory"
-       value={selectedGeneral.subcategoryId}
-       onChange={(val) =>
-         setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
-       }
-       options={generalSubcategoryOptions}
-       placeholder="Search & select subcategory…"
-       disabled={!selectedGeneral.categoryId}
-     />
-   </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">Industry Category</label>
+                  <SearchableSelect
+                    ariaLabel="Industry Category"
+                    value={selectedIndustry.categoryId}
+                    onChange={(val) =>
+                      setSelectedIndustry({ categoryId: val, subcategoryId: "" })
+                    }
+                    options={industryCategoryOptions}
+                    placeholder="Search & select industry category…"
+                  />
+                </div>
 
+                <div>
+                  <label className="text-[12px] font-medium text-gray-700">Industry Subcategory</label>
+                  <SearchableSelect
+                    ariaLabel="Industry Subcategory"
+                    value={selectedIndustry.subcategoryId}
+                    onChange={(val) =>
+                      setSelectedIndustry((s) => ({ ...s, subcategoryId: val }))
+                    }
+                    options={industrySubcategoryOptions}
+                    placeholder="Search & select industry subcategory…"
+                    disabled={!selectedIndustry.categoryId}
+                  />
+                </div>
+              </div>
+            </section>
 
- </div>
-</section>
-
-{/* ===== Industry Classification ===== */}
-<section className="hidden">
- <h2 className="font-semibold text-brand-600">Industry Classification</h2>
- <p className="text-xs text-gray-600 mb-3">
-   Select the industry category and subcategory that best describes your service.
- </p>
-
- <div className="grid md:grid-cols-2 gap-4">
-   <div>
-     <label className="text-[12px] font-medium text-gray-700">Industry Category</label>
-     <SearchableSelect
-       ariaLabel="Industry Category"
-       value={selectedIndustry.categoryId}
-       onChange={(val) =>
-         setSelectedIndustry({ categoryId: val, subcategoryId: "" })
-       }
-       options={industryCategoryOptions}
-       placeholder="Search & select industry category…"
-     />
-   </div>
-
-   <div>
-     <label className="text-[12px] font-medium text-gray-700">Industry Subcategory</label>
-     <SearchableSelect
-       ariaLabel="Industry Subcategory"
-       value={selectedIndustry.subcategoryId}
-       onChange={(val) =>
-         setSelectedIndustry((s) => ({ ...s, subcategoryId: val }))
-       }
-       options={industrySubcategoryOptions}
-       placeholder="Search & select industry subcategory…"
-       disabled={!selectedIndustry.categoryId}
-     />
-   </div>
- </div>
-</section>
-
-
-  {/* Portfolio / Attachments */}
+            {/* Portfolio / Attachments */}
             <section>
               <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
-              
                 Upload images or documents showcasing your work (max 5MB per file)
                 <div className="mt-3">
                   <input
@@ -1249,120 +1305,113 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                   </button>
                 </div>
 
-               
-               {(attachments.length > 0 || uploadingCount > 0) && (
-                <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
-                  {attachments.map((att, idx) => {
-                    const isImg = att.startsWith("data:image") || /\.(jpe?g|png|gif|webp|svg)$/i.test(att);
+                {(attachments.length > 0 || uploadingCount > 0) && (
+                  <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
+                    {attachments.map((att, idx) => {
+                      const isImg = att.startsWith("data:image") || /\.(jpe?g|png|gif|webp|svg)$/i.test(att);
 
-                    // Resolve URL for filenames (not base64 or full URL)
-                    let src = null;
-                    if (att.startsWith("data:image")) {
-                      src = att; // base64
-                    } else if (att.startsWith("http://") || att.startsWith("https://")) {
-                      src = att; // full URL
-                    } else if (isImg) {
-                      src = att
+                      // Resolve URL for filenames (not base64 or full URL)
+                      let src = null;
+                      if (att.startsWith("data:image")) {
+                        src = att; // base64
+                      } else if (att.startsWith("http://") || att.startsWith("https://")) {
+                        src = att; // full URL
+                      } else if (isImg) {
+                        src = att
+                      }
+
+                      return (
+                        <div key={`${att}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                          <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
+                            {isImg ? (
+                              <img src={src} alt={att} className="h-full w-full object-cover" />
+                            ) : (
+                              <span className="text-xs text-gray-500">DOC</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="truncate text-sm font-medium">Attachment {idx+1}</div>
+                            <div className="text-[11px] text-gray-500 truncate">Attached</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeAttachment(idx)}
+                            className="p-1 rounded hover:bg-gray-100"
+                            title="Remove"
+                          >
+                            <I.trash />
+                          </button>
+                        </div>
+                      );
+                    })}
+
+                    {uploadingCount > 0 &&
+                      Array.from({ length: uploadingCount }).map((_, idx) => (
+                        <div key={`att-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                          <div className="h-12 w-12 rounded-md bg-gray-200 animate-pulse" />
+                          <div className="flex-1 min-w-0">
+                            <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                            <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                          </div>
+                          <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
+                        </div>
+                      ))
                     }
-
-                    return (
-                      <div key={`${att}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                        <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
-                          {isImg ? (
-                            <img src={src} alt={att} className="h-full w-full object-cover" />
-                          ) : (
-                            <span className="text-xs text-gray-500">DOC</span>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="truncate text-sm font-medium">Attachment {idx+1}</div>
-                          <div className="text-[11px] text-gray-500 truncate">Attached</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeAttachment(idx)}
-                          className="p-1 rounded hover:bg-gray-100"
-                          title="Remove"
-                        >
-                          <I.trash />
-                        </button>
-                      </div>
-                    );
-                  })}
-
-                  {uploadingCount > 0 &&
-                    Array.from({ length: uploadingCount }).map((_, idx) => (
-                      <div key={`att-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                        <div className="h-12 w-12 rounded-md bg-gray-200 animate-pulse" />
-                        <div className="flex-1 min-w-0">
-                          <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
-                          <div className="h-3 bg-gray-200 rounded animate-pulse" />
-                        </div>
-                        <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
-                      </div>
-                    ))
-                  }
-                </div>
-              )}
-
-
+                  </div>
+                )}
               </div>
             </section>
 
             {/* Share With (Audience) */}
-                    
-          <section>
-            <div className="mb-4">
-              {!showAudienceSection ? (
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAudienceSection(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Define Target Audience (optional)
-                  </button>
-                  <p className="text-xs text-gray-500">
-                   Target your post to specific audiences
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
-                      <h3 className="font-semibold text-brand-600">Share With (Target Audience)</h3>
-                    </div>
+            <section>
+              <div className="mb-4">
+                {!showAudienceSection ? (
+                  <div className="space-y-2">
                     <button
                       type="button"
-                      onClick={() => setShowAudienceSection(false)}
-                      className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50"
+                      onClick={() => setShowAudienceSection(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
                     >
-                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M18 6L6 18M6 6l12 12" />
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 5v14M5 12h14" />
                       </svg>
-                      Hide
+                      Define Target Audience (optional)
                     </button>
+                    <p className="text-xs text-gray-500">
+                     Target your post to specific audiences
+                    </p>
                   </div>
-                  <p className="text-xs text-gray-600 mb-3">
-                    Select who should see this service.
-                  </p>
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
+                        <h3 className="font-semibold text-brand-600">Share With (Target Audience)</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAudienceSection(false)}
+                        className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50"
+                      >
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                        Hide
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-3">
+                      Select who should see this service.
+                    </p>
 
-                  <AudienceTree
-                    tree={audTree}
-                    selected={audSel}
-                    onChange={(next) => setAudSel(next)}
-                  />
-                </div>
-              )}
-            </div>
-          </section>
-
-
-          
+                    <AudienceTree
+                      tree={audTree}
+                      selected={audSel}
+                      onChange={(next) => setAudSel(next)}
+                    />
+                  </div>
+                )}
+              </div>
+            </section>
 
             {/* Actions */}
             <div className="flex justify-end gap-3">

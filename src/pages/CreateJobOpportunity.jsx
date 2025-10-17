@@ -794,7 +794,6 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border p-4">
             <div className="mt-2 text-sm text-gray-700 space-y-1">
-              <div>Department: {form.department || "—"}</div>
               <div>Experience: {form.experienceLevel || "—"}</div>
               <div>Type: {form.jobType || "—"}</div>
               <div>Work Location: {form.workLocation || "—"}</div>
@@ -836,9 +835,10 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
 
         <div>
           <h3 className="text-sm font-semibold text-gray-700">Description</h3>
-          <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap">
-            {form.description || "No description provided."}
-          </p>
+          <p className="mt-2 text-sm text-gray-700 whitespace-pre-wrap"  dangerouslySetInnerHTML={{
+                    __html: form.description || "No description provided."
+           }}/>
+           
         </div>
 
         <div>
@@ -861,15 +861,7 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
-          <button
-            type="button"
-            className="px-4 py-2 rounded-xl border border-brand-600 text-brand-600 bg-white hover:bg-brand-50"
-            onClick={() => history.back()}
-          >
-            Back
-          </button>
-        </div>
+       
       </div>
     </div>
   );
@@ -1467,12 +1459,12 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
         {!hideHeader && (
           <div className="mb-5 cursor-pointer">
             <a onClick={() => navigate("/jobs")} className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800">
-              <I.back /> Back to Jobs
+              <I.back /> Go to Jobs
             </a>
           </div>
         )}
 
-        {isEditMode && (
+        {(isEditMode && !readOnly) && (
           <div>
             <h1 className="text-[20px] font-bold">
               {isEditMode ? "Edit Job Opportunity" : "Create Job Opportunity"}

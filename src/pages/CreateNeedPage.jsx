@@ -215,11 +215,6 @@ function ReadOnlyNeedView({ form, attachments, audSel, audTree }) {
           </div>
         )}
 
-       {!hideHeader && <div className="flex justify-end gap-3 pt-2">
-          <button type="button" className={styles.ghost} onClick={() => window.history.back()}>
-            Back
-          </button>
-        </div>}
       </div>
     </div>
   );
@@ -866,12 +861,11 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
         </button>}
 
 
-          {isEditMode && (
+          {(isEditMode && !readOnly) && (
             <div>
               <h1 className="text-2xl font-bold mt-3">
                 {isEditMode ? "Edit Need" : "Post What You Need"}
               </h1>
-             
             </div>
           )}
 

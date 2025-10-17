@@ -416,9 +416,7 @@ function ReadOnlyEventView({ form, coverImageBase64, meta, audSel, audTree }) {
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <button type="button" className={styles.primaryGhost} onClick={() => history.back()}>
-            Back
-          </button>
+     
           {form.onlineUrl ? (
             <a href={form.onlineUrl} target="_blank" rel="noreferrer" className={styles.primary}>
               Open Join Link
@@ -854,7 +852,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
           </button>
         )}
 
-        {isEditMode && <>
+        {(isEditMode && !readOnly) && <>
           <h1 className="text-2xl font-bold mt-3">{isEditMode ? "Edit Event" : "Create Event"}</h1>
         
         </>}

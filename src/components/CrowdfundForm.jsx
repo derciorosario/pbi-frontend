@@ -124,10 +124,8 @@ function ReadOnlyCrowdfundView({ form, images, audSel, audTree }) {
 
   const hero = images?.[0] ? `${API_URL}/uploads/${images[0]}` : null;
   const gallery = (images || []).slice(1);
-  const tags = (form.tags || "")
-    .split(/[,\n]/g)
-    .map(t => t.trim())
-    .filter(Boolean);
+  console.log({form})
+  const tags = (form.tags || [])
   const links = (form.links || "")
     .split(/[,\n]/g)
     .map(t => t.trim())
@@ -266,11 +264,7 @@ function ReadOnlyCrowdfundView({ form, images, audSel, audTree }) {
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <button type="button" className="rounded-lg px-3 py-1.5 text-sm font-semibold border border-brand-600 text-brand-600 bg-white hover:bg-brand-50" onClick={() => history.back()}>
-            Back
-          </button>
-        </div>
+      
       </div>
     </div>
   );

@@ -491,7 +491,7 @@ export default function ServiceCard({
 
         {/* IMAGE (if exists and not in text mode) */}
         {settings?.contentType !== "text" && imageUrl && (
-          <div className="relative">
+          <div className="relative cursor-pointer">
             {hasMultipleImages ? (
               <div className="relative overflow-hidden">
                 <div
@@ -500,6 +500,15 @@ export default function ServiceCard({
                 >
                   {validImages.map((img, index) => (
                     <img
+                     onClick={() => {
+                        if (isOwner) {
+                          if (onEdit) onEdit(item);
+                          else navigate(`/service/${item.id}`);
+                        } else {
+                          setDetailsModalOpen(true);
+                          onDetails?.(item);
+                        }
+                      }}
                       key={index}
                       src={img}
                       alt={`${item?.title} - ${index + 1}`}
@@ -526,12 +535,18 @@ export default function ServiceCard({
               </div>
             ) : (
               <img
+
                 src={imageUrl}
                 alt={item?.title}
                 className="w-full max-h-96 object-cover cursor-pointer"
-                onClick={() => {
-                  setDetailsModalOpen(true);
-                  onDetails?.(item);
+                 onClick={() => {
+                  if (isOwner) {
+                    if (onEdit) onEdit(item);
+                    else navigate(`/service/${item.id}`);
+                  } else {
+                    setDetailsModalOpen(true);
+                    onDetails?.(item);
+                  }
                 }}
               />
             )}
