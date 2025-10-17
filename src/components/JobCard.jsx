@@ -162,10 +162,16 @@ export default function JobCard({
       ? `${API_URL}/uploads/${imageUrl}`
       : null;
 
+     console.log({img1:imageUrl,id:job.id,t:job?.coverImage,job})
+
   imageUrl =
     !imageUrl && !job?.make_company_name_private
       ? job?.company?.avatarUrl
       : imageUrl;
+
+
+ console.log({img2:imageUrl,id:job.id})
+
 
   const allTags = [
     "Job Offer",

@@ -3230,7 +3230,7 @@ function CategoryTree({
                   />
                 </div>}
 
-                  <div>
+                 <div>
                   <SearchableSelect
                     label={isCompany ? 'Country (Headquarters)': "Country of residence"}
                     options={COUNTRIES}

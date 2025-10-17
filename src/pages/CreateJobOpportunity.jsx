@@ -1389,6 +1389,8 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
       if (coverImage instanceof File) {
         imageFilename = await uploadCoverImage(coverImage);
       }
+
+   
       
       const payload = {
         ...form,
@@ -1411,7 +1413,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
         generalSubsubCategoryId: selectedGeneral.subsubCategoryId || null,
 
         // Use the filename instead of base64 data
-        coverImageBase64: !coverImage ? null :  imageFilename,
+        coverImageBase64: coverImage || imageFilename || null,
 
         companyId: form.companyId || null,
         companyName: form.companyName || "",
@@ -1454,6 +1456,8 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
   if (isLoading && !form.id) {
     return <FullPageLoader message="Loading job…" tip="Fetching..." />;
   }
+
+  console.log({a:coverImage})
 
  
   return (

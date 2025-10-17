@@ -396,9 +396,10 @@ export default function AdminModeration() {
                   {/* Content */}
                   <div className="p-4">
                     <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
-                    <div className={`text-gray-700 ${!isExpanded ? 'line-clamp-3' : ''}`}>
-                      {item.description}
-                    </div>
+                    <div dangerouslySetInnerHTML={{
+                    __html: item.description || "No description provided."
+                     }} className={`text-gray-700 ${!isExpanded ? 'line-clamp-3' : ''}`}/>
+                     
                     {!isExpanded && item.description && item.description.length > 200 && (
                       <button
                         onClick={() => toggleItemExpansion(item.id)}

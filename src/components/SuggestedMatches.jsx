@@ -373,7 +373,7 @@ export default function SuggestedMatches({
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-1">
                         <div className="flex items-center gap-3 min-w-0">
                           <Avatar item={p} idx={idx} size="sm" />
                           <div className="min-w-0">
@@ -386,21 +386,17 @@ export default function SuggestedMatches({
                             <div
                               className="text-xs text-gray-500 truncate max-w-[200px]"
                               title={`${
-                                p.role || p.title
-                              } ${
-                                p.city || p.country
-                                  ? `• ${p.city ? p.city : ""}${
-                                      p.city && p.country ? ", " : ""
-                                    }${p.country || ""}`
-                                  : ""
+                                p.professionalTitle
                               }`}
                             >
-                              {p.role || p.title}
-                              {p.city || p.country ? (
+                              {p.professionalTitle}
+                             
+                            </div>
+
+                            <div title={`${p.location}`} className="text-xs text-gray-500 truncate max-w-[200px]">
+                             {p.location ? (
                                 <>
-                                  {" "}• {p.city ? `${p.city}` : ""}
-                                  {p.city && p.country ? ", " : ""}
-                                  {p.country ? `${p.country}` : ""}
+                                  {p.location}
                                 </>
                               ) : null}
                             </div>
