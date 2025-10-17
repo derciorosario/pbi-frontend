@@ -382,7 +382,8 @@ export default function PeopleProfileCard({
     : "flex flex-col";
 
   return (
-    <div
+    <>
+     <div
       className={`${containerBase} ${containerLayout} ${!isList && isHovered ? "transform -translate-y-2" : ""}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -727,6 +728,9 @@ export default function PeopleProfileCard({
         </div>
       </div>
 
+    </div>
+
+    
       {/* Modals */}
       <ConnectionRequestModal
         open={modalOpen}
@@ -761,7 +765,8 @@ export default function PeopleProfileCard({
         requireValue={false}
         onConfirm={removeConnectionApi}
       />
-    </div>
+
+    </>
   );
 
   function renderConnectButton() {
