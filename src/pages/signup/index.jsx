@@ -297,7 +297,7 @@ export default function Signup() {
       next.password = "Password is required.";
     } else if (form.password.length < 8) {
       next.password = "Password must be at least 8 characters long.";
-    } else if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&_\-])[A-Za-z\d@$!%*?&_\-]+$/.test(form.password)) {
+    } else if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/.test(form.password)) {
       next.password = "Create a strong password with a mix of letters, numbers and symbols.";
     }
     if (!form.confirmPassword) next.confirmPassword = "Please confirm password.";

@@ -19,7 +19,7 @@ export default function ResetPassword() {
     const n = { password: "", confirm: "" };
     if (!password) n.password = "Password is required.";
     else if (password.length < 6) n.password = "Use at least 6 characters.";
-    else if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&_\-])[A-Za-z\d@$!%*?&_\-]+$/.test(password)) {
+    else if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/.test(password)) {
       n.password = "Create a strong password with a mix of letters, numbers and symbols.";
     }
     if (!confirm) n.confirm = "Please confirm your password.";
