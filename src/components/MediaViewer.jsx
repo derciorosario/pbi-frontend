@@ -64,7 +64,7 @@ const MediaViewer = ({
         {/* Close button */}
         <button
           onClick={handleCloseClick}
-          className="absolute -top-16 right-0 text-white hover:text-white transition-all duration-200 z-10 bg-black/80 hover:bg-white hover:text-black rounded-full p-3 border-2 border-white/50 hover:border-white shadow-lg hover:shadow-xl"
+          className="absolute -top-16 right-0 text-white hover:opacity-50 transition-all duration-200 z-10 bg-black/80 hover:bg-white hover:text-black rounded-full p-3 border-2 border-white/50 hover:border-white shadow-lg hover:shadow-xl"
           aria-label="Close media viewer"
         >
           <X size={28} />

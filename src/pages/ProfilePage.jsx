@@ -137,6 +137,7 @@ const ShareMenu = ({ profile, shareMenuRef, setShareOpen }) => {
   return (
     <div
       ref={shareMenuRef}
+      style={{ transform:'translate(30%,0)'}}
       className="absolute top-0  right-0 mt-2 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
       role="dialog"
       aria-label="Share options"
@@ -280,6 +281,16 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
     agenda: "",
     timezone: defaultTz,
   });
+
+  useEffect(() => {
+    if (open && toName) {
+      setForm(prev => ({
+        ...prev,
+        title: `Meeting with ${toName}`
+      }));
+    }
+  }, [open, toName]);
+
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   useEffect(() => {
@@ -293,7 +304,7 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
     if (!form.time) e.time = "Pick a time";
     if (!form.title.trim()) e.title = "Add a title";
    // leave like that: if (form.mode === "video" && !form.link.trim()) e.link = "Add a call link";
-    if (form.mode === "in_person" && !form.location.trim()) e.location = "Add a location";
+   // if (form.mode === "in_person" && !form.location.trim()) e.location = "Add a location";
     return e;
   }
   function handleChange(k, v) { setForm((f) => ({ ...f, [k]: v })); }
@@ -1346,7 +1357,7 @@ export default function PublicProfilePage() {
       <div className="flex gap-3 mt-4 md:mt-0">
         {renderConnectButton()}
 
-        <div className="relative">
+        {profile.connectionStatus === "connected" && <div className="relative">
           <button
             onClick={openMR}
             className="border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
@@ -1354,6 +1365,7 @@ export default function PublicProfilePage() {
             <Calendar size={16} />
           </button>
         </div>
+         }
 
         {/* Share Button */}
         <div className="relative">
@@ -1827,10 +1839,10 @@ export default function PublicProfilePage() {
             {/* Posts and activities - Modern Card Design */}
             {feedItems.length > 0 && (
               <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <div className="md:flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 max-md:mb-4">
                     <Activity size={20} className="text-brand-600" />
-                    Posts and activities
+                     Posts and activities
                   </h2>
 
                   {/* Tab Buttons */}
@@ -2083,7 +2095,7 @@ export default function PublicProfilePage() {
               {profile.meetings && profile.meetings.length > 0 ? (
                 <div className="space-y-3">
                   {profile.meetings.map((m) => {
-                    const joinable = m.mode === "video" && isJoinWindow(m.scheduledAt, m.duration);
+                    const joinable = true// m.mode === "video" && isJoinWindow(m.scheduledAt, m.duration);
                     const now = Date.now();
                     let start, end, status;
                     try {
@@ -2165,18 +2177,18 @@ export default function PublicProfilePage() {
               ) : meetings.length === 0 ? (
                 <div className="text-center py-4">
                   <p className="text-sm text-gray-600 mb-3">No meetings yet.</p>
-                  <button
+                 {profile.connectionStatus === "connected" && <button
                     onClick={openMR}
                     className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
                   >
                     <CalendarDays size={16} />
                     Request Meeting
-                  </button>
+                  </button>}
                 </div>
               ) : (
                 <div className="space-y-3">
                   {meetings.map((m) => {
-                    const joinable = m.mode === "video" && isJoinWindow(m.isoStart, m.duration);
+                    const joinable = true // m.mode === "video" && isJoinWindow(m.isoStart, m.duration);
                     const now = Date.now();
                     let start, end, status;
                     try {

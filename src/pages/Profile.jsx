@@ -3015,16 +3015,19 @@ function CategoryTree({
       {/* Text background for better readability */}
       <div className="absolute inset-0 bg-black bg-opacity-10 blur-sm rounded-lg -m-1 z-0"></div>
     </div>
+
     {isCompany && (
       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 z-10 relative">
         Company
       </span>
     )}
+
     {!isCompany && me?.user?.accountType && (
       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 z-10 relative">
         Individual
       </span>
     )}
+
   </div>
 
   {/* Professional Title with background */}

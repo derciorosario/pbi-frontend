@@ -233,22 +233,25 @@ export default function SettingsPage() {
 
         {/* Tabs */}
         <div className="bg-white rounded-2xl shadow-sm p-5 mb-6">
-          <div className="flex space-x-1 mb-6">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                  activeTab === tab.id
-                    ? "bg-brand-100 text-brand-700 border border-brand-200"
-                    : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-                }`}
-              >
-                <span>{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
-          </div>
+        
+    
+    <div className="flex flex-wrap sm:flex-nowrap sm:overflow-x-auto gap-2 mb-6">
+  {tabs.map((tab) => (
+    <button
+      key={tab.id}
+      onClick={() => setActiveTab(tab.id)}
+      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+        activeTab === tab.id
+          ? "bg-brand-100 text-brand-700 border border-brand-200"
+          : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+      }`}
+    >
+      <span>{tab.icon}</span>
+      {tab.label}
+    </button>
+  ))}
+</div>
+
 
           {/* Tab Content */}
           <div>

@@ -439,7 +439,7 @@ export default function PeopleProfileCard({
         <img
           src={coverImage}
           alt={`${name}'s cover`}
-          className="w-full h-full object-cover object-bottom" // Added object-center
+          className="w-full h-full object-cover object-[50%_30%]" // Added object-center
         />
         {/* Gradient overlay for text readability */}
         <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
@@ -628,7 +628,7 @@ export default function PeopleProfileCard({
         {/* About */}
         {about && (
           <div className="mb-4">
-            <p title={about} className={`text-[14px] leading-relaxed text-gray-700 ${isList ? "line-clamp-2 md:line-clamp-2" : "line-clamp-2"}`}>
+            <p title={about} className={`text-[14px] leading-relaxed text-gray-700 ${isList ? "line-clamp-3 md:line-clamp-3" : "line-clamp-3"}`}>
               {displayedAbout}
             </p>
             {/*isLong && (
