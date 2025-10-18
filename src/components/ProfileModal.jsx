@@ -57,6 +57,7 @@ import {
   FacebookMessengerShareButton,
   FacebookMessengerIcon,
 } from "react-share";
+import TIMEZONES from "../constants/timezones";
 
 // Profile Modal Skeleton Component
 const ProfileModalSkeleton = () => (
@@ -995,8 +996,8 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
                 value={form.timezone}
                 onChange={(e) => handleChange("timezone", e.target.value)}
               >
-                {timezones.map(t => (
-                  <option key={t} value={t}>{t}</option>
+                {TIMEZONES.map((i,_i)=>(
+                     <option value={i.value}>{`${i.offset} - ${i.label}`}</option>
                 ))}
               </select>
             </div>

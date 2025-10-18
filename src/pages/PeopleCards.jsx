@@ -10,6 +10,7 @@ import { ExternalLink, MapPin, Clock, Eye, UserX, UserCheck, Trash2, CalendarDay
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import client from "../api/client";
 import { toast } from "../lib/toast.js";
+import TIMEZONES from "../constants/timezones.js";
 
 // Import MeetingRequestModal from ProfileModal.jsx
 const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => {
@@ -156,15 +157,11 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
                 value={form.timezone}
                 onChange={(e) => handleChange("timezone", e.target.value)}
               >
-                <option value="UTC">UTC</option>
-                <option value="America/New_York">Eastern Time</option>
-                <option value="America/Chicago">Central Time</option>
-                <option value="America/Denver">Mountain Time</option>
-                <option value="America/Los_Angeles">Pacific Time</option>
-                <option value="Europe/London">London</option>
-                <option value="Europe/Paris">Paris</option>
-                <option value="Asia/Tokyo">Tokyo</option>
-                <option value="Australia/Sydney">Sydney</option>
+               {TIMEZONES.map((i,_i)=>(
+                    <option value={i.value}>{`${i.offset} - ${i.label}`}</option>
+               ))}
+               
+
               </select>
             </div>
           </div>

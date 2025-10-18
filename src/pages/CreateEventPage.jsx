@@ -10,6 +10,7 @@ import Header from "../components/Header";
 import AudienceTree from "../components/AudienceTree";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
+import TIMEZONES from "../constants/timezones";
 
 const styles = {
   primary:
@@ -992,11 +993,11 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
                 onChange={(e) => setField("timezone", e.target.value)}
                 className="w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-brand-200"
               >
-                {meta.timezones.map((tz) => (
-                  <option key={tz} value={tz}>
-                    {tzWithOffset(tz)}
-                  </option>
-                ))}
+
+                 {TIMEZONES.map((i,_i)=>(
+                                   <option value={i.value}>{`${i.offset} - ${i.label}`}</option>
+                  ))}
+
               </select>
               <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
                 <I.chevron />
