@@ -292,7 +292,7 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
     if (!form.date) e.date = "Pick a date";
     if (!form.time) e.time = "Pick a time";
     if (!form.title.trim()) e.title = "Add a title";
-    if (form.mode === "video" && !form.link.trim()) e.link = "Add a call link";
+   // leave like that: if (form.mode === "video" && !form.link.trim()) e.link = "Add a call link";
     if (form.mode === "in_person" && !form.location.trim()) e.location = "Add a location";
     return e;
   }

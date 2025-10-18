@@ -8,7 +8,6 @@ export const API_URL = env=="dev"
   ? "https://54links-testserver.derflash.com/api"
   : "https://kaziwani-server.visum.co.mz/api";
 
-
 const client = axios.create({
      baseURL: API_URL,
      headers: { "Content-Type": "application/json" },
