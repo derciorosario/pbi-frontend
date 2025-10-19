@@ -14,7 +14,6 @@ import FullPageLoader from "../components/ui/FullPageLoader";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
-
 /* brand icons (trimmed) */
 const I = {
   briefcase: () => (
@@ -276,7 +275,6 @@ const CountryCitySelector = ({ value, onChange, error }) => {
     </div>
   );
 };
-
 
 /* ---------- helpers for read-only view ---------- */
 const styles = {
@@ -877,7 +875,9 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
   const { user } = useAuth();
   const [coverImage, setCoverImage] = useState(null);
   const [coverImageFilename, setCoverImageFilename] = useState(null);
+  const [selectedMediaType, setSelectedMediaType] = useState(null); // 'image', 'video', or null
   const imagePickerRef = useRef(null);
+  const [mediaChanged, setMediaChanged] = useState(false);
 
   // Form validation errors
   const [errors, setErrors] = useState({
@@ -962,6 +962,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
     workLocation: "", description: "", requiredSkills: "",
     country:"", city: "",
     countries: [], // New field for multiple countries/cities
+    videoUrl: "", // New field for video URL
   });
 
 
@@ -1014,12 +1015,65 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
 
   const readOnly = isEditMode && ownerUserId && user?.id !== ownerUserId;
 
+  // Update the handleMediaChange function to set mediaChanged
+const handleMediaChange = (file, mediaType) => {
+  if (mediaType === 'image') {
+    setCoverImage(file);
+    setSelectedMediaType('image');
+    setMediaChanged(true); // Add this line
+    setForm(prev => ({ ...prev, videoUrl: "" }));
+  } else if (mediaType === 'video') {
+    setCoverImage(file);
+    setSelectedMediaType('video');
+    setMediaChanged(true); // Add this line
+  } else {
+    setCoverImage(null);
+    setSelectedMediaType(null);
+    setMediaChanged(true); // Add this line
+    setForm(prev => ({ ...prev, videoUrl: "" }));
+  }
+};
+  // Upload media files function
+  const uploadMediaFiles = async (mediaFile, mediaType) => {
+    if (!mediaFile) return { imageUrl: null, videoUrl: null };
+
+    const formData = new FormData();
+    let imageUrl = null;
+    let videoUrl = null;
+
+    try {
+      if (mediaType === 'image') {
+        formData.append('coverImage', mediaFile);
+        const response = await client.post('/jobs/upload-cover', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        imageUrl = response.data.url;
+      } else if (mediaType === 'video') {
+        formData.append('video', mediaFile);
+        const response = await client.post('/jobs/upload-video', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        videoUrl = response.data.url;
+      }
+
+      return { imageUrl, videoUrl };
+    } catch (error) {
+      console.error('Error uploading media file:', error);
+      toast.error(`Failed to upload ${mediaType}`);
+      return { imageUrl: null, videoUrl: null };
+    }
+  };
   
   // Check if we're in edit mode and fetch job data if we are
   useEffect(() => {
     if (!id) return;
     setIsEditMode(true);
     setIsLoading(true);
+    setMediaChanged(false);
 
     (async () => {
       try {
@@ -1045,6 +1099,29 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
           console.log('Loading job data, processed description:', processedDescription);
         }
 
+        // Determine media type from existing data
+        let mediaType = null;
+        let coverPreview = null;
+
+        if (job.coverImageBase64) {
+          mediaType = 'image';
+          // If it's a base64 string (old format), use it as preview
+          if (job.coverImageBase64.startsWith('data:') || job.coverImageBase64.startsWith('http')) {
+            coverPreview = job.coverImageBase64;
+             setCoverImage(job.coverImageBase64);
+          } else {
+            // If it's a filename (new format), store it
+            setCoverImageFilename(job.coverImageBase64);
+            // Set preview URL for the image
+            coverPreview = API_URL+`/uploads/${job.coverImageBase64}`;
+          }
+        } else if (job.videoUrl) {
+          mediaType = 'video';
+          coverPreview = job.videoUrl;
+        }
+
+        setSelectedMediaType(mediaType);
+
         setForm({
           id:job.id,
           createdAt:job.createdAt,
@@ -1057,7 +1134,6 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
           jobType: job.jobType || "",
           workLocation: job.workLocation || "",
           description: processedDescription,
-          //requiredSkills: Array.isArray(job.requiredSkills) ? job.requiredSkills.join(", ") : job.requiredSkills || "",
           requiredSkills: Array.isArray(job.requiredSkills)
           ? job.requiredSkills
           : (typeof job.requiredSkills === "string"
@@ -1082,6 +1158,8 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
           workSchedule: job.workSchedule || "",
           careerLevel: job.careerLevel || "",
           paymentType: job.paymentType || "",
+          videoUrl: job.videoUrl || null, // Load video URL if exists
+          coverImageBase64:job.coverImageBase64 || null
         });
 
         // Set audience selections
@@ -1101,18 +1179,6 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
 
         // Collect images/logos/cover
         setMedia(extractMedia(job));
-        if (job.coverImageBase64) {
-          // If it's a base64 string (old format), use it as preview
-          if (job.coverImageBase64.startsWith('data:') || job.coverImageBase64.startsWith('http')) {
-            setCoverImage(job.coverImageBase64);
-          } else {
-            // If it's a filename (new format), store it
-            setCoverImageFilename(job.coverImageBase64);
-            // Set preview URL for the image
-            setCoverImage(API_URL+`/uploads/${job.coverImageBase64}`);
-          }
-        }
-
 
          // If event already has general taxonomy set, prefill selectedGeneral
         setSelectedGeneral({
@@ -1321,129 +1387,99 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
     return next
   }
 
-  // Function to upload the cover image
-  const uploadCoverImage = async (file) => {
-    if (!file) return null;
+  
+  
+  // Modify the onSubmit function - only upload if media changed
+const onSubmit = async (e) => {
+  e.preventDefault();
+  if (readOnly) return;
 
-    const formData = new FormData();
-    formData.append('coverImage', file);
+  // Validate form
+  const validationResult = validate();
+  const firstError = Object.values(validationResult).find((v) =>
+    Array.isArray(v) ? v.length > 0 : v
+  );
+  if (firstError) {
+    toast.error(firstError);
+    return;
+  }
 
-    try {
-      const response = await client.post('/jobs/upload-cover', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+  setIsLoading(true);
 
-      // Return the S3 URL from the response
-      return response.data.url;
-    } catch (error) {
-      console.error('Error uploading cover image:', error);
-      toast.error('Failed to upload cover image');
-      return null;
+  try {
+    let imageUrl = form.coverImageBase64;
+    let videoUrl = form.videoUrl;
+    
+    // Only upload if media has changed
+    if (mediaChanged && coverImage instanceof File) {
+      let uploaded = await uploadMediaFiles(coverImage, selectedMediaType);
+      videoUrl = uploaded.videoUrl;
+      imageUrl = uploaded.imageUrl;
+      setMediaChanged(false); // Reset the flag after successful upload
     }
-  };
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    if (readOnly) return;
+    const payload = {
+      ...form,
+      positions: Number(form.positions || 1),
+      requiredSkills: form.requiredSkills,
+      minSalary: form.minSalary === "" ? null : Number(form.minSalary),
+      maxSalary: form.maxSalary === "" ? null : Number(form.maxSalary),
+      subcategoryId: form.subcategoryId || null,
 
-    // Validate form
-   /* if (!validate()) {
-      toast.error("Please fix the highlighted fields.");
-      return;
-    }*/
+      // Audience selection arrays
+      identityIds: Array.from(audSel.identityIds),
+      categoryIds: Array.from(audSel.categoryIds),
+      subcategoryIds: Array.from(audSel.subcategoryIds),
+      subsubCategoryIds: Array.from(audSel.subsubCategoryIds),
 
-    const validationResult = validate();
-    const firstError = Object.values(validationResult).find((v) =>
-     Array.isArray(v) ? v.length > 0 : v
-   );
-   if (firstError) {
-     toast.error(firstError);
-     return;
-   }
+      generalCategoryId: selectedGeneral.categoryId || null,
+      generalSubcategoryId: selectedGeneral.subcategoryId || null,
+      generalSubsubCategoryId: selectedGeneral.subsubCategoryId || null,
 
-    // Additional validation for industry selection
-    const identityIds = Array.from(audSel.identityIds);
-    const categoryIds = Array.from(audSel.categoryIds);
+      // Use the URLs from upload only if media changed, otherwise keep existing
+      coverImageBase64: selectedMediaType === 'image' 
+        ? (mediaChanged ? imageUrl : form.coverImageBase64)
+        : null,
+      videoUrl: selectedMediaType === 'video' 
+        ? (mediaChanged ? videoUrl : form.videoUrl)
+        : null,
 
-   /*  if (!form.categoryId && categoryIds.length === 0) {
-      toast.error("Please select at least one category in target audience");
-      return;
-    }*/
+      companyId: form.companyId || null,
+      companyName: form.companyName || "",
 
-    setIsLoading(true);
+      // Industry taxonomy
+      industryCategoryId: selectedIndustry.categoryId || null,
+      industrySubcategoryId: selectedIndustry.subcategoryId || null,
+    };
 
-    try {
-      // Upload cover image if there's a new one
-      let imageFilename = coverImageFilename;
-      
-      if (coverImage instanceof File) {
-        imageFilename = await uploadCoverImage(coverImage);
+    const promise = isEditMode
+      ? client.put(`/jobs/${id}`, payload)
+      : client.post("/jobs", payload);
+
+    await toast.promise(
+      promise,
+      {
+        loading: isEditMode ? "Updating job…" : "Creating job…",
+        success: isEditMode ? "Job updated successfully!" : "Job created successfully!",
+        error: (err) => err?.response?.data?.message || (isEditMode ? "Failed to update job" : "Failed to create job")
+      },
+      { id: "job-submit" }
+    );
+
+    if (!isEditMode) {
+      if (hideHeader && onSuccess) {
+        onSuccess();
+      } else {
+        navigate("/jobs");
       }
-
-   
-      
-      const payload = {
-        ...form,
-
-        positions: Number(form.positions || 1),
-        requiredSkills: form.requiredSkills, // backend will normalize
-        minSalary: form.minSalary === "" ? null : Number(form.minSalary),
-        maxSalary: form.maxSalary === "" ? null : Number(form.maxSalary),
-        subcategoryId: form.subcategoryId || null,
-
-        // Audience selection arrays
-        identityIds,
-        categoryIds,
-        subcategoryIds: Array.from(audSel.subcategoryIds),
-        subsubCategoryIds: Array.from(audSel.subsubCategoryIds),
-
-
-        generalCategoryId: selectedGeneral.categoryId || null,
-        generalSubcategoryId: selectedGeneral.subcategoryId || null,
-        generalSubsubCategoryId: selectedGeneral.subsubCategoryId || null,
-
-        // Use the filename instead of base64 data
-        coverImageBase64: coverImage || imageFilename || null,
-
-        companyId: form.companyId || null,
-        companyName: form.companyName || "",
-
-        // Industry taxonomy
-        industryCategoryId: selectedIndustry.categoryId || null,
-        industrySubcategoryId: selectedIndustry.subcategoryId || null,
-      };
-
-      const promise = isEditMode
-        ? client.put(`/jobs/${id}`, payload)
-        : client.post("/jobs", payload);
-
-      await toast.promise(
-        promise,
-        {
-          loading: isEditMode ? "Updating job…" : "Creating job…",
-          success: isEditMode ? "Job updated successfully!" : "Job created successfully!",
-          error: (err) => err?.response?.data?.message || (isEditMode ? "Failed to update job" : "Failed to create job")
-        },
-        { id: "job-submit" }
-      );
-
-      if (!isEditMode) {
-        if (hideHeader && onSuccess) {
-          onSuccess();
-        } else {
-          navigate("/jobs");
-        }
-      }
-
-    } catch (error) {
-      // Error already handled by toast.promise
-      console.error("Error saving job:", error);
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+  } catch (error) {
+    console.error("Error saving job:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   if (isLoading && !form.id) {
     return <FullPageLoader message="Loading job…" tip="Fetching..." />;
@@ -1591,16 +1627,22 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
 
 
             
-               {/* ===== Cover Image (optional) ===== */}
+               {/* ===== Cover Media (Image or Video) ===== */}
             <hr className="my-5 border-gray-200" />
         
 
             <CoverImagePicker
               ref={imagePickerRef}
-              label="Cover image (optional)"
+              label={"Image / Video (optional)"}
               value={coverImage}
-              preview={typeof coverImage === 'string' ? coverImage : null}
-              onChange={setCoverImage}
+              preview={
+                selectedMediaType === 'video' 
+                  ? form.videoUrl 
+                  : (typeof coverImage === 'string' ? coverImage : null)
+              }
+              onChange={handleMediaChange}
+              canSelectBothVideoAndImage={false} // Set to true if you want to allow both
+              selectedMediaType={selectedMediaType}
             />
 
              <div className="mt-3 grid md:grid-cols-2 gap-4 hidden">

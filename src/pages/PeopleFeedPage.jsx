@@ -552,7 +552,7 @@ export default function PeopleFeedPage() {
   };
 
   return (
-    <DefaultLayout makePublic={true}>
+    <DefaultLayout>
       <Header />
       <main
         className={`mx-auto ${

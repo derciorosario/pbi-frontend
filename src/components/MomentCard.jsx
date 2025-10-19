@@ -20,6 +20,8 @@ import {
   MoreVertical,
   Trash2,
   Globe,
+  Play,
+  Pause,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -41,6 +43,7 @@ import ConnectionRequestModal from "./ConnectionRequestModal";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import MomentDetails from "./MomentDetails";
+import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
 import LogoGray from '../assets/logo.png'
 
 function computeTimeAgo(explicit, createdAt) {
@@ -55,6 +58,38 @@ function computeTimeAgo(explicit, createdAt) {
   return `${days} day${days !== 1 ? "s" : ""} ago`;
 }
 
+// Helper function to validate media URLs
+const isValidMediaUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  return url.startsWith("data:") || url.startsWith("http://") || url.startsWith("https://");
+};
+
+// Helper function to get file extension
+const getFileExtension = (url) => {
+  if (!url) return '';
+  const match = url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  return match ? match[1].toLowerCase() : '';
+};
+
+// Helper function to determine media type
+const getMediaType = (mediaItem) => {
+  // Check if type is explicitly defined
+  if (mediaItem?.type === 'video') return 'video';
+  if (mediaItem?.type === 'image') return 'image';
+  
+  // Check file extension
+  const url = mediaItem?.base64url || mediaItem?.url || '';
+  const extension = getFileExtension(url);
+  
+  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'];
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+  
+  if (videoExtensions.includes(extension)) return 'video';
+  if (imageExtensions.includes(extension)) return 'image';
+  
+  // Default to image if unknown
+  return 'image';
+};
 
 export default function MomentCard({
   moment,
@@ -93,8 +128,10 @@ export default function MomentCard({
   // Moment details modal
   const [momentDetailsOpen, setMomentDetailsOpen] = useState(false);
 
-  // Image slider state
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // Media slider state
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [showVideoControls, setShowVideoControls] = useState(false);
 
   // Options menu and delete state
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
@@ -104,6 +141,9 @@ export default function MomentCard({
 
   // Description toggle
   const [showFullDescription, setShowFullDescription] = useState(false);
+
+  // Video control timeout ref
+  const videoControlsTimeoutRef = useRef(null);
 
   // Close share menu and options menu on outside click / Esc
   useEffect(() => {
@@ -138,6 +178,15 @@ export default function MomentCard({
     };
   }, []);
 
+  // Clear video controls timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (videoControlsTimeoutRef.current) {
+        clearTimeout(videoControlsTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Initial fetch for like & comments count (optional)
   useEffect(() => {
     if (!moment?.id) return;
@@ -160,40 +209,53 @@ export default function MomentCard({
   const isOwner =
     user?.id && moment?.userId && user.id === moment.userId;
   const isList = type === "list";
-  // Get all valid images for slider
-  const getValidImages = () => {
-    const validImages = [];
+
+  // Get all valid media items (videos first, then images)
+  const getValidMedia = () => {
+    const validMedia = [];
 
     // Check images array first (for moments)
     if (moment?.images?.length > 0) {
-      for (const img of moment.images) {
-        if (typeof img?.base64url === "string") {
-          if (img.base64url.startsWith("data:image") ||
-              img.base64url.startsWith("http://") ||
-              img.base64url.startsWith("https://")) {
-            validImages.push(img.base64url);
-          }
+      for (const mediaItem of moment.images) {
+        const url = mediaItem?.base64url;
+        if (isValidMediaUrl(url)) {
+          const mediaType = getMediaType(mediaItem);
+          validMedia.push({
+            url,
+            type: mediaType,
+            name: mediaItem?.name || `media-${validMedia.length}`
+          });
         }
       }
     }
 
     // Check attachments array as fallback
-    if (moment?.attachments?.length > 0 && validImages.length === 0) {
+    if (moment?.attachments?.length > 0 && validMedia.length === 0) {
       for (const attachment of moment.attachments) {
-        if (attachment?.base64url &&
-            (attachment.base64url.startsWith('data:image') ||
-             attachment.base64url.startsWith("http://") ||
-             attachment.base64url.startsWith("https://"))) {
-          validImages.push(attachment.base64url);
+        const url = attachment?.base64url;
+        if (isValidMediaUrl(url)) {
+          const mediaType = getMediaType(attachment);
+          validMedia.push({
+            url,
+            type: mediaType,
+            name: attachment?.name || `attachment-${validMedia.length}`
+          });
         }
       }
     }
 
-    return validImages;
+    // Sort: videos first, then images
+    return validMedia.sort((a, b) => {
+      if (a.type === 'video' && b.type !== 'video') return -1;
+      if (a.type !== 'video' && b.type === 'video') return 1;
+      return 0;
+    });
   };
 
-  const validImages = getValidImages();
-  const hasMultipleImages = validImages.length > 1;
+  const validMedia = getValidMedia();
+  const hasMultipleMedia = validMedia.length > 1;
+  const currentMedia = validMedia[currentMediaIndex];
+  const isCurrentVideo = currentMedia?.type === 'video';
 
   const locationLabel = useMemo(() => {
       const city = moment?.city?.trim();
@@ -244,6 +306,54 @@ export default function MomentCard({
     let textContent = div.textContent || div.innerText || "";
     textContent = textContent.replace(/\s+/g, " ").trim();
     return textContent;
+  };
+
+  // Video control functions
+  const handleVideoPlayPause = () => {
+    setIsVideoPlaying(!isVideoPlaying);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPlay = () => {
+    setIsVideoPlaying(true);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPause = () => {
+    setIsVideoPlaying(false);
+    setShowVideoControls(true);
+    
+    // Keep controls visible when paused
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+  };
+
+  const handleMediaClick = (e) => {
+    if (isCurrentVideo) {
+      // For videos, handle play/pause
+      e.stopPropagation();
+      handleVideoPlayPause();
+    } else {
+      // For images, open details modal
+      setMomentDetailsOpen(true);
+    }
   };
 
   const containerBase =
@@ -536,17 +646,6 @@ export default function MomentCard({
 
         {/* POST CONTENT */}
         <div className="px-4 pb-3">
-          {/* Moment Title */}
-         {/** <h3
-            className="font-semibold text-base text-gray-900 mb-1 hover:text-brand-600 cursor-pointer transition-colors"
-            onClick={() => {
-              if (isOwner) navigate(`/moment/${moment.id}`);
-              else setMomentDetailsOpen(true);
-            }}
-          >
-            {moment?.title}
-          </h3> */}
-
           {/* Description */}
           <div className="text-sm text-gray-700 mb-2">
             <div className={showFullDescription ? "" : "line-clamp-3"}>
@@ -561,57 +660,105 @@ export default function MomentCard({
               </button>
             )}
           </div>
-
-          
-
         </div>
 
-        {/* IMAGE (if exists and not in text mode) */}
-        {settings?.contentType !== "text" && validImages.length > 0 && (
+        {/* MEDIA (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && validMedia.length > 0 && (
           <div className="relative">
-            {/* Image Slider */}
-            <div onClick={()=>setMomentDetailsOpen(true)} className="relative w-full max-h-96 overflow-hidden cursor-pointer">
-              {hasMultipleImages ? (
+            {/* Media Slider */}
+            <div 
+              onClick={handleMediaClick}
+              className="relative w-full max-h-96 overflow-hidden cursor-pointer"
+            >
+              {hasMultipleMedia ? (
                 <div
                   className="flex w-full h-full transition-transform duration-300 ease-in-out"
-                  style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                  style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}
                 >
-                  {validImages.map((img, index) => (
-                    <img
-                      key={index}
-                      src={img}
-                      alt={`${moment?.title} - ${index + 1}`}
-                      className="flex-shrink-0 w-full max-h-96 object-cover"
-                    />
+                  {validMedia.map((media, index) => (
+                    <div key={index} className="flex-shrink-0 w-full h-96 relative">
+                      {media.type === 'video' ? (
+                        <div className="relative w-full h-full bg-black">
+                          <VideoPlayer
+                            src={media.url}
+                            className="w-full h-full object-contain"
+                            controls={false}
+                            autoPlay={false}
+                            muted
+                            isPlaying={index === currentMediaIndex && isVideoPlaying}
+                            onPlay={handleVideoPlay}
+                            onPause={handleVideoPause}
+                          />
+                         
+                        </div>
+                      ) : (
+                        <img
+                          src={media.url}
+                          alt={media.name || `Media ${index + 1}`}
+                          className="w-full h-96 object-cover"
+                        />
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
-                <img
-                  src={validImages[0]}
-                  alt={moment?.title}
-                  className="w-full max-h-96 object-cover"
-                />
+                <div className="w-full h-96 relative">
+
+                  {currentMedia.type === 'video' ? (
+                    <div className="relative w-full h-full bg-black">
+                      <VideoPlayer
+                        src={currentMedia.url}
+                        className="w-full h-full object-contain"
+                        controls={false}
+                        autoPlay={false}
+                        muted
+                        isPlaying={isVideoPlaying}
+                        onPlay={handleVideoPlay}
+                        onPause={handleVideoPause}
+                      />
+                
+                    
+                    </div>
+                  ) : (
+                    <img
+                      src={currentMedia.url}
+                      alt={currentMedia.name || "Media"}
+                      className="w-full h-96 object-cover"
+                    />
+                  )}
+                </div>
               )}
             </div>
 
             {/* Slider Dots */}
-            {hasMultipleImages && (
+            {hasMultipleMedia && (
               <div className="absolute bottom-3 right-3 flex gap-1">
-                {validImages.map((_, index) => (
+                {validMedia.map((media, index) => (
                   <button
                     key={index}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setCurrentImageIndex(index);
+                      setCurrentMediaIndex(index);
+                      // Reset video state when changing slides
+                      if (media.type === 'video') {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(true);
+                      } else {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(false);
+                      }
                     }}
                     className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
-                      index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                      index === currentMediaIndex 
+                        ? (media.type === 'video' ? 'bg-blue-500' : 'bg-white')
+                        : 'bg-white/50'
                     }`}
-                    aria-label={`Go to image ${index + 1}`}
+                    aria-label={`Go to ${media.type} ${index + 1}`}
                   />
                 ))}
               </div>
             )}
+
           </div>
         )}
 

@@ -21,6 +21,12 @@ import {
   MoreVertical,
   Trash2,
   Globe,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -45,6 +51,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import JobApplicationDialog from "./JobApplicationDialog";
 import LogoGray from "../assets/logo.png";
+import VideoPlayer from "./VideoPlayer";
 
 function computeTimeAgo(explicit, createdAt) {
   if (explicit) return explicit;
@@ -57,6 +64,8 @@ function computeTimeAgo(explicit, createdAt) {
   const days = Math.floor(hrs / 24);
   return `${days} day${days !== 1 ? "s" : ""} ago`;
 }
+
+
 
 export default function JobCard({
   job,
@@ -153,22 +162,43 @@ export default function JobCard({
   // Use user avatar, not post image
   const userAvatarUrl = job?.postedByUserAvatarUrl || null;
 
-  let imageUrl = job?.coverImage || job?.image || null;
-  imageUrl =
-    imageUrl &&
-    (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
-      ? imageUrl
-      : imageUrl
-      ? `${API_URL}/uploads/${imageUrl}`
-      : null;
+  // Process media files - PRIORITY: Video over Image
+  const processMediaUrl = (url) => {
+    if (!url) return null;
+    return (url?.startsWith("data:") || url?.startsWith("http"))
+      ? url
+      : `${API_URL}/uploads/${url}`;
+  };
 
-     console.log({img1:imageUrl,id:job.id,t:job?.coverImage,job})
+  // Get media to display - VIDEO has priority over IMAGE
+  const mediaToDisplay = useMemo(() => {
+    const videoUrl = processMediaUrl(job?.videoUrl);
+    const coverImageUrl = processMediaUrl(job?.coverImageBase64 || job?.coverImage);
+    
+    // If video exists, show video only
+    if (videoUrl) {
+      return { type: 'video', url: videoUrl };
+    }
+    
+    // If no video but cover image exists, show image
+    if (coverImageUrl) {
+      return { type: 'image', url: coverImageUrl };
+    }
+    
+    // If no cover image but company logo exists and not private, show company logo
+    if (!job?.make_company_name_private && job?.company?.avatarUrl) {
+      return { type: 'image', url: processMediaUrl(job.company.avatarUrl) };
+    }
+    
+    return null;
+  }, [job?.videoUrl, job?.coverImageBase64, job?.make_company_name_private, job?.company?.avatarUrl]);
 
-  imageUrl =
-    !imageUrl && !job?.make_company_name_private
-      ? job?.company?.avatarUrl
-      : imageUrl;
-
+  console.log({ 
+    jobId: job?.id, 
+    coverImage: job?.coverImageBase64, 
+    videoUrl: job?.videoUrl,
+    mediaToDisplay 
+  });
 
   const allTags = [
     "Job Offer",
@@ -527,15 +557,22 @@ export default function JobCard({
 
         </div>
 
-        {/* IMAGE (if exists and not in text mode) */}
-        {settings?.contentType !== "text" && imageUrl && (
+        {/* MEDIA - Show either VIDEO or IMAGE (Video has priority) */}
+        {mediaToDisplay && (
           <div className="relative">
-            <img
-              src={imageUrl}
-              alt={job?.title}
-              className="w-full max-h-96 object-cover cursor-pointer"
-              onClick={() => setJobDetailsOpen(true)}
-            />
+            {mediaToDisplay.type === 'video' ? (
+              <VideoPlayer
+                src={mediaToDisplay.url}
+                alt="Job video"
+              />
+            ) : (
+              <img
+                src={mediaToDisplay.url}
+                alt="Job cover"
+                className="w-full max-h-96 object-cover cursor-pointer"
+                onClick={() => setJobDetailsOpen(true)}
+              />
+            )}
           </div>
         )}
 

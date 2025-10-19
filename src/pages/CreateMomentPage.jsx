@@ -1,7 +1,7 @@
 // src/pages/CreateMomentPage.jsx
 import React, { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Image as ImageIcon, Plus } from "lucide-react";
+import { Image as ImageIcon, Video, Plus } from "lucide-react";
 import COUNTRIES from "../constants/countries"; // optional: if you want to suggest locations, else unused
 import CITIES from "../constants/cities.json";
 import client, { API_URL } from "../api/client";
@@ -126,11 +126,21 @@ function ReadOnlyMomentView({ form, tags, images, audSel, audTree }) {
         {/* Gallery */}
         {images && images.length > 1 && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-700">Images</h3>
+            <h3 className="text-sm font-semibold text-gray-700">Media</h3>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
               {images.slice(1).map((img, idx) => (
                 <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
-                  <img src={img.base64url} alt={img.name || `Experience image ${idx + 1}`} className="h-full w-full object-cover" />
+                  {img.type === 'video' ? (
+                    <video 
+                      src={img.base64url} 
+                      controls 
+                      className="h-full w-full object-cover"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <img src={img.base64url} alt={img.name || `Experience image ${idx + 1}`} className="h-full w-full object-cover" />
+                  )}
                 </div>
               ))}
             </div>
@@ -388,7 +398,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState([]);
 
-  // Images: [{ name, base64url }]
+  // Images: [{ name, base64url, type: 'image' | 'video' }]
   const [images, setImages] = useState([]);
   // Attachments: [{ name, base64url }]
   const [attachments, setAttachments] = useState([]);
@@ -674,25 +684,28 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
     return null;
   }
 
-
   async function handleFilesChosen(files) {
     if (readOnly) return;
     const arr = Array.from(files || []);
     if (!arr.length) return;
 
-    const onlyImages = arr.filter((f) => f.type.startsWith("image/"));
-    if (onlyImages.length !== arr.length) {
-      toast.error("Only image files are allowed.");
+    // Accept both images and videos
+    const mediaFiles = arr.filter((f) => 
+      f.type.startsWith("image/") || f.type.startsWith("video/")
+    );
+    
+    if (mediaFiles.length !== arr.length) {
+      toast.error("Only image and video files are allowed.");
       return;
     }
 
-    const sizeErrors = onlyImages.filter((f) => f.size > 5 * 1024 * 1024);
+    const sizeErrors = mediaFiles.filter((f) => f.size > 50 * 1024 * 1024); // 50MB for videos
     if (sizeErrors.length) {
-      toast.error("Each image must be up to 5MB.");
+      toast.error("Each file must be up to 50MB.");
       return;
     }
 
-    const accepted = onlyImages.filter((f) => f.size <= 5 * 1024 * 1024);
+    const accepted = mediaFiles.filter((f) => f.size <= 50 * 1024 * 1024);
     const remaining = 20 - images.length;
     const slice = accepted.slice(0, Math.max(0, remaining));
 
@@ -702,10 +715,10 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
       setUploadingCount(slice.length);
       const formData = new FormData();
       slice.forEach(file => {
-        formData.append('images', file);
+        formData.append('media', file); // Changed from 'images' to 'media'
       });
 
-      const response = await client.post('/moments/upload-images', formData, {
+      const response = await client.post('/moments/upload-media', formData, { // Changed endpoint
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -713,22 +726,24 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
 
       const uploadedFilenames = response.data.filenames || [];
 
-      // Store as {base64url: filename, name: ''}
+      // Store with type information
       const mapped = slice.map((file, index) => ({
         base64url: `${API_URL}/uploads/${uploadedFilenames[index] || file.name}`,
-        name: file.name.replace(/\.[^/.]+$/, ""), // filename without extension as name
+        name: file.name.replace(/\.[^/.]+$/, ""),
+        type: file.type.startsWith("video/") ? "video" : "image"
       }));
 
       setImages((prev) => [...prev, ...mapped]);
     } catch (error) {
-      console.error('Error uploading images:', error);
-      toast.error('Failed to upload images');
+      console.error('Error uploading media:', error);
+      toast.error('Failed to upload media files');
     } finally {
       setUploading(false);
       setUploadingCount(0);
     }
   }
 
+  console.log({images})
 
 
   function updateImageName(idx, name) {
@@ -740,7 +755,6 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
     if (readOnly) return;
     setImages((prev) => prev.filter((_, i) => i !== idx));
   }
-
 
   async function handleAttachmentsChosen(files) {
     if (readOnly) return;
@@ -804,7 +818,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
         country: form.country || undefined,
         city: (form.country === "All countries") ? undefined : (form.city || undefined),
         tags: tags,
-        images, // Already contains {base64url: filename, title: ''}
+        images, // Now contains {base64url: filename, name: '', type: 'image'|'video'}
         attachments, // Keep attachments as base64 for now
 
         // Audience selections
@@ -856,6 +870,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
     return <FullPageLoader message="Loading experience…" tip="Fetching..." />;
   }
 
+  
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
       {/* ===== Header ===== */}
@@ -934,18 +949,28 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
             />
           </section>
 
-            {/* Photos */}
+            {/* Photos & Videos */}
           <section>
-            <h2 className="font-semibold text-[12px] text-gray-700">Photos</h2>
+            <h2 className="font-semibold text-[12px] text-gray-700">Photos & Videos</h2>
             <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
-            
-              Upload images showcasing your experience
+              <div className="flex justify-center items-center gap-3 mb-2">
+                <div className="flex items-center gap-1">
+                  <ImageIcon className="h-4 w-4" />
+                  <span className="text-xs">Images</span>
+                </div>
+                <div className="h-4 w-px bg-gray-300"></div>
+                <div className="flex items-center gap-1">
+                  <Video className="h-4 w-4" />
+                  <span className="text-xs">Videos</span>
+                </div>
+              </div>
+              Upload images or videos showcasing your experience
               <div className="mt-3">
                 <input
                   ref={fileInputRef}
                   type="file"
                   multiple
-                  accept="image/*"
+                  accept="image/*,video/*"
                   className="hidden"
                   onChange={(e) => handleFilesChosen(e.target.files)}
                 />
@@ -962,18 +987,32 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
                 <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                   {images.map((img, idx) => (
                     <div key={`${img.base64url}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                      <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
-                        <img src={img.base64url} alt={img.name} className="h-full w-full object-cover" />
+                      <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center relative">
+                        {img.type === 'video' ? (
+                          <>
+                            <video 
+                              src={img.base64url} 
+                              className="h-full w-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                              <Video className="h-4 w-4 text-white" />
+                            </div>
+                          </>
+                        ) : (
+                          <img src={img.base64url} alt={img.name} className="h-full w-full object-cover" />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <input
                           type="text"
                           value={img.name}
                           onChange={(e) => updateImageName(idx, e.target.value)}
-                          placeholder={`Image ${idx + 1} name`}
+                          placeholder={`${img.type === 'video' ? 'Video' : 'Image'} ${idx + 1} name`}
                           className="w-full text-sm font-medium border-none p-0 focus:outline-none focus:ring-0"
                         />
-                        <div className="text-[11px] text-gray-500 truncate">Attached</div>
+                        <div className="text-[11px] text-gray-500 truncate">
+                          {img.type === 'video' ? 'Video' : 'Image'} • Attached
+                        </div>
                       </div>
                       <button
                         type="button"
@@ -1001,7 +1040,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
               )}
 
               <p className="mt-2 text-[11px] text-gray-400">
-                  Up to 5MB each.
+                  Up to 50MB each. Supported formats: JPG, PNG, GIF, MP4, MOV
               </p>
             </div>
           </section>
