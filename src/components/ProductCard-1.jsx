@@ -147,7 +147,6 @@ export default function ProductCard({
   }, [item?.id]);
 
   function onSent() {
-    toast.success("Connection request sent");
     setModalOpen(false);
     setConnectionStatus("pending_outgoing");
   }

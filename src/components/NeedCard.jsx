@@ -195,7 +195,6 @@ export default function NeedCard({
   }, [need?.city, need?.country]);
 
   function onSent() {
-    toast.success("Connection request sent");
     setModalOpen(false);
     setConnectionStatus("pending_outgoing");
   }

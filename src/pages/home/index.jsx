@@ -234,48 +234,47 @@ export default function HomePage() {
     setSignupErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const onFileChange = (name, file) => {
-    if (file) {
-      // Validate file size (5MB limit)
-      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-      if (file.size > maxSize) {
-        setSignupErrors((prev) => ({
-          ...prev,
-          [name]: "File size must be less than 5MB"
-        }));
-        return;
-      }
 
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-      if (!allowedTypes.includes(file.type)) {
-        setSignupErrors((prev) => ({
-          ...prev,
-          [name]: "Please select a valid image file (JPG, PNG, GIF)"
-        }));
-        return;
-      }
-
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target.result;
-        setSignupForm((f) => ({
-          ...f,
-          avatarUrl: base64, // Store base64 data in avatarUrl
-          avatarPreview: base64  // Store preview
-        }));
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setSignupForm((f) => ({
-        ...f,
-        avatarUrl: null,
-        avatarPreview: null
+   const onFileChange = async (name, file) => {
+  if (file) {
+    // Validate file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setSignupErrors((prev) => ({
+        ...prev,
+        [name]: "File size must be less than 5MB"
       }));
+      return;
     }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setSignupErrors((prev) => ({
+        ...prev,
+        [name]: "Please select a valid image file (JPG, PNG, GIF)"
+      }));
+      return;
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    
+    setSignupForm((f) => ({
+      ...f,
+      avatarFile: file, // Store the file object instead of base64
+      avatarPreview: previewUrl
+    }));
+    
     setSignupErrors((prev) => ({ ...prev, avatarUrl: "" }));
-  };
+  } else {
+    setSignupForm((f) => ({
+      ...f,
+      avatarFile: null,
+      avatarPreview: null
+    }));
+  }
+};
 
   // Labels change with account type, but variable names DO NOT change
   const labelName = acct === "company" ? "Company name" : "Name";
@@ -420,6 +419,26 @@ export default function HomePage() {
     }
   }
 
+
+     const uploadFile = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await client.post('/profile/uploadLogo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      return response.data.url; // Return the uploaded file URL
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw new Error('Failed to upload file');
+    }
+  };
+
+
   async function onAuthSignupSubmit(e) {
     e.preventDefault();
     if (!validateAuthSignup()) {
@@ -429,6 +448,19 @@ export default function HomePage() {
 
     setLoading(true);
     try {
+
+       let avatarUrl = null;
+                
+                // Upload avatar file first if exists
+        if (signupForm.avatarFile) {
+          try {
+            avatarUrl = await uploadFile(signupForm.avatarFile);
+          } catch (uploadError) {
+            toast.error("Failed to upload profile picture. Please try again.");
+            setLoading(false);
+            return;
+          }
+      }
       // Build payload with correct field names that match backend expectations
       const payload = {
         name: signupForm.name,
@@ -438,7 +470,7 @@ export default function HomePage() {
         password: signupForm.password,
         accountType: acct, // "individual" | "company"
         // Individual fields
-        avatarUrl: signupForm.avatarUrl, // Send base64 data
+        avatarUrl: avatarUrl, // Send base64 data
         birthDate: signupForm.birthDate,
         gender: signupForm.gender,
         nationality: signupForm.nationality,

@@ -912,7 +912,7 @@ export default function FourStepOnboarding() {
 
                           <div className="flex items-center gap-2">
                           <span className="text-xs text-gray-500">
-                            {(industryCat.subcategories || []).length} subcategories
+                            {(industryCat.subcategories || []).length} 
                           </span>
 
                            <div className="flex items-center gap-3">

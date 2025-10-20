@@ -223,10 +223,7 @@ const CoverImagePicker = forwardRef(function CoverImagePicker({
                 </button>
               )}
             </div>
-            
-            <div className="mx-auto w-12 h-12 rounded-full bg-white shadow grid place-items-center mb-3">
-              <Upload className="h-6 w-6 text-brand-600" />
-            </div>
+          
             
             <p className="text-sm text-gray-600">
               {isDragging ? 'Drop your file here!' : `Drag & drop your ${canSelectBothVideoAndImage ? 'image or video' : mediaType || 'media'} here, or`}

@@ -293,7 +293,6 @@ export default function MomentCard({
   );
 
   function onSent() {
-    toast.success("Connection request sent");
     setModalOpen(false);
     setConnectionStatus("pending_outgoing");
   }

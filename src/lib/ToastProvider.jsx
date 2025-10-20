@@ -14,7 +14,7 @@ export default function ToastProvider() {
       <Toaster
         position="top-right"
         toastOptions={{
-          style: { fontSize: "14px" },
+          style: { fontSize: "14px" ,zIndex:9999999},
           success: { iconTheme: { primary: "#0a66c2", secondary: "#fff" } }
         }}
       />
@@ -28,7 +28,7 @@ export default function ToastProvider() {
       closeOnClick
       newestOnTop
       theme="light"
-      style={{ fontSize: "14px" }}
+      style={{ fontSize: "14px",zIndex:9999999 }}
     />
   );
 }

@@ -54,6 +54,12 @@ const CountryCitySelector = ({ value, onChange, error }) => {
     onChange(updated);
   };
 
+
+  // Add upload progress state
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+
+
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-gray-700">
@@ -220,48 +226,47 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
     setSignupErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
-  const onFileChange = (name, file) => {
-    if (file) {
-      // Validate file size (5MB limit)
-      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-      if (file.size > maxSize) {
-        setSignupErrors((prev) => ({
-          ...prev,
-          [name]: "File size must be less than 5MB"
-        }));
-        return;
-      }
-
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-      if (!allowedTypes.includes(file.type)) {
-        setSignupErrors((prev) => ({
-          ...prev,
-          [name]: "Please select a valid image file (JPG, PNG, GIF)"
-        }));
-        return;
-      }
-
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target.result;
-        setSignupForm((f) => ({
-          ...f,
-          avatarUrl: base64, // Store base64 data in avatarUrl
-          avatarPreview: base64  // Store preview
-        }));
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setSignupForm((f) => ({
-        ...f,
-        avatarUrl: null,
-        avatarPreview: null
+ 
+  const onFileChange = async (name, file) => {
+  if (file) {
+    // Validate file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setSignupErrors((prev) => ({
+        ...prev,
+        [name]: "File size must be less than 5MB"
       }));
+      return;
     }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setSignupErrors((prev) => ({
+        ...prev,
+        [name]: "Please select a valid image file (JPG, PNG, GIF)"
+      }));
+      return;
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    
+    setSignupForm((f) => ({
+      ...f,
+      avatarFile: file, // Store the file object instead of base64
+      avatarPreview: previewUrl
+    }));
+    
     setSignupErrors((prev) => ({ ...prev, avatarUrl: "" }));
-  };
+  } else {
+    setSignupForm((f) => ({
+      ...f,
+      avatarFile: null,
+      avatarPreview: null
+    }));
+  }
+};
 
   // Labels change with account type, but variable names DO NOT change
   const labelName = acct === "company" ? "Organization name" : "Name";
@@ -405,55 +410,96 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
     }
   }
 
-  async function onSignupSubmit(e) {
-    e.preventDefault();
-    if (!validateSignup()) {
-      toast.error("Please fix the highlighted fields.");
-      return;
-    }
 
-    setLoading(true);
-    try {
-      // Build payload with correct field names that match backend expectations
-      const payload = {
-        name: signupForm.name,
-        email: signupForm.email,
-        phone: signupForm.phone,
-        countryOfResidence: signupForm.country, // Backend expects countryOfResidence
-        password: signupForm.password,
-        accountType: acct, // "individual" | "company"
-        // Individual fields
-        avatarUrl: signupForm.avatarUrl, // Send base64 data
-        birthDate: signupForm.birthDate,
-        gender: signupForm.gender,
-        nationality: signupForm.nationality,
-        // Company fields
-        otherCountries: signupForm.otherCountries, // Now contains [{country, city}] pairs
-        webpage: signupForm.webpage
-      };
-
-      const promise = client.post("/auth/signup", payload);
-
-      const res = await toast.promise(
-        promise,
-        {
-          loading: "Creating your account…",
-          success: "Account created! 🎉",
-          error: (err) => err?.response?.data?.message || "Sign up failed."
-        },
-        { id: "signup" }
-      );
-
-      // After signup, go to "Email Sent" page
-      const email = res?.data?.email || payload.email;
-      onClose(); // Close the dialog after successful signup
-      navigate("/verify-email-sent", { state: { email } });
-    } catch {
-      // toast already handled
-    } finally {
-      setLoading(false);
-    }
+  const uploadFile = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await client.post('/profile/uploadLogo', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    return response.data.url; // Return the uploaded file URL
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    throw new Error('Failed to upload file');
   }
+};
+
+
+
+
+async function onSignupSubmit(e) {
+
+  e.preventDefault();
+  if (!validateSignup()) {
+    toast.error("Please fix the highlighted fields.");
+    return;
+  }
+
+  setLoading(true);
+  try {
+    let avatarUrl = null;
+    
+    // Upload avatar file first if exists
+    if (signupForm.avatarFile) {
+      try {
+        avatarUrl = await uploadFile(signupForm.avatarFile);
+      } catch (uploadError) {
+        toast.error("Failed to upload profile picture. Please try again.");
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Build payload with the uploaded file URL
+    const payload = {
+      name: signupForm.name,
+      email: signupForm.email,
+      phone: signupForm.phone,
+      countryOfResidence: signupForm.country,
+      password: signupForm.password,
+      accountType: acct,
+      // Individual fields
+      avatarUrl: avatarUrl, // Use the uploaded file URL
+      birthDate: signupForm.birthDate,
+      gender: signupForm.gender,
+      nationality: signupForm.nationality,
+      // Company fields
+      otherCountries: signupForm.otherCountries,
+      webpage: signupForm.webpage
+    };
+
+    const promise = client.post("/auth/signup", payload);
+
+    const res = await toast.promise(
+      promise,
+      {
+        loading: "Creating your account…",
+        success: "Account created! 🎉",
+        error: (err) => err?.response?.data?.message || "Sign up failed."
+      },
+      { id: "signup" }
+    );
+
+    // After signup, go to "Email Sent" page
+    const email = res?.data?.email || payload.email;
+    onClose();
+    navigate("/verify-email-sent", { state: { email } });
+
+  } catch (error) {
+    console.error('Signup error:', error);
+    // Error handling is already done by toast.promise
+  } finally {
+    setLoading(false);
+  }
+}
+
+
+
 
   if (!isOpen) return null;
 

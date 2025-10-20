@@ -356,7 +356,7 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
-              <input type="date" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+              <input min={new Date().toISOString().split('T')[0]} type="date" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                 value={form.date} onChange={(e) => handleChange("date", e.target.value)} />
               {errors.date && <p className="text-xs text-red-600 mt-1">{errors.date}</p>}
             </div>
@@ -406,12 +406,12 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
           </div>
           {form.mode === "video" ? (
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Call link</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Call link <span className="text-gray-600">(optional)</span></label>
               <div className="flex items-center gap-2">
                 <div className="rounded-lg border border-gray-300 px-3 py-2 flex-1 flex items-center gap-2">
                   <LinkIcon size={16} className="text-gray-500" />
                   <input type="url" className="w-full text-sm focus:outline-none"
-                    placeholder="https://meet.google.com/abc-defg-hij" value={form.link}
+                    placeholder="Insert call link" value={form.link}
                     onChange={(e) => handleChange("link", e.target.value)} />
                 </div>
               </div>
@@ -1235,7 +1235,7 @@ export default function PublicProfilePage() {
   <div className="px-6 pb-6 relative">
     <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 gap-4 mb-6">
       {/* Profile Image and Company Logos */}
-      <div className="flex flex-col md:flex-row md:items-end gap-4">
+      <div className="flex flex-col md:flex-row md:items-end gap-4 flex-1">
         <div className="relative">
           {profile.avatarUrl ? (
             <div
@@ -1355,7 +1355,7 @@ export default function PublicProfilePage() {
 
       {/* Action Buttons */}
       <div className="flex gap-3 mt-4 md:mt-0">
-        {renderConnectButton()}
+        {user?.id!=profile?.id && renderConnectButton()}
 
         {profile.connectionStatus === "connected" && <div className="relative">
           <button
@@ -1382,7 +1382,7 @@ export default function PublicProfilePage() {
           {shareOpen && <ShareMenu profile={profile} shareMenuRef={shareMenuRef} setShareOpen={setShareOpen} />}
         </div>
 
-        <button
+       {user?.id!=profile?.id && <button
           onClick={() => {
             if (!user) {
               data._showPopUp("login_prompt");
@@ -1395,7 +1395,7 @@ export default function PublicProfilePage() {
         >
           <MessageCircle size={16} />
         </button>
-
+        }
         {/* Request Meeting Button - only show when connected */}
         {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
           <button
@@ -2075,7 +2075,7 @@ export default function PublicProfilePage() {
            
 
             {/* Meetings - Modern Card Design */}
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div className={`bg-white rounded-xl shadow-sm p-6 mb-6 ${user?.id==profile?.id ? 'hidden':''}`}> 
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   <CalendarDays size={20} className="text-brand-600" />

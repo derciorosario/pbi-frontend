@@ -35,7 +35,7 @@ import UserSelectionModal from "../components/UserSelectionModal";
 import StaffInvitationModal from "../components/StaffInvitationModal";
 import OrganizationSelectionModal from "../components/OrganizationSelectionModal";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { Camera, Download, MapPin } from "lucide-react";
+import { Camera, Download, ExternalLink, Eye, Link, Link2, MapPin } from "lucide-react";
 import ProfileModal from "../components/ProfileModal.jsx";
 
 // Add these color styles near the top of the component, after the imports
@@ -72,6 +72,13 @@ const Tab = {
   EVENTS: "events",
   JOB_APPLICATIONS: "job_applications",
   EVENT_REGISTRATIONS: "event_registrations",
+};
+
+
+// Add these constants near the top with other constants
+const CHARACTER_LIMITS = {
+  PROFESSIONAL_TITLE: 50, // Limit professional title to 100 characters
+  ABOUT: 300, // Limit about section to 500 characters
 };
 
 export default function ProfilePage() {
@@ -2827,9 +2834,8 @@ function CategoryTree({
                     </div>
                   
                     <div className="flex items-center gap-1">
-                     
-                        <span className="text-xs text-gray-500">
-                      {(industryCat.subcategories || []).length} subcategories
+                      <span className="text-xs text-gray-500">
+                      {(industryCat.subcategories || []).length} 
                     </span>
                       {_hasSubs && (
                         <button
@@ -2841,13 +2847,9 @@ function CategoryTree({
                           <span className={`inline-block transition-transform ${industryCatOpen ? "rotate-180" : ""}`}>▾</span>
                         </button>
                       )}
-
                     </div>
                   </div>
-
                   <div className={`${ (_hasSubs && industryCatOpen) ? 'px-4 py-4 space-y-3':''}`}>
-                 
-
                     {_hasSubs && industryCatOpen && (
                       <div className="ml-7 space-y-3">
                         {(industryCat.subcategories || []).map((industrySc, sIdx) => {
@@ -2917,7 +2919,7 @@ function CategoryTree({
   }
 
   return (
-    <div>
+    <div className="bg-[#F6F7FB]">
       {!isAdminEditing && <Header/>}
       <div className="max-w-5xl mx-auto p-4 md:p-8">
       
@@ -3015,6 +3017,7 @@ function CategoryTree({
       {/* Text background for better readability */}
       <div className="absolute inset-0 bg-black bg-opacity-10 blur-sm rounded-lg -m-1 z-0"></div>
     </div>
+    
 
     {isCompany && (
       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 z-10 relative">
@@ -3027,6 +3030,7 @@ function CategoryTree({
         Individual
       </span>
     )}
+   
 
   </div>
 
@@ -3049,18 +3053,31 @@ function CategoryTree({
 
       {/* Progress Section */}
       <div className="flex flex-col md:items-end gap-3 pt-5">
-        <div className="text-right flex items-center gap-2">
+         <div className="text-right flex items-center gap-2">
           <div className="text-sm font-medium text-gray-700">Profile Completion</div>
           <div className="text-sm font-bold text-gray-700"> ({progress}%) </div>
         </div>
-        <div>
+        
+       
+        
+        <div className="relative">
           <div className="w-[10.5rem] max-md:w-full h-3 bg-gray-200 rounded-full overflow-hidden">
             <div
               className="h-3 bg-gradient-to-r from-brand-500 to-brand-500 rounded-full transition-all duration-500 ease-out"
               style={{ width: `${progress}%` }}
             />
           </div>
+            {/* Add View Profile Button */}
+        <button
+          onClick={() => navigate(`/profile/${me?.user?.id}`)}
+          className="px-4 py-1 w-full absolute justify-center gap-x-2 flex items-center top-[100%] translate-y-[6px] left-0 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors text-sm font-medium"
+        >
+         Public Profile <Eye size={17}/>
+        </button>
         </div>
+
+      
+
       </div>
     </div>
   </div>
@@ -3225,7 +3242,7 @@ function CategoryTree({
 
                 {!isCompany && <div>
                   <SearchableSelect
-                    label="Country (birth)"
+                    label="Nationality"
                     options={COUNTRIES}
                     value={personal.country}
                     onChange={(value) => setPersonal({...personal, country: value})}
@@ -3265,7 +3282,7 @@ function CategoryTree({
                   <>
                     {/* Company Website */}
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium mb-1">Company Website</label>
+                      <label className="block text-sm font-medium mb-1">Company Website <span className="text-gray-400 font-normal">(Optional)</span></label>
                       <input
                         type="url"
                         className="w-full border rounded-lg px-3 py-2"
@@ -3301,27 +3318,104 @@ function CategoryTree({
                   </>
                 )}
 
+                
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium">
                     {isCompany ? "Company description/type" : "Professional title"}
                   </label>
-                  <input className="w-full border rounded-lg px-3 py-2" value={personal.professionalTitle}
-                         onChange={e=>setPersonal({...personal, professionalTitle:e.target.value})}
-                         placeholder={isCompany ? "e.g., Venture Capital Firm, Technology Startup" : "e.g., Software Engineer, Marketing Specialist"}/>
+                  <span className={`text-xs ${
+                    personal.professionalTitle.length > CHARACTER_LIMITS.PROFESSIONAL_TITLE 
+                      ? 'text-red-600' 
+                      : 'text-gray-500'
+                  }`}>
+                    {personal.professionalTitle.length}/{CHARACTER_LIMITS.PROFESSIONAL_TITLE}
+                  </span>
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">
-                    {isCompany ? "About the company" : "About you"}
-                  </label>
-                  <textarea className="w-full border rounded-lg px-3 py-2" rows="4" value={personal.about}
-                            onChange={e=>setPersonal({...personal, about:e.target.value})}
-                            placeholder={isCompany
-                              ? "Describe your company, its mission, and focus areas..."
-                              : "Tell others about yourself, your background, and interests..."}/>
-                </div>
+                <input 
+                  className={`w-full border rounded-lg px-3 py-2 ${
+                    personal.professionalTitle.length > CHARACTER_LIMITS.PROFESSIONAL_TITLE 
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                      : 'border-gray-300 focus:border-brand-500 focus:ring-brand-500'
+                  }`} 
+                  value={personal.professionalTitle}
+                  onChange={e => {
+                    if (e.target.value.length <= CHARACTER_LIMITS.PROFESSIONAL_TITLE) {
+                      setPersonal({...personal, professionalTitle: e.target.value});
+                    }
+                  }}
+                  placeholder={isCompany 
+                    ? "e.g., Venture Capital Firm, Technology Startup" 
+                    : "e.g., Software Engineer, Marketing Specialist"
+                  }
+                />
+                {personal.professionalTitle.length > CHARACTER_LIMITS.PROFESSIONAL_TITLE && (
+                  <p className="text-xs text-red-600 mt-1">
+                    Professional title must be {CHARACTER_LIMITS.PROFESSIONAL_TITLE} characters or less
+                  </p>
+                )}
+              </div>
+               
+               <div className="md:col-span-2">
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-sm font-medium">
+                  {isCompany ? "About the company" : "About you"}
+                </label>
+                <span className={`text-xs ${
+                  personal.about.length > CHARACTER_LIMITS.ABOUT 
+                    ? 'text-red-600' 
+                    : 'text-gray-500'
+                }`}>
+                  {personal.about.length}/{CHARACTER_LIMITS.ABOUT}
+                </span>
+              </div>
+              <textarea 
+                className={`w-full border rounded-lg px-3 py-2 ${
+                  personal.about.length > CHARACTER_LIMITS.ABOUT 
+                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
+                    : 'border-gray-300 focus:border-brand-500 focus:ring-brand-500'
+                }`} 
+                rows="4" 
+                value={personal.about}
+                onChange={e => {
+                  if (e.target.value.length <= CHARACTER_LIMITS.ABOUT) {
+                    setPersonal({...personal, about: e.target.value});
+                  }
+                }}
+                placeholder={isCompany
+                  ? "Describe your company, its mission, and focus areas..."
+                  : "Tell others about yourself, your background, and interests..."
+                }
+              />
+              {personal.about.length > CHARACTER_LIMITS.ABOUT && (
+                <p className="text-xs text-red-600 mt-1">
+                  About section must be {CHARACTER_LIMITS.ABOUT} characters or less
+                </p>
+              )}
+            </div>
+
+
               </div>
               <div className="flex justify-end gap-3">
-                <button disabled={saving} onClick={savePersonal} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+               
+                <button 
+                      disabled={saving} 
+                      onClick={savePersonal} 
+                      className="px-4 py-2 rounded-xl bg-brand-700 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {saving ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                          </svg>
+                          Saving...
+                        </>
+                      ) : (
+                        "Save"
+                      )}
+                    </button>
+
               </div>
             </div>
           )}
@@ -3390,7 +3484,7 @@ function CategoryTree({
                     </span>
                   ))}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <input id="lang-name" className="flex-1 border rounded-lg px-3 py-2" placeholder="Language (e.g., English)"/>
                   <select id="lang-level" className="w-40 border rounded-lg px-3 py-2">
                     <option>Basic</option><option>Intermediate</option><option>Advanced</option><option>Native</option>
@@ -3410,7 +3504,24 @@ function CategoryTree({
               </div>
 
               <div className="flex justify-end gap-3">
-                <button disabled={saving} onClick={saveProfessional} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+                  <button 
+                        disabled={saving} 
+                        onClick={saveProfessional} 
+                        className="px-4 py-2 rounded-xl bg-brand-700 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {saving ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                            </svg>
+                            Saving...
+                          </>
+                        ) : (
+                          "Save"
+                        )}
+                    </button>
+
               </div>
             </div>
           )}
@@ -4148,7 +4259,7 @@ function CategoryTree({
                             </svg>
                           </div>
                           Upload images or documents showcasing your work
-                          <div className="mt-3 flex gap-2 justify-center">
+                          <div className="mt-3 flex gap-2 justify-center flex-wrap">
                             <input
                               type="text"
                               placeholder="File title (optional)"
@@ -4292,21 +4403,32 @@ function CategoryTree({
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t">
-                <button
-                  disabled={saving}
-                  onClick={async () => {
-                    // Validate CV upload
-                    if (!portfolio.cvBase64 || portfolio.cvBase64.length === 0) {
-                      toast.error("Please upload at least one CV before saving");
-                      return;
-                    }
+               
+                 <button
+                        disabled={saving}
+                        onClick={async () => {
+                          // Validate CV upload
+                          if (!portfolio.cvBase64 || portfolio.cvBase64.length === 0) {
+                            toast.error("Please upload at least one CV before saving");
+                            return;
+                          }
+                          await savePortfolio();
+                        }}
+                        className="px-6 py-2 rounded-xl bg-brand-700 text-white hover:bg-brand-800 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                      >
+                        {saving ? (
+                          <>
+                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                            </svg>
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Portfolio"
+                        )}
+                      </button>
 
-                    await savePortfolio();
-                  }}
-                  className="px-6 py-2 rounded-xl bg-brand-700 text-white hover:bg-brand-800 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {saving ? "Saving..." : "Save Portfolio"}
-                </button>
               </div>
             </div>
           )}
@@ -4374,7 +4496,24 @@ function CategoryTree({
               )}
 
               <div className="flex justify-end gap-3">
-                <button disabled={saving} onClick={saveDo} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+                <button 
+                  disabled={saving} 
+                  onClick={saveDo} 
+                  className="px-4 py-2 rounded-xl bg-brand-700 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                      </svg>
+                      Saving...
+                    </>
+                  ) : (
+                    "Save"
+                  )}
+                </button>
+
               </div>
             </div>
           )}
@@ -4441,7 +4580,24 @@ function CategoryTree({
               )}
 
               <div className="flex justify-end gap-3">
-                <button disabled={saving} onClick={saveInterests} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+                 <button 
+                    disabled={saving} 
+                    onClick={saveInterests} 
+                    className="px-4 py-2 rounded-xl bg-brand-700 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {saving ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (
+                      "Save"
+                    )}
+                  </button>
+
               </div>
             </div>
           )}
@@ -4474,7 +4630,25 @@ function CategoryTree({
                   />
 
                   <div className="flex justify-end gap-3">
-                    <button disabled={saving} onClick={saveIndustries} className="px-4 py-2 rounded-xl bg-brand-700 text-white">Save</button>
+                   
+                      <button 
+                            disabled={saving} 
+                            onClick={saveIndustries} 
+                            className="px-4 py-2 rounded-xl bg-brand-700 text-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                          >
+                            {saving ? (
+                              <>
+                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                                </svg>
+                                Saving...
+                              </>
+                            ) : (
+                              "Save"
+                            )}
+                          </button>
+
                   </div>
                 </>
               )}

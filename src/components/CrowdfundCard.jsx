@@ -388,7 +388,6 @@ export default function CrowdfundCard({
   );
 
   function onSent() {
-    toast.success("Connection request sent");
     setModalOpen(false);
     setConnectionStatus("pending_outgoing");
   }

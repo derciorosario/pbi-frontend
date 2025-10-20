@@ -16,8 +16,12 @@ const client = axios.create({
 // Create a separate instance for file uploads
 const uploadClient = axios.create({
      baseURL: API_URL,
+     headers: {
+      "Content-Type": "multipart/form-data",
+    },
      // Don't set Content-Type - let axios set it automatically for FormData
 });
+
 
 // Ensure Authorization header is present on each upload request
 uploadClient.interceptors.request.use((config) => {
@@ -39,8 +43,6 @@ uploadClient.interceptors.response.use(
     return Promise.reject(err);
   }
 );
-
-export { uploadClient };
 
 /** Helpers to read/write token consistently */
 export function getStoredToken() {  
@@ -91,5 +93,5 @@ client.interceptors.response.use(
     return Promise.reject(err);
   }
 );
-
+export { uploadClient };
 export default client;

@@ -58,6 +58,9 @@ const CountryCitySelector = ({ value, onChange, error }) => {
     onChange(updated);
   };
 
+ 
+  
+
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-gray-700">
@@ -206,49 +209,47 @@ export default function Signup() {
     setErrors((prev) => ({ ...prev, [name]: "" })); // clear that field's error while typing
   };
 
-  const onFileChange = (name, file) => {
-    if (file) {
-      // Validate file size (5MB limit)
-      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-      if (file.size > maxSize) {
-        setErrors((prev) => ({
-          ...prev,
-          [name]: "File size must be less than 5MB"
-        }));
-        return;
-      }
-
-      // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-      if (!allowedTypes.includes(file.type)) {
-        setErrors((prev) => ({
-          ...prev,
-          [name]: "Please select a valid image file (JPG, PNG, GIF)"
-        }));
-        return;
-      }
-
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target.result;
-        setForm((f) => ({
-          ...f,
-          avatarUrl: base64, // Store base64 data in avatarUrl
-          avatarPreview: base64  // Store preview
-        }));
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setForm((f) => ({
-        ...f,
-        avatarUrl: null,
-        avatarPreview: null
+ 
+   const onFileChange = async (name, file) => {
+  if (file) {
+    // Validate file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "File size must be less than 5MB"
       }));
+      return;
     }
-    setErrors((prev) => ({ ...prev, avatarUrl: "" }));
-  };
 
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "Please select a valid image file (JPG, PNG, GIF)"
+      }));
+      return;
+    }
+
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    
+    setForm((f) => ({
+      ...f,
+      avatarFile: file, // Store the file object instead of base64
+      avatarPreview: previewUrl
+    }));
+    
+    setErrors((prev) => ({ ...prev, avatarUrl: "" }));
+  } else {
+    setForm((f) => ({
+      ...f,
+      avatarFile: null,
+      avatarPreview: null
+    }));
+  }
+};
   // Labels change with account type, but variable names DO NOT change
   const labelName = acct === "company" ? "Organization name" : "Name";
   const labelEmail = acct === "company" ? "Organization email" : "Email Address";
@@ -350,6 +351,26 @@ export default function Signup() {
     return Object.values(next).every((v) => !v);
   }
 
+
+     const uploadFile = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await client.post('/profile/uploadLogo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      return response.data.url; // Return the uploaded file URL
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw new Error('Failed to upload file');
+    }
+  };
+
+
   async function onSubmit(e) {
     e.preventDefault();
     if (!validate()) {
@@ -357,8 +378,24 @@ export default function Signup() {
       return;
     }
 
+
     setLoading(true);
     try {
+
+       let avatarUrl = null;
+          
+          // Upload avatar file first if exists
+          if (form.avatarFile) {
+            try {
+              avatarUrl = await uploadFile(form.avatarFile);
+            } catch (uploadError) {
+              toast.error("Failed to upload profile picture. Please try again.");
+              setLoading(false);
+              return;
+            }
+        }
+
+
       // Build payload with correct field names that match backend expectations
       const payload = {
         name: form.name,
@@ -368,7 +405,7 @@ export default function Signup() {
         password: form.password,
         accountType: acct, // "individual" | "company"
         // Individual fields
-        avatarUrl: form.avatarUrl, // Send base64 data
+        avatarUrl: avatarUrl, 
         birthDate: form.birthDate,
         gender: form.gender,
         nationality: form.nationality,

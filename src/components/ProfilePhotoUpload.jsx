@@ -1,12 +1,14 @@
 // src/components/ProfilePhotoUpload.jsx
 import { useRef, useState, useEffect } from "react";
 import { toast } from "../lib/toast";
-import { updateAvatarUrl, updateCoverImage } from "../api/profile"; // Add updateCoverImage import
+import { updateAvatarUrl, updateCoverImage } from "../api/profile";
 import { Camera } from "lucide-react";
 
 export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "avatar" }) {
+
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
+
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
@@ -42,35 +44,42 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
       return;
     }
 
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select a valid image file.");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
+
     setIsUploading(true);
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64Url = reader.result;
-        onChange(base64Url); // update local state immediately
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
 
-        try {
-          if (type === "avatar") {
-            await updateAvatarUrl({ avatarUrl: base64Url });
-            toast.success("Profile photo updated successfully!");
-          } else if (type === "cover") {
-            await updateCoverImage({ coverImage: base64Url });
-            toast.success("Cover image updated successfully!");
-          }
-        } catch (error) {
-          console.error(`Failed to save ${type}:`, error);
-          toast.error(`Failed to save ${type === "avatar" ? "profile photo" : "cover image"}. Please try again.`);
-          // Revert local state on error
-          onChange(type === "avatar" ? avatarUrl : coverImage);
-        } finally {
-          setIsUploading(false);
-        }
-      };
-      reader.readAsDataURL(file);
+      if (type === "avatar") {
+        await updateAvatarUrl(formData);
+        toast.success("Profile photo updated successfully!");
+      } else if (type === "cover") {
+        await updateCoverImage(formData);
+        toast.success("Cover image updated successfully!");
+      }
+
+      // Create object URL for immediate preview
+      const objectUrl = URL.createObjectURL(file);
+      onChange(objectUrl);
+
     } catch (error) {
-      console.error("Failed to read file:", error);
-      toast.error("Failed to process image. Please try again.");
+      console.error(`Failed to upload ${type}:`, error);
+      toast.error(`Failed to upload ${type === "avatar" ? "profile photo" : "cover image"}. Please try again.`);
+    } finally {
       setIsUploading(false);
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -78,26 +87,24 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
     setIsRemoving(true);
     setShowOptions(false);
     try {
-      onChange(null); // update local state immediately
-
-      try {
-        if (type === "avatar") {
-          await updateAvatarUrl({ avatarUrl: null });
-          toast.success("Profile photo removed successfully!");
-        } else if (type === "cover") {
-          await updateCoverImage({ coverImage: null });
-          toast.success("Cover image removed successfully!");
-        }
-
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
-      } catch (error) {
-        console.error(`Failed to remove ${type}:`, error);
-        toast.error(`Failed to remove ${type === "avatar" ? "profile photo" : "cover image"}. Please try again.`);
-        // Revert local state on error
-        onChange(type === "avatar" ? avatarUrl : coverImage);
+      // Send null to remove the image
+      if (type === "avatar") {
+        await updateAvatarUrl({ avatarUrl: null });
+        toast.success("Profile photo removed successfully!");
+      } else if (type === "cover") {
+        await updateCoverImage({ coverImage: null });
+        toast.success("Cover image removed successfully!");
       }
+
+      onChange(null); // update local state
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+    } catch (error) {
+      console.error(`Failed to remove ${type}:`, error);
+      toast.error(`Failed to remove ${type === "avatar" ? "profile photo" : "cover image"}. Please try again.`);
     } finally {
       setIsRemoving(false);
     }
@@ -110,15 +117,12 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
 
   const handleButtonClick = () => {
     const currentImage = type === "avatar" ? avatarUrl : coverImage;
-    console.log({currentImage})
     if (currentImage) {
       setShowOptions(!showOptions);
     } else {
       fileInputRef.current?.click();
     }
   };
-
-
 
   return (
     <div>
@@ -132,8 +136,7 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
       />
 
       {/* Camera button - position differently based on type */}
-   
-       <div
+      <div
         onClick={handleButtonClick}
         className={`bg-brand-600 rounded-full p-1 flex cursor-pointer hover:opacity-60 transition-opacity ${
           type === "avatar" 
@@ -141,10 +144,15 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
             : "absolute top-2 right-2"
         }`}
       >
-       <div className="flex items-center gap-2">
-         {type!="avatar" && !coverImage &&  <span className="text-white">Add</span>}
-        <Camera size={18} className="text-white"/>
-       </div>
+        <div className="flex items-center gap-2">
+          {type !== "avatar" && !coverImage && <span className="text-white">Add</span>}
+          <Camera size={18} className="text-white"/>
+          {(isUploading || isRemoving) && (
+            <span className="text-white text-xs">
+              {isUploading ? "Uploading..." : "Removing..."}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="relative">
@@ -175,5 +183,6 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
         )}
       </div>
     </div>
+    
   );
 }

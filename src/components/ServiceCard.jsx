@@ -237,7 +237,6 @@ export default function ServiceCard({
   }, [item?.timeAgo, item?.createdAt]);
 
   function onSent() {
-    toast.success("Connection request sent");
     setModalOpen(false);
     setConnectionStatus("pending_outgoing");
     onConnect?.(item);

@@ -161,6 +161,8 @@ export default function CommentsDialog({
       // Background refresh to pick up server-side ordering or new metadata
       // (no loader flicker)
       fetchComments({ silent: true });
+
+       //onClose?.();
     } catch (e) {
       // remove optimistic item
       setComments((arr) => {

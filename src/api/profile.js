@@ -35,7 +35,23 @@ export const deleteGalleryItem  = (id) => client.delete(`/profile/gallery/${id}`
 export const updateAvailability = (payload) => client.put("/profile/availability", payload);
 
 // AVATAR
-export const updateAvatarUrl = (payload) => client.put("/profile/avatar", payload);
+export const updateAvatarUrl = (payload) => {
+  if (payload instanceof FormData) {
+    // File upload
+    return uploadClient.put("/profile/avatar", payload);
+  } else {
+    // JSON payload (for removal)
+    return client.put("/profile/avatar", payload);
+  }
+};
 
-export const updateCoverImage  = (payload) => client.put("/profile/cover-image", payload);
-
+// COVER IMAGE - updated to use FormData
+export const updateCoverImage = (payload) => {
+  if (payload instanceof FormData) {
+    // File upload
+    return uploadClient.put("/profile/cover-image", payload);
+  } else {
+    // JSON payload (for removal)
+    return client.put("/profile/cover-image", payload);
+  }
+};

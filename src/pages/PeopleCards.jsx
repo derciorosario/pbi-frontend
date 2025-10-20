@@ -120,6 +120,7 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
                 type="date"
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                 value={form.date}
+                min={new Date().toISOString().split('T')[0]}
                 onChange={(e) => handleChange("date", e.target.value)}
               />
               {errors.date && <p className="text-xs text-red-600 mt-1">{errors.date}</p>}
@@ -201,7 +202,7 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
 
           {form.mode === "video" ? (
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Call link</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Call link <span className="text-gray-600">(optional)</span></label>
               <div className="flex items-center gap-2">
                 <div className="rounded-lg border border-gray-300 px-3 py-2 flex-1 flex items-center gap-2">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -210,8 +211,8 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
                   </svg>
                   <input
                     type="url"
+                    placeholder="Insert call link"
                     className="w-full text-sm focus:outline-none"
-                    placeholder="https://meet.google.com/abc-defg-hij"
                     value={form.link}
                     onChange={(e) => handleChange("link", e.target.value)}
                   />
@@ -572,7 +573,7 @@ export default function PeopleProfileCard({
 
           {/* Role */}
           {role ? (
-            <div className={`text-sm ${isCompany ? 'font-semibold text-gray-700' : 'font-semibold text-gray-600'} break-words`} title={role}>
+            <div className={`text-[13px] line-clamp-3 ${isCompany ? 'font-semibold text-gray-700' : 'font-semibold text-gray-600'} break-words`} title={role}>
               {isCompany ? `${role || 'Company'}` : role}
             </div>
           ) : (

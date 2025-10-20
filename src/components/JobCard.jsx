@@ -224,7 +224,6 @@ export default function JobCard({
   );
 
   function onSent() {
-    toast.success("Connection request sent");
     setModalOpen(false);
     setConnectionStatus("pending_outgoing");
   }
@@ -814,6 +813,7 @@ export default function JobCard({
                   Applied
                 </button>
               ) : (
+
                 <button
                   onClick={() => {
                     if (!user?.id) {
@@ -826,17 +826,30 @@ export default function JobCard({
                 >
                   Apply
                 </button>
+
               )}
 
               {connectionStatus !== "connected" && (
                 <button
+
+                 disabled={connectionStatus === "pending_outgoing" ||
+                    connectionStatus === "outgoing_pending" ||
+                    connectionStatus === "incoming_pending"}
+
                   onClick={() => {
+
+                    if(connectionStatus === "pending_incoming" ||
+                      connectionStatus === "incoming_pending"){
+                        navigate("/notifications")
+                        return
+                      }
                     if (!user?.id) {
                       data._showPopUp("login_prompt");
                       return;
                     }
                     setModalOpen(true);
                   }}
+
                   className={`flex-1 px-4 py-2 rounded-full font-medium text-sm transition-colors ${
                     connectionStatus === "pending_outgoing" ||
                     connectionStatus === "outgoing_pending"

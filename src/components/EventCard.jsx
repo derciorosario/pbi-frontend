@@ -326,7 +326,6 @@ export default function EventCard({
   const timeAgo = useMemo(() => computeTimeAgo(e?.timeAgo, e?.createdAt), [e?.timeAgo, e?.createdAt]);
 
   function onSent() {
-    toast.success("Connection request sent");
     setModalOpen(false);
     setConnectionStatus("pending_outgoing");
     // Restore body scroll when modal closes
