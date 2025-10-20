@@ -28,9 +28,14 @@ export const createRepost = (targetType, targetId, comment = null) =>
 export const getReposts = (targetType, targetId) => 
   client.get(`/reposts/${targetType}/${targetId}`);
 
+export const getLikes = (targetType, targetId) => {
+  return client.get(`/likes/${targetType}/${targetId}/users`);
+};
+
 export const deleteRepost = (repostId) => 
   client.delete(`/reposts/${repostId}`);
 
 // REPORTS
 export const reportContent = (targetType, targetId, category, description) => 
   client.post("/reports", { targetType, targetId, category, description });
+

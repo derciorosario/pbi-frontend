@@ -210,129 +210,10 @@ export default function SuggestedMatches({
     <>
       <div className="space-y-4">
 
-          {/* Nearby */}
-        <div className="rounded-lg bg-white border border-gray-100 shadow p-4">
-          <h3 className="font-semibold">Nearby suggestions</h3>
-          <div className="mt-3 space-y-3">
-            {loading ? (
-              // Skeleton loaders for nearby professionals
-              <>
-                <NearbyCardSkeleton />
-              </>
-            ) : (
-              // Actual nearby content
-              <>
-                {nearby.map((p, idx) => {
-                  const pct = getMatchPct(p);
-                  return (
-                    <div
-                      key={p.id || p.name || idx}
-                      className="flex flex-col border-b last:border-b-0 pb-3 last:pb-0 relative"
-                    >
-                      <div>
-                        {pct !== null && (
-                          <span
-                            className="inline-flex mb-2 items-center rounded-full bg-gray-100  text-gray-600  border border-gray-200 px-2 py-0.5 text-[11px] font-semibold"
-                            title={`${pct}% match`}
-                          >
-                            {pct}% match
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between gap-1">
-
-                           <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            onClick={() => {
-                              navigate('/profile/'+p.id)
-                            }}
-                            className="grid absolute top-0 right-2 _profile shrink-0 place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600"
-                            title="View profile"
-                          >
-                            <I.see />
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Avatar item={p} idx={idx} size="sm" />
-                          <div className="min-w-0">
-                            <div
-                              className="text-sm font-medium truncate max-w-[160px]"
-                              title={p.name}
-                            >
-                              {p.name}
-                            </div>
-                            <div
-                              className="text-xs text-gray-500 truncate max-w-[200px]"
-                              title={`${
-                                p.professionalTitle
-                              }`}
-                            >
-                              {p.professionalTitle}
-                             
-                            </div>
-
-                            <div title={`${p.location}`} className="text-xs flex items-center mt-1 text-gray-500 truncate max-w-[200px]">
-                             {p.location ? (
-                                <>
-                                  <MapPin size={13}/>
-                                  {p.location}
-                                </>
-                              ) : null}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {renderConnectButton(p)}
-                        </div>
-                      </div>
-
-                      {Array.isArray(p.cats) && p.cats.length > 0 && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {p.cats
-                            .filter((_, i) => i <= 2)
-                            .map((c) => (
-                              <span
-                                key={c}
-                                className="inline-block bg-gray-100 text-gray-600 text-[11px] px-2 py-0.5 rounded-full truncate max-w-[120px]"
-                                title={c}
-                              >
-                                {c}
-                              </span>
-                            ))}
-                        </div>
-                      )}
-
-                      {pct !== null && (
-                        <div className="mt-2 hidden">
-                          <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-1.5 bg-brand-500 rounded-full"
-                              style={{ width: `${pct}%` }}
-                              aria-hidden="true"
-                            />
-                          </div>
-                          <span className="sr-only">{pct}% match</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-                {nearby.length === 0 && (
-                  <div className="text-sm text-gray-500 border rounded-xl p-3">
-                    No nearby profiles for these filters.
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
         {/* Matches */}
         <div className={`rounded-lg bg-white border border-gray-100 shadow p-4 ${!user ? 'hidden':''}`}>
           <h3 className="font-semibold">
-            Other suggestions ({loading ? "..." : matches.length})
+            People You May Want to Meet {/**({loading ? "..." : matches.length}) */}
           </h3>
           <div className="mt-4 space-y-3">
             {loading ? (
@@ -461,6 +342,127 @@ export default function SuggestedMatches({
             )}
           </div>
         </div>
+
+        
+          {/* Nearby */}
+        <div className="rounded-lg bg-white border border-gray-100 shadow p-4">
+          <h3 className="font-semibold">People Around You</h3>
+          <div className="mt-3 space-y-3">
+            {loading ? (
+              // Skeleton loaders for nearby professionals
+              <>
+                <NearbyCardSkeleton />
+              </>
+            ) : (
+              // Actual nearby content
+              <>
+                {nearby.map((p, idx) => {
+                  const pct = getMatchPct(p);
+                  return (
+                    <div
+                      key={p.id || p.name || idx}
+                      className="flex flex-col border-b last:border-b-0 pb-3 last:pb-0 relative"
+                    >
+                      <div>
+                        {pct !== null && (
+                          <span
+                            className="inline-flex mb-2 items-center rounded-full bg-gray-100  text-gray-600  border border-gray-200 px-2 py-0.5 text-[11px] font-semibold"
+                            title={`${pct}% match`}
+                          >
+                            {pct}% match
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between gap-1">
+
+                           <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => {
+                              navigate('/profile/'+p.id)
+                            }}
+                            className="grid absolute top-0 right-2 _profile shrink-0 place-items-center h-8 w-8 rounded-lg border border-gray-200 text-gray-600"
+                            title="View profile"
+                          >
+                            <I.see />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar item={p} idx={idx} size="sm" />
+                          <div className="min-w-0">
+                            <div
+                              className="text-sm font-medium truncate max-w-[160px]"
+                              title={p.name}
+                            >
+                              {p.name}
+                            </div>
+                            <div
+                              className="text-xs text-gray-500 truncate max-w-[200px]"
+                              title={`${
+                                p.professionalTitle
+                              }`}
+                            >
+                              {p.professionalTitle}
+                             
+                            </div>
+
+                            <div title={`${p.location}`} className="text-xs flex items-center mt-1 text-gray-500 truncate max-w-[200px]">
+                             {p.location ? (
+                                <>
+                                  <MapPin size={13}/>
+                                  {p.location}
+                                </>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {renderConnectButton(p)}
+                        </div>
+                      </div>
+
+                      {Array.isArray(p.cats) && p.cats.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {p.cats
+                            .filter((_, i) => i <= 2)
+                            .map((c) => (
+                              <span
+                                key={c}
+                                className="inline-block bg-gray-100 text-gray-600 text-[11px] px-2 py-0.5 rounded-full truncate max-w-[120px]"
+                                title={c}
+                              >
+                                {c}
+                              </span>
+                            ))}
+                        </div>
+                      )}
+
+                      {pct !== null && (
+                        <div className="mt-2 hidden">
+                          <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-1.5 bg-brand-500 rounded-full"
+                              style={{ width: `${pct}%` }}
+                              aria-hidden="true"
+                            />
+                          </div>
+                          <span className="sr-only">{pct}% match</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {nearby.length === 0 && (
+                  <div className="text-sm text-gray-500 border rounded-xl p-3">
+                    No nearby profiles for these filters.
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
 
       
       </div>

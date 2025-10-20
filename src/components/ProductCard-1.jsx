@@ -44,6 +44,8 @@ import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import LogoGray from '../assets/logo.png'
 import client, { API_URL } from "../api/client";
+import LikesDialog from "./LikesDialog";
+
 
 export default function ProductCard({
   item,
@@ -62,6 +64,7 @@ export default function ProductCard({
   const [isHovered, setIsHovered] = useState(false);
   const [openId, setOpenId] = useState(null);
   const [productDetailsOpen, setProductDetailsOpen] = useState(false);
+   const [likesDialogOpen, setLikesDialogOpen] = useState(false);
   
   // Track connection status locally (for immediate UI updates)
   const [connectionStatus, setConnectionStatus] = useState(item?.connectionStatus || "none");
@@ -626,35 +629,38 @@ export default function ProductCard({
           </div>
         </div>
 
-        {/* ENGAGEMENT BAR - Like/Comment counts */}
-        {(likeCount > 0 || commentCount > 0) && (
-          <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
-            <div className="flex items-center gap-1">
-              {likeCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <div className="flex -space-x-1">
-                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-                      <Heart size={10} className="text-white fill-white" />
-                    </div>
-                  </div>
-                  <span>
-                   {likeCount}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-3">
-              {commentCount > 0 && (
-                <button
-                  onClick={() => setCommentsDialogOpen(true)}
-                  className="hover:underline"
-                >
-                  {commentCount} comment{commentCount !== 1 ? "s" : ""}
-                </button>
-              )}
-            </div>
-          </div>
+       
+          {(likeCount > 0 || commentCount > 0) && (
+             <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+               <div className="flex items-center gap-1">
+                 {likeCount > 0 && (
+                   <div className="flex items-center gap-1">
+                     <div className="flex -space-x-1">
+                       <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                         <Heart size={10} className="text-white fill-white" />
+                       </div>
+                     </div>
+                     <button
+                       onClick={() => setLikesDialogOpen(true)}
+                       className="hover:underline cursor-pointer"
+                     >
+                       {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+                     </button>
+                   </div>
+                 )}
+               </div>
+       
+               <div className="flex items-center gap-3">
+                 {commentCount > 0 && (
+                   <button
+                     onClick={() => setCommentsDialogOpen(true)}
+                     className="hover:underline"
+                   >
+                     {commentCount} comment{commentCount !== 1 ? "s" : ""}
+                   </button>
+                 )}
+               </div>
+             </div>
         )}
 
         {/* ACTION BUTTONS */}
@@ -816,6 +822,13 @@ export default function ProductCard({
         inputPlaceholder="Describe the issue (spam, scam, offensive, etc.)"
         requireValue
         onConfirm={reportProduct}
+      />
+
+      <LikesDialog
+        open={likesDialogOpen}
+        onClose={() => setLikesDialogOpen(false)}
+        entityType="product"
+        entityId={item?.id}
       />
 
       <CommentsDialog

@@ -53,6 +53,7 @@ export default function CrowdfundingPage() {
   const [subcategoryId, setSubcategoryId] = useState();
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
+  const [fundingView,setFundingView]=useState()  
 
   const [generalTree, setGeneralTree] = useState([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState({});
@@ -174,12 +175,12 @@ export default function CrowdfundingPage() {
         tab: "funding",
         q: debouncedQ || undefined,
         country: country || undefined,
+        fundingView:fundingView || undefined,
         city: city || undefined,
         categoryId: categoryId || undefined,
         subcategoryId: subcategoryId || undefined,
         goalId: goalId || undefined,
         role:role || undefined,
-
         // include ALL filters so backend can leverage them when needed:
         // products
         price: price || undefined,
@@ -242,6 +243,7 @@ export default function CrowdfundingPage() {
     data._scrollToSection('top',true);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
    price,
+   fundingView,
    audienceSelections,
    serviceType,
    priceType,
@@ -331,6 +333,8 @@ export default function CrowdfundingPage() {
     // industries
     selectedIndustries,
     setSelectedIndustries,
+    fundingView,
+    setFundingView,
     query,
     setQuery,
     country,

@@ -54,6 +54,7 @@ export default function TourismPage() {
   const [subcategoryId, setSubcategoryId] = useState();
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
+  const [tourismView,setTourismView]=useState('')
 
   const [generalTree, setGeneralTree] = useState([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState({});
@@ -174,6 +175,7 @@ export default function TourismPage() {
         tab: "tourism",
         q: debouncedQ || undefined,
         country: country || undefined,
+        tourismView:tourismView || undefined,
         city: city || undefined,
         categoryId: categoryId || undefined,
         subcategoryId: subcategoryId || undefined,
@@ -241,6 +243,7 @@ export default function TourismPage() {
     }
     data._scrollToSection('top',true);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
+    tourismView,
    audienceSelections,
    price,
    serviceType,
@@ -329,6 +332,8 @@ export default function TourismPage() {
     onSubcategoryChange: handleSubcategoryChange,
     query,
     setQuery,
+    tourismView,
+    setTourismView,
     country,
     setCountry,
     city,

@@ -55,6 +55,7 @@ export default function ServicesPage() {
   const [subcategoryId, setSubcategoryId] = useState();
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
+  const [servicesView,setServicesView]=useState()
 
   const [generalTree, setGeneralTree] = useState([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState({});
@@ -177,6 +178,7 @@ export default function ServicesPage() {
         tab: "services",
         q: debouncedQ || undefined,
         country: country || undefined,
+        servicesView:servicesView || undefined,
         city: city || undefined,
         categoryId: categoryId || undefined,
         subcategoryId: subcategoryId || undefined,
@@ -200,6 +202,8 @@ export default function ServicesPage() {
         postType: postType || undefined,
         season: season || undefined,
         budgetRange: budgetRange || undefined,
+
+        servicesView:servicesView || undefined,
         // funding
         fundingGoal: fundingGoal || undefined,
         amountRaised: amountRaised || undefined,
@@ -245,6 +249,7 @@ export default function ServicesPage() {
     data._scrollToSection('top',true);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
        audienceSelections,
+       servicesView,
    price,
    serviceType,
    priceType,
@@ -330,6 +335,7 @@ export default function ServicesPage() {
     selectedFilters,
     setSelectedFilters,
     onSubcategoryChange: handleSubcategoryChange,
+    servicesView,
     query,
     setQuery,
     country,
@@ -357,6 +363,10 @@ export default function ServicesPage() {
     setPriceType,
     deliveryTime,
     setDeliveryTime,
+
+
+    servicesView,
+    setServicesView,
 
     // shared
     experienceLevel,
@@ -414,7 +424,7 @@ export default function ServicesPage() {
             <div className="text-sm text-gray-600">
               {totalCount} result{totalCount === 1 ? "" : "s"}
             </div>
-          )}
+    )}
           
 
     if(!loadingFeed && items.length == 0){

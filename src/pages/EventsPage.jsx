@@ -58,6 +58,8 @@ export default function EventsPage() {
   const [generalTree, setGeneralTree] = useState([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState({});
 
+  const [eventsView,setEventsView]=useState('')
+
   useEffect(() => {
       (async () => {
         try {
@@ -231,6 +233,8 @@ export default function EventsPage() {
         date: date || undefined,
         registrationType: registrationType || undefined,
 
+        eventsView: eventsView || undefined,
+
         // Include selected categories as IDs
         generalCategoryIds: selectedFilters.filter(id =>
           generalTree.some(category => category.id === id)
@@ -288,6 +292,7 @@ export default function EventsPage() {
     }
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
         audienceSelections,
+    eventsView,
     price,
     serviceType,
     priceType,
@@ -345,6 +350,7 @@ export default function EventsPage() {
       currency,
       deadline,
       eventType,
+      eventsView,
       date,
       registrationType,
       selectedFilters: [...selectedFilters].sort(),
@@ -488,6 +494,9 @@ export default function EventsPage() {
     setPriceType,
     deliveryTime,
     setDeliveryTime,
+
+    eventsView,
+    setEventsView,
 
     // shared
     experienceLevel,

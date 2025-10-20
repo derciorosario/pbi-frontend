@@ -16,6 +16,8 @@ import CommentsDialog from "./CommentsDialog";
 import client,{API_URL} from "../api/client";
 import LogoGray from '../assets/logo.png';
 import { Edit, Eye, Share2, MapPin, Clock, User as UserIcon, Copy as CopyIcon, Heart, MessageCircle, Flag, Calendar, MoreVertical, Trash2, Globe } from "lucide-react";
+import LikesDialog from "./LikesDialog";
+
 import {
   FacebookShareButton,
   FacebookIcon,
@@ -61,6 +63,7 @@ export default function EventCard({
   const [registrationStatus, setRegistrationStatus] = useState(
     e?.registrationStatus || "not_registered"
   );
+  const [likesDialogOpen, setLikesDialogOpen] = useState(false);
   const [eventDetailsOpen, setEventDetailsOpen] = useState(false); // event details modal
   const [registrationOpen, setRegistrationOpen] = useState(false); // event registration modal
 
@@ -564,35 +567,39 @@ export default function EventCard({
         </div>
 
         {/* ENGAGEMENT BAR - Like/Comment counts */}
-        {(likeCount > 0 || commentCount > 0) && (
-          <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+       
+       {(likeCount > 0 || commentCount > 0) && (
+      <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+        <div className="flex items-center gap-1">
+          {likeCount > 0 && (
             <div className="flex items-center gap-1">
-              {likeCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <div className="flex -space-x-1">
-                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-                      <Heart size={10} className="text-white fill-white" />
-                    </div>
-                  </div>
-                  <span>
-                    {likeCount}
-                  </span>
+              <div className="flex -space-x-1">
+                <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                  <Heart size={10} className="text-white fill-white" />
                 </div>
-              )}
+              </div>
+              <button
+                onClick={() => setLikesDialogOpen(true)}
+                className="hover:underline cursor-pointer"
+              >
+                {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+              </button>
             </div>
+          )}
+        </div>
 
-            <div className="flex items-center gap-3">
-              {commentCount > 0 && (
-                <button
-                  onClick={() => setCommentsDialogOpen(true)}
-                  className="hover:underline"
-                >
-                  {commentCount} comment{commentCount !== 1 ? "s" : ""}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {commentCount > 0 && (
+            <button
+              onClick={() => setCommentsDialogOpen(true)}
+              className="hover:underline"
+            >
+              {commentCount} comment{commentCount !== 1 ? "s" : ""}
+            </button>
+          )}
+        </div>
+      </div>
+    )}
 
         {/* ACTION BUTTONS */}
         <div className="px-2 py-1 border-t border-gray-100 grid grid-cols-4 gap-1">
@@ -748,6 +755,13 @@ export default function EventCard({
         isOpen={!!openId}
         onClose={() => setOpenId(null)}
         onSent={onSent}
+      />
+
+      <LikesDialog
+            open={likesDialogOpen}
+            onClose={() => setLikesDialogOpen(false)}
+            entityType="event"
+            entityId={e?.id}
       />
 
       {/* Event Details Modal */}

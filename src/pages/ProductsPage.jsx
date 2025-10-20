@@ -57,6 +57,7 @@ export default function ProductsPage() {
   const [subcategoryId, setSubcategoryId] = useState();
   const [goalId, setGoalId] = useState();
   const [role, setRole] = useState();
+  const [productsView,setProductsView]=useState()
 
 
   const [generalTree, setGeneralTree] = useState([]);
@@ -182,6 +183,7 @@ export default function ProductsPage() {
         q: debouncedQ || undefined,
         country: country || undefined,
         city: city || undefined,
+        productsView:productsView || undefined,
         categoryId: categoryId || undefined,
         subcategoryId: subcategoryId || undefined,
         goalId: goalId || undefined,
@@ -250,6 +252,7 @@ export default function ProductsPage() {
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
 
        audienceSelections,
+       productsView,
   // price,
    serviceType,
    priceType,
@@ -338,6 +341,8 @@ export default function ProductsPage() {
     query,
     setQuery,
     country,
+    productsView,
+    setProductsView,
     setCountry,
     city,
     setCity,

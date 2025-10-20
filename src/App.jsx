@@ -90,6 +90,7 @@ function App() {
         <Route path="/onboarding/goals"       element={<Goals />} />
 
         <Route path="/terms" element={<TermsOfServicePage />} />
+        <Route path="/landing" element={<Home />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
         <Route element={<ProtectedRoute />}>

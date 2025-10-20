@@ -335,7 +335,7 @@ function Header({ page }) {
             : "text-gray-700 hover:bg-brand-50 hover:text-brand-600"
         } ${shouldShowAllItems ? 'flex-shrink-0' : ''}`}
       >
-        {item.icon} {!user && item.name === "feed" ? "Home" : item.label}
+        {item.icon} {(!user || pathname.includes('/landing')) && item.name === "feed" ? "Home" : item.label}
       </a>
     );
   };
@@ -615,6 +615,12 @@ function Header({ page }) {
                       >
                         Sign out
                       </button>
+
+                       <div className="border-t border-gray-100 mt-3 pt-2 text-[11px] text-gray-400 text-center space-x-1">
+                          <a href="/privacy" className="hover:underline">Privacy</a> ·
+                          <a href="/terms" className="hover:underline">Terms</a> ·
+                          <a href="/landing" className="hover:underline">About 54links</a>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -712,7 +718,7 @@ function Header({ page }) {
                   >
                     <span className="shrink-0">{item.icon}</span>
                     <span className="text-sm font-medium">
-                      {!user && item.name === "feed" ? "Home" : item.label}
+                      {(!user || pathname.includes('/landing')) && item.name === "feed" ? "Home" : item.label}
                     </span>
                   </button>
                 );
@@ -783,6 +789,12 @@ function Header({ page }) {
                   >
                     Sign out
                   </button>
+
+                   <div className="border-t border-gray-100 mt-3 pt-2 text-[11px] text-gray-400 text-center space-x-1">
+                          <a href="/privacy" className="hover:underline">Privacy</a> ·
+                          <a href="/terms" className="hover:underline">Terms</a> ·
+                          <a href="/landing" className="hover:underline">About 54links</a>
+                    </div>
                 </>
               ) : (
                 <div className="flex gap-2">

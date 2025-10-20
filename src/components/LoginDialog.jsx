@@ -1010,8 +1010,19 @@ async function onSignupSubmit(e) {
                   </button>
                 }
               />
-              {!signupErrors.password &&  <p className="text-xs text-gray-500 my-2">Create a strong password with a mix of letters, numbers and symbols.</p>}
-
+            
+           
+             {/* Password validation feedback */}
+            {signupForm.password && (/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/.test(signupForm.password)) ? (
+              <div className="flex items-center gap-2 mt-2 text-green-600">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+                <p className="text-xs">Password validated</p>
+              </div>
+            ) : !signupErrors.password ? (
+              <p className="text-xs text-gray-500 my-2">Create a strong password with a mix of letters, numbers and symbols.</p>
+            ) : null}
 
               </div>
               <Input

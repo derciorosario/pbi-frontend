@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import client from "../../api/client";
 import I from "../../lib/icons.jsx";
 import LoginDialog from "../../components/LoginDialog.jsx";
@@ -508,19 +508,19 @@ export default function HomePage() {
   const {user,settings}=useAuth()
 
 
-  
+  const {pathname} = useLocation()
 
 
   return (
     <DefaultLayout makePublic={true}>
-     <Header page={'feed'}/>
 
+       <Header page={'feed'}/>
        {settings?.hideMainFeed && <></>}
 
-       {(user && !settings?.hideMainFeed) && <FeedPage/>}
+       {(user && !settings?.hideMainFeed && !pathname.includes('/landing')) && <FeedPage/>}
 
       {/* Enhanced Landing Page - Only show when user is not logged in */}
-      <section className={`relative overflow-visible ${user?.id ? "hidden" : ""}`}>
+      <section className={`relative overflow-visible ${(user?.id && !pathname.includes('/landing')) ? "hidden" : ""}`}>
 
          {/* Hero Section */}
          <div className="relative bg-brand-600 overflow-hidden">
@@ -1556,9 +1556,16 @@ export default function HomePage() {
                          }
                        />
 
-
-                       {!signupErrors.password &&  <p className="text-xs text-gray-500 my-2">Create a strong password with a mix of letters, numbers and symbols.</p>}
-
+                      {signupForm.password && (/^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/.test(signupForm.password)) ? (
+                      <div className="flex items-center gap-2 mt-2 text-green-600">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                        <p className="text-xs">Password validated</p>
+                      </div>
+                    ) : !signupErrors.password ? (
+                      <p className="text-xs text-gray-500 my-2">Create a strong password with a mix of letters, numbers and symbols.</p>
+                    ) : null}
 
 
                       </div>
