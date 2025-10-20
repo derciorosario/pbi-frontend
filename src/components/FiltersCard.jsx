@@ -91,6 +91,10 @@ export default function FiltersCard({
   jobsView,
   setJobsView,
 
+
+  eventsView,
+  setEventsView,
+
   /* Events */
   eventType,
   setEventType,
@@ -1925,7 +1929,7 @@ export default function FiltersCard({
             hide={from !== "jobs"}
             value={jobsView || ""}
             onChange={setJobsView}
-            options={["Job Seekers", "Job Offers"]}
+            options={["Job Seekers", "Job Offers","Job Experiences"]}
             label="View"
             placeholder="Select"
           />

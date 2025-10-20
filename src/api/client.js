@@ -1,6 +1,6 @@
 // src/api/client.js
 import axios from "axios";
-const env="pro"
+const env="dev"
 
 export const API_URL = env=="dev"
   ? "http://localhost:5000/api"
