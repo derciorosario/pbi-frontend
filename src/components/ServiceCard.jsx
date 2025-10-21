@@ -1,4 +1,3 @@
-
 // src/components/ServiceCard.jsx
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +15,8 @@ import {
   MoreVertical,
   Trash2,
   Globe,
+  Play,
+  Pause,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -44,6 +45,45 @@ import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import client from "../api/client";
 import LikesDialog from "./LikesDialog";
+import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
+
+// Helper function to validate media URLs
+const isValidMediaUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  return url.startsWith("data:") || url.startsWith("http://") || url.startsWith("https://");
+};
+
+// Helper function to get file extension
+const getFileExtension = (url) => {
+  if (!url) return '';
+  const match = url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  return match ? match[1].toLowerCase() : '';
+};
+
+// Helper function to determine media type
+const getMediaType = (url) => {
+  if (!url) return 'unknown';
+  
+  // Check data URLs
+  if (url.startsWith("data:")) {
+    if (url.startsWith("data:image")) return 'image';
+    if (url.startsWith("data:video")) return 'video';
+    return 'unknown';
+  }
+  
+  // Check file extension
+  const extension = getFileExtension(url);
+  
+  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'];
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+  const documentExtensions = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'];
+  
+  if (videoExtensions.includes(extension)) return 'video';
+  if (imageExtensions.includes(extension)) return 'image';
+  if (documentExtensions.includes(extension)) return 'document';
+  
+  return 'unknown';
+};
 
 export default function ServiceCard({
   item,
@@ -71,15 +111,13 @@ export default function ServiceCard({
   const [openId, setOpenId] = useState(null);   
 
   const [likesDialogOpen, setLikesDialogOpen] = useState(false);
-              // Profile modal
 
   // Social state
-  const [liked, setLiked] = useState(!!item?.liked);
-  const [likeCount, setLikeCount] = useState(Number(item?.likes || 0));
-  const [commentCount, setCommentCount] = useState(
-    Array.isArray(item?.comments) ? item.comments.length : Number(item?.commentsCount || 0)
-  );
-
+  const [liked, setLiked] =  useState(!!item?.isLiked);
+  const [likeCount, setLikeCount] = useState(Number(item.likesCount || 0));
+  const [commentCount, setCommentCount] = useState(Number(item?.commentsCount || 0));
+   
+ 
   // Report dialog
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -97,10 +135,15 @@ export default function ServiceCard({
   const shareMenuRef = useRef(null);
   const cardRef = useRef(null);
 
-  // Image slider state
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  // Media slider state
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [showVideoControls, setShowVideoControls] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   
+  // Video control timeout ref
+  const videoControlsTimeoutRef = useRef(null);
+
   // Close menus on outside click / Esc
   useEffect(() => {
     function onDown(e) {
@@ -134,8 +177,17 @@ export default function ServiceCard({
     };
   }, []);
 
-  // Initial fetch for like & comments count (optional)
+  // Clear video controls timeout on unmount
   useEffect(() => {
+    return () => {
+      if (videoControlsTimeoutRef.current) {
+        clearTimeout(videoControlsTimeoutRef.current);
+      }
+    };
+  }, []);
+
+   // Initial fetch for like & comments count (optional)
+   /*useEffect(() => { leave it like this, commented
     if (!item?.id) return;
     socialApi
       .getLikeStatus("service", item.id)
@@ -151,43 +203,39 @@ export default function ServiceCard({
         setCommentCount(len);
       })
       .catch(() => {});
-  }, [item?.id]);
+  }, [item?.id]);*/
 
+  // Get all valid media for slider (images and videos only, no documents)
+  const getValidMedia = () => {
+    const mediaItems = item?.images || [];
+    const validMedia = [];
 
-  
-
-  // Get all valid images for slider
-  const getValidImages = () => {
-    const attachments = item?.images || [];
-    const validImages = [];
-
-    // Add base64 images
-    attachments.forEach(att => {
-      if (att?.startsWith("data:image")) {
-        validImages.push(att);
+    mediaItems.forEach((mediaUrl, index) => {
+      if (isValidMediaUrl(mediaUrl)) {
+        const mediaType = getMediaType(mediaUrl);
+        // Only include images and videos in the slider
+        if (mediaType === 'image' || mediaType === 'video') {
+          validMedia.push({
+            url: mediaUrl,
+            type: mediaType,
+            name: `media-${index}`
+          });
+        }
       }
     });
 
-    // Add URL images
-    attachments.forEach(att => {
-      if (typeof att === "string" &&
-          (/\.(jpe?g|png|gif|webp|svg)$/i.test(att) || att.startsWith("http://") || att.startsWith("https://"))) {
-        if (!validImages.includes(att)) validImages.push(att);
-      }
+    // Sort: videos first, then images
+    return validMedia.sort((a, b) => {
+      if (a.type === 'video' && b.type !== 'video') return -1;
+      if (a.type !== 'video' && b.type === 'video') return 1;
+      return 0;
     });
-
-    // Fallback to item.images[0] if valid
-    if (validImages.length === 0 && item?.images?.[0] &&
-        (item.images[0].startsWith("http://") || item.images[0].startsWith("https://")) &&
-        /\.(jpe?g|png|gif|webp|svg)$/i.test(item.images[0])) {
-      validImages.push(item.images[0]);
-    }
-
-    return validImages;
   };
 
-  const validImages = getValidImages();
-  const hasMultipleImages = validImages.length > 1;
+  const validMedia = getValidMedia();
+  const hasMultipleMedia = validMedia.length > 1;
+  const currentMedia = validMedia[currentMediaIndex];
+  const isCurrentVideo = currentMedia?.type === 'video';
 
   const allTags = [
     "Service",
@@ -265,6 +313,60 @@ export default function ServiceCard({
     return textContent;
   };
 
+  // Video control functions
+  const handleVideoPlayPause = () => {
+    setIsVideoPlaying(!isVideoPlaying);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPlay = () => {
+    setIsVideoPlaying(true);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPause = () => {
+    setIsVideoPlaying(false);
+    setShowVideoControls(true);
+    
+    // Keep controls visible when paused
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+  };
+
+  const handleMediaClick = (e) => {
+    if (isCurrentVideo) {
+      // For videos, handle play/pause
+      e.stopPropagation();
+      handleVideoPlayPause();
+    } else {
+      // For images, open details modal
+      if (isOwner) {
+        if (onEdit) onEdit(item);
+        else navigate(`/service/${item.id}`);
+      } else {
+        setDetailsModalOpen(true);
+        onDetails?.(item);
+      }
+    }
+  };
+
   // Determine if we're in list mode
   const isList = type === "list";
 
@@ -306,8 +408,6 @@ export default function ServiceCard({
 
   // Use provider avatar, not post image
   const providerAvatarUrl = item?.avatarUrl || null;
-
-  let imageUrl = validImages.length > 0 ? validImages[0] : null;
 
   // Share data
   const shareUrl = `${window.location.origin}/service/${item?.id}`;
@@ -492,66 +592,97 @@ export default function ServiceCard({
 
         </div>
 
-        {/* IMAGE (if exists and not in text mode) */}
-        {settings?.contentType !== "text" && imageUrl && (
-          <div className="relative cursor-pointer">
-            {hasMultipleImages ? (
-              <div className="relative overflow-hidden">
+        {/* MEDIA (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && validMedia.length > 0 && (
+          <div className="relative">
+            {/* Media Slider */}
+            <div 
+              onClick={handleMediaClick}
+              className="relative w-full max-h-96 overflow-hidden cursor-pointer"
+            >
+              {hasMultipleMedia ? (
                 <div
-                  className="flex w-full max-h-96 transition-transform duration-300 ease-in-out"
-                  style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                  className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                  style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}
                 >
-                  {validImages.map((img, index) => (
+                  {validMedia.map((media, index) => (
+                    <div key={index} className="flex-shrink-0 w-full h-96 relative">
+                      {media.type === 'video' ? (
+                        <div className="relative w-full h-full bg-black">
+                          <VideoPlayer
+                            src={media.url}
+                            className="w-full h-full object-contain"
+                            controls={false}
+                            autoPlay={false}
+                            muted
+                            isPlaying={index === currentMediaIndex && isVideoPlaying}
+                            onPlay={handleVideoPlay}
+                            onPause={handleVideoPause}
+                          />
+                        </div>
+                      ) : (
+                        <img
+                          src={media.url}
+                          alt={media.name || `Media ${index + 1}`}
+                          className="w-full h-96 object-cover"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="w-full h-96 relative">
+                  {currentMedia.type === 'video' ? (
+                    <div className="relative w-full h-full bg-black">
+                      <VideoPlayer
+                        src={currentMedia.url}
+                        className="w-full h-full object-contain"
+                        controls={false}
+                        autoPlay={false}
+                        muted
+                        isPlaying={isVideoPlaying}
+                        onPlay={handleVideoPlay}
+                        onPause={handleVideoPause}
+                      />
+                    </div>
+                  ) : (
                     <img
-                     onClick={() => {
-                        if (isOwner) {
-                          if (onEdit) onEdit(item);
-                          else navigate(`/service/${item.id}`);
-                        } else {
-                          setDetailsModalOpen(true);
-                          onDetails?.(item);
-                        }
-                      }}
-                      key={index}
-                      src={img}
-                      alt={`${item?.title} - ${index + 1}`}
-                      className="flex-shrink-0 w-full max-h-96 object-cover"
+                      src={currentMedia.url}
+                      alt={currentMedia.name || "Media"}
+                      className="w-full h-96 object-cover"
                     />
-                  ))}
+                  )}
                 </div>
-                {/* Slider Dots */}
-                <div className="absolute bottom-3 right-3 flex gap-1">
-                  {validImages.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentImageIndex(index);
-                      }}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                      }`}
-                      aria-label={`Go to image ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <img
+              )}
+            </div>
 
-                src={imageUrl}
-                alt={item?.title}
-                className="w-full max-h-96 object-cover cursor-pointer"
-                 onClick={() => {
-                  if (isOwner) {
-                    if (onEdit) onEdit(item);
-                    else navigate(`/service/${item.id}`);
-                  } else {
-                    setDetailsModalOpen(true);
-                    onDetails?.(item);
-                  }
-                }}
-              />
+            {/* Slider Dots */}
+            {hasMultipleMedia && (
+              <div className="absolute bottom-3 right-3 flex gap-1">
+                {validMedia.map((media, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentMediaIndex(index);
+                      // Reset video state when changing slides
+                      if (media.type === 'video') {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(true);
+                      } else {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(false);
+                      }
+                    }}
+                    className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                      index === currentMediaIndex 
+                        ? (media.type === 'video' ? 'bg-blue-500' : 'bg-white')
+                        : 'bg-white/50'
+                    }`}
+                    aria-label={`Go to ${media.type} ${index + 1}`}
+                  />
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -963,154 +1094,3 @@ export default function ServiceCard({
     );
   }
 }
-
-// Options menu
-const OptionsMenu = ({ item, optionsMenuRef, setOptionsMenuOpen, setShowDeleteConfirm, showDeleteConfirm, setIsDeleted }) => (
-  <div
-    ref={optionsMenuRef}
-    className="absolute z-30 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-xl top-12 right-3"
-    role="dialog"
-    aria-label="Options menu"
-  >
-    {showDeleteConfirm ? (
-      // Confirmation mode
-      <>
-        <div className="px-3 py-2 text-sm font-medium text-gray-900 border-b border-gray-200 mb-2">
-          Delete this service?
-        </div>
-        <button
-          onClick={async () => {
-            try {
-              await client.delete(`/services/${item.id}`);
-              toast.success("Service deleted successfully");
-              setIsDeleted(true); // Hide the card
-            } catch (error) {
-              console.error("Failed to delete service:", error);
-              toast.error(error?.response?.data?.message || "Failed to delete service");
-            }
-            setOptionsMenuOpen(false);
-            setShowDeleteConfirm(false);
-          }}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mb-1"
-        >
-          <Trash2 size={16} />
-          Confirm Delete
-        </button>
-        <button
-          onClick={() => setShowDeleteConfirm(false)}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-        >
-          Cancel
-        </button>
-      </>
-    ) : (
-      // Initial menu
-      <button
-        onClick={() => setShowDeleteConfirm(true)}
-        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-      >
-        <Trash2 size={16} />
-        Delete
-      </button>
-    )}
-  </div>
-);
-
-// Share data and components
-const ShareMenu = ({ item, shareMenuRef, setShareOpen }) => {
-  const shareUrl = `${window.location.origin}/service/${item?.id}`;
-  const shareTitle = item?.title || "Service on 54Links";
-  const shareQuote = (item?.description || "").slice(0, 160) + ((item?.description || "").length > 160 ? "…" : "");
-  const shareHashtags = ["54Links", "Services", "Professionals"].filter(Boolean);
-  const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
-
-  return (
-    <div
-      ref={shareMenuRef}
-      className="absolute top-12 right-3 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
-      role="dialog"
-      aria-label="Share options"
-    >
-      <div className="text-xs font-medium text-gray-500 px-1 pb-2">
-        Share this service
-      </div>
-
-      <div className="grid grid-cols-3 gap-2">
-        <WhatsappShareButton url={shareUrl} title={shareTitle} separator=" — ">
-          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-            <WhatsappIcon size={40} round />
-            <span className="text-xs text-gray-700">WhatsApp</span>
-          </div>
-        </WhatsappShareButton>
-
-        <FacebookShareButton url={shareUrl} quote={shareQuote} hashtag="#54Links">
-          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-            <FacebookIcon size={40} round />
-            <span className="text-xs text-gray-700">Facebook</span>
-          </div>
-        </FacebookShareButton>
-
-        <LinkedinShareButton url={shareUrl} title={shareTitle} summary={shareQuote} source="54Links">
-          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-            <LinkedinIcon size={40} round />
-            <span className="text-xs text-gray-700">LinkedIn</span>
-          </div>
-        </LinkedinShareButton>
-
-        <TwitterShareButton url={shareUrl} title={shareTitle} hashtags={shareHashtags}>
-          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-            <TwitterIcon size={40} round />
-            <span className="text-xs text-gray-700">X / Twitter</span>
-          </div>
-        </TwitterShareButton>
-
-        <TelegramShareButton url={shareUrl} title={shareTitle}>
-          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-            <TelegramIcon size={40} round />
-            <span className="text-xs text-gray-700">Telegram</span>
-          </div>
-        </TelegramShareButton>
-
-        <EmailShareButton url={shareUrl} subject={shareTitle} body={shareQuote + "\n\n" + shareUrl}>
-          <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-            <EmailIcon size={40} round />
-            <span className="text-xs text-gray-700">Email</span>
-          </div>
-        </EmailShareButton>
-
-        {messengerAppId && (
-          <FacebookMessengerShareButton url={shareUrl} appId={messengerAppId}>
-            <div className="flex flex-col items-center gap-1 p-2 rounded-lg hover:bg-gray-50">
-              <FacebookMessengerIcon size={40} round />
-              <span className="text-xs text-gray-700">Messenger</span>
-            </div>
-          </FacebookMessengerShareButton>
-        )}
-      </div>
-
-      <div className="mt-2">
-        <CopyLinkButton shareUrl={shareUrl} setShareOpen={setShareOpen} />
-      </div>
-    </div>
-  );
-};
-
-const CopyLinkButton = ({ shareUrl, setShareOpen }) => {
-  return (
-    <button
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(shareUrl);
-          toast.success("Link copied");
-          setShareOpen(false);
-        } catch {
-          toast.error("Failed to copy link");
-        }
-      }}
-      className="flex items-center gap-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm hover:bg-gray-50"
-    >
-      <CopyIcon size={16} />
-      Copy link
-    </button>
-  );
-};

@@ -9,6 +9,7 @@ import Header from "../components/Header";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
 import FullPageLoader from "../components/ui/FullPageLoader";
+import MediaViewer from "../components/FormMediaViewer"; // Import the MediaViewer component
 
 /* -------------- Shared styles (brand) -------------- */
 const styles = {
@@ -23,95 +24,6 @@ const styles = {
   chip:
     "inline-flex items-center rounded-full bg-gray-100 text-gray-700 border border-gray-200 px-2.5 py-1 text-xs",
 };
-
-/* Image Slider Component */
-function ImageSlider({ images, className = "" }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-
-  const nextSlide = () => {
-    setCurrentIndex((prevIndex) => 
-      prevIndex === images.length - 1 ? 0 : prevIndex + 1
-    );
-  };
-
-  const prevSlide = () => {
-    setCurrentIndex((prevIndex) => 
-      prevIndex === 0 ? images.length - 1 : prevIndex - 1
-    );
-  };
-
-  const goToSlide = (index) => {
-    setCurrentIndex(index);
-  };
-
-  if (!images || images.length === 0) {
-    return (
-      <div className={`w-full h-64 bg-gray-100 flex items-center justify-center text-gray-400 ${className}`}>
-        No Images
-      </div>
-    );
-  }
-
-  return (
-    <div className={`relative w-full h-64 bg-gray-100 rounded-lg overflow-hidden ${className}`}>
-      {/* Main Image */}
-      <div className="w-full h-full">
-        <img
-          src={images[currentIndex].startsWith('http') 
-            ? images[currentIndex] 
-            : `${API_URL}/uploads/${images[currentIndex]}`
-          }
-          alt={`Slide ${currentIndex + 1}`}
-          className="w-full h-full object-cover"
-        />
-      </div>
-
-      {/* Navigation Arrows */}
-      {images.length > 1 && (
-        <>
-          <button
-            onClick={prevSlide}
-            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-all"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-all"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </>
-      )}
-
-      {/* Slide Indicators */}
-      {images.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-          {images.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
-                index === currentIndex ? 'bg-white' : 'bg-white/50'
-              }`}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Image Counter */}
-      {images.length > 1 && (
-        <div className="absolute top-4 right-4 bg-black/50 text-white px-2 py-1 rounded-full text-xs">
-          {currentIndex + 1} / {images.length}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* -------------- Small helpers -------------- */
 const Label = ({ children, required }) => (
@@ -156,26 +68,52 @@ const I = {
       <path d="M3 6h18v12H3z"/><circle cx="12" cy="12" r="3" fill="white"/>
     </svg>
   ),
+  video: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="m17 10.5-5-3v6l5-3Z"/><rect x="3" y="6" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+    </svg>
+  ),
+  image: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+      <path d="m21 15-5-5L5 21" stroke="currentColor" strokeWidth="2"/>
+    </svg>
+  ),
 };
 
-/* Convert a File to a data URL (base64) */
-function fileToDataURL(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(file);
-  });
+/* File type detection */
+function getFileType(filename) {
+  if (!filename) return 'document';
+  const ext = filename.toLowerCase().split('.').pop();
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+  const videoExts = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv', 'm4v', '3gp', 'ogv'];
+  
+  if (imageExts.includes(ext)) return 'image';
+  if (videoExts.includes(ext)) return 'video';
+  return 'document';
+}
+
+function isImage(filename) {
+  return getFileType(filename) === 'image';
+}
+
+function isVideo(filename) {
+  return getFileType(filename) === 'video';
+}
+
+function isMedia(filename) {
+  return isImage(filename) || isVideo(filename);
+}
+
+function isDocument(filename) {
+  return getFileType(filename) === 'document';
 }
 
 const CURRENCY_OPTIONS = [
   "USD","EUR","GBP","NGN","GHS","ZAR","KES","UGX","TZS","XOF","XAF","MAD","DZD","TND","EGP","ETB",
   "NAD","BWP","MZN","ZMW","RWF","BIF","SOS","SDG","CDF"
 ];
-
-function isImage(base64url) {
-  return typeof base64url === "string" && base64url.startsWith("data:image");
-}
 
 function fmtPrice(amount, type) {
   if (amount === "" || amount == null) return "—";
@@ -222,9 +160,9 @@ function extractServiceMedia(service = {}, attachments = []) {
   fromArr(service.gallery);
   fromArr(service.photos);
 
-  // images from attachments (base64)
-  attachments.forEach((a) => {
-    if (isImage(a?.base64url)) urls.push(a.base64url);
+  // images and videos from attachments
+  attachments.forEach((att) => {
+    if (isMedia(att)) urls.push(att);
   });
 
   // unique
@@ -232,10 +170,8 @@ function extractServiceMedia(service = {}, attachments = []) {
   const coverImageUrl = service.coverImageUrl || uniq[0] || null;
   const images = uniq.filter((u) => u !== coverImageUrl);
 
-  // non-image documents
-  const docs = attachments
-    .filter((a) => a?.base64url && !isImage(a.base64url))
-    .map((a) => ({ name: a.name, base64url: a.base64url }));
+  // non-media documents
+  const docs = attachments.filter(att => isDocument(att));
 
   return { coverImageUrl, images, docs };
 }
@@ -256,8 +192,15 @@ function ReadOnlyServiceView({ form, audSel, audTree, media }) {
       {/* Cover hero */}
       {coverImageUrl ? (
         <div className="relative aspect-[16/6] w-full bg-gray-100">
-          {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <img src={coverImageUrl} alt="Service cover" className="h-full w-full object-cover" />
+          {isVideo(coverImageUrl) ? (
+            <video 
+              src={coverImageUrl} 
+              className="h-full w-full object-cover"
+              controls
+            />
+          ) : (
+            <img src={coverImageUrl} alt="Service cover" className="h-full w-full object-cover" />
+          )}
           <span className="absolute left-4 top-4 bg-white/90 border-gray-200 text-gray-700 rounded-full px-2 py-0.5 text-xs font-medium">
             {form.serviceType || "Service"}
           </span>
@@ -300,31 +243,45 @@ function ReadOnlyServiceView({ form, audSel, audTree, media }) {
           </div>
         </div>
 
-        {/* Gallery - Using Image Slider */}
+        {/* Gallery - Using MediaViewer */}
         {images?.length > 0 ? (
           <div>
-            <h3 className="text-sm font-semibold text-gray-700">Images</h3>
-            <div className="mt-3">
-              <ImageSlider images={images} className="w-full" />
+            <h3 className="text-sm font-semibold text-gray-700">Media</h3>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {images.map((item, idx) => (
+                <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
+                  {isVideo(item) ? (
+                    <video 
+                      src={item} 
+                      controls 
+                      className="h-full w-full object-cover"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <img src={item} alt={`Service image ${idx + 1}`} className="h-full w-full object-cover" />
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         ) : null}
 
-        {/* Non-image attachments */}
+        {/* Non-media attachments */}
         {docs?.length > 0 ? (
           <div>
-            <h3 className="text-sm font-semibold text-gray-700">Attachments</h3>
+            <h3 className="text-sm font-semibold text-gray-700">Documents</h3>
             <div className="mt-3 grid sm:grid-cols-2 gap-3">
-              {docs.map((d, i) => (
+              {docs.map((doc, i) => (
                 <a
-                  key={`${d.name}-${i}`}
-                  href={d.base64url}
-                  download={d.name}
+                  key={`${doc}-${i}`}
+                  href={doc}
+                  download={doc.split('/').pop()}
                   className="flex items-center gap-3 border rounded-lg p-3 hover:bg-gray-50"
                 >
                   <div className="h-10 w-10 rounded-md bg-gray-100 grid place-items-center text-xs text-gray-500">DOC</div>
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">{d.name}</div>
+                    <div className="truncate text-sm font-medium">{doc.split('/').pop()}</div>
                     <div className="text-[11px] text-gray-500 truncate">Tap to download</div>
                   </div>
                 </a>
@@ -372,7 +329,10 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
   const [loading,setLoading]=useState(true)
   const [uploading, setUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState({}); // Track progress per file
   const [showAudienceSection, setShowAudienceSection] = useState(false);
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   // owner detection
   const [ownerUserId, setOwnerUserId] = useState(null);
@@ -405,7 +365,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
 
   const [skillInput, setSkillInput] = useState("");
 
-  // Attachments: [{ name, base64url }]
+  // Attachments: array of filenames/URLs ['img.png', 'video.mp4', 'document.pdf']
   const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
 
@@ -425,6 +385,11 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
 
   // Read-only if editing and current user is not the owner
   const readOnly = isEditMode && ownerUserId && user?.id != ownerUserId;
+
+  // Get media URLs for the MediaViewer (only images and videos)
+  const mediaUrls = useMemo(() => {
+    return attachments.filter(att => isMedia(att));
+  }, [attachments]);
 
   /* ---------- Effects ---------- */
 
@@ -497,7 +462,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
         setSelectedIndustry({
           categoryId: data.industryCategoryId || "",
           subcategoryId: data.industrySubcategoryId || "",
-          subsubCategoryId: data.industrySubsubCategoryId || "",
+          subsubCategoryId: data.industrySubcategoryId || "",
         });
 
         // build media
@@ -550,28 +515,53 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
     setForm((f) => ({ ...f, skills: f.skills.filter((_, i) => i !== idx) }));
   }
 
+  function handleMediaClick(index) {
+    setSelectedMediaIndex(index);
+    setMediaViewerOpen(true);
+  }
+
+  function closeMediaViewer() {
+    setMediaViewerOpen(false);
+  }
+
   async function handleFilesChosen(files) {
     if (readOnly) return;
     const arr = Array.from(files || []);
     if (!arr.length) return;
 
-    // Check file sizes (5MB limit)
-    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
-    const oversizedFiles = arr.filter(file => file.size > maxSizeBytes);
+    // Check file sizes (50MB limit for videos, 5MB for others)
+    const maxSizeBytes = {
+      video: 50 * 1024 * 1024,
+      image: 5 * 1024 * 1024,
+      document: 5 * 1024 * 1024
+    };
+
+    const oversizedFiles = arr.filter(file => {
+      const fileType = getFileType(file.name);
+      return file.size > maxSizeBytes[fileType];
+    });
 
     if (oversizedFiles.length > 0) {
       const fileNames = oversizedFiles.map(file => file.name).join(', ');
-      toast.error(`Files exceeding 5MB limit: ${fileNames}`);
+      toast.error(`Files exceeding size limit: ${fileNames}`);
       return;
     }
 
-    // Optionally cap total
+    // Cap total attachments
     const remainingSlots = 20 - attachments.length;
     const slice = remainingSlots > 0 ? arr.slice(0, remainingSlots) : [];
 
     try {
       setUploading(true);
       setUploadingCount(slice.length);
+      
+      // Reset progress for new uploads
+      const initialProgress = {};
+      slice.forEach(file => {
+        initialProgress[file.name] = 0;
+      });
+      setUploadProgress(initialProgress);
+
       const formData = new FormData();
       slice.forEach(file => {
         formData.append('attachments', file);
@@ -580,15 +570,31 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
       const response = await client.post('/services/upload-attachments', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            
+            // Update progress for all files
+            const newProgress = {};
+            slice.forEach(file => {
+              newProgress[file.name] = percentCompleted;
+            });
+            setUploadProgress(newProgress);
+          }
         }
       });
 
-      const mapped = response.data.filenames.map((filename) => (`${API_URL}/uploads/${filename}`  ));
+      const uploadedFilenames = response.data.filenames || [];
 
+      // Store as array of filenames
+      const mapped = uploadedFilenames.map(filename => `${API_URL}/uploads/${filename}`);
       setAttachments((prev) => [...prev, ...mapped]);
+      setUploadProgress({}); // Clear progress after upload
     } catch (err) {
       console.error(err);
       toast.error("Some files could not be uploaded.");
+      setUploadProgress({}); // Clear progress on error
     } finally {
       setUploading(false);
       setUploadingCount(0);
@@ -915,7 +921,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
             ? Number(form.priceAmount)
             : undefined,
         currency:form.currency || 'USD',
-        attachments: attachments.map(a => a.filename || a),
+        attachments,
         identityIds,
         categoryIds,
         subcategoryIds,
@@ -1285,14 +1291,30 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
 
             {/* Portfolio / Attachments */}
             <section>
+              <Label>Portfolio & Attachments (Optional)</Label>
               <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
-                Upload images or documents showcasing your work (max 5MB per file)
+                <div className="flex justify-center items-center gap-3 mb-2">
+                  <div className="flex items-center gap-1">
+                    <I.image />
+                    <span className="text-xs">Images</span>
+                  </div>
+                  <div className="h-4 w-px bg-gray-300"></div>
+                  <div className="flex items-center gap-1">
+                    <I.video />
+                    <span className="text-xs">Videos</span>
+                  </div>
+                  <div className="h-4 w-px bg-gray-300"></div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs">Documents</span>
+                  </div>
+                </div>
+                Upload images, videos, or documents showcasing your work
                 <div className="mt-3">
                   <input
                     ref={fileInputRef}
                     type="file"
                     multiple
-                    accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                    accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
                     className="hidden"
                     onChange={(e) => handleFilesChosen(e.target.files)}
                   />
@@ -1305,44 +1327,106 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                   </button>
                 </div>
 
+                {/* Upload Progress Indicator */}
+                {uploading && Object.keys(uploadProgress).length > 0 && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        Uploading {Object.keys(uploadProgress).length} file(s)...
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {Object.values(uploadProgress)[0]}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-brand-600 h-2 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Object.values(uploadProgress)[0] || 0}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {(attachments.length > 0 || uploadingCount > 0) && (
                   <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                     {attachments.map((att, idx) => {
-                      const isImg = att.startsWith("data:image") || /\.(jpe?g|png|gif|webp|svg)$/i.test(att);
+                      const isImg = isImage(att);
+                      const isVid = isVideo(att);
+                      const isDoc = isDocument(att);
 
-                      // Resolve URL for filenames (not base64 or full URL)
-                      let src = null;
-                      if (att.startsWith("data:image")) {
-                        src = att; // base64
-                      } else if (att.startsWith("http://") || att.startsWith("https://")) {
-                        src = att; // full URL
-                      } else if (isImg) {
-                        src = att
+                      if (isImg || isVid) {
+                        return (
+                          <div key={`${att}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                            <div 
+                              className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center relative cursor-pointer"
+                              onClick={() => handleMediaClick(idx)}
+                            >
+                              {isVid ? (
+                                <>
+                                  <video 
+                                    src={att} 
+                                    className="h-full w-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                    <I.video />
+                                  </div>
+                                </>
+                              ) : (
+                                <img src={att} alt={`Attachment ${idx+1}`} className="h-full w-full object-cover" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="truncate text-sm font-medium">
+                                {att.split('/').pop()}
+                              </div>
+                              <div className="text-[11px] text-gray-500 truncate">
+                                {isVid ? 'Video' : 'Image'} • Attached
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeAttachment(idx)}
+                              className="p-1 rounded hover:bg-gray-100"
+                              title="Remove"
+                            >
+                              <I.trash />
+                            </button>
+                          </div>
+                        );
                       }
 
-                      return (
-                        <div key={`${att}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                          <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
-                            {isImg ? (
-                              <img src={src} alt={att} className="h-full w-full object-cover" />
-                            ) : (
-                              <span className="text-xs text-gray-500">DOC</span>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="truncate text-sm font-medium">Attachment {idx+1}</div>
-                            <div className="text-[11px] text-gray-500 truncate">Attached</div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => removeAttachment(idx)}
-                            className="p-1 rounded hover:bg-gray-100"
-                            title="Remove"
+                      if (isDoc) {
+                        return (
+                          <a
+                            key={`${att}-${idx}`}
+                            href={att}
+                            download={att.split('/').pop()}
+                            className="flex items-center gap-3 border rounded-lg p-3 hover:bg-gray-50"
                           >
-                            <I.trash />
-                          </button>
-                        </div>
-                      );
+                            <div className="h-12 w-12 rounded-md bg-gray-100 grid place-items-center text-xs text-gray-500">DOC</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="truncate text-sm font-medium">{att.split('/').pop()}</div>
+                              <div className="text-[11px] text-gray-500 truncate">Tap to download</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                removeAttachment(idx);
+                              }}
+                              className="p-1 rounded hover:bg-gray-100"
+                              title="Remove"
+                            >
+                              <I.trash />
+                            </button>
+                          </a>
+                        );
+                      }
+
+                      return null;
                     })}
 
                     {uploadingCount > 0 &&
@@ -1352,6 +1436,17 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                           <div className="flex-1 min-w-0">
                             <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
                             <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                            {/* Upload Progress Bar */}
+                            {uploading && (
+                              <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                                <div 
+                                  className="bg-brand-600 h-1.5 rounded-full transition-all duration-300"
+                                  style={{ 
+                                    width: `${Object.values(uploadProgress)[0] || 0}%` 
+                                  }}
+                                />
+                              </div>
+                            )}
                           </div>
                           <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
                         </div>
@@ -1359,6 +1454,11 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                     }
                   </div>
                 )}
+
+                <p className="mt-2 text-[11px] text-gray-400">
+                  Images & Documents: Up to 5MB each. Videos: Up to 50MB each.
+                  Supported formats: JPG, PNG, GIF, MP4, MOV, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT
+                </p>
               </div>
             </section>
 
@@ -1431,6 +1531,15 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
           </form>
         )}
       </main>
+
+      {/* Media Viewer */}
+      {mediaViewerOpen && (
+        <MediaViewer
+          urls={mediaUrls}
+          initialIndex={selectedMediaIndex}
+          onClose={closeMediaViewer}
+        />
+      )}
     </div>
   );
 }

@@ -70,12 +70,11 @@ export default function ExperienceCard({
   const [likesDialogOpen, setLikesDialogOpen] = useState(false);
 
   // Social state
-  const [liked, setLiked] = useState(!!item?.liked);
-  const [likeCount, setLikeCount] = useState(Number(item?.likes || 0));
-  const [commentCount, setCommentCount] = useState(
-    Array.isArray(item?.comments) ? item.comments.length : Number(item?.commentsCount || 0)
-  );
-
+    const [liked, setLiked] =  useState(!!item?.isLiked);
+   const [likeCount, setLikeCount] = useState(Number(item.likesCount || 0));
+     const [commentCount, setCommentCount] = useState(Number(item?.commentsCount || 0));
+   
+ 
   // Report dialog
   const [reportOpen, setReportOpen] = useState(false);
 

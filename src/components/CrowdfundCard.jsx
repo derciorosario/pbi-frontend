@@ -10,6 +10,7 @@ import client, { API_URL } from "../api/client";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import LikesDialog from "./LikesDialog";
+import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
 
 import {
   Eye,
@@ -25,6 +26,8 @@ import {
   MoreVertical,
   Trash2,
   Globe,
+  Play,
+  Pause,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -45,6 +48,44 @@ import {
 import CrowdfundDetails from "./CrowdfundDetails.jsx";
 
 const BRAND = "#034ea2";
+
+// Helper function to validate media URLs
+const isValidMediaUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  return url.startsWith("data:") || url.startsWith("http://") || url.startsWith("https://");
+};
+
+// Helper function to get file extension
+const getFileExtension = (url) => {
+  if (!url) return '';
+  const match = url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  return match ? match[1].toLowerCase() : '';
+};
+
+// Helper function to determine media type
+const getMediaType = (url) => {
+  if (!url) return 'unknown';
+  
+  // Check data URLs
+  if (url.startsWith("data:")) {
+    if (url.startsWith("data:image")) return 'image';
+    if (url.startsWith("data:video")) return 'video';
+    return 'unknown';
+  }
+  
+  // Check file extension
+  const extension = getFileExtension(url);
+  
+  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'];
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+  const documentExtensions = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'];
+  
+  if (videoExtensions.includes(extension)) return 'video';
+  if (imageExtensions.includes(extension)) return 'image';
+  if (documentExtensions.includes(extension)) return 'document';
+  
+  return 'unknown';
+};
 
 const Progress = ({ value }) => (
   <div className="w-full h-2 rounded-full bg-gray-100 overflow-hidden">
@@ -73,20 +114,20 @@ export default function CrowdfundCard({
   const [likesDialogOpen, setLikesDialogOpen] = useState(false);
 
   // Social state
-  const [liked, setLiked] = useState(!!item?.liked);
-  const [likeCount, setLikeCount] = useState(Number(item?.likes || 0));
-  const [commentCount, setCommentCount] = useState(
-    Array.isArray(item?.comments) ? item.comments.length : Number(item?.commentsCount || 0)
-  );
-
+  const [liked, setLiked] =  useState(!!item?.isLiked);
+  const [likeCount, setLikeCount] = useState(Number(item.likesCount || 0));
+  const [commentCount, setCommentCount] = useState(Number(item?.commentsCount || 0));
+  
+  // Media slider state
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [showVideoControls, setShowVideoControls] = useState(false);
+    
   // Report dialog
   const [reportOpen, setReportOpen] = useState(false);
 
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
-
-  // Image slider state
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Share popover
   const [shareOpen, setShareOpen] = useState(false);
@@ -104,6 +145,9 @@ export default function CrowdfundCard({
   const { user, settings } = useAuth();
   const data = useData();
   const navigate = useNavigate();
+
+  // Video control timeout ref
+  const videoControlsTimeoutRef = useRef(null);
 
   // Close share menu and options menu on outside click / Esc
   useEffect(() => {
@@ -138,31 +182,49 @@ export default function CrowdfundCard({
     };
   }, []);
 
-  // Get all valid images for slider
-  const getValidImages = () => {
-    const validImages = [];
+  // Clear video controls timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (videoControlsTimeoutRef.current) {
+        clearTimeout(videoControlsTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Get all valid media for slider (images and videos only, no documents)
+  const getValidMedia = () => {
+    const validMedia = [];
 
     if (item?.images?.length > 0) {
       for (const img of item.images) {
-        if (img?.base64url &&
-            (img.base64url.startsWith("data:image") ||
-             img.base64url.startsWith("http://") ||
-             img.base64url.startsWith("https://"))) {
-          validImages.push(img.base64url);
-        } else if (typeof img === "string" &&
-                   (img.startsWith("data:image") ||
-                    img.startsWith("http://") ||
-                    img.startsWith("https://"))) {
-          validImages.push(img);
+        let mediaUrl = img?.base64url || img || null;
+        
+        if (isValidMediaUrl(mediaUrl)) {
+          const mediaType = getMediaType(mediaUrl);
+          // Only include images and videos in the slider
+          if (mediaType === 'image' || mediaType === 'video') {
+            validMedia.push({
+              url: mediaUrl,
+              type: mediaType,
+              name: `media-${validMedia.length}`
+            });
+          }
         }
       }
     }
 
-    return validImages;
+    // Sort: videos first, then images
+    return validMedia.sort((a, b) => {
+      if (a.type === 'video' && b.type !== 'video') return -1;
+      if (a.type !== 'video' && b.type === 'video') return 1;
+      return 0;
+    });
   };
 
-  const validImages = getValidImages();
-  const hasMultipleImages = validImages.length > 1;
+  const validMedia = getValidMedia();
+  const hasMultipleMedia = validMedia.length > 1;
+  const currentMedia = validMedia[currentMediaIndex];
+  const isCurrentVideo = currentMedia?.type === 'video';
 
   // Raised/goal/progress
   const raised = parseFloat(item?.raised || 0);
@@ -228,6 +290,55 @@ export default function CrowdfundCard({
       })
       .catch(() => {});
   }, [item?.id]);
+
+  // Video control functions
+  const handleVideoPlayPause = () => {
+    setIsVideoPlaying(!isVideoPlaying);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPlay = () => {
+    setIsVideoPlaying(true);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPause = () => {
+    setIsVideoPlaying(false);
+    setShowVideoControls(true);
+    
+    // Keep controls visible when paused
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+  };
+
+  const handleMediaClick = (e) => {
+    if (isCurrentVideo) {
+      // For videos, handle play/pause
+      e.stopPropagation();
+      handleVideoPlayPause();
+    } else {
+      // For images, open details modal
+      if (isOwner) navigate(`/funding/${item.id}`);
+      else setCrowdfundDetailsOpen(true);
+    }
+  };
 
   // Share data
   const shareUrl = `${window.location.origin}/funding/${item?.id}`;
@@ -565,48 +676,94 @@ export default function CrowdfundCard({
 
         </div>
 
-        {/* IMAGE (if exists and not in text mode) */}
-        {settings?.contentType !== "text" && validImages.length > 0 && (
+        {/* MEDIA (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && validMedia.length > 0 && (
           <div className="relative">
-            {/* Image Slider */}
-            <div className="relative w-full max-h-96 overflow-hidden">
-              {hasMultipleImages ? (
+            {/* Media Slider */}
+            <div 
+              onClick={handleMediaClick}
+              className="relative w-full max-h-96 overflow-hidden cursor-pointer"
+            >
+              {hasMultipleMedia ? (
                 <div
                   className="flex w-full h-full transition-transform duration-300 ease-in-out"
-                  style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                  style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}
                 >
-                  {validImages.map((img, index) => (
-                    <img
-                      key={index}
-                      src={img}
-                      alt={`${item?.title} - ${index + 1}`}
-                      className="flex-shrink-0 w-full max-h-96 object-cover"
-                    />
+                  {validMedia.map((media, index) => (
+                    <div key={index} className="flex-shrink-0 w-full h-96 relative">
+                      {media.type === 'video' ? (
+                        <div className="relative w-full h-full bg-black">
+                          <VideoPlayer
+                            src={media.url}
+                            className="w-full h-full object-contain"
+                            controls={false}
+                            autoPlay={false}
+                            muted
+                            isPlaying={index === currentMediaIndex && isVideoPlaying}
+                            onPlay={handleVideoPlay}
+                            onPause={handleVideoPause}
+                          />
+                        </div>
+                      ) : (
+                        <img
+                          src={media.url}
+                          alt={media.name || `Media ${index + 1}`}
+                          className="w-full h-96 object-cover"
+                        />
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
-                <img
-                  src={validImages[0]}
-                  alt={item?.title}
-                  className="w-full max-h-96 object-cover"
-                />
+                <div className="w-full h-96 relative">
+                  {currentMedia.type === 'video' ? (
+                    <div className="relative w-full h-full bg-black">
+                      <VideoPlayer
+                        src={currentMedia.url}
+                        className="w-full h-full object-contain"
+                        controls={false}
+                        autoPlay={false}
+                        muted
+                        isPlaying={isVideoPlaying}
+                        onPlay={handleVideoPlay}
+                        onPause={handleVideoPause}
+                      />
+                    </div>
+                  ) : (
+                    <img
+                      src={currentMedia.url}
+                      alt={currentMedia.name || "Media"}
+                      className="w-full h-96 object-cover"
+                    />
+                  )}
+                </div>
               )}
             </div>
 
             {/* Slider Dots */}
-            {hasMultipleImages && (
+            {hasMultipleMedia && (
               <div className="absolute bottom-3 right-3 flex gap-1">
-                {validImages.map((_, index) => (
+                {validMedia.map((media, index) => (
                   <button
                     key={index}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setCurrentImageIndex(index);
+                      setCurrentMediaIndex(index);
+                      // Reset video state when changing slides
+                      if (media.type === 'video') {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(true);
+                      } else {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(false);
+                      }
                     }}
                     className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
-                      index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                      index === currentMediaIndex 
+                        ? (media.type === 'video' ? 'bg-blue-500' : 'bg-white')
+                        : 'bg-white/50'
                     }`}
-                    aria-label={`Go to image ${index + 1}`}
+                    aria-label={`Go to ${media.type} ${index + 1}`}
                   />
                 ))}
               </div>

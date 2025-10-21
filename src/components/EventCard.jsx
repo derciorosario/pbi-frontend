@@ -17,6 +17,7 @@ import client,{API_URL} from "../api/client";
 import LogoGray from '../assets/logo.png';
 import { Edit, Eye, Share2, MapPin, Clock, User as UserIcon, Copy as CopyIcon, Heart, MessageCircle, Flag, Calendar, MoreVertical, Trash2, Globe } from "lucide-react";
 import LikesDialog from "./LikesDialog";
+import VideoPlayer from "./VideoPlayer";
 
 import {
   FacebookShareButton,
@@ -68,11 +69,9 @@ export default function EventCard({
   const [registrationOpen, setRegistrationOpen] = useState(false); // event registration modal
 
   // Social state
-  const [liked, setLiked] = useState(!!e?.liked);
-  const [likeCount, setLikeCount] = useState(Number(e?.likes || 0));
-  const [commentCount, setCommentCount] = useState(
-    Array.isArray(e?.comments) ? e.comments.length : Number(e?.commentsCount || 0)
-  );
+  const [liked, setLiked] =  useState(!!e?.isLiked);
+  const [likeCount, setLikeCount] = useState(Number(e.likesCount || 0));
+  const [commentCount, setCommentCount] = useState(Number(e?.commentsCount || 0));
 
   // Report dialog
   const [reportOpen, setReportOpen] = useState(false);
@@ -126,7 +125,7 @@ export default function EventCard({
   }, []);
 
   // Initial fetch for like & comments count (optional)
-  useEffect(() => {
+ /* useEffect(() => { leave this section as it is
     if (!e?.id) return;
     socialApi
       .getLikeStatus("event", e.id)
@@ -142,19 +141,43 @@ export default function EventCard({
         setCommentCount(len);
       })
       .catch(() => {});
-  }, [e?.id]);
+  }, [e?.id]);*/
 
   const isOwner = user?.id && e?.organizerUserId && user.id === e.organizerUserId;
   const isList = type === "list";
 
-  let imageUrl = e?.coverImageBase64 || e?.coverImage || null;
-   imageUrl =
-  imageUrl && (imageUrl?.startsWith("data:image") || imageUrl?.startsWith("http"))
-    ? imageUrl
-    : imageUrl
-    ? `${API_URL}/uploads/${imageUrl}`
-    : null; 
+  // Process media files - PRIORITY: Video over Image
+  const processMediaUrl = (url) => {
+    if (!url) return null;
+    return (url?.startsWith("data:") || url?.startsWith("http"))
+      ? url
+      : `${API_URL}/uploads/${url}`;
+  };
 
+  // Get media to display - VIDEO has priority over IMAGE
+  const mediaToDisplay = useMemo(() => {
+    const videoUrl = processMediaUrl(e?.videoUrl);
+    const coverImageUrl = processMediaUrl(e?.coverImageBase64 || e?.coverImage);
+    
+    // If video exists, show video only
+    if (videoUrl) {
+      return { type: 'video', url: videoUrl };
+    }
+    
+    // If no video but cover image exists, show image
+    if (coverImageUrl) {
+      return { type: 'image', url: coverImageUrl };
+    }
+    
+    return null;
+  }, [e?.videoUrl, e?.coverImageBase64, e?.coverImage]);
+
+  console.log({ 
+    eventId: e?.id, 
+    coverImage: e?.coverImageBase64, 
+    videoUrl: e?.videoUrl,
+    mediaToDisplay 
+  });
 
   // Share data
   const shareUrl = `${window.location.origin}/event/${e?.id}`;
@@ -499,15 +522,22 @@ export default function EventCard({
 
         </div>
 
-        {/* IMAGE (if exists and not in text mode) */}
-        {settings?.contentType !== "text" && imageUrl && (
+        {/* MEDIA - Show either VIDEO or IMAGE (Video has priority) */}
+        {settings?.contentType !== "text" && mediaToDisplay && (
           <div className="relative">
-            <img
-              src={imageUrl}
-              alt={e?.title}
-              className="w-full max-h-96 object-cover cursor-pointer"
-              onClick={() => setEventDetailsOpen(true)}
-            />
+            {mediaToDisplay.type === 'video' ? (
+              <VideoPlayer
+                src={mediaToDisplay.url}
+                alt="Event video"
+              />
+            ) : (
+              <img
+                src={mediaToDisplay.url}
+                alt="Event cover"
+                className="w-full max-h-96 object-cover cursor-pointer"
+                onClick={() => setEventDetailsOpen(true)}
+              />
+            )}
           </div>
         )}
 
@@ -865,4 +895,3 @@ export default function EventCard({
     );
   }
 }
-

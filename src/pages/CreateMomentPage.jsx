@@ -10,6 +10,7 @@ import Header from "../components/Header";
 import AudienceTree from "../components/AudienceTree";
 import { useAuth } from "../contexts/AuthContext";
 import FullPageLoader from "../components/ui/FullPageLoader";
+import MediaViewer from "../components/FormMediaViewer"; // Import the new MediaViewer component
 
 /* ---------------- Shared styles (brand) ---------------- */
 const styles = {
@@ -378,8 +379,11 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState({}); // Track progress per file
   const [ownerUserId, setOwnerUserId] = useState(null);
   const [currentType, setCurrentType] = useState("need");
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   // Form (Experience fields)
   const [form, setForm] = useState({
@@ -713,14 +717,34 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
     try {
       setUploading(true);
       setUploadingCount(slice.length);
+      
+      // Reset progress for new uploads
+      const initialProgress = {};
+      slice.forEach(file => {
+        initialProgress[file.name] = 0;
+      });
+      setUploadProgress(initialProgress);
+
       const formData = new FormData();
       slice.forEach(file => {
-        formData.append('media', file); // Changed from 'images' to 'media'
+        formData.append('media', file);
       });
 
-      const response = await client.post('/moments/upload-media', formData, { // Changed endpoint
+      const response = await client.post('/moments/upload-media', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            
+            // Update progress for all files (simplified - you could track individual files if needed)
+            const newProgress = {};
+            slice.forEach(file => {
+              newProgress[file.name] = percentCompleted;
+            });
+            setUploadProgress(newProgress);
+          }
         }
       });
 
@@ -734,9 +758,11 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
       }));
 
       setImages((prev) => [...prev, ...mapped]);
+      setUploadProgress({}); // Clear progress after upload
     } catch (error) {
       console.error('Error uploading media:', error);
       toast.error('Failed to upload media files');
+      setUploadProgress({}); // Clear progress on error
     } finally {
       setUploading(false);
       setUploadingCount(0);
@@ -744,7 +770,6 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
   }
 
   console.log({images})
-
 
   function updateImageName(idx, name) {
     if (readOnly) return;
@@ -755,6 +780,20 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
     if (readOnly) return;
     setImages((prev) => prev.filter((_, i) => i !== idx));
   }
+
+  function handleMediaClick(index) {
+    setSelectedMediaIndex(index);
+    setMediaViewerOpen(true);
+  }
+
+  function closeMediaViewer() {
+    setMediaViewerOpen(false);
+  }
+
+  // Get all media URLs for the MediaViewer
+  const mediaUrls = useMemo(() => {
+    return images.map(img => img.base64url);
+  }, [images]);
 
   async function handleAttachmentsChosen(files) {
     if (readOnly) return;
@@ -987,7 +1026,10 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
                 <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                   {images.map((img, idx) => (
                     <div key={`${img.base64url}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                      <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center relative">
+                      <div 
+                        className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center relative cursor-pointer"
+                        onClick={() => handleMediaClick(idx)}
+                      >
                         {img.type === 'video' ? (
                           <>
                             <video 
@@ -1032,10 +1074,43 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
                         <div className="flex-1 min-w-0">
                           <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
                           <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                          {/* Upload Progress Bar */}
+                          {uploading && (
+                            <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                              <div 
+                                className="bg-brand-600 h-1.5 rounded-full transition-all duration-300"
+                                style={{ 
+                                  width: `${Object.values(uploadProgress)[0] || 0}%` 
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                         <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
                       </div>
                     ))}
+                </div>
+              )}
+
+              {/* Upload Progress Indicator */}
+              {uploading && Object.keys(uploadProgress).length > 0 && (
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      Uploading {Object.keys(uploadProgress).length} file(s)...
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {Object.values(uploadProgress)[0]}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-brand-600 h-2 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Object.values(uploadProgress)[0] || 0}%` 
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1411,6 +1486,15 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           )}
         </div>
       </main>
+
+      {/* Media Viewer */}
+      {mediaViewerOpen && (
+        <MediaViewer
+          urls={mediaUrls}
+          initialIndex={selectedMediaIndex}
+          onClose={closeMediaViewer}
+        />
+      )}
     </div>
   );
 }

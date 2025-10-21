@@ -482,12 +482,15 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
     capacity: "",
     registrationDeadline: "",
     coverImageUrl: "",
+    videoUrl: "", // New field for video URL
   });
 
   const [meta, setMeta] = useState({ categories: [], currencies: [], timezones: [] });
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [coverImageBase64, setCoverImageBase64] = useState(null);
   const [coverImageFilename, setCoverImageFilename] = useState(null);
+  const [selectedMediaType, setSelectedMediaType] = useState(null); // 'image', 'video', or null
+  const [mediaChanged, setMediaChanged] = useState(false);
   const imagePickerRef = useRef(null);
 
   // Support single or multi-country (comma-separated) selection
@@ -526,6 +529,30 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
           null;
         setOrganizerUserId(orgId);
 
+        // Determine media type from existing data
+        let mediaType = null;
+        let coverPreview = null;
+
+        if (data.coverImageBase64) {
+          mediaType = 'image';
+          if (data.coverImageBase64.startsWith('data:') || data.coverImageBase64.startsWith('http')) {
+            // If it's a base64 string (old format), use it as preview
+            coverPreview = data.coverImageBase64;
+            setCoverImageBase64(data.coverImageBase64);
+          } else {
+            // If it's a filename (new format), store it
+            setCoverImageFilename(data.coverImageBase64);
+            // Set preview URL for the image
+            coverPreview = API_URL+`/uploads/${data.coverImageBase64}`;
+            setCoverImageBase64(coverPreview);
+          }
+        } else if (data.videoUrl) {
+          mediaType = 'video';
+          coverPreview = data.videoUrl;
+        }
+
+        setSelectedMediaType(mediaType);
+
         setForm({
           eventType: data.eventType || "Workshop",
           title: data.title || "",
@@ -547,20 +574,9 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
           capacity: data.capacity?.toString() || "",
           registrationDeadline: data.registrationDeadline ? new Date(data.registrationDeadline).toISOString().split("T")[0] : "",
           coverImageUrl: data.coverImageUrl || "",
-          coverImageBase64:data.coverImageBase64 || data.coverImageUrl 
+          coverImageBase64: data.coverImageBase64 || data.coverImageUrl,
+          videoUrl: data.videoUrl || null, // Load video URL if exists
         });
-
-        if (data.coverImageBase64) {
-          if (data.coverImageBase64.startsWith('data:') || data.coverImageBase64.startsWith('http')) {
-            // If it's a base64 string (old format), use it as preview
-            setCoverImageBase64(data.coverImageBase64);
-          } else {
-            // If it's a filename (new format), store it
-            setCoverImageFilename(data.coverImageBase64);
-            // Set preview URL for the image
-            setCoverImageBase64(API_URL+`/uploads/${data.coverImageBase64}`);
-          }
-        }
 
         if (
           data.audienceIdentities?.length ||
@@ -618,7 +634,6 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
     })();
   }, []);
 
-
   // Trigger image selection when component mounts with triggerImageSelection
   useEffect(() => {
     if (triggerImageSelection && imagePickerRef.current) {
@@ -674,6 +689,60 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
     return cat?.subcategories || [];
   }, [form.categoryId, meta.categories]);
 
+  // Update the handleMediaChange function to set mediaChanged
+  const handleMediaChange = (file, mediaType) => {
+    if (mediaType === 'image') {
+      setCoverImageBase64(file);
+      setSelectedMediaType('image');
+      setMediaChanged(true);
+      setForm(prev => ({ ...prev, videoUrl: "" }));
+    } else if (mediaType === 'video') {
+      setCoverImageBase64(file);
+      setSelectedMediaType('video');
+      setMediaChanged(true);
+    } else {
+      setCoverImageBase64(null);
+      setSelectedMediaType(null);
+      setMediaChanged(true);
+      setForm(prev => ({ ...prev, videoUrl: "" }));
+    }
+  };
+
+  // Upload media files function
+  const uploadMediaFiles = async (mediaFile, mediaType) => {
+    if (!mediaFile) return { imageUrl: null, videoUrl: null };
+
+    const formData = new FormData();
+    let imageUrl = null;
+    let videoUrl = null;
+
+    try {
+      if (mediaType === 'image') {
+        formData.append('coverImage', mediaFile);
+        const response = await client.post('/events/upload-cover', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        imageUrl = response.data.filename;
+      } else if (mediaType === 'video') {
+        formData.append('video', mediaFile);
+        const response = await client.post('/events/upload-video', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+        videoUrl = response.data.url;
+      }
+
+      return { imageUrl, videoUrl };
+    } catch (error) {
+      console.error('Error uploading media file:', error);
+      toast.error(`Failed to upload ${mediaType}`);
+      return { imageUrl: null, videoUrl: null };
+    }
+  };
+
   function setField(name, value) {
     if (readOnly) return;
     setForm((f) => {
@@ -699,28 +768,6 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
     });
   }
 
-  // Function to upload the cover image
-  const uploadCoverImage = async (file) => {
-    if (!file) return null;
-
-    const formData = new FormData();
-    formData.append('coverImage', file);
-
-    try {
-      const response = await client.post('/events/upload-cover', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      return response.data.filename;
-    } catch (error) {
-      console.error('Error uploading cover image:', error);
-      toast.error('Failed to upload cover image');
-      return null;
-    }
-  };
-
   async function onSubmit(e) {
     e.preventDefault();
     if (readOnly) return;
@@ -745,11 +792,15 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
       const subcategoryIds = Array.from(audSel.subcategoryIds);
       const subsubCategoryIds = Array.from(audSel.subsubCategoryIds);
 
-      // Upload cover image if there's a new one
       let imageFilename = coverImageFilename;
-
-      if (coverImageBase64 instanceof File) {
-        imageFilename = await uploadCoverImage(coverImageBase64);
+      let videoUrl = form.videoUrl;
+      
+      // Only upload if media has changed
+      if (mediaChanged && coverImageBase64 instanceof File) {
+        let uploaded = await uploadMediaFiles(coverImageBase64, selectedMediaType);
+        videoUrl = uploaded.videoUrl;
+        imageFilename = uploaded.imageUrl;
+        setMediaChanged(false); // Reset the flag after successful upload
       }
 
       console.log({a:imageFilename,coverImageBase64})
@@ -760,9 +811,16 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
         categoryIds,
         subcategoryIds,
         subsubCategoryIds,
-        // Use the filename instead of base64 data
-        coverImageBase64: !coverImageBase64 ? null : imageFilename,
-        coverImageUrl:!coverImageBase64 ? null :  imageFilename,
+        // Use the URLs from upload only if media changed, otherwise keep existing
+        coverImageBase64: selectedMediaType === 'image' 
+          ? (mediaChanged ? imageFilename : form.coverImageBase64)
+          : null,
+        coverImageUrl: selectedMediaType === 'image' 
+          ? (mediaChanged ? imageFilename : form.coverImageUrl)
+          : null,
+        videoUrl: selectedMediaType === 'video' 
+          ? (mediaChanged ? videoUrl : form.videoUrl)
+          : null,
         // NEW — general taxonomy from searchable pickers
         generalCategoryId: selectedGeneral.categoryId || null,
         generalSubcategoryId: selectedGeneral.subcategoryId || null,
@@ -904,10 +962,16 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
             <section>
               <CoverImagePicker
                 ref={imagePickerRef}
-                label="Cover Image (optional)"
+                label="Cover Image / Video (optional)"
                 value={coverImageBase64}
-                preview={typeof coverImageBase64 === 'string' ? coverImageBase64 : null}
-                onChange={setCoverImageBase64}
+                preview={
+                  selectedMediaType === 'video' 
+                    ? form.videoUrl 
+                    : (typeof coverImageBase64 === 'string' ? coverImageBase64 : null)
+                }
+                onChange={handleMediaChange}
+                canSelectBothVideoAndImage={false} // Set to true if you want to allow both
+                selectedMediaType={selectedMediaType}
               />
             </section>
 

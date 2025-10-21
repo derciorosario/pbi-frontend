@@ -1114,6 +1114,7 @@ const handleMediaChange = (file, mediaType) => {
             setCoverImageFilename(job.coverImageBase64);
             // Set preview URL for the image
             coverPreview = API_URL+`/uploads/${job.coverImageBase64}`;
+             setCoverImage(coverPreview);
           }
         } else if (job.videoUrl) {
           mediaType = 'video';

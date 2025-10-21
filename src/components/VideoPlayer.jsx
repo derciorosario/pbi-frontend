@@ -1,4 +1,4 @@
-// src/components/JobCard.jsx
+// src/components/VideoPlayer.jsx
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -7,20 +7,8 @@ import { toast } from "../lib/toast";
 import * as socialApi from "../api/social";
 import client, { API_URL } from "../api/client";
 import {
-  Edit,
-  Eye,
-  MapPin,
-  Clock,
   User as UserIcon,
-  Share2,
-  MessageCircle,
-  Heart,
-  Flag,
-  Send,
   Copy as CopyIcon,
-  MoreVertical,
-  Trash2,
-  Globe,
   Play,
   Pause,
   Volume2,

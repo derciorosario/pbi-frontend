@@ -10,6 +10,7 @@ import Header from "./Header";
 import { useAuth } from "../contexts/AuthContext";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import { toast } from "../lib/toast";
+import MediaViewer from "../components/FormMediaViewer"; // Import the MediaViewer component
 
 /* --- Minimal inline icons --- */
 const I = {
@@ -29,7 +30,43 @@ const I = {
       <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v9h-2V9Zm4 0h2v9h-2V9ZM6 9h2v9H6V9Z" />
     </svg>
   ),
+  video: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="m17 10.5-5-3v6l5-3Z"/><rect x="3" y="6" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+    </svg>
+  ),
+  image: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+      <path d="m21 15-5-5L5 21" stroke="currentColor" strokeWidth="2"/>
+    </svg>
+  ),
 };
+
+/* File type detection */
+function getFileType(filename) {
+  if (!filename) return 'document';
+  const ext = filename.toLowerCase().split('.').pop();
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+  const videoExts = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'flv', 'wmv', 'm4v', '3gp', 'ogv'];
+  
+  if (imageExts.includes(ext)) return 'image';
+  if (videoExts.includes(ext)) return 'video';
+  return 'document';
+}
+
+function isImage(filename) {
+  return getFileType(filename) === 'image';
+}
+
+function isVideo(filename) {
+  return getFileType(filename) === 'video';
+}
+
+function isMedia(filename) {
+  return isImage(filename) || isVideo(filename);
+}
 
 /* --- Small form atoms --- */
 const Label = ({ children, required }) => (
@@ -37,8 +74,6 @@ const Label = ({ children, required }) => (
     {children} {required && <span className="text-pink-600">*</span>}
   </label>
 );
-
-
 
 const Input = (props) => {
   const handleChange = (e) => {
@@ -143,7 +178,15 @@ function ReadOnlyCrowdfundView({ form, images, audSel, audTree }) {
       {/* Hero */}
       {hero ? (
         <div className="relative aspect-[16/6] w-full bg-gray-100">
-          <img src={hero} alt="Project cover" className="h-full w-full object-cover" />
+          {isVideo(hero) ? (
+            <video 
+              src={hero} 
+              className="h-full w-full object-cover"
+              controls
+            />
+          ) : (
+            <img src={hero} alt="Project cover" className="h-full w-full object-cover" />
+          )}
           
         </div>
       ) : null}
@@ -182,13 +225,23 @@ function ReadOnlyCrowdfundView({ form, images, audSel, audTree }) {
         {/* Gallery */}
         {gallery.length > 0 ? (
           <div>
-            <h3 className="text-sm font-semibold text-gray-700">Gallery</h3>
+            <h3 className="text-sm font-semibold text-gray-700">Media</h3>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {gallery.map((img, idx) => {
-                const src = img.startsWith('http') ? img : `${API_URL}/uploads/${img}`;
+              {gallery.map((item, idx) => {
+                const src = item.startsWith('http') ? item : `${API_URL}/uploads/${item}`;
                 return (
                   <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
-                    <img src={src} alt={`Image ${idx + 2}`} className="h-full w-full object-cover" />
+                    {isVideo(item) ? (
+                      <video 
+                        src={src} 
+                        controls 
+                        className="h-full w-full object-cover"
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    ) : (
+                      <img src={src} alt={`Image ${idx + 2}`} className="h-full w-full object-cover" />
+                    )}
                   </div>
                 );
               })}
@@ -285,8 +338,10 @@ export default function CrowdfundForm({ triggerImageSelection = false, hideHeade
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
-
+  const [uploadProgress, setUploadProgress] = useState({}); // Track progress per file
   const [showAudienceSection, setShowAudienceSection] = useState(false);
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   // Trigger image selection when component mounts with triggerImageSelection
   useEffect(() => {
@@ -333,6 +388,13 @@ export default function CrowdfundForm({ triggerImageSelection = false, hideHeade
 
   const [tagInput, setTagInput] = useState("");
 
+  // Get media URLs for the MediaViewer (only images and videos)
+  const mediaUrls = useMemo(() => {
+    return images.filter(img => isMedia(img)).map(img => 
+      img.startsWith('http') ? img : `${API_URL}/uploads/${img}`
+    );
+  }, [images]);
+
   const change = (e) => {
     if (readOnly) return;
     setForm((f) => {
@@ -344,6 +406,15 @@ export default function CrowdfundForm({ triggerImageSelection = false, hideHeade
     });
   };
   const chooseFiles = () => { if (!readOnly) fileRef.current?.click(); };
+
+  function handleMediaClick(index) {
+    setSelectedMediaIndex(index);
+    setMediaViewerOpen(true);
+  }
+
+  function closeMediaViewer() {
+    setMediaViewerOpen(false);
+  }
 
   /* Load categories and audience tree */
   useEffect(() => {
@@ -477,24 +548,30 @@ function removeTag(idx) {
 
   const readOnly = isEditMode  && ownerUserId && user?.id !== ownerUserId;
 
-  /* Upload guard: images only, <=5MB each, max 20 total */
+  /* Upload guard: images and videos, <=50MB for videos, 5MB for images, max 20 total */
   async function handleFilesChosen(fileList) {
     if (readOnly) return;
     const arr = Array.from(fileList || []);
     if (!arr.length) return;
 
-    const onlyImages = arr.filter((f) => f.type.startsWith("image/"));
-    if (onlyImages.length !== arr.length) {
-      toast.error("Only image files are allowed.");
+    // Check file sizes (50MB limit for videos, 5MB for images)
+    const maxSizeBytes = {
+      video: 50 * 1024 * 1024,
+      image: 5 * 1024 * 1024
+    };
+
+    const oversizedFiles = arr.filter(file => {
+      const fileType = file.type.startsWith('video/') ? 'video' : 'image';
+      return file.size > maxSizeBytes[fileType];
+    });
+
+    if (oversizedFiles.length) {
+      const fileNames = oversizedFiles.map(file => file.name).join(', ');
+      toast.error(`Files exceeding size limit: ${fileNames}`);
       return;
     }
 
-    const oversize = onlyImages.filter((f) => f.size > 5 * 1024 * 1024);
-    if (oversize.length) {
-      toast.error("Each image must be at most 5MB.");
-      return;
-    }
-    const accepted = onlyImages.filter((f) => f.size <= 5 * 1024 * 1024);
+    const accepted = arr.filter((f) => f.size <= maxSizeBytes[f.type.startsWith('video/') ? 'video' : 'image']);
 
     const remaining = 20 - images.length;
     const slice = accepted.slice(0, Math.max(0, remaining));
@@ -503,6 +580,14 @@ function removeTag(idx) {
     try {
       setUploading(true);
       setUploadingCount(slice.length);
+      
+      // Reset progress for new uploads
+      const initialProgress = {};
+      slice.forEach(file => {
+        initialProgress[file.name] = 0;
+      });
+      setUploadProgress(initialProgress);
+
       const formData = new FormData();
       slice.forEach(file => {
         formData.append('images', file);
@@ -511,6 +596,18 @@ function removeTag(idx) {
       const response = await client.post('/funding/upload-images', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            
+            // Update progress for all files
+            const newProgress = {};
+            slice.forEach(file => {
+              newProgress[file.name] = percentCompleted;
+            });
+            setUploadProgress(newProgress);
+          }
         }
       });
 
@@ -518,9 +615,11 @@ function removeTag(idx) {
 
       // Store as array of filenames (strings)
       setImages((prev) => [...prev, ...uploadedFilenames]);
+      setUploadProgress({}); // Clear progress after upload
     } catch (error) {
-      console.error('Error uploading images:', error);
-      toast.error('Failed to upload images');
+      console.error('Error uploading files:', error);
+      toast.error('Failed to upload files');
+      setUploadProgress({}); // Clear progress on error
     } finally {
       setUploading(false);
       setUploadingCount(0);
@@ -554,7 +653,7 @@ function removeTag(idx) {
     if (!form.goal || Number(form.goal) <= 0) return "Funding goal must be greater than zero.";
     if (!form.deadline) return "Deadline is required.";
     if (!form.pitch.trim()) return "Project pitch/description is required.";
-    if (!images.length) return "Please add at least one image.";
+    if (!images.length) return "Please add at least one image or video.";
     return null;
   }
 
@@ -1025,22 +1124,28 @@ function removeTag(idx) {
               </div>
             </div>
 
-            {/* Media (images only) */}
+            {/* Media (images and videos) */}
             <div className="mt-4">
-              <Label>Media (images)</Label>
+              <Label>Media (Images & Videos)</Label>
               <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
-                <div className="mb-2">
-                  <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M12 4v16m8-8H4" />
-                  </svg>
+                <div className="flex justify-center items-center gap-3 mb-2">
+                  <div className="flex items-center gap-1">
+                    <I.image />
+                    <span className="text-xs">Images</span>
+                  </div>
+                  <div className="h-4 w-px bg-gray-300"></div>
+                  <div className="flex items-center gap-1">
+                    <I.video />
+                    <span className="text-xs">Videos</span>
+                  </div>
                 </div>
-                Upload images to showcase your crowdfunding project (max 5MB per file)
+                Upload images or videos to showcase your crowdfunding project
                 <div className="mt-3">
                   <input
                     ref={fileRef}
                     type="file"
                     multiple
-                    accept="image/*"
+                    accept="image/*,video/*"
                     className="hidden"
                     onChange={(e) => handleFilesChosen(e.target.files)}
                   />
@@ -1053,34 +1158,62 @@ function removeTag(idx) {
                   </button>
                 </div>
 
+                {/* Upload Progress Indicator */}
+                {uploading && Object.keys(uploadProgress).length > 0 && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        Uploading {Object.keys(uploadProgress).length} file(s)...
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {Object.values(uploadProgress)[0]}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-brand-600 h-2 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${Object.values(uploadProgress)[0] || 0}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                {(images.length > 0 || uploadingCount > 0) && (
                 <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                   {images.map((img, idx) => {
-                    const isImg = true
-
-                    // Resolve URL for filenames
-                    let src = null;
-                    if (img.startsWith("data:image")) {
-                      src = img; // base64
-                    } else if (img.startsWith("http://") || img.startsWith("https://")) {
-                      src = img; // full URL
-                    } else if (isImg) {
-                      src = `${API_URL}/uploads/${img}`; // filename to full URL
-                    }
+                    const isImg = isImage(img);
+                    const isVid = isVideo(img);
+                    const src = img.startsWith("http") ? img : `${API_URL}/uploads/${img}`;
 
                     return (
                       <div key={`${img}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                        <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
-                          {isImg ? (
-                            <img src={src} alt={img} className="h-full w-full object-cover" />
+                        <div 
+                          className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center relative cursor-pointer"
+                          onClick={() => handleMediaClick(idx)}
+                        >
+                          {isVid ? (
+                            <>
+                              <video 
+                                src={src} 
+                                className="h-full w-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                <I.video />
+                              </div>
+                            </>
                           ) : (
-                            <span className="text-xs text-gray-500">DOC</span>
+                            <img src={src} alt={img} className="h-full w-full object-cover" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="truncate text-sm font-medium">Image {idx+1}</div>
-                          <div className="text-[11px] text-gray-500 truncate">Attached</div>
+                          <div className="truncate text-sm font-medium">
+                            {img.split('/').pop()}
+                          </div>
+                          <div className="text-[11px] text-gray-500 truncate">
+                            {isVid ? 'Video' : 'Image'} • Attached
+                          </div>
                         </div>
                         <button
                           type="button"
@@ -1101,6 +1234,17 @@ function removeTag(idx) {
                         <div className="flex-1 min-w-0">
                           <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
                           <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                          {/* Upload Progress Bar */}
+                          {uploading && (
+                            <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                              <div 
+                                className="bg-brand-600 h-1.5 rounded-full transition-all duration-300"
+                                style={{ 
+                                  width: `${Object.values(uploadProgress)[0] || 0}%` 
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                         <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
                       </div>
@@ -1109,7 +1253,10 @@ function removeTag(idx) {
                 </div>
               )}
 
-
+              <p className="mt-2 text-[11px] text-gray-400">
+                Images: Up to 5MB each. Videos: Up to 50MB each.
+                Supported formats: JPG, PNG, GIF, MP4, MOV
+              </p>
               </div>
             </div>
 
@@ -1134,7 +1281,7 @@ function removeTag(idx) {
                   value={form.team}
                   onChange={change}
                   rows={4}
-                  placeholder="Who’s building this? Roles and experience."
+                  placeholder="Who's building this? Roles and experience."
                 />
               </div>
             </div>
@@ -1376,6 +1523,15 @@ function removeTag(idx) {
           </div>
         )}
       </div>
+
+      {/* Media Viewer */}
+      {mediaViewerOpen && (
+        <MediaViewer
+          urls={mediaUrls}
+          initialIndex={selectedMediaIndex}
+          onClose={closeMediaViewer}
+        />
+      )}
     </DefaultLayout>
   );
 }

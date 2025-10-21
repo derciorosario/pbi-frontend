@@ -91,13 +91,10 @@ export default function JobCard({
   const [jobDetailsOpen, setJobDetailsOpen] = useState(false);
 
   // Social state
-  const [liked, setLiked] = useState(!!job?.liked);
-  const [likeCount, setLikeCount] = useState(Number(job?.likes || 0));
-  const [commentCount, setCommentCount] = useState(
-    Array.isArray(job?.comments)
-      ? job.comments.length
-      : Number(job?.commentsCount || 0)
-  );
+ // Social state - initialize from job props
+const [liked, setLiked] = useState(!!job?.isLiked);
+const [likeCount, setLikeCount] = useState(Number(job?.likesCount || 0));
+const [commentCount, setCommentCount] = useState(Number(job?.commentsCount || 0));
 
   const [reportOpen, setReportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -138,7 +135,7 @@ export default function JobCard({
     };
   }, []);
 
-  useEffect(() => {
+  /*useEffect(() => { //leave it here for later
     if (!job?.id) return;
     socialApi
       .getLikeStatus("job", job.id)
@@ -154,7 +151,7 @@ export default function JobCard({
         setCommentCount(len);
       })
       .catch(() => {});
-  }, [job?.id]);
+  }, [job?.id]);*/
 
   const isOwner =
     user?.id && job?.postedByUserId && user.id === job.postedByUserId;

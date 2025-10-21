@@ -9,6 +9,7 @@ import client, { API_URL } from "../api/client";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
 import FullPageLoader from "../components/ui/FullPageLoader";
+import MediaViewer from "../components/FormMediaViewer"; // Import the MediaViewer component
 
 /* ---------------- Shared styles (brand) ---------------- */
 const styles = {
@@ -33,6 +34,18 @@ const I = {
   chevron: () => (
     <svg className="h-4 w-4 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
       <path d="m6 9 6 6 6-6" />
+    </svg>
+  ),
+  video: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="m17 10.5-5-3v6l5-3Z"/><rect x="3" y="6" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+    </svg>
+  ),
+  image: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+      <path d="m21 15-5-5L5 21" stroke="currentColor" strokeWidth="2"/>
     </svg>
   ),
 };
@@ -134,6 +147,20 @@ function fileToDataURL(file) {
     r.onload = () => resolve(r.result);
     r.readAsDataURL(file);
   });
+}
+
+function isImage(url) {
+  return typeof url === "string" && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+}
+
+function isVideo(url) {
+  return typeof url === "string" && /\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/i.test(url);
+}
+
+function getFileType(file) {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  return "document";
 }
 
 /* ---------- helpers for read-only view ---------- */
@@ -262,7 +289,10 @@ export default function CreateProductPage({ triggerImageSelection = false, hideH
   const [isLoading, setIsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState({}); // Track progress per file
   const [ownerUserId, setOwnerUserId] = useState(null);
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   const [cats, setCats] = useState([]); // [{id,name,subcategories:[{id,name}]}]
 
@@ -571,9 +601,14 @@ const industrySubcategoryOptions = useMemo(() => {
 
   const [tagInput, setTagInput] = useState("");
 
-  // Images: array of strings (filenames)
+  // Images & Videos: array of strings (filenames)
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
+
+  // Get all media URLs for the MediaViewer (images and videos)
+  const mediaUrls = useMemo(() => {
+    return images.filter(url => isImage(url) || isVideo(url)).map(img=> img.startsWith('http') ? img : `${API_URL}/uploads/${img}`);
+  }, [images]);
 
   // Trigger image selection when component mounts with triggerImageSelection
   useEffect(() => {
@@ -604,6 +639,15 @@ const industrySubcategoryOptions = useMemo(() => {
       ...f,
       tags: f.tags.filter((_, i) => i !== idx),
     }));
+  }
+
+  function handleMediaClick(index) {
+    setSelectedMediaIndex(index);
+    setMediaViewerOpen(true);
+  }
+
+  function closeMediaViewer() {
+    setMediaViewerOpen(false);
   }
 
   // Load identities for AudienceTree
@@ -722,52 +766,31 @@ const industrySubcategoryOptions = useMemo(() => {
     return null;
   }
 
-  // Function to upload multiple images
-  const uploadImages = async (files) => {
-    if (!files || files.length === 0) return [];
-
-    const formData = new FormData();
-    files.forEach(file => {
-      formData.append('images', file);
-    });
-
-    try {
-      const response = await client.post('/products/upload-images', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      return response.data.filenames.map((filename, index) => ({
-        filename: filename,
-        title: files[index].name.replace(/\.[^/.]+$/, ""),
-        base64url: `${API_URL}/uploads/${filename}` // For preview
-      }));
-    } catch (error) {
-      console.error('Error uploading images:', error);
-      toast.error('Failed to upload images');
-      return [];
-    }
-  };
-
   async function handleFilesChosen(files) {
     const arr = Array.from(files || []);
     if (!arr.length) return;
 
-    // Check file sizes (5MB limit)
-    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
-    const oversizedFiles = arr.filter(file => file.size > maxSizeBytes);
+    // Check file sizes (50MB limit for videos, 5MB for images)
+    const maxSizeBytes = {
+      video: 50 * 1024 * 1024,
+      image: 5 * 1024 * 1024
+    };
+
+    const oversizedFiles = arr.filter(file => {
+      const fileType = getFileType(file);
+      return file.size > maxSizeBytes[fileType];
+    });
 
     if (oversizedFiles.length > 0) {
       const fileNames = oversizedFiles.map(file => file.name).join(', ');
-      toast.error(`Files exceeding 5MB limit: ${fileNames}`);
+      toast.error(`Files exceeding size limit: ${fileNames}`);
       return;
     }
 
-    // Only allow images
-    const imgFiles = arr.filter((f) => f.type.startsWith("image/"));
-    if (imgFiles.length !== arr.length) {
-      toast.error("Only image files are allowed.");
+    // Only allow images and videos
+    const mediaFiles = arr.filter((f) => f.type.startsWith("image/") || f.type.startsWith("video/"));
+    if (mediaFiles.length !== arr.length) {
+      toast.error("Only image and video files are allowed.");
       return;
     }
 
@@ -778,6 +801,14 @@ const industrySubcategoryOptions = useMemo(() => {
     try {
       setUploading(true);
       setUploadingCount(slice.length);
+      
+      // Reset progress for new uploads
+      const initialProgress = {};
+      slice.forEach(file => {
+        initialProgress[file.name] = 0;
+      });
+      setUploadProgress(initialProgress);
+
       const formData = new FormData();
       slice.forEach(file => {
         formData.append('images', file);
@@ -786,15 +817,29 @@ const industrySubcategoryOptions = useMemo(() => {
       const response = await client.post('/products/upload-images', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            
+            // Update progress for all files
+            const newProgress = {};
+            slice.forEach(file => {
+              newProgress[file.name] = percentCompleted;
+            });
+            setUploadProgress(newProgress);
+          }
         }
       });
 
       const mapped = response.data.filenames.map((filename) => filename);
 
       setImages((prev) => [...prev, ...mapped]);
+      setUploadProgress({}); // Clear progress after upload
     } catch (err) {
       console.error(err);
-      toast.error("Some images could not be uploaded.");
+      toast.error("Some images/videos could not be uploaded.");
+      setUploadProgress({}); // Clear progress on error
     } finally {
       setUploading(false);
       setUploadingCount(0);
@@ -956,20 +1001,26 @@ const industrySubcategoryOptions = useMemo(() => {
 
               {/* Product Images */}
               <section>
-                <h2 className="text-[12px] font-medium text-gray-700">Product Images <label className="text-[crimson] text-[14px]">*</label></h2>
+                <h2 className="text-[12px] font-medium text-gray-700">Product Images & Videos <label className="text-[crimson] text-[14px]">*</label></h2>
                 <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
-                  <div className="mb-2">
-                    <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path d="M12 4v16m8-8H4" />
-                    </svg>
+                  <div className="flex justify-center items-center gap-3 mb-2">
+                    <div className="flex items-center gap-1">
+                      <I.image />
+                      <span className="text-xs">Images</span>
+                    </div>
+                    <div className="h-4 w-px bg-gray-300"></div>
+                    <div className="flex items-center gap-1">
+                      <I.video />
+                      <span className="text-xs">Videos</span>
+                    </div>
                   </div>
-                  Upload images to showcase your product (max 5MB per file)
+                  Upload images or videos to showcase your product
                   <div className="mt-3">
                     <input
                       ref={fileInputRef}
                       type="file"
                       multiple
-                      accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                      accept="image/*,video/*"
                       className="hidden"
                       onChange={(e) => handleFilesChosen(e.target.files)}
                     />
@@ -982,33 +1033,62 @@ const industrySubcategoryOptions = useMemo(() => {
                     </button>
                   </div>
 
+                  {/* Upload Progress Indicator */}
+                  {uploading && Object.keys(uploadProgress).length > 0 && (
+                    <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Uploading {Object.keys(uploadProgress).length} file(s)...
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {Object.values(uploadProgress)[0]}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-brand-600 h-2 rounded-full transition-all duration-300"
+                          style={{ 
+                            width: `${Object.values(uploadProgress)[0] || 0}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {(images.length > 0 || uploadingCount > 0) && (
                     <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                       {images.map((img, idx) => {
-                        const isImg = true
-
-                        // Resolve URL for filenames
-                        let src = null;
-                        if (img.startsWith("data:image")) {
-                          src = img; // base64
-                        } else if (img.startsWith("http://") || img.startsWith("https://")) {
-                          src = img; // full URL
-                        } else if (isImg) {
-                          src = `${API_URL}/uploads/${img}`; // filename to full URL
-                        }
+                        const isImg = isImage(img);
+                        const isVid = isVideo(img);
+                        const fullUrl = img.startsWith('http') ? img : `${API_URL}/uploads/${img}`;
 
                         return (
                           <div key={`${img}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                            <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
-                              {isImg ? (
-                                <img src={src} alt={img} className="h-full w-full object-cover" />
+                            <div 
+                              className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center relative cursor-pointer"
+                              onClick={() => handleMediaClick(idx)}
+                            >
+                              {isVid ? (
+                                <>
+                                  <video 
+                                    src={fullUrl} 
+                                    className="h-full w-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                    <I.video />
+                                  </div>
+                                </>
                               ) : (
-                                <span className="text-xs text-gray-500">DOC</span>
+                                <img src={fullUrl} alt={`Product media ${idx + 1}`} className="h-full w-full object-cover" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="truncate text-sm font-medium">Image {idx+1}</div>
-                              <div className="text-[11px] text-gray-500 truncate">Attached</div>
+                              <div className="truncate text-sm font-medium">
+                                {isVid ? 'Video' : 'Image'} {idx + 1}
+                              </div>
+                              <div className="text-[11px] text-gray-500 truncate">
+                                {isVid ? 'Video' : 'Image'} • Attached
+                              </div>
                             </div>
                             <button
                               type="button"
@@ -1029,6 +1109,17 @@ const industrySubcategoryOptions = useMemo(() => {
                             <div className="flex-1 min-w-0">
                               <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
                               <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                              {/* Upload Progress Bar */}
+                              {uploading && (
+                                <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                                  <div 
+                                    className="bg-brand-600 h-1.5 rounded-full transition-all duration-300"
+                                    style={{ 
+                                      width: `${Object.values(uploadProgress)[0] || 0}%` 
+                                    }}
+                                  />
+                                </div>
+                              )}
                             </div>
                             <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
                           </div>
@@ -1037,6 +1128,10 @@ const industrySubcategoryOptions = useMemo(() => {
                     </div>
                   )}
 
+                  <p className="mt-2 text-[11px] text-gray-400">
+                    Images: Up to 5MB each. Videos: Up to 50MB each.
+                    Supported formats: JPG, PNG, GIF, MP4, MOV
+                  </p>
                 </div>
               </section>
 
@@ -1318,6 +1413,15 @@ const industrySubcategoryOptions = useMemo(() => {
           </div>
         </aside>
       </main>
+
+      {/* Media Viewer */}
+      {mediaViewerOpen && (
+        <MediaViewer
+          urls={mediaUrls}
+          initialIndex={selectedMediaIndex}
+          onClose={closeMediaViewer}
+        />
+      )}
     </div>
   );
 }

@@ -110,11 +110,11 @@ export default function MomentCard({
   );
 
   // Social state
-  const [liked, setLiked] = useState(!!moment?.liked);
-  const [likeCount, setLikeCount] = useState(Number(moment?.likes || 0));
-  const [commentCount, setCommentCount] = useState(
-    Array.isArray(moment?.comments) ? moment.comments.length : Number(moment?.commentsCount || 0)
-  );
+     const [liked, setLiked] =  useState(!!moment?.isLiked);
+    const [likeCount, setLikeCount] = useState(Number(moment?.likesCount || 0));
+      const [commentCount, setCommentCount] = useState(Number(moment?.commentsCount || 0));
+    
+  
 
   // Report dialog
   const [reportOpen, setReportOpen] = useState(false);

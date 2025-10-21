@@ -22,6 +22,8 @@ import {
   MoreVertical,
   Trash2,
   Globe,
+  Play,
+  Pause,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -44,6 +46,7 @@ import ProfileModal from "./ProfileModal";
 import NeedDetails from "./NeedDetails";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
+import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
 import LogoGray from '../assets/logo.png';
 
 function computeTimeAgo(explicit, createdAt) {
@@ -57,6 +60,39 @@ function computeTimeAgo(explicit, createdAt) {
   const days = Math.floor(hrs / 24);
   return `${days} day${days !== 1 ? "s" : ""} ago`;
 }
+
+// Helper function to validate media URLs
+const isValidMediaUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  return url.startsWith("data:") || url.startsWith("http://") || url.startsWith("https://");
+};
+
+// Helper function to get file extension
+const getFileExtension = (url) => {
+  if (!url) return '';
+  const match = url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  return match ? match[1].toLowerCase() : '';
+};
+
+// Helper function to determine media type
+const getMediaType = (mediaItem) => {
+  // Check if type is explicitly defined
+  if (mediaItem?.type === 'video') return 'video';
+  if (mediaItem?.type === 'image') return 'image';
+  
+  // Check file extension
+  const url = mediaItem?.base64url || mediaItem?.url || '';
+  const extension = getFileExtension(url);
+  
+  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'];
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+  
+  if (videoExtensions.includes(extension)) return 'video';
+  if (imageExtensions.includes(extension)) return 'image';
+  
+  // Default to image if unknown
+  return 'image';
+};
 
 export default function NeedCard({
   need,
@@ -77,14 +113,16 @@ export default function NeedCard({
   const [needDetailsOpen, setNeedDetailsOpen] = useState(false);
 
   // Social state
-  const [liked, setLiked] = useState(!!need?.liked);
-  const [likeCount, setLikeCount] = useState(Number(need?.likes || 0));
-  const [commentCount, setCommentCount] = useState(
-    Array.isArray(need?.comments) ? need.comments.length : Number(need?.commentsCount || 0)
-  );
-
+  const [liked, setLiked] =  useState(!!need?.isLiked);
+  const [likeCount, setLikeCount] = useState(Number(need.likesCount || 0));
+  const [commentCount, setCommentCount] = useState(Number(need?.commentsCount || 0));
+  
+  // Media slider state
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [showVideoControls, setShowVideoControls] = useState(false);
+ 
   const [likesDialogOpen, setLikesDialogOpen] = useState(false);
-
   const [reportOpen, setReportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
@@ -94,6 +132,9 @@ export default function NeedCard({
   const [isDeleted, setIsDeleted] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const optionsMenuRef = useRef(null);
+
+  // Video control timeout ref
+  const videoControlsTimeoutRef = useRef(null);
 
   useEffect(() => {
     function onDown(e) {
@@ -123,6 +164,15 @@ export default function NeedCard({
     };
   }, []);
 
+  // Clear video controls timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (videoControlsTimeoutRef.current) {
+        clearTimeout(videoControlsTimeoutRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (!need?.id) return;
     socialApi
@@ -144,26 +194,37 @@ export default function NeedCard({
   const isOwner =
     user?.id && need?.userId && user.id === need.userId;
 
-  // Get all valid images for slider
-  const getValidImages = () => {
-    const validImages = [];
+  // Get all valid media items (videos first, then images)
+  const getValidMedia = () => {
+    const validMedia = [];
 
+    // Check attachments array
     if (need?.attachments?.length > 0) {
       for (const attachment of need.attachments) {
-        if (attachment?.base64url &&
-            (attachment.base64url.startsWith('data:image') ||
-             attachment.base64url.startsWith("http://") ||
-             attachment.base64url.startsWith("https://"))) {
-          validImages.push(attachment.base64url);
+        const url = attachment?.base64url;
+        if (isValidMediaUrl(url)) {
+          const mediaType = getMediaType(attachment);
+          validMedia.push({
+            url,
+            type: mediaType,
+            name: attachment?.name || `attachment-${validMedia.length}`
+          });
         }
       }
     }
 
-    return validImages;
+    // Sort: videos first, then images
+    return validMedia.sort((a, b) => {
+      if (a.type === 'video' && b.type !== 'video') return -1;
+      if (a.type !== 'video' && b.type === 'video') return 1;
+      return 0;
+    });
   };
 
-  const validImages = getValidImages();
-  const hasMultipleImages = validImages.length > 1;
+  const validMedia = getValidMedia();
+  const hasMultipleMedia = validMedia.length > 1;
+  const currentMedia = validMedia[currentMediaIndex];
+  const isCurrentVideo = currentMedia?.type === 'video';
 
   const allTags = useMemo(() => {
     const apiTags = Array.isArray(need?.tags) ? need.tags : [];
@@ -211,6 +272,54 @@ export default function NeedCard({
     let textContent = div.textContent || div.innerText || "";
     textContent = textContent.replace(/\s+/g, " ").trim();
     return textContent;
+  };
+
+  // Video control functions
+  const handleVideoPlayPause = () => {
+    setIsVideoPlaying(!isVideoPlaying);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPlay = () => {
+    setIsVideoPlaying(true);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPause = () => {
+    setIsVideoPlaying(false);
+    setShowVideoControls(true);
+    
+    // Keep controls visible when paused
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+  };
+
+  const handleMediaClick = (e) => {
+    if (isCurrentVideo) {
+      // For videos, handle play/pause
+      e.stopPropagation();
+      handleVideoPlayPause();
+    } else {
+      // For images, open details modal
+      setNeedDetailsOpen(true);
+    }
   };
 
   const toggleLike = async () => {
@@ -473,18 +582,6 @@ export default function NeedCard({
 
         {/* POST CONTENT */}
         <div className="px-4 pb-3">
-          {/* Need Title */}
-         
-         {/** <h3
-            className="font-semibold text-base text-gray-900 mb-1 hover:text-brand-600 cursor-pointer transition-colors"
-            onClick={() => {
-              if (isOwner) navigate(`/need/${need.id}`);
-              else setNeedDetailsOpen(true);
-            }}
-          >
-            {need?.title}
-          </h3> */}
-
           {/* Description */}
           <div className="text-sm text-gray-700 mb-2">
             <div className={showFullDescription ? "" : "line-clamp-3"}>
@@ -506,18 +603,100 @@ export default function NeedCard({
               {need.budget}
             </div>
           )}
-
         </div>
 
-        {/* IMAGE (if exists and not in text mode) */}
-        {settings?.contentType !== "text" && validImages.length > 0 && (
+        {/* MEDIA (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && validMedia.length > 0 && (
           <div className="relative">
-            <img
-              src={validImages[0]}
-              alt={need?.title}
-              className="w-full max-h-96 object-cover cursor-pointer"
-              onClick={() => setNeedDetailsOpen(true)}
-            />
+            {/* Media Slider */}
+            <div 
+              onClick={handleMediaClick}
+              className="relative w-full max-h-96 overflow-hidden cursor-pointer"
+            >
+              {hasMultipleMedia ? (
+                <div
+                  className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                  style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}
+                >
+                  {validMedia.map((media, index) => (
+                    <div key={index} className="flex-shrink-0 w-full h-96 relative">
+                      {media.type === 'video' ? (
+                        <div className="relative w-full h-full bg-black">
+                          <VideoPlayer
+                            src={media.url}
+                            className="w-full h-full object-contain"
+                            controls={false}
+                            autoPlay={false}
+                            muted
+                            isPlaying={index === currentMediaIndex && isVideoPlaying}
+                            onPlay={handleVideoPlay}
+                            onPause={handleVideoPause}
+                          />
+                        </div>
+                      ) : (
+                        <img
+                          src={media.url}
+                          alt={media.name || `Media ${index + 1}`}
+                          className="w-full h-96 object-cover"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="w-full h-96 relative">
+                  {currentMedia.type === 'video' ? (
+                    <div className="relative w-full h-full bg-black">
+                      <VideoPlayer
+                        src={currentMedia.url}
+                        className="w-full h-full object-contain"
+                        controls={false}
+                        autoPlay={false}
+                        muted
+                        isPlaying={isVideoPlaying}
+                        onPlay={handleVideoPlay}
+                        onPause={handleVideoPause}
+                      />
+                    </div>
+                  ) : (
+                    <img
+                      src={currentMedia.url}
+                      alt={currentMedia.name || "Media"}
+                      className="w-full h-96 object-cover"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Slider Dots */}
+            {hasMultipleMedia && (
+              <div className="absolute bottom-3 right-3 flex gap-1">
+                {validMedia.map((media, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentMediaIndex(index);
+                      // Reset video state when changing slides
+                      if (media.type === 'video') {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(true);
+                      } else {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(false);
+                      }
+                    }}
+                    className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                      index === currentMediaIndex 
+                        ? (media.type === 'video' ? 'bg-blue-500' : 'bg-white')
+                        : 'bg-white/50'
+                    }`}
+                    aria-label={`Go to ${media.type} ${index + 1}`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -581,7 +760,6 @@ export default function NeedCard({
         </div>
 
         {/* ENGAGEMENT BAR - Like/Comment counts */}
-     
         {(likeCount > 0 || commentCount > 0) && (
            <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
              <div className="flex items-center gap-1">
@@ -669,20 +847,19 @@ export default function NeedCard({
         </div>
 
         {/* BOTTOM SECTION - Message and Connect */}
-       
-          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
-            <div className="flex items-center gap-3">
-              {/* Location */}
-              {locationLabel && (
-                <div className="flex items-center gap-1 text-sm text-gray-600">
-                  <MapPin size={14} />
-                  <span>{locationLabel}</span>
-                </div>
-              )}
-            </div>
+        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-3">
+            {/* Location */}
+            {locationLabel && (
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <MapPin size={14} />
+                <span>{locationLabel}</span>
+              </div>
+            )}
+          </div>
 
-            {/* Action buttons */}
-             {!isOwner && (
+          {/* Action buttons */}
+          {!isOwner && (
             <div className="flex items-center gap-2 mt-3">
               <button
                 onClick={() => {
@@ -702,10 +879,9 @@ export default function NeedCard({
               </button>
 
               {connectionStatus !== "connected" && renderConnectButton()}
-            </div> )}
-
-          </div>
-       
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modals */}
@@ -741,11 +917,11 @@ export default function NeedCard({
         onConfirm={reportNeed}
       />
 
-       <LikesDialog
-                  open={likesDialogOpen}
-                  onClose={() => setLikesDialogOpen(false)}
-                  entityType="need"
-                  entityId={need?.id}
+      <LikesDialog
+        open={likesDialogOpen}
+        onClose={() => setLikesDialogOpen(false)}
+        entityType="need"
+        entityId={need?.id}
       />
 
       <CommentsDialog

@@ -15,6 +15,8 @@ import {
   MoreVertical,
   Trash2,
   Globe,
+  Play,
+  Pause,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -45,7 +47,45 @@ import CommentsDialog from "./CommentsDialog";
 import LogoGray from '../assets/logo.png'
 import client, { API_URL } from "../api/client";
 import LikesDialog from "./LikesDialog";
+import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
 
+// Helper function to validate media URLs
+const isValidMediaUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  return url.startsWith("data:") || url.startsWith("http://") || url.startsWith("https://");
+};
+
+// Helper function to get file extension
+const getFileExtension = (url) => {
+  if (!url) return '';
+  const match = url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  return match ? match[1].toLowerCase() : '';
+};
+
+// Helper function to determine media type
+const getMediaType = (url) => {
+  if (!url) return 'unknown';
+  
+  // Check data URLs
+  if (url.startsWith("data:")) {
+    if (url.startsWith("data:image")) return 'image';
+    if (url.startsWith("data:video")) return 'video';
+    return 'unknown';
+  }
+  
+  // Check file extension
+  const extension = getFileExtension(url);
+  
+  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'];
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+  const documentExtensions = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt'];
+  
+  if (videoExtensions.includes(extension)) return 'video';
+  if (imageExtensions.includes(extension)) return 'image';
+  if (documentExtensions.includes(extension)) return 'document';
+  
+  return 'unknown';
+};
 
 export default function ProductCard({
   item,
@@ -69,12 +109,15 @@ export default function ProductCard({
   // Track connection status locally (for immediate UI updates)
   const [connectionStatus, setConnectionStatus] = useState(item?.connectionStatus || "none");
   
-  // Social state
-  const [liked, setLiked] = useState(!!item?.liked);
-  const [likeCount, setLikeCount] = useState(Number(item?.likes || 0));
-  const [commentCount, setCommentCount] = useState(
-    Array.isArray(item?.comments) ? item.comments.length : Number(item?.commentsCount || 0)
-  );
+ 
+   const [liked, setLiked] =  useState(!!item?.isLiked);
+  const [likeCount, setLikeCount] = useState(Number(item.likesCount || 0));
+    const [commentCount, setCommentCount] = useState(Number(item?.commentsCount || 0));
+  
+  // Media slider state
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [showVideoControls, setShowVideoControls] = useState(false);
 
   // Report dialog
   const [reportOpen, setReportOpen] = useState(false);
@@ -93,9 +136,10 @@ export default function ProductCard({
   const [isDeleted, setIsDeleted] = useState(false);
   const optionsMenuRef = useRef(null);
 
-  // Image slider state
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showFullDescription, setShowFullDescription] = useState(false);
+
+  // Video control timeout ref
+  const videoControlsTimeoutRef = useRef(null);
 
   // Close menus on outside click / Esc
   useEffect(() => {
@@ -130,8 +174,17 @@ export default function ProductCard({
     };
   }, []);
 
-  // Initial fetch for like & comments count (optional)
+  // Clear video controls timeout on unmount
   useEffect(() => {
+    return () => {
+      if (videoControlsTimeoutRef.current) {
+        clearTimeout(videoControlsTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Initial fetch for like & comments count (optional)
+ /* useEffect(() => { leave this section as it is
     if (!item?.id) return;
     socialApi
       .getLikeStatus("product", item.id)
@@ -147,7 +200,7 @@ export default function ProductCard({
         setCommentCount(len);
       })
       .catch(() => {});
-  }, [item?.id]);
+  }, [item?.id]);*/
 
   function onSent() {
     setModalOpen(false);
@@ -164,29 +217,46 @@ export default function ProductCard({
     return textContent;
   };
 
-  const isList = type === "list";
+  // Get all valid media for slider (images and videos only, no documents)
+  const getValidMedia = () => {
+    const mediaItems = item?.images || [];
+    const validMedia = [];
 
-  // Get all valid images for slider
-  const getValidImages = () => {
-    const images = item?.images || [];
-    const validImages = [];
-
-    images.forEach(img => {
-      let imageUrl = img?.filename || img || null;
-      if (imageUrl) {
-        imageUrl = (imageUrl.startsWith("data:image") || imageUrl.startsWith("http"))
-          ? imageUrl
-          : `${API_URL}/uploads/${imageUrl}`;
-        validImages.push(imageUrl);
+    mediaItems.forEach((mediaUrl, index) => {
+      let processedUrl = mediaUrl?.filename || mediaUrl || null;
+      
+      // Process URL for external access
+      if (processedUrl && !processedUrl.startsWith("data:") && !processedUrl.startsWith("http")) {
+        processedUrl = `${API_URL}/uploads/${processedUrl}`;
+      }
+      
+      if (isValidMediaUrl(processedUrl)) {
+        const mediaType = getMediaType(processedUrl);
+        // Only include images and videos in the slider
+        if (mediaType === 'image' || mediaType === 'video') {
+          validMedia.push({
+            url: processedUrl,
+            type: mediaType,
+            name: `media-${index}`
+          });
+        }
       }
     });
 
-    return validImages;
+    // Sort: videos first, then images
+    return validMedia.sort((a, b) => {
+      if (a.type === 'video' && b.type !== 'video') return -1;
+      if (a.type !== 'video' && b.type === 'video') return 1;
+      return 0;
+    });
   };
 
-  const validImages = getValidImages();
-  const hasMultipleImages = validImages.length > 1;
-  
+  const validMedia = getValidMedia();
+  const hasMultipleMedia = validMedia.length > 1;
+  const currentMedia = validMedia[currentMediaIndex];
+  const isCurrentVideo = currentMedia?.type === 'video';
+
+  const isList = type === "list";
 
   const initials = (item?.seller?.name || item?.sellerUserName || "?")
     .split(" ")
@@ -214,6 +284,55 @@ export default function ProductCard({
         ? "flex flex-col" // Full width for text mode in list
         : "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch")
     : "flex flex-col";
+
+  // Video control functions
+  const handleVideoPlayPause = () => {
+    setIsVideoPlaying(!isVideoPlaying);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPlay = () => {
+    setIsVideoPlaying(true);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPause = () => {
+    setIsVideoPlaying(false);
+    setShowVideoControls(true);
+    
+    // Keep controls visible when paused
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+  };
+
+  const handleMediaClick = (e) => {
+    if (isCurrentVideo) {
+      // For videos, handle play/pause
+      e.stopPropagation();
+      handleVideoPlayPause();
+    } else {
+      // For images, open details modal
+      if (isOwner) navigate(`/product/${item.id}`);
+      else setProductDetailsOpen(true);
+    }
+  };
 
   /* ----------------------- Like handler ----------------------- */
   const toggleLike = async () => {
@@ -407,8 +526,6 @@ export default function ProductCard({
   // Use seller avatar, not post image
   const sellerAvatarUrl = item?.avatarUrl || null;
 
-  let imageUrl = validImages.length > 0 ? validImages[0] : null;
-
   const allTags = [
     "Product",
     ...(Array.isArray(item?.audienceCategories)
@@ -528,48 +645,97 @@ export default function ProductCard({
 
         </div>
 
-        {/* IMAGE (if exists and not in text mode) */}
-        {settings?.contentType !== "text" && imageUrl && (
+        {/* MEDIA (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && validMedia.length > 0 && (
           <div className="relative">
-            {hasMultipleImages ? (
-              <div className="relative overflow-hidden">
+            {/* Media Slider */}
+            <div 
+              onClick={handleMediaClick}
+              className="relative w-full max-h-96 overflow-hidden cursor-pointer"
+            >
+              {hasMultipleMedia ? (
                 <div
-                  className="flex w-full max-h-96 transition-transform duration-300 ease-in-out"
-                  style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+                  className="flex w-full h-full transition-transform duration-300 ease-in-out"
+                  style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}
                 >
-                  {validImages.map((img, index) => (
+                  {validMedia.map((media, index) => (
+                    <div key={index} className="flex-shrink-0 w-full h-96 relative">
+                      {media.type === 'video' ? (
+                        <div className="relative w-full h-full bg-black">
+                          <VideoPlayer
+                            src={media.url}
+                            className="w-full h-full object-contain"
+                            controls={false}
+                            autoPlay={false}
+                            muted
+                            isPlaying={index === currentMediaIndex && isVideoPlaying}
+                            onPlay={handleVideoPlay}
+                            onPause={handleVideoPause}
+                          />
+                        </div>
+                      ) : (
+                        <img
+                          src={media.url}
+                          alt={media.name || `Media ${index + 1}`}
+                          className="w-full h-96 object-cover"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="w-full h-96 relative">
+                  {currentMedia.type === 'video' ? (
+                    <div className="relative w-full h-full bg-black">
+                      <VideoPlayer
+                        src={currentMedia.url}
+                        className="w-full h-full object-contain"
+                        controls={false}
+                        autoPlay={false}
+                        muted
+                        isPlaying={isVideoPlaying}
+                        onPlay={handleVideoPlay}
+                        onPause={handleVideoPause}
+                      />
+                    </div>
+                  ) : (
                     <img
-                      key={index}
-                      src={img}
-                      alt={`${item?.title} - ${index + 1}`}
-                      className="flex-shrink-0 w-full max-h-96 object-cover"
+                      src={currentMedia.url}
+                      alt={currentMedia.name || "Media"}
+                      className="w-full h-96 object-cover"
                     />
-                  ))}
+                  )}
                 </div>
-                {/* Slider Dots */}
-                <div className="absolute bottom-3 right-3 flex gap-1">
-                  {validImages.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCurrentImageIndex(index);
-                      }}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                      }`}
-                      aria-label={`Go to image ${index + 1}`}
-                    />
-                  ))}
-                </div>
+              )}
+            </div>
+
+            {/* Slider Dots */}
+            {hasMultipleMedia && (
+              <div className="absolute bottom-3 right-3 flex gap-1">
+                {validMedia.map((media, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentMediaIndex(index);
+                      // Reset video state when changing slides
+                      if (media.type === 'video') {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(true);
+                      } else {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(false);
+                      }
+                    }}
+                    className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
+                      index === currentMediaIndex 
+                        ? (media.type === 'video' ? 'bg-blue-500' : 'bg-white')
+                        : 'bg-white/50'
+                    }`}
+                    aria-label={`Go to ${media.type} ${index + 1}`}
+                  />
+                ))}
               </div>
-            ) : (
-              <img
-                src={imageUrl}
-                alt={item?.title}
-                className="w-full max-h-96 object-cover cursor-pointer"
-                onClick={() => setProductDetailsOpen(true)}
-              />
             )}
           </div>
         )}

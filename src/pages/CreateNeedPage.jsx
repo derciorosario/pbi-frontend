@@ -8,6 +8,7 @@ import AudienceTree from "../components/AudienceTree";
 import Header from "../components/Header";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
+import MediaViewer from "../components/FormMediaViewer"; // Import the MediaViewer component
 
 /* -------------- Shared styles (brand) -------------- */
 const styles = {
@@ -61,6 +62,18 @@ const I = {
       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
     </svg>
   ),
+  video: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="m17 10.5-5-3v6l5-3Z"/><rect x="3" y="6" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+    </svg>
+  ),
+  image: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+      <path d="m21 15-5-5L5 21" stroke="currentColor" strokeWidth="2"/>
+    </svg>
+  ),
 };
 
 /* File → data URL */
@@ -75,6 +88,16 @@ function fileToDataURL(file) {
 
 function isImage(base64url) {
   return typeof base64url === "string" && base64url.startsWith("data:image");
+}
+
+function isVideo(base64url) {
+  return typeof base64url === "string" && base64url.startsWith("data:video");
+}
+
+function getFileType(file) {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  return "document";
 }
 
 /* ---------- Read-only view for non-owners ---------- */
@@ -104,17 +127,25 @@ function ReadOnlyNeedView({ form, attachments, audSel, audTree }) {
   const subcategories = Array.from(audSel.subcategoryIds || []).map((k) => maps.subs.get(String(k))).filter(Boolean);
   const subsubs = Array.from(audSel.subsubCategoryIds || []).map((k) => maps.subsubs.get(String(k))).filter(Boolean);
 
-  // Extract images and docs from attachments (stored as [{name: '', base64url: ''}])
-  const images = attachments?.filter(att => isImage(att.base64url)) || [];
-  const docs = attachments?.filter(att => !isImage(att.base64url)) || [];
-  const coverImageUrl = images[0]?.base64url || null;
+  // Extract media and docs from attachments (stored as [{name: '', base64url: '', type: 'image'|'video'|'document'}])
+  const media = attachments?.filter(att => att.type === 'image' || att.type === 'video') || [];
+  const docs = attachments?.filter(att => att.type === 'document') || [];
+  const coverMediaUrl = media[0]?.base64url || null;
 
   return (
     <div className="mt-6 rounded-2xl bg-white border p-0 shadow-sm overflow-hidden">
       {/* Cover hero */}
-      {coverImageUrl ? (
+      {coverMediaUrl ? (
         <div className="relative aspect-[16/6] w-full bg-gray-100">
-          <img src={coverImageUrl} alt="Need cover" className="h-full w-full object-cover" />
+          {media[0]?.type === 'video' ? (
+            <video 
+              src={coverMediaUrl} 
+              className="h-full w-full object-cover"
+              controls
+            />
+          ) : (
+            <img src={coverMediaUrl} alt="Need cover" className="h-full w-full object-cover" />
+          )}
           <span className="absolute left-4 top-4 bg-white/90 border-gray-200 text-gray-700 rounded-full px-2 py-0.5 text-xs font-medium">
             {form.relatedEntityType || "Need"}
           </span>
@@ -151,13 +182,23 @@ function ReadOnlyNeedView({ form, attachments, audSel, audTree }) {
         </div>
 
         {/* Gallery */}
-        {images.length > 1 && (
+        {media.length > 1 && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-700">Images</h3>
+            <h3 className="text-sm font-semibold text-gray-700">Media</h3>
             <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {images.slice(1).map((img, idx) => (
+              {media.slice(1).map((item, idx) => (
                 <div key={idx} className="relative w-full aspect-[16/10] bg-gray-100 rounded-xl overflow-hidden border">
-                  <img src={img.base64url} alt={`Need image ${idx + 1}`} className="h-full w-full object-cover" />
+                  {item.type === 'video' ? (
+                    <video 
+                      src={item.base64url} 
+                      controls 
+                      className="h-full w-full object-cover"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <img src={item.base64url} alt={`Need image ${idx + 1}`} className="h-full w-full object-cover" />
+                  )}
                 </div>
               ))}
             </div>
@@ -167,7 +208,7 @@ function ReadOnlyNeedView({ form, attachments, audSel, audTree }) {
         {/* Attachments */}
         {docs.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-700">Attachments</h3>
+            <h3 className="text-sm font-semibold text-gray-700">Documents</h3>
             <div className="mt-3 grid sm:grid-cols-2 gap-3">
               {docs.map((att, i) => (
                 <a
@@ -409,8 +450,11 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState({}); // Track progress per file
   const [ownerUserId, setOwnerUserId] = useState(null);
   const [currentType, setCurrentType] = useState("need");
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
 
   const readOnly = isEditMode && ownerUserId && user?.id !== ownerUserId;
 
@@ -439,7 +483,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
 
   const [criteriaInput, setCriteriaInput] = useState("");
 
-  // Attachments: [{ name, base64url }]
+  // Attachments: [{ name, base64url, type: 'image' | 'video' | 'document' }]
   const [attachments, setAttachments] = useState([]);
   const fileInputRef = useRef(null);
   const imagePickerRef = useRef(null);
@@ -560,9 +604,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
         // Set currentType for general categories
         setCurrentType(data.relatedEntityType || "need");
 
-        
-
-        // Set attachments if they exist (stored as [{name: '', base64url: ''}])
+        // Set attachments if they exist (stored as [{name: '', base64url: '', type: ''}])
         if (Array.isArray(data.attachments)) {
           setAttachments(data.attachments);
         } else {
@@ -677,6 +719,13 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
     return (c?.subcategories || []).map((sc) => ({ value: sc.id, label: sc.name || `Subcategory ${sc.id}` }));
   }, [industryTree, selectedIndustry.categoryId]);
 
+  // Get media URLs for the MediaViewer (only images and videos)
+  const mediaUrls = useMemo(() => {
+    return attachments
+      .filter(att => att.type === 'image' || att.type === 'video')
+      .map(att => att.base64url);
+  }, [attachments]);
+
   /* ---------- Handlers ---------- */
 
   function setField(name, value) {
@@ -702,18 +751,34 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
     setForm((f) => ({ ...f, criteria: f.criteria.filter((_, i) => i !== idx) }));
   }
 
+  function handleMediaClick(index) {
+    setSelectedMediaIndex(index);
+    setMediaViewerOpen(true);
+  }
+
+  function closeMediaViewer() {
+    setMediaViewerOpen(false);
+  }
 
   async function handleFilesChosen(files) {
     const arr = Array.from(files || []);
     if (!arr.length) return;
 
-    // Check file sizes (5MB limit)
-    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
-    const oversizedFiles = arr.filter(file => file.size > maxSizeBytes);
+    // Check file sizes (50MB limit for videos, 5MB for others)
+    const maxSizeBytes = {
+      video: 50 * 1024 * 1024,
+      image: 5 * 1024 * 1024,
+      document: 5 * 1024 * 1024
+    };
+
+    const oversizedFiles = arr.filter(file => {
+      const fileType = getFileType(file);
+      return file.size > maxSizeBytes[fileType];
+    });
 
     if (oversizedFiles.length > 0) {
       const fileNames = oversizedFiles.map(file => file.name).join(', ');
-      toast.error(`Files exceeding 5MB limit: ${fileNames}`);
+      toast.error(`Files exceeding size limit: ${fileNames}`);
       return;
     }
 
@@ -725,6 +790,14 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
     try {
       setUploading(true);
       setUploadingCount(slice.length);
+      
+      // Reset progress for new uploads
+      const initialProgress = {};
+      slice.forEach(file => {
+        initialProgress[file.name] = 0;
+      });
+      setUploadProgress(initialProgress);
+
       const formData = new FormData();
       slice.forEach(file => {
         formData.append('attachments', file);
@@ -733,21 +806,36 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
       const response = await client.post('/needs/upload-attachments', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            
+            // Update progress for all files
+            const newProgress = {};
+            slice.forEach(file => {
+              newProgress[file.name] = percentCompleted;
+            });
+            setUploadProgress(newProgress);
+          }
         }
       });
 
       const uploadedFilenames = response.data.filenames || [];
 
-      // Store as [{name: '', base64url: ''}] where base64url is the uploaded filename
+      // Store with type information
       const mapped = slice.map((file, index) => ({
         name: file.name,
         base64url: `${API_URL}/uploads/${uploadedFilenames[index] || file.name}`,
+        type: getFileType(file)
       }));
 
       setAttachments((prev) => [...prev, ...mapped]);
+      setUploadProgress({}); // Clear progress after upload
     } catch (error) {
       console.error('Error uploading attachments:', error);
       toast.error('Failed to upload attachments');
+      setUploadProgress({}); // Clear progress on error
     } finally {
       setUploading(false);
       setUploadingCount(0);
@@ -763,8 +851,6 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
     if (!form.description.trim()) return "Description is required";
     return null;
   }
-
-  
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -792,7 +878,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
         country: form.country || undefined,
         city: (form.country === "All countries") ? undefined : (form.city || undefined),
         criteria: form.criteria,
-        attachments, // Already contains {name: '', base64: ''} where base64 is uploaded filename
+        attachments, // Already contains {name: '', base64url: '', type: ''} where base64url is uploaded filename
 
         // Audience selections
         identityIds,
@@ -1054,18 +1140,28 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
           <section>
             <Label>Attachments (Optional)</Label>
             <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
-              <div className="mb-2">
-                <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path d="M12 4v16m8-8H4" />
-                </svg>
+              <div className="flex justify-center items-center gap-3 mb-2">
+                <div className="flex items-center gap-1">
+                  <I.image />
+                  <span className="text-xs">Images</span>
+                </div>
+                <div className="h-4 w-px bg-gray-300"></div>
+                <div className="flex items-center gap-1">
+                  <I.video />
+                  <span className="text-xs">Videos</span>
+                </div>
+                <div className="h-4 w-px bg-gray-300"></div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">Documents</span>
+                </div>
               </div>
-              Upload images or documents to support your need (max 5MB per file)
+              Upload images, videos, or documents to support your need
               <div className="mt-3">
                 <input
                   ref={fileInputRef}
                   type="file"
                   multiple
-                  accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                  accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
                   className="hidden"
                   onChange={(e) => handleFilesChosen(e.target.files)}
                 />
@@ -1078,55 +1174,123 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
                 </button>
               </div>
 
+              {/* Upload Progress Indicator */}
+              {uploading && Object.keys(uploadProgress).length > 0 && (
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      Uploading {Object.keys(uploadProgress).length} file(s)...
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {Object.values(uploadProgress)[0]}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-brand-600 h-2 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${Object.values(uploadProgress)[0] || 0}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             
               {(attachments.length > 0 || uploadingCount > 0) && (
                 <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
                   {attachments.map((a, idx) => {
-                    const isImage =
-                      typeof a.base64url === "string" &&
-                      (a.base64url.startsWith("data:image") || /\.(jpe?g|png|gif|webp|svg)$/i.test(a.base64url));
+                    const isMedia = a.type === 'image' || a.type === 'video';
+                    const isDocument = a.type === 'document';
 
-                    // Resolve src for image
-                    let src = null;
-                    if (a.base64url?.startsWith("data:image") || a.base64url?.startsWith("http")) {
-                      src = a.base64url;
-                    } else if (isImage) {
-                      // It's a filename like "1.png"
-                      src = a.base64url
+                    if (isMedia) {
+                      return (
+                        <div key={`${a.name}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                          <div 
+                            className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center relative cursor-pointer"
+                            onClick={() => handleMediaClick(idx)}
+                          >
+                            {a.type === 'video' ? (
+                              <>
+                                <video 
+                                  src={a.base64url} 
+                                  className="h-full w-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                  <I.video />
+                                </div>
+                              </>
+                            ) : (
+                              <img src={a.base64url} alt={a.name} className="h-full w-full object-cover" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="truncate text-sm font-medium">{a.name}</div>
+                            <div className="text-[11px] text-gray-500 truncate">
+                              {a.type === 'video' ? 'Video' : 'Image'} • Attached
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeAttachment(idx)}
+                            className="p-1 rounded hover:bg-gray-100"
+                            title="Remove"
+                          >
+                            <I.trash />
+                          </button>
+                        </div>
+                      );
                     }
 
-                    return (
-                      <div key={`${a.name}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                        <div className="h-10 w-10 rounded-md bg-gray-100 grid place-items-center overflow-hidden">
-                          {isImage ? (
-                            <img src={src} alt={a.name} className="h-full w-full object-cover" />
-                          ) : (
-                            <span className="text-xs text-gray-500">DOC</span>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="truncate text-sm font-medium">{a.name}</div>
-                          <div className="text-[11px] text-gray-500 truncate">Attached</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeAttachment(idx)}
-                          className="p-1 rounded hover:bg-gray-100"
-                          title="Remove"
+                    if (isDocument) {
+                      return (
+                        <a
+                          key={`${a.name}-${idx}`}
+                          href={a.base64url}
+                          download={a.name}
+                          className="flex items-center gap-3 border rounded-lg p-3 hover:bg-gray-50"
                         >
-                          <I.trash />
-                        </button>
-                      </div>
-                    );
+                          <div className="h-12 w-12 rounded-md bg-gray-100 grid place-items-center text-xs text-gray-500">DOC</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="truncate text-sm font-medium">{a.name}</div>
+                            <div className="text-[11px] text-gray-500 truncate">Tap to download</div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              removeAttachment(idx);
+                            }}
+                            className="p-1 rounded hover:bg-gray-100"
+                            title="Remove"
+                          >
+                            <I.trash />
+                          </button>
+                        </a>
+                      );
+                    }
+
+                    return null;
                   })}
 
                   {uploadingCount > 0 &&
                     Array.from({ length: uploadingCount }).map((_, idx) => (
                       <div key={`att-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                        <div className="h-10 w-10 rounded-md bg-gray-200 animate-pulse" />
+                        <div className="h-12 w-12 rounded-md bg-gray-200 animate-pulse" />
                         <div className="flex-1 min-w-0">
                           <div className="h-4 w-3/5 bg-gray-200 rounded mb-2 animate-pulse" />
                           <div className="h-3 w-2/5 bg-gray-200 rounded animate-pulse" />
+                          {/* Upload Progress Bar */}
+                          {uploading && (
+                            <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                              <div 
+                                className="bg-brand-600 h-1.5 rounded-full transition-all duration-300"
+                                style={{ 
+                                  width: `${Object.values(uploadProgress)[0] || 0}%` 
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
                         <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
                       </div>
@@ -1134,6 +1298,11 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
                   }
                 </div>
               )}
+
+              <p className="mt-2 text-[11px] text-gray-400">
+                Images & Documents: Up to 5MB each. Videos: Up to 50MB each.
+                Supported formats: JPG, PNG, GIF, MP4, MOV, PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT
+              </p>
             </div>
           </section>
 
@@ -1282,6 +1451,15 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
           )}
         </div>
       </main>
+
+      {/* Media Viewer */}
+      {mediaViewerOpen && (
+        <MediaViewer
+          urls={mediaUrls}
+          initialIndex={selectedMediaIndex}
+          onClose={closeMediaViewer}
+        />
+      )}
     </div>
   );
 }
