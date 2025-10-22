@@ -68,6 +68,7 @@ import {
   FacebookMessengerIcon,
 } from "react-share";
 import TIMEZONES from "../constants/timezones";
+import FormMediaViewer from "../components/FormMediaViewer";
 
 /* -------------------------------- utils --------------------------------- */
 function timeAgo(iso) {
@@ -125,11 +126,167 @@ function getInitials(name) {
   return first + second;
 }
 
+// User Search Component
+const UserSearch = ({ onSelect, selectedUsers, onRemove, thisUserId }) => {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const searchRef = useRef(null);
+
+  const searchUsers = async (searchQuery) => {
+    if (!searchQuery.trim()) {
+      setResults([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data } = await client.get(`/users/search?q=${encodeURIComponent(searchQuery)}`);
+      // Filter out already selected users
+      const filteredResults = data.filter(user =>
+        !selectedUsers.some(selected => selected.id === user.id) && user?.id != thisUserId
+      );
+      setResults(filteredResults);
+    } catch (error) {
+      console.error("Error searching users:", error);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle clicking outside to close results
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setResults([]);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setQuery(value);
+    
+    // Debounce search
+    clearTimeout(window.searchTimeout);
+    window.searchTimeout = setTimeout(() => {
+      searchUsers(value);
+    }, 300);
+  };
+
+  const handleSelect = (user) => {
+    onSelect(user);
+    setQuery("");
+    setResults([]);
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-xs font-medium text-gray-700 mb-1">
+        Add Participants 
+      </label>
+      
+      {/* Selected users chips */}
+      {selectedUsers.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {selectedUsers.map((user) => (
+            <div
+              key={user.id}
+              className="inline-flex items-center gap-2 bg-brand-50 text-brand-700 rounded-full px-3 py-1 text-xs font-medium"
+            >
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="w-4 h-4 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-4 h-4 rounded-full bg-brand-100 flex items-center justify-center text-xs font-medium text-brand-700">
+                  {getInitials(user.name)}
+                </div>
+              )}
+              {user.name || user.email}
+              {user?.id != thisUserId && (
+                <button
+                  type="button"
+                  onClick={() => onRemove(user.id)}
+                  className="text-brand-500 hover:text-brand-700"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div ref={searchRef} className="relative">
+        {/* Search input */}
+        <div className="relative">
+          <input
+            type="text"
+            value={query}
+            onChange={handleInputChange}
+            placeholder="Search users by name or email..."
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          />
+          {loading && (
+            <div className="absolute right-3 top-2.5">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500"></div>
+            </div>
+          )}
+        </div>
+
+        {/* Search results */}
+        {results.length > 0 && (
+          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            {results.map((user) => (
+              <button
+                key={user.id}
+                type="button"
+                onClick={() => handleSelect(user)}
+                className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+              >
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.name}
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center text-xs font-medium text-brand-700">
+                    {getInitials(user.name)}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-gray-900 truncate">
+                    {user.name}
+                  </div>
+                  <div className="text-xs text-gray-500 truncate">
+                    {user.email}
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // Share data and components
 const ShareMenu = ({ profile, shareMenuRef, setShareOpen }) => {
   const shareUrl = `https://54links.com/profile/${profile?.id}`;
   const shareTitle = `${profile?.name || "Profile"} on 54Links`;
   const shareDescription = profile?.about || `Check out ${profile?.name || "this profile"} on 54Links`;
+
   const shareQuote = shareDescription.slice(0, 160) + (shareDescription.length > 160 ? "…" : "");
   const shareHashtags = ["54Links", "Profile", "Networking"].filter(Boolean);
   const messengerAppId = import.meta?.env?.VITE_FACEBOOK_APP_ID || undefined;
@@ -281,6 +438,7 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
     agenda: "",
     timezone: defaultTz,
   });
+  const [participants, setParticipants] = useState([]);
 
   useEffect(() => {
     if (open && toName) {
@@ -288,8 +446,9 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
         ...prev,
         title: `Meeting with ${toName}`
       }));
+      setParticipants([{ id: toUserId, name: toName }]);
     }
-  }, [open, toName]);
+  }, [open, toName, toUserId]);
 
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -297,16 +456,32 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
     if (!open) return;
     setErrors({});
     setSubmitting(false);
-  }, [open]);
+    // Initialize with the primary recipient if provided
+    if (toUserId && toName) {
+      setParticipants([{ id: toUserId, name: toName }]);
+    }
+  }, [open, toUserId, toName]);
   function validate() {
     const e = {};
     if (!form.date) e.date = "Pick a date";
     if (!form.time) e.time = "Pick a time";
     if (!form.title.trim()) e.title = "Add a title";
-   // leave like that: if (form.mode === "video" && !form.link.trim()) e.link = "Add a call link";
-   // if (form.mode === "in_person" && !form.location.trim()) e.location = "Add a location";
+    if (participants.length === 0) e.participants = "Add at least one participant";
+    // leave like that: if (form.mode === "video" && !form.link.trim()) e.link = "Add a call link";
+    // if (form.mode === "in_person" && !form.location.trim()) e.location = "Add a location";
     return e;
+
   }
+
+  const handleAddParticipant = (user) => {
+  if (!participants.some(p => p.id === user.id)) {
+    setParticipants(prev => [...prev, user]);
+  }
+};
+
+const handleRemoveParticipant = (userId) => {
+  setParticipants(prev => prev.filter(p => p.id !== userId));
+};
   function handleChange(k, v) { setForm((f) => ({ ...f, [k]: v })); }
   async function handleSubmit(e) {
     e.preventDefault();
@@ -316,8 +491,10 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
     const isoStart = new Date(`${form.date}T${form.time}:00`).toISOString();
     setSubmitting(true);
     try {
+      const primaryParticipant = participants[0];
+      const additionalParticipants = participants.slice(1).map(p => p.id);
       const payload = {
-        toUserId,
+        toUserId: primaryParticipant.id,
         title: form.title,
         agenda: form.agenda,
         scheduledAt: isoStart,
@@ -325,7 +502,8 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
         timezone: form.timezone,
         mode: form.mode,
         location: form.mode === "in_person" ? form.location : null,
-        link: form.mode === "video" ? form.link : null
+        link: form.mode === "video" ? form.link : null,
+        participants: additionalParticipants
       };
       const { data } = await client.post("/meeting-requests", payload);
       toast.success("Meeting request sent successfully!");
@@ -353,6 +531,15 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
               value={form.title} onChange={(e) => handleChange("title", e.target.value)} placeholder="e.g., Intro call about collaboration" />
             {errors.title && <p className="text-xs text-red-600 mt-1">{errors.title}</p>}
           </div>
+          
+          {/* Participants Section */}
+          <UserSearch
+            onSelect={handleAddParticipant}
+            selectedUsers={participants}
+            onRemove={handleRemoveParticipant}
+            thisUserId={toUserId}
+          />
+          {errors.participants && <p className="text-xs text-red-600 mt-1">{errors.participants}</p>}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
@@ -444,7 +631,7 @@ function MeetingRequestModal({ open, onClose, toUserId, toName, onCreated }) {
           </button>
           <button type="submit" form="meetingForm" disabled={submitting}
             className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-60">
-            <Clock size={18} /> {submitting ? "Creating…" : "Create request"}
+            <Clock size={18} /> {submitting ? "Creating…" : `Create request (${participants.length})`}
           </button>
         </div>
       </div>
@@ -757,8 +944,66 @@ export default function PublicProfilePage() {
     return allImages;
   };
 
+  
+// Add this function to filter items by user ID
+const filterItemsByUserId = (items, targetUserId) => {
+  if (!targetUserId || !items.length) return [];
+  
+  return items.filter(item => {
+    // Extract the owner/user ID based on item kind
+    let itemUserId;
+    
+    switch (item.kind) {
+      case 'job':
+        itemUserId = item.postedByUserId || item.postedBy?.id;
+        break;
+      case 'event':
+        itemUserId = item.organizerUserId || item.organizer?.id;
+        break;
+      case 'service':
+        itemUserId = item.providerUserId || item.provider?.id;
+        break;
+      case 'product':
+        itemUserId = item.sellerUserId || item.seller?.id;
+        break;
+      case 'tourism':
+        itemUserId = item.authorUserId || item.author?.id;
+        break;
+      case 'funding':
+        itemUserId = item.creatorUserId || item.creator?.id;
+        break;
+      case 'need':
+        itemUserId = item.userId || item.user?.id;
+        break;
+      case 'moment':
+        itemUserId = item.userId || item.user?.id;
+        break;
+      default:
+        itemUserId = null;
+    }
+    
+    // Compare as strings to ensure type consistency
+    return String(itemUserId) === String(targetUserId);
+  });
+};
+
+
   // Get valid images for the Images tab
-  const validImages = extractValidImages(feedItems);
+const userFeedItems = useMemo(() => {
+  return filterItemsByUserId(feedItems, userId);
+}, [feedItems, userId]);
+
+// Update video extraction
+useEffect(() => {
+  if (userFeedItems.length > 0) {
+    const videos = extractVideoUrls(userFeedItems);
+    setVideoUrls(videos);
+  }
+}, [userFeedItems])
+
+
+const validImages = extractValidImages(userFeedItems);
+
 
   // Combine gallery images and feed images for the image slider
   const allImages = useMemo(() => {
@@ -867,37 +1112,88 @@ export default function PublicProfilePage() {
     return () => { mounted = false; };
   }, [userId]);
 
-  useEffect(() => {
-    if (!userId || !user) return;
-    async function loadMeetings() {
-      try {
-        const { data } = await client.get("/meeting-requests");
-        const relevantMeetings = [
-          ...data.received.filter((m) => m.fromUserId === userId),
-          ...data.sent.filter((m) => m.toUserId === userId),
-        ].filter((m) => m.status === "accepted");
-        const formatted = relevantMeetings.map((m) => ({
+ 
+
+ useEffect(() => {
+  if (!userId || !user) return;
+  async function loadMeetings() {
+    try {
+      const { data } = await client.get("/meeting-requests");
+      
+      // Get all meetings where the profile user (userId) is involved in any capacity
+      const relevantMeetings = [
+        // Meetings where profile user is requester
+        ...data.sent.filter((m) => m.fromUserId === userId),
+        // Meetings where profile user is recipient  
+        ...data.received.filter((m) => m.toUserId === userId),
+        // Meetings where profile user is participant
+        ...data.invitations.filter((m) => 
+          m.participants?.some(p => p.user?.id === userId)
+        ),
+        // Also include meetings where current logged-in user is involved AND profile user is also involved
+        ...data.sent.filter((m) => 
+          m.fromUserId === user.id && 
+          (m.toUserId === userId || m.participants?.some(p => p.user?.id === userId))
+        ),
+        ...data.received.filter((m) => 
+          m.toUserId === user.id && 
+          (m.fromUserId === userId || m.participants?.some(p => p.user?.id === userId))
+        ),
+        ...data.invitations.filter((m) => 
+          m.participants?.some(p => p.user?.id === user.id) && 
+          (m.fromUserId === userId || m.toUserId === userId || m.participants?.some(p => p.user?.id === userId))
+        )
+      ].filter((m, index, array) => 
+        // Remove duplicates and only show accepted meetings
+        array.findIndex(m2 => m2.id === m.id) === index && 
+        m.status === "accepted"
+      );
+
+      console.log("Loaded meetings for profile:", {
+        profileUserId: userId,
+        currentUserId: user.id,
+        meetingsCount: relevantMeetings.length,
+        meetings: relevantMeetings.map(m => ({
           id: m.id,
-          toUserId: userId,
           title: m.title,
-          agenda: m.agenda,
-          mode: m.mode,
-          link: m.link,
-          location: m.location,
-          timezone: m.timezone,
-          duration: m.duration,
-          isoStart: m.scheduledAt,
-          createdAt: m.createdAt,
-          from: m.from,
-          to: m.to,
-        }));
-        setMeetings(formatted);
-      } catch (err) {
-        console.error("Error loading meetings:", err);
-      }
+          from: m.requester?.name,
+          to: m.recipient?.name,
+          participants: m.participants?.map(p => p.user?.name)
+        }))
+      });
+
+      const formatted = relevantMeetings.map((m) => ({
+        id: m.id,
+        toUserId: m.toUserId,
+        title: m.title,
+        agenda: m.agenda,
+        mode: m.mode,
+        link: m.link,
+        location: m.location,
+        timezone: m.timezone,
+        duration: m.duration,
+        isoStart: m.scheduledAt,
+        createdAt: m.createdAt,
+        from: m.requester,
+        to: m.recipient,
+        // Include all participants including requester, recipient, and additional participants
+        participants: [
+          m.requester,
+          m.recipient,
+          ...(m.participants || []).map(p => p.user).filter(user => 
+            user && user.id !== m.requester?.id && user.id !== m.recipient?.id
+          )
+        ].filter(Boolean) // Remove any null/undefined
+      }));
+      
+      setMeetings(formatted);
+    } catch (err) {
+      console.error("Error loading meetings:", err);
     }
-    loadMeetings();
-  }, [user?.id, userId]);
+  }
+  loadMeetings();
+}, [user?.id, userId]);
+
 
   // Load categories for feed items
   useEffect(() => {
@@ -983,6 +1279,253 @@ export default function PublicProfilePage() {
       testUserItemsAPI();
     }
   }, [userId]);
+  
+
+
+
+/**  useEffect(() => {
+  if (!userId) return;
+  async function loadMeetings() {
+    try {
+      // Use the new dedicated endpoint for profile meetings
+      const { data } = await client.get(`/meeting-requests/profile/${userId}`);
+      
+      console.log("Profile meetings loaded:", {
+        profileUserId: userId,
+        meetingsCount: data.length,
+        meetings: data.map(m => ({
+          id: m.id,
+          title: m.title,
+          from: m.requester?.name,
+          to: m.recipient?.name,
+          participantsCount: m.participants?.length || 0,
+          participants: m.participants?.map(p => p.user?.name)
+        }))
+      });
+
+      const formatted = data.map((m) => {
+        // Create a Set to ensure no duplicate users
+        const participantSet = new Set();
+        const participants = [];
+
+        // Add requester if not null
+        if (m.requester && m.requester.id) {
+          participantSet.add(m.requester.id);
+          participants.push(m.requester);
+        }
+
+        // Add recipient if not null
+        if (m.recipient && m.recipient.id) {
+          if (!participantSet.has(m.recipient.id)) {
+            participantSet.add(m.recipient.id);
+            participants.push(m.recipient);
+          }
+        }
+
+        // Add all other participants
+        if (m.participants && Array.isArray(m.participants)) {
+          m.participants.forEach(participant => {
+            if (participant.user && participant.user.id && !participantSet.has(participant.user.id)) {
+              participantSet.add(participant.user.id);
+              participants.push(participant.user);
+            }
+          });
+        }
+
+        console.log(`Formatted meeting ${m.id}:`, {
+          title: m.title,
+          totalParticipants: participants.length,
+          participants: participants.map(p => p.name)
+        });
+
+        return {
+          id: m.id,
+          toUserId: m.toUserId,
+          title: m.title,
+          agenda: m.agenda,
+          mode: m.mode,
+          link: m.link,
+          location: m.location,
+          timezone: m.timezone,
+          duration: m.duration,
+          isoStart: m.scheduledAt,
+          createdAt: m.createdAt,
+          from: m.requester,
+          to: m.recipient,
+          participants: participants
+        };
+      });
+      
+      setMeetings(formatted);
+    } catch (err) {
+      console.error("Error loading profile meetings:", err);
+      // Fallback to original method if new endpoint doesn't exist
+      await loadMeetingsFallback();
+    }
+  }
+
+  async function loadMeetingsFallback() {
+    try {
+      const { data } = await client.get("/meeting-requests");
+      
+      const relevantMeetings = [
+        ...data.received.filter((m) => m.fromUserId === userId),
+        ...data.sent.filter((m) => m.toUserId === userId),
+        ...data.invitations.filter((m) => m.participants?.some(p => p.user?.id === userId))
+      ].filter((m) => m.status === "accepted");
+
+      const formatted = relevantMeetings.map((m) => {
+        const participantSet = new Set();
+        const participants = [];
+
+        if (m.requester && m.requester.id) {
+          participantSet.add(m.requester.id);
+          participants.push(m.requester);
+        }
+
+        if (m.recipient && m.recipient.id) {
+          if (!participantSet.has(m.recipient.id)) {
+            participantSet.add(m.recipient.id);
+            participants.push(m.recipient);
+          }
+        }
+
+        if (m.participants && Array.isArray(m.participants)) {
+          m.participants.forEach(participant => {
+            if (participant.user && participant.user.id && !participantSet.has(participant.user.id)) {
+              participantSet.add(participant.user.id);
+              participants.push(participant.user);
+            }
+          });
+        }
+
+        return {
+          id: m.id,
+          toUserId: m.toUserId,
+          title: m.title,
+          agenda: m.agenda,
+          mode: m.mode,
+          link: m.link,
+          location: m.location,
+          timezone: m.timezone,
+          duration: m.duration,
+          isoStart: m.scheduledAt,
+          createdAt: m.createdAt,
+          from: m.requester,
+          to: m.recipient,
+          participants: participants
+        };
+      });
+      
+      setMeetings(formatted);
+    } catch (err) {
+      console.error("Error loading meetings fallback:", err);
+    }
+  }
+
+  loadMeetings();
+}, [user?.id, userId]);
+
+**/
+
+
+  // Add this function to extract video URLs from the feed items structure
+const extractVideoUrls = (items) => {
+  const videoUrls = [];
+
+  items.forEach(item => {
+    // Handle items with videoUrl field
+    if (item.videoUrl && (
+      item.videoUrl.startsWith('http://') || 
+      item.videoUrl.startsWith('https://') ||
+      item.videoUrl.startsWith('data:video/')
+    )) {
+      videoUrls.push({
+        url: item.videoUrl,
+        alt: item.title || `Video from ${item.kind}`,
+        type: item.kind,
+        itemId: item.id,
+        itemTitle: item.title
+      });
+    }
+
+    // Handle items with images array containing videos
+    if (Array.isArray(item.images)) {
+      item.images.forEach((media, index) => {
+        // Handle string URLs in images array
+        if (typeof media === 'string' && (
+          media.toLowerCase().match(/\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/) ||
+          media.startsWith('data:video/')
+        )) {
+          videoUrls.push({
+            url: media,
+            alt: `${item.title || item.kind} video ${index + 1}`,
+            type: item.kind,
+            itemId: item.id,
+            itemTitle: item.title
+          });
+        }
+        
+        // Handle object format in images array (like in moments/needs)
+        if (typeof media === 'object' && media?.base64url && (
+          media.base64url.toLowerCase().match(/\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/) ||
+          media.base64url.startsWith('data:video/') ||
+          media.type === 'video'
+        )) {
+          videoUrls.push({
+            url: media.base64url,
+            alt: media.name || `${item.title || item.kind} video`,
+            type: item.kind,
+            itemId: item.id,
+            itemTitle: item.title
+          });
+        }
+      });
+    }
+
+    // Handle items with attachments array containing videos
+    if (Array.isArray(item.attachments)) {
+      item.attachments.forEach((attachment, index) => {
+        if (typeof attachment === 'object' && attachment?.base64url && (
+          attachment.base64url.toLowerCase().match(/\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/) ||
+          attachment.base64url.startsWith('data:video/') ||
+          attachment.type === 'video'
+        )) {
+          videoUrls.push({
+            url: attachment.base64url,
+            alt: attachment.name || `${item.title || item.kind} video ${index + 1}`,
+            type: item.kind,
+            itemId: item.id,
+            itemTitle: item.title
+          });
+        }
+      });
+    }
+  });
+
+  return videoUrls;
+};
+
+// Add this state for videos and media viewer
+const [videoUrls, setVideoUrls] = useState([]);
+// Replace the existing media viewer state with separate state for FormMediaViewer (for videos only)
+const [formMediaViewerOpen, setFormMediaViewerOpen] = useState(false);
+const [formMediaViewerUrls, setFormMediaViewerUrls] = useState([]);
+const [formMediaViewerInitialIndex, setFormMediaViewerInitialIndex] = useState(0);
+
+// Update only the video click handler to use the new state
+const handleVideoClick = (videoIndex) => {
+  // Create array of all video URLs for the media viewer
+  const allVideoUrls = videoUrls.map(video => video.url);
+  setFormMediaViewerUrls(allVideoUrls);
+  setFormMediaViewerInitialIndex(videoIndex);
+  setFormMediaViewerOpen(true);
+};
+// Add this useEffect to extract videos when feedItems changes
+
+
+
+
 
   // Close share menu on outside click / Esc
   useEffect(() => {
@@ -1837,7 +2380,7 @@ export default function PublicProfilePage() {
             )}
 
             {/* Posts and activities - Modern Card Design */}
-            {feedItems.length > 0 && (
+            {userFeedItems.length > 0 && (
               <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
                 <div className="md:flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 max-md:mb-4">
@@ -1855,7 +2398,7 @@ export default function PublicProfilePage() {
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      Posts
+                      Posts ({userFeedItems.length})
                     </button>
                     <button
                       onClick={() => setActiveTab('images')}
@@ -1875,7 +2418,7 @@ export default function PublicProfilePage() {
                           : 'text-gray-600 hover:text-gray-900'
                       }`}
                     >
-                      Videos
+                      Videos ({videoUrls.length})
                     </button>
                   </div>
                 </div>
@@ -1890,11 +2433,11 @@ export default function PublicProfilePage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {showAllPosts
                               ? feedItems.map(renderFeedItem)
-                              : feedItems.slice(0, 4).map(renderFeedItem)
+                              : userFeedItems.slice(0, 4).map(renderFeedItem)
                             }
                           </div>
 
-                          {feedItems.length > 4 && (
+                          {userFeedItems.length > 4 && (
                             <div className="flex justify-center pt-2">
                               <button
                                 onClick={() => setShowAllPosts(!showAllPosts)}
@@ -2021,12 +2564,61 @@ export default function PublicProfilePage() {
                       )}
 
                       {/* Videos Tab */}
-                      {activeTab === 'videos' && (
-                        <div className="text-center py-8 text-gray-500">
-                          <div className="text-sm">Videos coming soon</div>
-                          <div className="text-xs mt-1">Video content will be displayed here</div>
-                        </div>
-                      )}
+                    
+{activeTab === 'videos' && (
+  <>
+    {loadingFeed ? (
+      <div className="text-sm text-gray-600">Loading videos...</div>
+    ) : (
+      <>
+        {videoUrls.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {videoUrls.map((video, index) => (
+              <div
+                key={`${video.itemId}-${index}`}
+                className="group relative aspect-video rounded-lg overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer bg-black"
+                onClick={() => handleVideoClick(index)}
+              >
+                {/* Video thumbnail with play button */}
+                <div className="relative w-full h-full">
+                  <video
+                    src={video.url}
+                    className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity"
+                    preload="metadata"
+                  />
+                  {/* Play button overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-12 h-12 bg-white bg-opacity-90 rounded-full flex items-center justify-center group-hover:bg-opacity-100 transition-all">
+                      <svg className="w-6 h-6 text-gray-900 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Video info overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-3">
+                    <div className="text-white text-xs">
+                      <div className="font-medium capitalize truncate">{video.type}</div>
+                      <div className="truncate opacity-90">{video.itemTitle || 'Video'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <Video size={48} className="mx-auto mb-3 text-gray-300" />
+            <div className="text-sm">No videos found</div>
+            <div className="text-xs mt-1">Videos from posts will appear here</div>
+          </div>
+        )}
+      </>
+    )}
+  </>
+)}
+
+
                     </>
                   )}
                 </div>
@@ -2074,186 +2666,209 @@ export default function PublicProfilePage() {
 
            
 
-            {/* Meetings - Modern Card Design */}
-            <div className={`bg-white rounded-xl shadow-sm p-6 mb-6 ${user?.id==profile?.id ? 'hidden':''}`}> 
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                  <CalendarDays size={20} className="text-brand-600" />
-                  Meetings
-                </h2>
-                {(profile?.connectionStatus=="connected" && (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
-                  <button
-                    onClick={openMR}
-                    className="inline-flex items-center gap-2 px-3 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
-                  >
-                    <CalendarDays size={16} />
-                    Request Meeting
-                  </button>
-                )}
-              </div>
+          
+          
+          {/* Meetings - Modern Card Design */}
+<div className={`bg-white rounded-xl shadow-sm p-6 mb-6 ${user?.id==profile?.id ? 'hidden':''}`}> 
+  <div className="flex items-center justify-between mb-4">
+    <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+      <CalendarDays size={20} className="text-brand-600" />
+      Meetings
+    </h2>
+    {(profile?.connectionStatus=="connected" && (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
+      <button
+        onClick={openMR}
+        className="inline-flex items-center gap-2 px-3 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
+      >
+        <CalendarDays size={16} />
+        Request Meeting
+      </button>
+    )}
+  </div>
 
-              {profile.meetings && profile.meetings.length > 0 ? (
-                <div className="space-y-3">
-                  {profile.meetings.map((m) => {
-                    const joinable = true// m.mode === "video" && isJoinWindow(m.scheduledAt, m.duration);
-                    const now = Date.now();
-                    let start, end, status;
-                    try {
-                      const startDate = new Date(m.scheduledAt);
-                      if (!isNaN(startDate.getTime())) {
-                        start = startDate.getTime();
-                        const endTimeStr = addMinutes(m.scheduledAt, Number(m.duration) || 30);
-                        end = endTimeStr ? new Date(endTimeStr).getTime() : start + (Number(m.duration) || 30) * 60 * 1000;
-                        status = now < start ? "Upcoming" : now > end ? "Ended" : "Ongoing";
-                      } else {
-                        status = "Upcoming";
-                      }
-                    } catch {
-                      status = "Upcoming";
-                    }
-                    return (
-                      <div key={m.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="font-semibold text-sm text-gray-900 truncate">{m.title || "Untitled meeting"}</div>
-                              <span className={`text-xs px-2 py-1 rounded-full ${
-                                status === "Upcoming" ? "bg-blue-100 text-blue-700"
-                                : status === "Ongoing" ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-600"}`}>
-                                {status}
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-600 mb-2">
-                              {humanWhen(m.scheduledAt, m.timezone, m.duration)} • {m.mode === "video" ? "Online" : "In person"}
-                            </div>
-                            {m.mode === "in_person" && m.location ? (
-                              <div className="text-xs text-gray-500 mb-2">📍 {m.location}</div>
-                            ) : null}
-                            {m.mode === "video" && m.link ? (
-                              <div className="text-xs text-gray-500 mb-2 truncate">🔗 {m.link}</div>
-                            ) : null}
-                            {m.agenda ? (
-                              <div className="text-xs text-gray-500 mb-2">📝 {m.agenda}</div>
-                            ) : null}
-                            <div className="flex items-center gap-2">
-                              <div className="flex -space-x-2">
-                                {m.from && (
-                                  <img src={m.from.avatarUrl || "https://i.pravatar.cc/150"} alt={m.from.name}
-                                    className="h-6 w-6 rounded-full border border-white" title={m.from.name} />
-                                )}
-                                {m.to && (
-                                  <img src={m.to.avatarUrl || "https://i.pravatar.cc/150"} alt={m.to.name}
-                                    className="h-6 w-6 rounded-full border border-white" title={m.to.name} />
-                                )}
-                              </div>
-                              <span className="text-xs text-gray-500">
-                                {m.from?.name || "User"} and {m.to?.name || "User"}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="shrink-0 flex items-center gap-2">
-                            {m.mode === "video" ? (
-                              <a href={m.link || "#"} target="_blank" rel="noreferrer"
-                                title={joinable ? "Open call link" : `Join opens 10 min before start`}
-                                className={`inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium ${
-                                  joinable ? "bg-brand-500 text-white hover:bg-brand-600" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
-                                onClick={(e) => { if (!joinable) e.preventDefault(); }}>
-                                Join
-                              </a>
-                            ) : m.location ? (
-                              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.location)}`}
-                                target="_blank" rel="noreferrer"
-                                className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium bg-brand-50 text-brand-700 hover:bg-brand-100">
-                                Open Map
-                              </a>
-                            ) : null}
-                          </div>
+  {meetings.length > 0 ? (
+    <div className="space-y-3">
+      {meetings.map((m) => {
+        const joinable = true; // m.mode === "video" && isJoinWindow(m.isoStart, m.duration);
+        const now = Date.now();
+        let start, end, status;
+        try {
+          const startDate = new Date(m.isoStart);
+          if (!isNaN(startDate.getTime())) {
+            start = startDate.getTime();
+            const endTimeStr = addMinutes(m.isoStart, Number(m.duration) || 30);
+            end = endTimeStr ? new Date(endTimeStr).getTime() : start + (Number(m.duration) || 30) * 60 * 1000;
+            status = now < start ? "Upcoming" : now > end ? "Ended" : "Ongoing";
+          } else {
+            status = "Upcoming";
+          }
+        } catch {
+          status = "Upcoming";
+        }
+        
+        // Check if current user is involved in this meeting
+        const isUserInvolved = m.participants?.some(p => p.id === user?.id) || 
+                              m.from?.id === user?.id || 
+                              m.to?.id === user?.id;
+        
+        return (
+          <div key={m.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="font-semibold text-sm text-gray-900 truncate">{m.title || "Untitled meeting"}</div>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    status === "Upcoming" ? "bg-blue-100 text-blue-700"
+                    : status === "Ongoing" ? "bg-green-100 text-green-700"
+                    : "bg-gray-100 text-gray-600"}`}>
+                    {status}
+                  </span>
+                  {!isUserInvolved && (
+                    <span className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700">
+                      Observer
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-600 mb-2">
+                  {humanWhen(m.isoStart, m.timezone, m.duration)} • {m.mode === "video" ? "Online" : "In person"}
+                </div>
+                
+                {/* Meeting organizer and recipient */}
+                <div className="flex items-center gap-4 mb-2 text-xs text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <span>Organized by:</span>
+                    <button
+                      onClick={() => navigate(`/profile/${m.from?.id}`)}
+                      className="text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1"
+                    >
+                      {m.from?.avatarUrl ? (
+                        <img 
+                          src={m.from.avatarUrl} 
+                          alt={m.from.name}
+                          className="w-4 h-4 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                          {getInitials(m.from?.name)}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : meetings.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-sm text-gray-600 mb-3">No meetings yet.</p>
-                 {profile.connectionStatus === "connected" && <button
-                    onClick={openMR}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
-                  >
-                    <CalendarDays size={16} />
-                    Request Meeting
-                  </button>}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {meetings.map((m) => {
-                    const joinable = true // m.mode === "video" && isJoinWindow(m.isoStart, m.duration);
-                    const now = Date.now();
-                    let start, end, status;
-                    try {
-                      const startDate = new Date(m.isoStart);
-                      if (!isNaN(startDate.getTime())) {
-                        start = startDate.getTime();
-                        const endTimeStr = addMinutes(m.isoStart, Number(m.duration) || 30);
-                        end = endTimeStr ? new Date(endTimeStr).getTime() : start + (Number(m.duration) || 30) * 60 * 1000;
-                        status = now < start ? "Upcoming" : now > end ? "Ended" : "Ongoing";
-                      } else {
-                        status = "Upcoming";
-                      }
-                    } catch {
-                      status = "Upcoming";
-                    }
-                    return (
-                      <div key={m.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <div className="font-semibold text-sm text-gray-900 truncate">{m.title || "Untitled meeting"}</div>
-                              <span className={`text-xs px-2 py-1 rounded-full ${
-                                status === "Upcoming" ? "bg-blue-100 text-blue-700"
-                                : status === "Ongoing" ? "bg-green-100 text-green-700"
-                                : "bg-gray-100 text-gray-600"}`}>
-                                {status}
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-600 mb-2">
-                              {humanWhen(m.isoStart, m.timezone, m.duration)} • {m.mode === "video" ? "Online" : "In person"}
-                            </div>
-                            {m.mode === "in_person" && m.location ? (
-                              <div className="text-xs text-gray-500 mb-2">📍 {m.location}</div>
-                            ) : null}
-                            {m.mode === "video" && m.link ? (
-                              <div className="text-xs text-gray-500 mb-2 truncate">🔗 {m.link}</div>
-                            ) : null}
-                            {m.agenda ? (
-                              <div className="text-xs text-gray-500 mb-2">📝 {m.agenda}</div>
-                            ) : null}
-                          </div>
-                          <div className="shrink-0 flex items-center gap-2">
-                            {m.mode === "video" ? (
-                              <a href={m.link || "#"} target="_blank" rel="noreferrer"
-                                title={joinable ? "Open call link" : `Join opens 10 min before start`}
-                                className={`inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium ${
-                                  joinable ? "bg-brand-500 text-white hover:bg-brand-600" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
-                                onClick={(e) => { if (!joinable) e.preventDefault(); }}>
-                                Join
-                              </a>
-                            ) : m.location ? (
-                              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.location)}`}
-                                target="_blank" rel="noreferrer"
-                                className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium bg-brand-50 text-brand-700 hover:bg-brand-100">
-                                Open Map
-                              </a>
-                            ) : null}
-                          </div>
+                      )}
+                      {m.from?.name}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span>For:</span>
+                    <button
+                      onClick={() => navigate(`/profile/${m.to?.id}`)}
+                      className="text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1"
+                    >
+                      {m.to?.avatarUrl ? (
+                        <img 
+                          src={m.to.avatarUrl} 
+                          alt={m.to.name}
+                          className="w-4 h-4 rounded-full"
+                        />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-gray-200 flex items-center justify-center text-xs">
+                          {getInitials(m.to?.name)}
                         </div>
-                      </div>
-                    );
-                  })}
+                      )}
+                      {m.to?.name}
+                    </button>
+                  </div>
                 </div>
-              )}
+
+                {m.mode === "in_person" && m.location ? (
+                  <div className="text-xs text-gray-500 mb-2">📍 {m.location}</div>
+                ) : null}
+                {m.mode === "video" && m.link ? (
+                  <div className="text-xs text-gray-500 mb-2 truncate">🔗 {m.link}</div>
+                ) : null}
+                {m.agenda ? (
+                  <div className="text-xs text-gray-500 mb-2">📝 {m.agenda}</div>
+                ) : null}
+                
+                {/* Participants Section */}
+                <div className="mt-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex -space-x-2">
+                      {m.participants && m.participants.map((participant, index) => (
+                        <button
+                          key={participant.id}
+                          onClick={() => navigate(`/profile/${participant.id}`)}
+                          className="transition-transform hover:scale-110 hover:z-10"
+                          title={participant.name}
+                        >
+                          {participant?.avatarUrl ? (
+                            <img 
+                              src={participant.avatarUrl} 
+                              alt={participant.name}
+                              className="h-6 w-6 rounded-full border-2 border-white"
+                            />
+                          ) : (
+                            <div className="h-6 w-6 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center text-xs font-medium text-gray-600">
+                              {getInitials(participant.name)}
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {m.participants?.length || 0} participant{m.participants?.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  
+                  {/* Participant names (visible on larger screens) */}
+                  <div className="hidden sm:block mt-2">
+                    <div className="flex flex-wrap gap-1 text-xs text-gray-600">
+                      {m.participants && m.participants.map((participant, index) => (
+                        <button
+                          key={participant.id}
+                          onClick={() => navigate(`/profile/${participant.id}`)}
+                          className="text-brand-600 hover:text-brand-700 transition-colors"
+                        >
+                          {participant.name}{index < m.participants.length - 1 ? ',' : ''}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="shrink-0 flex items-center gap-2">
+                {m.mode === "video" ? (
+                  <a href={m.link || "#"} target="_blank" rel="noreferrer"
+                    title={joinable ? "Open call link" : `Join opens 10 min before start`}
+                    className={`inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium ${
+                      joinable ? "bg-brand-500 text-white hover:bg-brand-600" : "bg-gray-100 text-gray-500 cursor-not-allowed"}`}
+                    onClick={(e) => { if (!joinable) e.preventDefault(); }}>
+                    Join
+                  </a>
+                ) : m.location ? (
+                  <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.location)}`}
+                    target="_blank" rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium bg-brand-50 text-brand-700 hover:bg-brand-100">
+                    Open Map
+                  </a>
+                ) : null}
+              </div>
             </div>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    <div className="text-center py-4">
+      <p className="text-sm text-gray-600 mb-3">No meetings yet.</p>
+      {profile.connectionStatus === "connected" && <button
+        onClick={openMR}
+        className="inline-flex items-center gap-2 px-3 py-1.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors text-sm"
+      >
+        <CalendarDays size={16} />
+        Request Meeting
+      </button>}
+    </div>
+  )}
+</div>
+
 
             {/* Footer Actions - Modern Card Design */}
             <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
@@ -2377,6 +2992,18 @@ export default function PublicProfilePage() {
         alt={`${profile?.name}'s profile picture`}
       />
 
+      {formMediaViewerOpen && formMediaViewerUrls.length > 0 && (
+        <FormMediaViewer
+          urls={formMediaViewerUrls}
+          initialIndex={formMediaViewerInitialIndex}
+          onClose={() => {
+            setFormMediaViewerOpen(false);
+            setFormMediaViewerUrls([]);
+            setFormMediaViewerInitialIndex(0);
+          }}
+        />
+      )}
+
       {/* Image Slider Modal */}
       {imageSliderOpen && allImages.length > 0 && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black bg-opacity-90">
@@ -2472,3 +3099,4 @@ export default function PublicProfilePage() {
       </DefaultLayout>
    );
   }
+

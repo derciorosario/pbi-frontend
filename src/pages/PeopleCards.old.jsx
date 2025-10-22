@@ -1,4 +1,4 @@
-// src/components/PeopleProfileCard.jsx
+// src/pages/PeopleCards.jsx
 import React, { useMemo, useState } from "react";
 import I from "../lib/icons.jsx";
 import ProfileModal from "../components/ProfileModal.jsx";
@@ -6,10 +6,11 @@ import ConnectionRequestModal from "../components/ConnectionRequestModal.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useData } from "../contexts/DataContext.jsx";
 import { useNavigate } from "react-router-dom";
-import { ExternalLink, MapPin, Clock, Eye, UserX, UserCheck, Trash2, CalendarDays } from "lucide-react";
+import { ExternalLink, MapPin, Clock, Eye, UserX, UserCheck, Trash2, CalendarDays, MessageCircle, Link2, Building2 } from "lucide-react";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import client from "../api/client";
 import { toast } from "../lib/toast.js";
+import TIMEZONES from "../constants/timezones.js";
 
 // Import MeetingRequestModal from ProfileModal.jsx
 const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => {
@@ -119,6 +120,7 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
                 type="date"
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                 value={form.date}
+                min={new Date().toISOString().split('T')[0]}
                 onChange={(e) => handleChange("date", e.target.value)}
               />
               {errors.date && <p className="text-xs text-red-600 mt-1">{errors.date}</p>}
@@ -156,15 +158,11 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
                 value={form.timezone}
                 onChange={(e) => handleChange("timezone", e.target.value)}
               >
-                <option value="UTC">UTC</option>
-                <option value="America/New_York">Eastern Time</option>
-                <option value="America/Chicago">Central Time</option>
-                <option value="America/Denver">Mountain Time</option>
-                <option value="America/Los_Angeles">Pacific Time</option>
-                <option value="Europe/London">London</option>
-                <option value="Europe/Paris">Paris</option>
-                <option value="Asia/Tokyo">Tokyo</option>
-                <option value="Australia/Sydney">Sydney</option>
+               {TIMEZONES.map((i,_i)=>(
+                    <option value={i.value}>{`${i.offset} - ${i.label}`}</option>
+               ))}
+               
+
               </select>
             </div>
           </div>
@@ -204,7 +202,7 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
 
           {form.mode === "video" ? (
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">Call link</label>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Call link <span className="text-gray-600">(optional)</span></label>
               <div className="flex items-center gap-2">
                 <div className="rounded-lg border border-gray-300 px-3 py-2 flex-1 flex items-center gap-2">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -213,8 +211,8 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
                   </svg>
                   <input
                     type="url"
+                    placeholder="Insert call link"
                     className="w-full text-sm focus:outline-none"
-                    placeholder="https://meet.google.com/abc-defg-hij"
                     value={form.link}
                     onChange={(e) => handleChange("link", e.target.value)}
                   />
@@ -284,17 +282,12 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
   );
 };
 
-
 /* --- Small reusable subcomponents --- */
 const Pill = ({ children, className = "" }) => (
   <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${className}`}>
     {children}
   </span>
 );
-const Tag = ({ children }) => (
-  <Pill className="bg-brand-50 text-brand-600 border border-brand-200/50">{children}</Pill>
-);
-
 
 function getInitials(name) {
   if (!name) return "U";
@@ -320,6 +313,7 @@ function computeTimeAgo(explicit, createdAt) {
 export default function PeopleProfileCard({
   id,
   avatarUrl,
+  coverImage,
   name,
   role,
   city,
@@ -350,18 +344,12 @@ export default function PeopleProfileCard({
   const [isHovered, setIsHovered] = useState(false);
   const [openConfirmRemove, setOpenConfirmRemove] = useState(false);
 
-
   async function removeConnectionApi(note) {
-  // `note` comes from ConfirmDialog (when withInput=true)
-  await client.delete(`/connections/${id}`, { data: { note } });
-  setConnectionStatus("none");
-  toast.success("Connection removed");
-  
- }
-
-
- // REMOVE THIS FUNCTION:
-
+    // `note` comes from ConfirmDialog (when withInput=true)
+    await client.delete(`/connections/${id}`, { data: { note } });
+    setConnectionStatus("none");
+    toast.success("Connection removed");
+  }
 
   const isList = type === "list";
   const location = [city, countryOfResidence].filter(Boolean).join(", ");
@@ -371,10 +359,10 @@ export default function PeopleProfileCard({
     const set = new Set([...goals, ...cats].filter(Boolean).map(String));
     return [...set];
   }, [goals, cats]);
-  const visibleTags = allTags.slice(0, 2);
+  const visibleTags = allTags.slice(0, 1);
   const extraCount = Math.max(0, allTags.length - visibleTags.length);
 
-  const MAX_CHARS = 300;
+  const MAX_CHARS = 200;
   const isLong = !!about && about.length > MAX_CHARS;
   const displayedAbout = !about ? "" : isLong ? `${about.slice(0, MAX_CHARS)}...` : about;
 
@@ -386,284 +374,328 @@ export default function PeopleProfileCard({
   const isCompany = accountType === "company";
   
   const containerBase =
-    `group relative rounded-[15px] border ${isCompany ? 'border-blue-100' : 'border-gray-100'} ${isCompany ? 'bg-blue-50/20' : 'bg-white'} shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out`;
+    `group relative rounded-2xl border-2 ${isCompany ? 'border-gray-100 shadow-sm' : 'border-gray-100'} ${isCompany ? 'bg-white' : 'bg-white'}  overflow-hidden transition-all duration-300 ease-out`;
   const containerLayout = isList
-    ? "grid grid-cols-[160px_1fr] md:grid-cols-[224px_1fr] items-stretch"
+    ? "flex"
     : "flex flex-col";
 
   return (
-    <div
-      className={`${containerBase} ${containerLayout} ${!isList && isHovered ? "transform -translate-y-1" : ""}`}
-      
+    <>
+     <div
+      className={`${containerBase} ${containerLayout} ${!isList && isHovered ? "transform -translate-y-2" : ""}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-       <ProfileModal
+      <ProfileModal
         userId={openId}
         isOpen={!!openId}
         onClose={() => setOpenId(null)}
         onSent={onSent}
       />
+
       {/* MEDIA: left column ONLY when list; otherwise top hero in grid */}
       {isList ? (
-        <div className="relative h-full w-full min-h-[160px] md:min-h-[176px] overflow-hidden">
+        <div className="relative overflow-hidden">
+          
+              <div className="p-5 pr-0">
+                  {avatarUrl ? (
+                  <div
+                    className={`flex bg-white  items-center justify-center w-24 h-24 shadow-xl ${isCompany ? 'border-4 border-white rounded-2xl' : 'border-4 border-white rounded-2xl'} overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-200`}
+                    onClick={() => {
+                      navigate(`/profile/${id}`)
+                    }}
+                    title={`View ${name}'s profile`}
+                  >
+                    <img
+                      src={avatarUrl}
+                      alt={name}
+                      className="w-full h-full border border-gray-100"
+                      style={{ objectFit: isCompany ? 'contain' : 'cover' }}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className={`w-24 h-24 rounded-2xl shadow-xl ${isCompany ? 'border-4 border-white bg-gradient-to-br from-blue-100 to-blue-200' : 'border-4 border-white bg-gradient-to-br from-brand-100 to-brand-200'} flex items-center justify-center cursor-pointer hover:shadow-2xl transition-all duration-200`}
+                    onClick={() => {
+                      navigate(`/profile/${id}`)
+                    }}
+                    title={`View ${name}'s profile`}
+                  >
+                    <span className={`${isCompany ? 'text-blue-700' : 'text-brand-700'} font-bold text-3xl`}>
+                      {getInitials(name)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+         
+        </div>
+     ) : 
+(
+ /* Header Section - Bold banner design with company/profile showcase */
+  <div className="relative w-full overflow-hidden">
+    {/* Cover Image or Gradient Background */}
+    {coverImage ? (
+      <div className="h-32 relative">
+        <img
+          src={coverImage}
+          alt={`${name}'s cover`}
+          className="w-full h-full object-cover object-[50%_30%]" // Added object-center
+        />
+        {/* Gradient overlay for text readability */}
+        <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
+      </div>
+    ) : (
+      <div className={`h-32 ${isCompany ? 'bg-gradient-to-br from-blue-500 via-blue-400 to-blue-300' : 'bg-gradient-to-br from-brand-500 via-brand-300 to-brand-100'} relative`}>
+        {/* Decorative pattern overlay */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, currentColor 10px, currentColor 11px)`,
+            color: 'white'
+          }} />
+        </div>
+      </div>
+    )}
+    
+    {/* Match percentage badge - top right */}
+    {(matchPercentage != 0) && (
+      <div className="absolute top-3 right-3">
+        <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg backdrop-blur-sm border-2 ${
+          matchPercentage >= 80 
+            ? 'bg-white/95 text-green-700 border-green-400' 
+            : matchPercentage >= 60 
+            ? 'bg-white/95 text-brand-700 border-brand-400'
+            : 'bg-white/95 text-gray-700 border-gray-300'
+        }`}>
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+          {matchPercentage}%
+        </div>
+      </div>
+    )}
+
+    {/* Profile Content - Overlapping the banner */}
+    <div className="relative px-5 pb-3 bg-white">
+      {/* Avatar positioned to overlap banner more */}
+      <div className="flex items-start gap-4 -mt-16">
+        <div className="relative flex-shrink-0 -translate-y-4">
           {avatarUrl ? (
-            <>
-              <img src={avatarUrl} alt={name} className="absolute inset-0 w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </>
+            <div
+              className={`flex bg-white items-center justify-center w-24 h-24 shadow-xl ${isCompany ? 'border-4 border-white rounded-2xl' : 'border-4 border-white rounded-2xl'} overflow-hidden cursor-pointer hover:shadow-2xl transition-all duration-200`}
+              onClick={() => {
+                navigate(`/profile/${id}`)
+              }}
+              title={`View ${name}'s profile`}
+            >
+              <img
+                src={avatarUrl}
+                alt={name}
+                className="w-full h-full"
+                style={{ objectFit: isCompany ? 'contain' : 'cover' }}
+              />
+            </div>
           ) : (
-            <div className={`absolute inset-0 w-full h-full ${isCompany ? 'bg-blue-50' : 'bg-brand-50'} flex items-center justify-center`}>
-              <span className={`text-2xl font-semibold ${isCompany ? 'text-blue-600' : 'text-brand-600'}`}>
+            <div
+              className={`w-24 h-24 rounded-2xl shadow-xl ${isCompany ? 'border-4 border-white bg-gradient-to-br from-blue-100 to-blue-200' : 'border-4 border-white bg-gradient-to-br from-brand-100 to-brand-200'} flex items-center justify-center cursor-pointer hover:shadow-2xl transition-all duration-200`}
+              onClick={() => {
+                navigate(`/profile/${id}`)
+              }}
+              title={`View ${name}'s profile`}
+            >
+              <span className={`${isCompany ? 'text-blue-700' : 'text-brand-700'} font-bold text-3xl`}>
                 {getInitials(name)}
               </span>
             </div>
           )}
 
-          {/* Quick actions on image */}
-          <div className="absolute top-3 right-3 flex items-center gap-2">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setOpenId(id);
-                data._showPopUp?.("profile");
-              }}
-              className="p-2 rounded-full bg-white/90 backdrop-blur-sm shadow-lg hover:bg-white hover:shadow-xl transition-all duration-200"
-              aria-label="View profile"
-            >
-              <Eye size={16} className="text-gray-600" />
-            </button>
+          {/* Company logos for approved staff members */}
+          {companyMemberships && companyMemberships.length > 0 && (
+            <div className="absolute -bottom-1 -right-1 flex -space-x-1">
+              {[...companyMemberships]
+                .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
+                .slice(0, 3)
+                .map((membership, index) => (
+                  membership.company.avatarUrl ? (
+                    <img
+                      key={membership.companyId}
+                      src={membership.company.avatarUrl}
+                      alt={membership.company.name}
+                      className={`h-7 w-7 rounded-full border-2 border-white bg-white shadow-md object-cover ${
+                        membership.isMain ? 'ring-2 ring-brand-400' : ''
+                      }`}
+                      title={`${membership.company.name} (${membership.role})`}
+                    />
+                  ) : (
+                    <div
+                      key={membership.companyId}
+                      className={`h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-600 ${
+                        membership.isMain ? 'ring-2 ring-brand-400' : ''
+                      }`}
+                      title={`${membership.company.name} (${membership.role})`}
+                    >
+                      {getInitials(membership.company.name)}
+                    </div>
+                  )
+                ))}
+              {companyMemberships.length > 3 && (
+                <div className="h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-600">
+                  +{companyMemberships.length - 3}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-            {(matchPercentage!=0) && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
+        {/* Name, account type, role, and location - next to image */}
+        <div className="flex-1 min-w-0 pt-4 space-y-2">
+          {/* Account type label for companies */}
+          {isCompany && (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wide">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Association
+            </div>
+          )}
+          
+          {/* Name */}
+          <div
+            className="cursor-pointer group/name"
+            onClick={() => {
+              navigate(`/profile/${id}`)
+            }}
+          >
+            <h3 className={`font-bold text-sm ${isCompany ? 'text-gray-900' : 'text-gray-900'} group-hover/name:text-brand-600 transition-colors leading-tight break-words`} title={name}>
+              {name || "Anonymous User"}
+            </h3>
+          </div>
+
+          {/* Role */}
+          {role ? (
+            <div className={`text-[13px] line-clamp-3 ${isCompany ? 'font-semibold text-gray-700' : 'font-semibold text-gray-600'} break-words`} title={role}>
+              {isCompany ? `${role || 'Company'}` : role}
+            </div>
+          ) : (
+            <div className="text-sm font-medium text-gray-500 italic">
+              {isCompany ? 'Company Profile' : 'Professional'}
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  </div>
+      )}
+
+
+
+      
+
+      {/* CONTENT */}
+      <div className={`${isList ? "pb-5 pl-5 pr-5 md:pb-6 md:pl-6 md:pr-6" : "pb-6 pl-6 pr-6"} mt-1 flex flex-col flex-1`}>
+             { type=="list" && <>
+
+          {/* Quick actions on image */}
+        
+<div className="mt-6">
+        <h3 
+        onClick={() => navigate(`/profile/${id}`)} className={`font-bold cursor-pointer text-sm mb-2 hover:underline ${isCompany ? 'text-gray-900' : 'text-gray-900'} group-hover/name:text-brand-600 transition-colors leading-tight break-words`} title={name}>
+                    {name || "Anonymous User"}
+        </h3>
+        </div>
+          <div className="absolute top-3 right-3 flex items-center gap-2">
+          
+            {matchPercentage != 0 && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-white/95 backdrop-blur-sm text-brand-600 border border-brand-200">
                 {matchPercentage}% match
               </span>
             )}
           </div>
-        </div>
-      ) : (
-        <div className="relative overflow-hidden w-full">
-    <div className="relative">
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt={name}
-          className={`w-full ${isCompany ? 'h-[60px]' : 'h-[45px]'} blur-sm opacity-80 object-cover transition-transform duration-500 group-hover:scale-105`}
-        />
-      ) : (
-        <div className={`w-full ${isCompany ? 'bg-blue-50' : 'bg-brand-50'} ${isCompany ? 'h-[60px]' : 'h-[45px]'} flex items-center justify-center`}>
-          <span className={`text-lg font-semibold ${isCompany ? 'text-blue-600' : 'text-brand-600'}`}>
-            {getInitials(name)}
-          </span>
-        </div>
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" /> <div className="absolute top-3 right-3 flex items-center gap-2">
-                {(matchPercentage!=0) && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200">
-                    {matchPercentage}% match
-                  </span>
-                )} 
-              </div>
-              
+         
+         </> }
+
+         
+          {/* Location */}
+          {location && (
+            <div className={`flex mb-3 items-start text-sm text-gray-600 gap-1.5 ${isCompany  ? 'absolute bottom-1 right-4':''}`}>
+              <MapPin size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />
+              <span className="break-words text-[12px]" title={location}>{location}</span>
             </div>
-        
-        </div>
-      )}
+          )}
 
-      {/* Profile Image (circular) - only when there's no heroUrl */}
-
-       
-       <div className="flex items-center gap-4 pt-1 pb-4 pl-4 pr-4">
-  <div className="relative flex-shrink-0 -mt-4">
-    {avatarUrl ? (
-      <div
-        className={`flex bg-white items-center justify-center w-24 h-24 rounded-md shadow-md ${isCompany ? 'border-2 border-blue-100' : 'border-2 border-gray-100'} overflow-hidden cursor-pointer`}
-        onClick={() => {
-          setOpenId(id);
-          data._showPopUp?.("profile");
-        }}
-        title={`View ${name}'s profile`}
-      >
-        <img
-          src={avatarUrl}
-          alt={name}
-          className="w-full"
-        />
-      </div>
-    ) : (
-      <div
-        className={`w-24 h-24 rounded-md shadow-md ${isCompany ? 'border-2 border-blue-100' : 'border-2 border-gray-100'} ${isCompany ? 'bg-blue-100' : 'bg-brand-100'} flex items-center justify-center cursor-pointer`}
-        onClick={() => {
-          setOpenId(id);
-          data._showPopUp?.("profile");
-        }}
-        title={`View ${name}'s profile`}
-      >
-        <span className={`${isCompany ? 'text-blue-600' : 'text-brand-600'} font-medium text-lg`}>
-          {getInitials(name)}
-        </span>
-      </div>
-    )}
-
-    {/* Company logos for approved staff members */}
-    {companyMemberships && companyMemberships.length > 0 && (
-      <div className="absolute -bottom-2 -right-2 flex -space-x-2">
-        {[...companyMemberships]
-          .sort((a, b) => (b.isMain ? 1 : 0) - (a.isMain ? 1 : 0))
-          .slice(0, 3)
-          .map((membership, index) => (
-            membership.company.avatarUrl ? (
-              <img
-                key={membership.companyId}
-                src={membership.company.avatarUrl}
-                alt={membership.company.name}
-                className={`h-7 w-7 rounded-full border-2 border-white shadow-md object-cover ${
-                  membership.isMain ? 'ring-2 ring-brand-400' : ''
-                }`}
-                title={`${membership.company.name} (${membership.role})`}
-              />
-            ) : (
-              <div
-                key={membership.companyId}
-                className={`h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 ${
-                  membership.isMain ? 'ring-2 ring-brand-400' : ''
-                }`}
-                title={`${membership.company.name} (${membership.role})`}
+      
+     
+        {/* About */}
+        {about && (
+          <div className="mb-4">
+            <p title={about} className={`text-[14px] leading-relaxed text-gray-700 ${isList ? "line-clamp-3 md:line-clamp-3" : "line-clamp-3"}`}>
+              {displayedAbout}
+            </p>
+            {/*isLong && (
+              <button 
+                onClick={() => navigate(`/profile/${id}`)}
+                className="mt-2 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
               >
-                {getInitials(membership.company.name)}
-              </div>
-            )
-          ))}
-        {companyMemberships.length > 3 && (
-          <div className="h-7 w-7 rounded-full border-2 border-white shadow-md bg-gray-100 flex items-center justify-center text-xs font-medium text-gray-600 z-10">
-            +{companyMemberships.length - 3}
+                Read more
+              </button>
+            )*/}
           </div>
         )}
-      </div>
-    )}
-  </div>
 
-  {/* Name, role and location - clickable to open profile */}
-  <div
-    className="flex-1 min-w-0 cursor-pointer"
-    onClick={() => {
-      setOpenId(id);
-      data._showPopUp?.("profile");
-    }}
-    title={`View ${name}'s profile`}
-  >
-    <div className={`${isCompany ? 'text-[17px]' : 'text-[15px]'} font-semibold ${isCompany ? 'text-blue-900' : 'text-gray-900'} hover:underline transition-colors truncate`} title={name}>
-      {name}
-    </div>
-    {role && (
-      <div className={`text-sm ${isCompany ? 'font-medium text-blue-700' : 'text-gray-600'} truncate`} title={role}>
-        {isCompany ? `${role || 'Company'}` : role}
-      </div>
-    )}
-    {cats && cats.length > 0 && (
-      <div className={`text-sm ${isCompany ? 'font-medium text-brand-600' : 'text-brand-600'} truncate`} title={cats.join(", ")}>
-        {cats.join(", ")}
-      </div>
-    )}
-
-    {(location || computedTime) && (
-      <div className="mt-0.5 flex items-center text-xs text-gray-500 min-w-0 w-full">
-        <span className="flex items-center gap-1.5 min-w-0 flex-1" title={location}>
-          {location && (
-            <>
-              <MapPin size={14} />
-              <span className="truncate" title={location}>{location}</span>
-            </>
-          )}
-        </span>
-      </div>
-    )}
-  </div>
-</div>
-      
-
-      {/* CONTENT */}
-      <div className={`${isList ? "pb-4 pl-4 pr-4 md:pb-5 md:pl-5 md:pr-5" : "pb-5 pl-5 pr-5"} flex flex-col flex-1`}>
-
-          {/* Tags: show 2 + tooltip */}
-        {!!visibleTags.length && (0==1) && (
-          <div className="mt-4 mb-4 flex flex-wrap gap-2">
+          {/* Tags */}
+        {!!visibleTags.length && (
+          <div className="mb-4 flex flex-wrap gap-2">
             {visibleTags.map((t) => (
-              <span key={t} className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${isCompany ? 'bg-blue-50 text-blue-600 border border-blue-200/50' : 'bg-brand-50 text-brand-600 border border-brand-200/50'}`}>
+              <span key={t} className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold ${false ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-brand-50 text-brand-400 border _border-brand-200'}`}>
                 {t}
               </span>
             ))}
-
             {extraCount > 0 && (
-              <div className="relative inline-block group/tagmore">
-                <Pill
-                  className="bg-gray-100 text-gray-600 cursor-default hover:bg-gray-200"
-                  aria-describedby={`people-tags-more-${id}`}
-                  tabIndex={0}
-                >
+              <div className="relative inline-block group/tags">
+                <span className="inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-semibold bg-gray-100 text-gray-600 cursor-help">
                   +{extraCount} more
-                </Pill>
-                <div
-                  id={`people-tags-more-${id}`}
-                  role="tooltip"
-                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg
-                  opacity-0 invisible transition-opacity duration-200
-                  group-hover/tagmore:opacity-100 group-hover/tagmore:visible
-                  focus-within:opacity-100 focus-within:visible z-10 whitespace-nowrap"
-                >
-                  <div className="flex flex-wrap gap-1 max-w-xs">
-                    {allTags.slice(2).map((tag, i) => (
+                </span>
+
+                {/* Tooltip with remaining tags */}
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tags:opacity-100 group-hover/tags:visible z-10 whitespace-nowrap max-w-xs">
+                  <div className="flex flex-wrap gap-1">
+                    {allTags.slice(visibleTags.length).map((tag, i) => (
                       <span key={i} className="inline-block">
                         {tag}
-                        {i < allTags.length - 3 ? "," : ""}
+                        {i < allTags.length - visibleTags.length - 1 ? "," : ""}
                       </span>
                     ))}
                   </div>
-                  <div
-                    className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0
-                    border-l-4 border-r-4 border-t-4
-                    border-l-transparent border-r-transparent border-t-gray-900"
-                  />
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
                 </div>
               </div>
             )}
           </div>
         )}
 
-        {/* About */}
-        {about && (
-          <p title={about} className={`mt-0 text-[15px] leading-relaxed text-gray-700 ${isList ? "line-clamp-4 md:line-clamp-6" : "line-clamp-6"}`}>
-            {displayedAbout}
-          </p>
-        )}
-
-        {/* Looking For */}
-        {lookingFor && (
-          <p className="mt-3 text-[15px] leading-relaxed text-gray-700">
-            Looking for: <span className="font-medium">{lookingFor}</span>
-          </p>
-        )}
-
-      
 
         {/* Actions */}
-        <div className="mt-auto pt-2 flex items-center gap-2">
-
-
+        <div className={`mt-auto ${!isCompany ? 'pt-3':''} flex items-center gap-3`}>
           {/* Message */}
-          {user?.id!=id && <button
-            onClick={() => {
-              if (!user) {
-                data._showPopUp("login_prompt");
-                return;
-              }
-              if (onMessage) onMessage(id);
-              else navigate(`/messages?userId=${id}`);
-            }}
-            className={`rounded-xl _login_prompt px-4 py-2.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-700 active:bg-brand-800 transition-all duration-200 shadow-sm hover:shadow-md ${
-              type === "grid" ? "flex-1" : ""
-            }`}
-          >
-            Message
-          </button>}
+          {(user?.id != id && !isCompany)  && (
+            <button
+              onClick={() => {
+                if (!user) {
+                  data._showPopUp("login_prompt");
+                  return;
+                }
+                if (onMessage) onMessage(id);
+                else navigate(`/messages?userId=${id}`);
+              }}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold bg-brand-50 text-brand-500 active:bg-brand-800 transition-all duration-200 shadow-sm hover:shadow-md ${
+                type === "grid" ? "flex-1 justify-center" : ""
+              }`}
+            >
+              <MessageCircle size={16} />
+              Message
+            </button>
+          )}
 
           {/* Request Meeting - only show when connected */}
           {connectionStatus === "connected" && (
@@ -675,20 +707,28 @@ export default function PeopleProfileCard({
                 }
                 setMeetingModalOpen(true);
               }}
-              className="rounded-xl px-4 py-2.5 text-sm font-medium border border-brand-200 bg-white text-brand-700 hover:border-brand-500 hover:text-brand-700 transition-colors"
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold border border-brand-200 bg-white text-brand-700 hover:border-brand-500 hover:text-brand-700 transition-all duration-200"
             >
-              Request Meeting
+              <CalendarDays size={16} />
+              Meeting
             </button>
           )}
 
           {/* Connect */}
-          {connectionStatus!="connected" && <div className="_login_prompt">
+          {connectionStatus != "connected" && (
+            <div className={type === "grid" ? "flex-1" : ""}>
               {renderConnectButton()}
-          </div>}
+            </div>
+          )}
+
+
 
         </div>
       </div>
 
+    </div>
+
+    
       {/* Modals */}
       <ConnectionRequestModal
         open={modalOpen}
@@ -709,101 +749,95 @@ export default function PeopleProfileCard({
       />
 
       <ConfirmDialog
-      open={openConfirmRemove}
-      onClose={() => setOpenConfirmRemove(false)}
-      title="Remove this connection?"
-      text="This will remove the connection. You can send a new request later."
-      confirmText="Remove"
-      cancelText="Cancel"
-      tone="danger"
-      withInput={true}
-      inputLabel="Optional note"
-      inputPlaceholder="Why are you removing this connection?"
-      inputType="textarea"
-      requireValue={false}
-      onConfirm={removeConnectionApi}
-    />
+        open={openConfirmRemove}
+        onClose={() => setOpenConfirmRemove(false)}
+        title="Remove this connection?"
+        text="This will remove the connection. You can send a new request later."
+        confirmText="Remove"
+        cancelText="Cancel"
+        tone="danger"
+        withInput={true}
+        inputLabel="Optional note"
+        inputPlaceholder="Why are you removing this connection?"
+        inputType="textarea"
+        requireValue={false}
+        onConfirm={removeConnectionApi}
+      />
 
-     
-    </div>
+    </>
   );
 
   function renderConnectButton() {
     const status = (connectionStatus || "none").toLowerCase();
 
     if (status === "connected") {
-
       return (
         <button
           onClick={() => setOpenConfirmRemove(true)}
           title="Connected — click to remove"
           aria-label="Connected. Click to remove connection"
-          className="group/conn rounded-xl px-2.5 py-2 text-sm font-semibold w-full
-                    bg-green-100 text-green-700 border-2 border-green-200
+          className={`group/conn rounded-xl px-4 py-2.5 text-sm font-semibold w-full
+                    bg-green-50 text-green-700 border-2 border-green-200
                     hover:bg-red-50 hover:text-red-700 hover:border-red-300
                     focus:outline-none focus:ring-2 focus:ring-red-500/30
-                    transition-all duration-200 flex items-center justify-center"
+                    transition-all duration-200 flex items-center justify-center gap-2 ${
+                      type === "grid" ? "flex-1" : ""
+                    }`}
         >
-          <span className="flex items-center gap-2">
-            {/* Main icon/label swap */}
-            <UserCheck size={16} className="block group-hover/conn:hidden group-focus/conn:hidden" />
-            <UserX     size={16} className="hidden group-hover/conn:block group-focus/conn:block" />
-
-            <span className="block group-hover/conn:hidden group-focus/conn:hidden">Connected</span>
-            <span className="hidden group-hover/conn:block group-focus/conn:block">Remove</span>
-
-            {/* Affordance: delete icon BEFORE hover; 'tap to remove' AFTER hover */}
-            <span className="ml-2 inline-flex items-center">
-              <Trash2
-                size={14}
-                className="block group-hover/conn:hidden group-focus/conn:hidden text-gray-500"
-                aria-hidden="true"
-              />
-              <span className="hidden group-hover/conn:inline group-focus/conn:inline text-[11px] leading-none text-gray-500">
-                tap to remove
-              </span>
-            </span>
-          </span>
+          <UserCheck size={16} className="block group-hover/conn:hidden group-focus/conn:hidden" />
+          <UserX size={16} className="hidden group-hover/conn:block group-focus/conn:block" />
+          <span className="block group-hover/conn:hidden group-focus/conn:hidden">Connected</span>
+          <span className="hidden group-hover/conn:block group-focus/conn:block">Remove</span>
         </button>
       );
     }
 
-
     if (status === "pending_outgoing" || status === "outgoing_pending" || status === "pending") {
       return (
-        <button className="rounded-xl px-4 py-2.5 text-sm font-medium bg-yellow-100 text-yellow-700 cursor-default">
+        <button className={`rounded-xl px-4 py-2.5 text-sm font-semibold bg-amber-50 text-amber-700 border border-amber-200 cursor-default ${
+          type === "grid" ? "w-full" : ""
+        }`}>
           Pending
         </button>
       );
     }
+
     if (status === "pending_incoming" || status === "incoming_pending") {
       return (
         <button
           onClick={() => navigate("/notifications")}
-          className="rounded-xl px-4 py-2.5 text-sm font-medium bg-brand-100 text-brand-600 hover:bg-brand-200"
+          className={`rounded-xl px-4 py-2.5 text-sm font-semibold bg-brand-50 text-brand-700 border border-brand-200 hover:bg-brand-100 transition-colors ${
+            type === "grid" ? "w-full" : ""
+          }`}
         >
-         
           Respond
         </button>
       );
     }
+
     if (!user) {
       return (
         <button
           onClick={() => data._showPopUp("login_prompt")}
-          className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 transition-colors"
+          className={`rounded-xl px-4 py-2.5 text-sm font-semibold border-2 border-gray-200 bg-white text-gray-500 hover:border-brand-300 hover:text-brand-600 transition-all duration-200 ${
+            type === "grid" ? "w-full" : ""
+          }`}
         >
           Connect
         </button>
       );
     }
+
     return (
       <button
         onClick={() => setModalOpen(true)}
-        className="rounded-xl px-4 py-2.5 text-sm font-medium border-2 border-gray-200 bg-white text-gray-700 hover:border-brand-300 hover:text-brand-600 transition-colors"
+        className={`rounded-xl px-4 py-2.5 text-sm font-semibold border-2  hover:border-brand-300 hover:text-brand-600 transition-all duration-200 ${
+          type === "grid" ? "w-full" : ""
+        }`}
       >
         Connect
       </button>
     );
+    
   }
 }

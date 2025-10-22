@@ -1,9 +1,9 @@
-// src/components/MediaViewer.jsx
+// src/components/FormMediaViewer.jsx
 import React, { useState, useEffect } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import VideoPlayer from "./VideoPlayer";
 
-export default function MediaViewer({ urls = [], initialIndex = 0, onClose }) {
+export default function FormMediaViewer({ urls = [], initialIndex = 0, onClose }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isClosing, setIsClosing] = useState(false);
 
@@ -92,6 +92,9 @@ export default function MediaViewer({ urls = [], initialIndex = 0, onClose }) {
           <VideoPlayer 
             src={currentUrl} 
             alt={`Video ${currentIndex + 1}`}
+            key={currentUrl} // Add key to force re-render when URL changes
+            autoPlay={true} // Ensure autoplay when switching
+            controls={true}
           />
         ) : isImage ? (
           <div className="flex items-center justify-center h-full">

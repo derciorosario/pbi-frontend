@@ -1,33 +1,189 @@
 // src/pages/PeopleCards.jsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import I from "../lib/icons.jsx";
 import ProfileModal from "../components/ProfileModal.jsx";
 import ConnectionRequestModal from "../components/ConnectionRequestModal.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { useData } from "../contexts/DataContext.jsx";
 import { useNavigate } from "react-router-dom";
-import { ExternalLink, MapPin, Clock, Eye, UserX, UserCheck, Trash2, CalendarDays, MessageCircle, Link2, Building2 } from "lucide-react";
+import { ExternalLink, MapPin, Clock, Eye,X, UserX, UserCheck, Trash2, CalendarDays, MessageCircle, Link2, Building2, Users } from "lucide-react";
 import ConfirmDialog from "../components/ConfirmDialog.jsx";
 import client from "../api/client";
 import { toast } from "../lib/toast.js";
 import TIMEZONES from "../constants/timezones.js";
 
-// Import MeetingRequestModal from ProfileModal.jsx
+
+
+// User Search Component
+const UserSearch = ({ onSelect, selectedUsers, onRemove, thisUserId }) => {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const searchRef = useRef(null);
+
+  const searchUsers = async (searchQuery) => {
+    if (!searchQuery.trim()) {
+      setResults([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data } = await client.get(`/users/search?q=${encodeURIComponent(searchQuery)}`);
+      // Filter out already selected users
+      const filteredResults = data.filter(user =>
+        !selectedUsers.some(selected => selected.id === user.id) && user?.id!=thisUserId
+      );
+      setResults(filteredResults);
+    } catch (error) {
+      console.error("Error searching users:", error);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle clicking outside to close results
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setResults([]);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setQuery(value);
+    
+    // Debounce search
+    clearTimeout(window.searchTimeout);
+    window.searchTimeout = setTimeout(() => {
+      searchUsers(value);
+    }, 300);
+  };
+
+  const handleSelect = (user) => {
+    onSelect(user);
+    setQuery("");
+    setResults([]);
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-xs font-medium text-gray-700 mb-1">
+        Add Participants 
+      </label>
+      
+      {/* Selected users chips */}
+      {selectedUsers.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {selectedUsers.map((user) => (
+            <div
+              key={user.id}
+              className="inline-flex items-center gap-2 bg-brand-50 text-brand-700 rounded-full px-3 py-1 text-xs font-medium"
+            >
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="w-4 h-4 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-4 h-4 rounded-full bg-brand-100 flex items-center justify-center text-xs font-medium text-brand-700">
+                  {getInitials(user.name)}
+                </div>
+              )}
+              {user.name || user.email}
+             {user?.id!=thisUserId && <button
+                type="button"
+                onClick={() => onRemove(user.id)}
+                className="text-brand-500 hover:text-brand-700"
+              >
+                <X size={14} />
+              </button>}
+            </div>
+          ))}
+        </div>
+      )}
+
+    <div ref={searchRef} className="relative">
+         {/* Search input */}
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={handleInputChange}
+          placeholder="Search users by name or email..."
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+        />
+        {loading && (
+          <div className="absolute right-3 top-2.5">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-500"></div>
+          </div>
+        )}
+      </div>
+
+      {/* Search results */}
+      {results.length > 0 && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+          {results.map((user) => (
+            <button
+              key={user.id}
+              type="button"
+              onClick={() => handleSelect(user)}
+              className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-3"
+            >
+              {user.avatarUrl ? (
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name}
+                  className="w-6 h-6 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-brand-100 flex items-center justify-center text-xs font-medium text-brand-700">
+                  {getInitials(user.name)}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-gray-900 truncate">
+                  {user.name}
+                </div>
+                <div className="text-xs text-gray-500 truncate">
+                  {user.email}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+    </div>
+    </div>
+  );
+};
+
+
+// Updated MeetingRequestModal with participant support
 const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => {
-  
   const defaultTz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const [form, setForm] = useState({
     date: "",
     time: "",
     duration: "30",
-    mode: "video", // 'video' | 'in_person'
+    mode: "video",
     location: "",
     link: "",
     title: `Meeting with ${toName ?? "User"}`,
     agenda: "",
     timezone: defaultTz,
   });
-
+  const [participants, setParticipants] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -35,19 +191,34 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
     if (!open) return;
     setErrors({});
     setSubmitting(false);
-  }, [open]);
+    // Initialize with the primary recipient if provided
+    if (toUserId && toName) {
+      setParticipants([{ id: toUserId, name: toName }]);
+    }
+  }, [open, toUserId, toName]);
 
   function validate() {
     const e = {};
     if (!form.date) e.date = "Pick a date";
     if (!form.time) e.time = "Pick a time";
     if (!form.title.trim()) e.title = "Add a title";
+    if (participants.length === 0) e.participants = "Add at least one participant";
     return e;
   }
 
   function handleChange(k, v) {
     setForm((f) => ({ ...f, [k]: v }));
   }
+
+  const handleAddParticipant = (user) => {
+    if (!participants.some(p => p.id === user.id)) {
+      setParticipants(prev => [...prev, user]);
+    }
+  };
+
+  const handleRemoveParticipant = (userId) => {
+    setParticipants(prev => prev.filter(p => p.id !== userId));
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -57,11 +228,14 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
 
     const isoStart = new Date(`${form.date}T${form.time}:00`).toISOString();
 
-    // Create meeting request via API
+    // The first participant is the primary recipient
+    const primaryParticipant = participants[0];
+    const additionalParticipants = participants.slice(1).map(p => p.id);
+
     setSubmitting(true);
     try {
       const payload = {
-        toUserId,
+        toUserId: primaryParticipant.id,
         title: form.title,
         agenda: form.agenda,
         scheduledAt: isoStart,
@@ -69,12 +243,27 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
         timezone: form.timezone,
         mode: form.mode,
         location: form.mode === "in_person" ? form.location : null,
-        link: form.mode === "video" ? form.link : null
+        link: form.mode === "video" ? form.link : null,
+        participants: additionalParticipants
       };
 
       const { data } = await client.post("/meeting-requests", payload);
       onCreated?.(data);
       onClose();
+      
+      // Reset form
+      setParticipants([]);
+      setForm({
+        date: "",
+        time: "",
+        duration: "30",
+        mode: "video",
+        location: "",
+        link: "",
+        title: `Meeting with ${toName ?? "User"}`,
+        agenda: "",
+        timezone: defaultTz,
+      });
     } catch (error) {
       console.error("Error creating meeting request:", error);
       toast.error(error?.response?.data?.message || "Failed to send meeting request");
@@ -87,7 +276,6 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      {/* Responsive container: header + scrollable body + sticky footer */}
       <div className="w-[92vw] sm:w-full sm:max-w-lg max-h-[80vh] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between bg-brand-500 px-4 py-3">
@@ -112,6 +300,15 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
             />
             {errors.title && <p className="text-xs text-red-600 mt-1">{errors.title}</p>}
           </div>
+
+          {/* Participants Section */}
+          <UserSearch
+            onSelect={handleAddParticipant}
+            selectedUsers={participants}
+            onRemove={handleRemoveParticipant}
+            thisUserId={toUserId}
+          />
+          {errors.participants && <p className="text-xs text-red-600 mt-1">{errors.participants}</p>}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -158,11 +355,9 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
                 value={form.timezone}
                 onChange={(e) => handleChange("timezone", e.target.value)}
               >
-               {TIMEZONES.map((i,_i)=>(
-                    <option value={i.value}>{`${i.offset} - ${i.label}`}</option>
-               ))}
-               
-
+                {TIMEZONES.map((i, _i) => (
+                  <option value={i.value}>{`${i.offset} - ${i.label}`}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -251,6 +446,12 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
                   ({form.timezone}) • {form.duration} min • {form.mode === "video" ? "Video call" : "In person"}
                 </span>
               </div>
+              {participants.length > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Users size={14} />
+                  <span>{participants.length} participant{participants.length !== 1 ? 's' : ''}</span>
+                </div>
+              )}
             </div>
           )}
         </form>
@@ -274,13 +475,13 @@ const MeetingRequestModal = ({ open, onClose, toUserId, toName, onCreated }) => 
               <circle cx="12" cy="12" r="10" />
               <polyline points="12,6 12,12 16,14" />
             </svg>
-            {submitting ? "Creating…" : "Create request"}
+            {submitting ? "Creating…" : `Create request (${participants.length})`}
           </button>
         </div>
       </div>
     </div>
   );
-};
+}
 
 /* --- Small reusable subcomponents --- */
 const Pill = ({ children, className = "" }) => (
@@ -838,5 +1039,6 @@ export default function PeopleProfileCard({
         Connect
       </button>
     );
+
   }
 }

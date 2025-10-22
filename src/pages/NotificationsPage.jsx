@@ -6,6 +6,7 @@ import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import { useNavigate } from "react-router-dom";
+import { Delete, DeleteIcon, LucideDelete } from "lucide-react";
 
 const styles = {
   primary: "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/30",
@@ -40,8 +41,12 @@ const getUserIdFromNotification = (notification) => {
       return payload?.fromId || payload?.fromUserId || payload?.byUserId;
     case "meeting_request":
       return payload?.fromId || payload?.fromUserId || payload?.byUserId;
+    case "meeting_invitation":
+      return payload?.fromId || payload?.fromUserId || payload?.byUserId;
     case "meeting_response":
       return payload?.fromId || payload?.fromUserId || payload?.byUserId;
+    case "meeting_participant_response":
+      return payload?.participantId;
     case "meeting_cancelled":
       return user?.id || payload?.fromId || payload?.fromUserId;
     case "message.new":
@@ -124,7 +129,7 @@ export default function NotificationsPage() {
     return (
       <button 
         onClick={() => handleViewProfile(userId)}
-        className={`${styles.icon} ${className}`}
+        className={`${styles.icon} ${className} px-2.5 py-2.5`}
         title="View Profile"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -317,7 +322,7 @@ export default function NotificationsPage() {
     try {
       const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : 'Declining'} meeting request...`);
       
-      const relatedNotification = notifications.find(n => 
+      const relatedNotification = notifications.find(n =>
           n.type === "meeting_request" && n.payload?.item_id === id
       );
 
@@ -339,6 +344,35 @@ export default function NotificationsPage() {
       ]);
     } catch (e) {
       toast.error(e?.response?.data?.message || "Failed to update meeting request");
+    }
+  };
+
+  const handleParticipantRespond = async (id, action, rejectionReason = "") => {
+    try {
+      const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : action === 'reject' ? 'Declining' : 'Setting as tentative'} meeting invitation...`);
+      
+      const relatedNotification = notifications.find(n =>
+          n.type === "meeting_invitation" && n.payload?.item_id === id
+      );
+
+      if (connected && socket) {
+        await client.post(`/meeting-requests/${id}/respond-invitation`, { action, rejectionReason });
+      } else {
+        await client.post(`/meeting-requests/${id}/respond-invitation`, { action, rejectionReason });
+      }
+
+      if (relatedNotification) {
+        await markNotificationAsRead(relatedNotification.id);
+      }
+      
+      toast.success(`Meeting invitation ${action === 'accept' ? 'accepted' : action === 'reject' ? 'declined' : 'set as tentative'} successfully`, { id: toastId });
+      
+      await Promise.all([
+        loadMeetingRequests(),
+        loadNotifications()
+      ]);
+    } catch (e) {
+      toast.error(e?.response?.data?.message || "Failed to update meeting invitation");
     }
   };
 
@@ -469,6 +503,8 @@ export default function NotificationsPage() {
       })),
     ];
 
+    console.log({a: meetingRequests})
+
     const meetingItems = meetingRequests
       .filter(m => m.status === "pending" && m.requester?.id !== user?.id)
       .map((m) => ({
@@ -537,10 +573,29 @@ export default function NotificationsPage() {
           }
           break;
 
+        case "meeting_invitation":
+          title = "Meeting Invitation";
+          message = `${n.payload?.fromName || "Someone"} has invited you to a meeting ${n.payload?.title  ? `:${n.payload?.title}`:''}`;
+          meta= `📅 ${new Date(n.payload.scheduledAt).toLocaleString('en-US', {dateStyle: 'short',timeStyle: 'short'})} ${n.payload.time ? '-':''} ${n.payload.time || ''} (${n.payload.timezone}) • ${n.payload.duration} min • ${n.payload.mode} ${n.payload.link || n.payload.location ? '•':''} ${n.payload.link || n.payload.location || ''}`
+          if (n.payload?.agenda) {
+            message += `. Agenda: ${n.payload.agenda}`;
+          }
+          break;
+
         case "meeting_response":
           title = (n.payload?.action=="accept" ? "Meeting Accepted" : "Meeting Declined");
           message = `${n.payload?.fromName || "Someone"} ${n.payload?.action=="accept" ? "accepted" : "declined"} your meeting request${n.payload?.title  ? `: ${n.payload?.title}`:''}`;
           meta= `📅 ${new Date(n.payload.scheduledAt).toLocaleString('en-US', {dateStyle: 'short',timeStyle: 'short'})} ${n.payload.time ? '-':''} ${n.payload.time || ''} (${n.payload.timezone}) • ${n.payload.duration} min • ${n.payload.mode} ${n.payload.link || n.payload.location ? '•':''} ${n.payload.link || n.payload.location || ''}`
+        
+          if (n.payload?.rejectionReason) {
+            message += `. Reason: ${n.payload.rejectionReason}`;
+          }
+          break;
+
+        case "meeting_participant_response":
+          title = n.payload?.action === "accept" ? "Meeting Invitation Accepted" : n.payload?.action === "reject" ? "Meeting Invitation Declined" : "Meeting Invitation Response";
+          message = `${n.payload?.participantName || "Someone"} ${n.payload?.action}ed your meeting invitation${n.payload?.title  ? `: ${n.payload?.title}`:''}`;
+          meta = `📅 ${new Date(n.payload.scheduledAt).toLocaleString('en-US', {dateStyle: 'short',timeStyle: 'short'})} (${n.payload.timezone}) • ${n.payload.duration} min • ${n.payload.mode} ${n.payload.link || n.payload.location ? '•' : ''} ${n.payload.link || n.payload.location || ''}`;
         
           if (n.payload?.rejectionReason) {
             message += `. Reason: ${n.payload.rejectionReason}`;
@@ -674,7 +729,7 @@ export default function NotificationsPage() {
         notificationType = "invitation";
       }
 
-      const hasActions = n.type === "connection.request" || n.type === "meeting_request";
+      const hasActions = n.type === "connection.request" || n.type === "meeting_request" || n.type === "meeting_invitation";
 
       const handleViewJobApplication = (applicationId) => {
         window.location.href = `/profile?jobApplication=${applicationId}`;
@@ -710,15 +765,21 @@ export default function NotificationsPage() {
         hasActions: hasActions,
         userId: userId,
         actions: (
-          <div className="mt-2 flex justify-between items-center text-sm">
+          <div className="mt-2 flex sm:justify-between items-center text-sm gap-x-2">
             <div className="flex gap-2">
               {!n.readAt && (
                 <button onClick={() => markNotificationAsRead(n.id)} className={styles.outline}>
-                  Mark Read
+                 <span className="max-md:hidden">Mark Read</span>
+                 <span className="md:hidden">
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#5f6368"><path d="M480-480Zm280-160q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q28 0 55.5 4t54.5 12q-11 17-18 36.5T562-788q-20-6-40.5-9t-41.5-3q-134 0-227 93t-93 227q0 134 93 227t227 93q134 0 227-93t93-227q0-21-3-41.5t-9-40.5q20-3 39.5-10t36.5-18q8 27 12 54.5t4 55.5q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-57-216 273-273q-20-7-37.5-17.5T625-611L424-410 310-522l-56 56 169 170Z"/></svg>
+                 </span> 
                 </button>
               )}
               <button onClick={() => deleteNotification(n.id)} className={styles.danger}>
-                Delete
+                <span className="max-md:hidden">Delete</span>
+                <span className="md:hidden">
+                  <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#fff"><path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/></svg>
+                </span>
               </button>
             </div>
             <div className="flex gap-2">
@@ -763,6 +824,19 @@ export default function NotificationsPage() {
                 >
                   View
                 </button>
+              )}
+              {n.type === "meeting_invitation" && !n.readAt && (
+                <div className="flex gap-2">
+                  <button onClick={() => handleParticipantRespond(n.payload.item_id, "accept")} className={styles.primary}>
+                    Accept
+                  </button>
+                  <button onClick={() => {
+                    const reason = window.prompt("Reason for rejection (optional):");
+                    handleParticipantRespond(n.payload.item_id, "reject", reason || "");
+                  }} className={styles.outline}>
+                    Decline
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -882,7 +956,7 @@ export default function NotificationsPage() {
                                 </div>
                                 <p className="text-sm text-gray-600 mt-1">{connectedNotMessage || item.desc}</p>
                                 {item.meta && <p className="text-xs text-gray-500 mt-1">{item.meta}</p>}
-                                <div className="flex items-center justify-between gap-x-5 gap-y-1">
+                                <div className="flex md:items-center max-sm:flex-col justify-between gap-x-5 gap-y-1">
                                    <div className="flex-1">
                                      {item.actions}
                                    </div>
