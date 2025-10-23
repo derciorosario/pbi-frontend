@@ -5,9 +5,9 @@ const env="pro"
 export const API_URL = env=="dev"
   ? "http://localhost:5000/api"
   : env=="test"
-  ? "https://54links-testserver.derflash.com/api"
-  : "http://54.160.149.194:5000/api"
-  //: "https://kaziwani-server.visum.co.mz/api";
+  ? "https://test.54links.com/api"
+  : "https://api.54links.com/api"
+  
 
 const client = axios.create({
      baseURL: API_URL,
