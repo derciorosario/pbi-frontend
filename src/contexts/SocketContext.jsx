@@ -14,7 +14,7 @@ export const SocketProvider = ({ children }) => {
   const { token, isAuthed, user } = useAuth();
 
   const env = "pro";
-  const API_URL = env === "dev" ? "http://localhost:5000" : "https://kaziwani-server.visum.co.mz";
+  const API_URL = env === "dev" ? "http://localhost:5000" : "https://api.54links.com";
 
   useEffect(() => {
     if (!isAuthed || !token) return;

@@ -3015,7 +3015,7 @@ function CategoryTree({
         {personal.name || "Profile"}
       </h1>
       {/* Text background for better readability */}
-      <div className="absolute inset-0 bg-black bg-opacity-10 blur-sm rounded-lg -m-1 z-0"></div>
+      <div className="absolute inset-0 bg-black bg-opacity-10 blur-sm rounded-lg -m-1 z-0 max-md:hidden"></div>
     </div>
     
 
