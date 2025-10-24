@@ -588,7 +588,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
       const uploadedFilenames = response.data.filenames || [];
 
       // Store as array of filenames
-      const mapped = uploadedFilenames.map(filename => `${API_URL}/uploads/${filename}`);
+      const mapped = uploadedFilenames.map(filename => `${filename}`);
       setAttachments((prev) => [...prev, ...mapped]);
       setUploadProgress({}); // Clear progress after upload
     } catch (err) {

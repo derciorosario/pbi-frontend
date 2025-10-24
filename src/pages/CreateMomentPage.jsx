@@ -752,7 +752,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
 
       // Store with type information
       const mapped = slice.map((file, index) => ({
-        base64url: `${API_URL}/uploads/${uploadedFilenames[index] || file.name}`,
+        base64url: `${uploadedFilenames[index] || file.name}`,
         name: file.name.replace(/\.[^/.]+$/, ""),
         type: file.type.startsWith("video/") ? "video" : "image"
       }));
@@ -1495,6 +1495,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           onClose={closeMediaViewer}
         />
       )}
+      
     </div>
   );
 }

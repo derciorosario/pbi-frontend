@@ -20,7 +20,7 @@ const uploadClient = axios.create({
      headers: {
       "Content-Type": "multipart/form-data",
     },
-     // Don't set Content-Type - let axios set it automatically for FormData
+     //Don't set Content-Type - let axios set it automatically for FormData
 });
 
 

@@ -724,7 +724,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
             'Content-Type': 'multipart/form-data'
           }
         });
-        imageUrl = response.data.filename;
+        imageUrl = response.data.url;
       } else if (mediaType === 'video') {
         formData.append('video', mediaFile);
         const response = await client.post('/events/upload-video', formData, {

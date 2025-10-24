@@ -5292,10 +5292,7 @@ function CategoryTree({
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => {
-                                setSelectedProfileUserId(application.applicant.id);
-                                setProfileModalOpen(true);
-                              }}
+                              onClick={() => navigate(`/profile/${application.applicant.id}`)}
                               className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
                             >
                               View Profile
@@ -5473,10 +5470,7 @@ function CategoryTree({
                           </div>
                           <div className="flex gap-2">
                             <button
-                              onClick={() => {
-                                setSelectedProfileUserId(registration.registrant.id);
-                                setProfileModalOpen(true);
-                              }}
+                              onClick={() => navigate(`/profile/${registration.registrant.id}`)}
                               className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
                             >
                               View Profile

@@ -826,7 +826,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
       // Store with type information
       const mapped = slice.map((file, index) => ({
         name: file.name,
-        base64url: `${API_URL}/uploads/${uploadedFilenames[index] || file.name}`,
+        base64url: `${uploadedFilenames[index] || file.name}`,
         type: getFileType(file)
       }));
 
