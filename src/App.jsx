@@ -59,6 +59,7 @@ import AuthorizeRepresentative from './pages/AuthorizeRepresentative.jsx';
  import ConfirmStaffInvitation from './pages/ConfirmStaffInvitation.jsx';
  import OrganizationJoinRequests from './pages/OrganizationJoinRequests.jsx';
 import AdminContacts from './admin/AdminContacts.jsx';
+import AdminSupports from './admin/AdminSupports.jsx';
 
 
 
@@ -121,6 +122,7 @@ function App() {
           <Route path="users" element={<AdminUsers />} />
           <Route path="content-moderation" element={<AdminModeration/>} />
           <Route path="contacts" element={<AdminContacts/>} />
+          <Route path="supports" element={<AdminSupports/>} />
           <Route path="user-profile/:id" element={<ProfilePage />} />
         </Route>
 

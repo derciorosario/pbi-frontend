@@ -35,3 +35,19 @@ export const searchUsers = (query) =>
 // Get total unread message count
 export const getUnreadCount = () =>
   client.get("/messages/unread-count");
+
+// Delete a message
+export const deleteMessage = (messageId) =>
+  client.delete(`/messages/${messageId}`);
+
+// Edit a message
+export const editMessage = (messageId, content) =>
+  client.put(`/messages/${messageId}`, { content });
+
+// Bulk delete messages
+export const bulkDeleteMessages = (messageIds) =>
+  client.post(`messages/bulk-delete`, { data: { messageIds } });
+
+// Delete a conversation
+export const deleteConversation = (conversationId) =>
+  client.delete(`/messages/conversations/${conversationId}`);

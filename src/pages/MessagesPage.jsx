@@ -1,7 +1,7 @@
 // src/pages/MessagesPage.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Send, User, Check, CheckCheck, ArrowLeft, Plus, X, Paperclip, File, Image, Download, Smile } from "lucide-react";
+import { Search, Send, User, Check, CheckCheck, ArrowLeft, Plus, X, Paperclip, File, Image, Download, Smile, Edit, Trash2, CheckSquare, Square, MoreVertical } from "lucide-react";
 
 // Emoji picker
 import EmojiPicker from 'emoji-picker-react';
@@ -9,7 +9,9 @@ import Header from "../components/Header";
 import { useSocket } from "../contexts/SocketContext";
 import { useAuth } from "../contexts/AuthContext";
 import * as messageApi from "../api/messages";
-import client from "../api/client";
+import { deleteMessage, editMessage, bulkDeleteMessages, deleteConversation } from "../api/messages";
+import ConfirmDialog from "../components/ConfirmDialog";
+import client, { API_URL } from "../api/client";
 import { toast } from "../lib/toast";
 import DefaultLayout from "../layout/DefaultLayout";
 import FullPageLoader from "../components/ui/FullPageLoader";
@@ -51,8 +53,30 @@ export default function MessagesPage() {
   const [messageFilter, setMessageFilter] = useState('all'); // 'all' or 'unread'
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
+  // Edit message states
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editContent, setEditContent] = useState("");
+
+  // Delete message states
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState(null);
+
+  // Delete conversation states
+  const [deleteConvDialogOpen, setDeleteConvDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState(null);
+
+  // Bulk select states
+  const [selectedMessages, setSelectedMessages] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+
   // Image loading states
   const [imageLoadingStates, setImageLoadingStates] = useState({});
+
+  // Conversation menu state
+  const [menuOpenConv, setMenuOpenConv] = useState(null);
+
+  // Message menu state
+  const [menuOpenMessage, setMenuOpenMessage] = useState(null);
 
   const searchUsers = async (query) => {
     if (!query || query.length < 3) {
@@ -320,6 +344,30 @@ export default function MessagesPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showEmojiPicker]);
+
+  // Close conversation menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuOpenConv && !event.target.closest('.conversation-menu')) {
+        setMenuOpenConv(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpenConv]);
+
+  // Close message menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuOpenMessage && !event.target.closest('.message-menu')) {
+        setMenuOpenMessage(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [menuOpenMessage]);
 
   useEffect(() => {
     const refreshInterval = setInterval(async () => {
@@ -600,6 +648,105 @@ export default function MessagesPage() {
     }
   }
 
+  const handleEdit = (message) => {
+    setEditingMessageId(message.id);
+    setEditContent(message.content || "");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editContent.trim()) return;
+    try {
+      const updatedMessage = await editMessage(editingMessageId, editContent.trim());
+      setMessages(prev => prev.map(m => m.id === editingMessageId ? updatedMessage.data : m));
+      setEditingMessageId(null);
+      setEditContent("");
+      toast.success("Message edited");
+    } catch (error) {
+      console.error("Failed to edit message:", error);
+      toast.error("Failed to edit message");
+    }
+  };
+
+  const handleDelete = (messageId) => {
+    setMessageToDelete(messageId);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!messageToDelete) return;
+    try {
+      await deleteMessage(messageToDelete);
+      setMessages(prev => prev.filter(m => m.id !== messageToDelete));
+      toast.success("Message deleted");
+      setDeleteDialogOpen(false);
+      setMessageToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete message:", error);
+      toast.error("Failed to delete message");
+    }
+  };
+
+  const toggleMessageSelection = (messageId) => {
+    setSelectedMessages(prev =>
+      prev.includes(messageId)
+        ? prev.filter(id => id !== messageId)
+        : [...prev, messageId]
+    );
+  };
+
+  const selectAllMessages = () => {
+    const userMessages = messages.filter(m => m.senderId === user.id);
+    setSelectedMessages(userMessages.map(m => m.id));
+  };
+
+  const clearSelection = () => {
+    setSelectedMessages([]);
+  };
+
+  const bulkDelete = async () => {
+    if (selectedMessages.length === 0) return;
+    setMessageToDelete(selectedMessages);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    if (!messageToDelete || !Array.isArray(messageToDelete)) return;
+    try {
+      await bulkDeleteMessages(messageToDelete);
+      setMessages(prev => prev.filter(m => !messageToDelete.includes(m.id)));
+      setSelectedMessages([]);
+      setIsSelectionMode(false);
+      toast.success(`${messageToDelete.length} messages deleted`);
+      setDeleteDialogOpen(false);
+      setMessageToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete messages:", error);
+      toast.error("Failed to delete some messages");
+    }
+  };
+
+  const handleDeleteConversation = (conversationId) => {
+    setConversationToDelete(conversationId);
+    setDeleteConvDialogOpen(true);
+  };
+
+  const confirmDeleteConversation = async () => {
+    if (!conversationToDelete) return;
+    try {
+      await deleteConversation(conversationToDelete);
+      setConversations(prev => prev.filter(c => c.id !== conversationToDelete));
+      if (activeConversation && activeConversation.id === conversationToDelete) {
+        setActiveConversation(null);
+      }
+      toast.success("Conversation deleted");
+      setDeleteConvDialogOpen(false);
+      setConversationToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+      toast.error("Failed to delete conversation");
+    }
+  };
+
   
   function formatMessageTime(dateString) {
   
@@ -638,6 +785,128 @@ export default function MessagesPage() {
 
     return matchesSearch && matchesFilter;
   });
+
+
+
+    
+
+  // In your MessagesPage.jsx
+const [downloadProgress, setDownloadProgress] = useState(0);
+const [downloadingFile, setDownloadingFile] = useState(null);
+
+const handleDownload = async (url) => {
+  try {
+    // Extract filename from URL for UI display
+    const filename = url.split('/').pop() || `download-${Date.now()}`;
+    
+    setDownloadingFile(filename);
+    setDownloadProgress(0);
+
+    // Use your backend download endpoint
+    const downloadUrl = API_URL+`/download?url=${encodeURIComponent(url)}`;
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', downloadUrl, true);
+    xhr.responseType = 'blob';
+    
+    // Track download progress
+    xhr.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = (event.loaded / event.total) * 100;
+        console.log(percentComplete)
+        setDownloadProgress(Math.round(percentComplete));
+      }
+    };
+
+    // Handle download completion
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const blob = xhr.response;
+        
+        if (!blob || blob.size === 0) {
+          toast.error('Error: Empty file received');
+          setDownloadProgress(0);
+          setDownloadingFile(null);
+          return;
+        }
+        
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(downloadUrl);
+          setDownloadProgress(0);
+          setDownloadingFile(null);
+          toast.success('Download completed!');
+        }, 100);
+        
+      } else {
+        console.error('Download failed with status:', xhr.status);
+        toast.error(`Download failed: ${xhr.statusText}`);
+        setDownloadProgress(0);
+        setDownloadingFile(null);
+      }
+    };
+
+    // Handle errors
+    xhr.onerror = () => {
+      console.error('Network error downloading file');
+      toast.error('Network error downloading file');
+      setDownloadProgress(0);
+      setDownloadingFile(null);
+    };
+
+    // Handle timeout
+    xhr.ontimeout = () => {
+      console.error('Download timeout');
+      toast.error('Download timeout');
+      setDownloadProgress(0);
+      setDownloadingFile(null);
+    };
+
+    // Set timeout (30 seconds)
+    xhr.timeout = 30000;
+    
+    // Start the request
+    xhr.send();
+    
+  } catch (error) {
+    console.error('Download initialization failed:', error);
+    toast.error('Download failed to start');
+    setDownloadProgress(0);
+    setDownloadingFile(null);
+  }
+};
+
+
+const DownloadButton = ({ url, className = "", downloadProgress, downloadingFile, isDownloading }) => {
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        handleDownload(url);
+      }}
+      className={className}
+      title="Download"
+      disabled={isDownloading}
+    >
+      {isDownloading ? (
+        <span className="text-xs">{downloadProgress}%</span>
+      ) : (
+        <Download size={12} />
+      )}
+    </button>
+  );
+};
+
 
   if (loading && conversations.length === 0) {
     return <FullPageLoader />;
@@ -732,11 +1001,23 @@ export default function MessagesPage() {
                     <div
                       key={conv.id}
                       onClick={() => setActiveConversation(conv)}
-                      className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${
+                      className={`group p-4 border-b cursor-pointer hover:bg-gray-50 relative ${
                         activeConversation?.id === conv.id ? "bg-gray-50" : ""
                       }`}
                     >
                       <div className="flex items-center gap-3 relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenConv(menuOpenConv === conv.id ? null : conv.id);
+                          }}
+                          className={`absolute top-4 -right-4 p-1 text-gray-400 hover:text-gray-600 rounded ${
+                            menuOpenConv === conv.id ? 'block' : 'hidden group-hover:block'
+                          }`}
+                          title="More options"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
                         {conv.otherUser?.avatarUrl ? (
                           <div className="relative">
                             {getImageLoadingState(`conv-${conv.id}`) !== false && (
@@ -779,6 +1060,20 @@ export default function MessagesPage() {
                           </div>
                         </div>
                       </div>
+                      {menuOpenConv === conv.id && (
+                        <div className="absolute top-10 right-2 bg-white border rounded shadow-lg z-10 conversation-menu">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteConversation(conv.id);
+                              setMenuOpenConv(null);
+                            }}
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                          >
+                            Delete conversation
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -835,6 +1130,54 @@ export default function MessagesPage() {
                       </div>
                     </div>
                   </div>
+
+                  <div className="flex items-center gap-2">
+                    {isSelectionMode ? (
+                      <>
+                        <button
+                          onClick={selectAllMessages}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                          title="Select All"
+                        >
+                          <CheckSquare size={18} />
+                        </button>
+                        <button
+                          onClick={clearSelection}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                          title="Clear Selection"
+                        >
+                          <Square size={18} />
+                        </button>
+                        {selectedMessages.length > 0 && (
+                          <button
+                            onClick={bulkDelete}
+                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                            title="Delete Selected"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setIsSelectionMode(false);
+                            setSelectedMessages([]);
+                          }}
+                          className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                          title="Exit Selection Mode"
+                        >
+                          <X size={18} />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setIsSelectionMode(true)}
+                        className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                        title="Select Messages"
+                      >
+                        <CheckSquare size={18} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Messages list: fill remaining height and scroll */}
@@ -847,8 +1190,18 @@ export default function MessagesPage() {
                     messages.map((m) => (
                       <div
                         key={m.id}
-                        className={`flex ${m.senderId === user.id ? "justify-end" : "justify-start"}`}
+                        className={`relative flex ${m.senderId === user.id ? "justify-end" : "justify-start"}`}
                       >
+                        {isSelectionMode && m.senderId === user.id && (
+                          <div className="flex-shrink-0 mr-2 mt-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedMessages.includes(m.id)}
+                              onChange={() => toggleMessageSelection(m.id)}
+                              className="rounded border-gray-300"
+                            />
+                          </div>
+                        )}
                         {m.senderId !== user.id && (
                           <div className="flex-shrink-0 mr-2">
                             {m.sender?.avatarUrl ? (
@@ -876,96 +1229,173 @@ export default function MessagesPage() {
                         <div
                           className={`max-w-xs px-4 py-2 rounded-lg text-sm ${
                             m.senderId === user.id ? "bg-brand-500 text-white" : "bg-gray-100"
-                          } ${m.pending ? "opacity-70" : ""}`}
+                          } ${m.pending ? "opacity-70" : ""} ${selectedMessages.includes(m.id) ? "ring-2 ring-blue-500" : ""}`}
                         >
-                          {m.content && <div className="mb-2">{m.content}</div>}
-                          {m.attachments && m.attachments.length > 0 && (
-                            <div className="space-y-2">
-                              {m.attachments.map((attachment, idx) => (
-                                <div key={idx} className={`p-2 rounded ${m.senderId === user.id ? "bg-white/10" : "bg-gray-200"}`}>
-                                  {isImageAttachment(attachment) ? (
-                                    <div className="relative inline-block">
-                                      {getImageLoadingState(`attachment-${m.id}-${idx}`) !== false && (
-                                        <ImageSkeleton className="rounded-lg max-w-[240px] max-h-[240px]" showIcon={true} />
-                                      )}
-                                      <button
-                                        onClick={() => {
-                                          setSelectedImage(attachment);
-                                          setShowImageDialog(true);
-                                        }}
-                                        className={`block cursor-pointer ${getImageLoadingState(`attachment-${m.id}-${idx}`) === false ? 'block' : 'hidden'}`}
-                                        title={attachment.filename}
-                                      >
-                                        <img
-                                          src={attachment.url}
-                                          alt={attachment.filename}
-                                          className="rounded-lg max-w-[240px] max-h-[240px] object-cover border border-black/10"
-                                          onLoad={() => handleImageLoad(`attachment-${m.id}-${idx}`)}
-                                          onError={() => handleImageError(`attachment-${m.id}-${idx}`)}
-                                          onLoadStart={() => setImageLoading(`attachment-${m.id}-${idx}`)}
-                                        />
-                                      </button>
-                                      <a
-                                        href={attachment.url.replace("/uploads/", "/download/")}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
-                                        title="Download"
-                                      >
-                                        <Download size={12} />
-                                      </a>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-2">
-                                      <File size={16} />
-                                      <div className="flex-1 min-w-0">
-                                        <a
-                                          href={attachment.url.replace("/uploads/", "/download/")}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-xs underline hover:no-underline truncate block"
-                                        >
-                                          {attachment.filename}
-                                        </a>
-                                        <span className="text-xs opacity-70">
-                                          {(attachment.size / 1024).toFixed(1)} KB
-                                        </span>
-                                      </div>
-                                      <a
-                                        href={attachment.url.replace("/uploads/", "/download/")}
-                                        download={attachment.filename}
-                                        className="p-1 hover:bg-white/20 rounded"
-                                        title="Download"
-                                      >
-                                        <Download size={12} />
-                                      </a>
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
+                          {editingMessageId === m.id ? (
+                            <div className="mb-2">
+                              <input
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full bg-transparent border border-white/20 rounded px-2 py-1 text-sm"
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    handleSaveEdit();
+                                  } else if (e.key === "Escape") {
+                                    setEditingMessageId(null);
+                                    setEditContent("");
+                                  }
+                                }}
+                              />
+                              <div className="flex gap-2 mt-2">
+                                <button
+                                  onClick={handleSaveEdit}
+                                  className="text-xs bg-white/20 px-2 py-1 rounded hover:bg-white/30"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingMessageId(null);
+                                    setEditContent("");
+                                  }}
+                                  className="text-xs bg-white/20 px-2 py-1 rounded hover:bg-white/30"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
-                          )}
-                          <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-gray-400">
-                            <div className="flex items-center gap-2">
-                              {m.pending && <span className="opacity-70">Sending…</span>}
-                              {m.failed && (
-                                <div className="flex items-center gap-2 text-red-500">
-                                  <span>Failed</span>
-                                  <button
-                                    onClick={() => handleRetry(m)}
-                                    className="px-2 py-0.5 rounded bg-red-100 text-red-600 hover:bg-red-200"
-                                  >
-                                    Retry
-                                  </button>
+                          ) : (
+                            <>
+                              {m.content && <div className="mb-2">{m.content}</div>}
+                              {m.attachments && m.attachments.length > 0 && (
+                                <div className="space-y-2">
+                                  {m.attachments.map((attachment, idx) => (
+                                    <div key={idx} className={`p-2 rounded ${m.senderId === user.id ? "bg-white/10" : "bg-gray-200"}`}>
+                                      {isImageAttachment(attachment) ? (
+                                        <div className="relative inline-block">
+                                          {getImageLoadingState(`attachment-${m.id}-${idx}`) !== false && (
+                                            <ImageSkeleton className="rounded-lg max-w-[240px] max-h-[240px]" showIcon={true} />
+                                          )}
+                                          <button
+                                            onClick={() => {
+                                              setSelectedImage(attachment);
+                                              setShowImageDialog(true);
+                                            }}
+                                            className={`block cursor-pointer ${getImageLoadingState(`attachment-${m.id}-${idx}`) === false ? 'block' : 'hidden'}`}
+                                            title={attachment.filename}
+                                          >
+                                            <img
+                                              src={attachment.url}
+                                              alt={attachment.filename}
+                                              className="rounded-lg max-w-[240px] max-h-[240px] object-cover border border-black/10"
+                                              onLoad={() => handleImageLoad(`attachment-${m.id}-${idx}`)}
+                                              onError={() => handleImageError(`attachment-${m.id}-${idx}`)}
+                                              onLoadStart={() => setImageLoading(`attachment-${m.id}-${idx}`)}
+                                            />
+                                          </button>
+
+                                         <DownloadButton
+                                            url={attachment.url}
+                                            className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                                            downloadProgress={downloadProgress}
+                                            downloadingFile={downloadingFile}
+                                            isDownloading={downloadProgress > 0 && downloadingFile === attachment.url}
+                                         />
+
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center gap-2">
+                                          <File size={16} />
+                                          <div className="flex-1 min-w-0">
+                                            <a
+                                              href={attachment.url.replace("/uploads/", "/download/")}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              className="text-xs underline hover:no-underline truncate block"
+                                            >
+                                              {attachment.filename}
+                                            </a>
+                                            <span className="text-xs opacity-70">
+                                              {(attachment.size / 1024).toFixed(1)} KB
+                                            </span>
+                                          </div>
+                                          <a
+                                            href={attachment.url.replace("/uploads/", "/download/")}
+                                            download={attachment.filename}
+                                            target="_blank"
+                                            className="p-1 hover:bg-white/20 rounded"
+                                            title="Download"
+                                          >
+                                            <Download size={12} />
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                  ))}
                                 </div>
                               )}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <span>{formatMessageTime(m.createdAt)}</span>
-                              {m.senderId === user.id && (m.read ? <CheckCheck size={12} /> : <Check size={12} />)}
-                            </div>
-                          </div>
+                              <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-gray-400">
+                                <div className="flex items-center gap-2">
+                                  {m.pending && <span className="opacity-70">Sending…</span>}
+                                  {m.failed && (
+                                    <div className="flex items-center gap-2 text-red-500">
+                                      <span>Failed</span>
+                                      <button
+                                        onClick={() => handleRetry(m)}
+                                        className="px-2 py-0.5 rounded bg-red-100 text-red-600 hover:bg-red-200"
+                                      >
+                                        Retry
+                                      </button>
+                                    </div>
+                                  )}
+                                  {m.senderId === user.id && !m.pending && !m.failed && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setMenuOpenMessage(menuOpenMessage === m.id ? null : m.id);
+                                      }}
+                                      className="p-1 hover:bg-white/20 rounded"
+                                      title="More options"
+                                    >
+                                      <MoreVertical size={12} />
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span>{formatMessageTime(m.createdAt)}</span>
+                                  {m.senderId === user.id && (m.read ? <CheckCheck size={12} /> : <Check size={12} />)}
+                                </div>
+                              </div>
+                            </>
+                          )}
                         </div>
+                        {menuOpenMessage === m.id && (
+                          <div className="absolute top-full right-0 bg-white border rounded shadow-lg z-10 message-menu">
+                            {m.content && m.content.trim().length > 0 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(m);
+                                  setMenuOpenMessage(null);
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                              >
+                                Edit
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(m.id);
+                                setMenuOpenMessage(null);
+                              }}
+                              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
@@ -1197,6 +1627,38 @@ export default function MessagesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setMessageToDelete(null);
+        }}
+        title={Array.isArray(messageToDelete) ? "Delete Messages" : "Delete Message"}
+        text={Array.isArray(messageToDelete)
+          ? `Are you sure you want to delete ${messageToDelete.length} messages? This action cannot be undone.`
+          : "Are you sure you want to delete this message? This action cannot be undone."
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        tone="danger"
+        onConfirm={Array.isArray(messageToDelete) ? confirmBulkDelete : confirmDelete}
+      />
+
+      <ConfirmDialog
+        open={deleteConvDialogOpen}
+        onClose={() => {
+          setDeleteConvDialogOpen(false);
+          setConversationToDelete(null);
+        }}
+        title="Delete Conversation"
+        text="Are you sure you want to delete this conversation? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        tone="danger"
+        onConfirm={confirmDeleteConversation}
+      />
     </DefaultLayout>
   );
 }
+

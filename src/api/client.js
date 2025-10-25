@@ -8,7 +8,6 @@ export const API_URL = env=="dev"
   ? "https://test.54links.com/api"
   : "https://api.54links.com/api"
   
-
 const client = axios.create({
      baseURL: API_URL,
      headers: { "Content-Type": "application/json" },
@@ -22,7 +21,6 @@ const uploadClient = axios.create({
     },
      //Don't set Content-Type - let axios set it automatically for FormData
 });
-
 
 // Ensure Authorization header is present on each upload request
 uploadClient.interceptors.request.use((config) => {

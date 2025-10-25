@@ -441,3 +441,125 @@ export const downloadContactsDataAsExcel = async (contacts) => {
     throw error;
   }
 };
+
+/**
+ * Get all support requests
+ * @param {Object} params - Query parameters
+ * @param {number} params.page - Page number
+ * @param {number} params.limit - Number of items per page
+ * @param {string} params.status - Filter by status (new, in_progress, responded, closed)
+ * @param {string} params.priority - Filter by priority (low, medium, high)
+ * @param {string} params.supportReason - Filter by support reason
+ * @param {string} params.search - Search term for name or email
+ * @param {string} params.sortBy - Field to sort by
+ * @param {string} params.sortOrder - Sort order (ASC or DESC)
+ * @returns {Promise} - Promise with supports data
+ */
+export const getAllSupports = (params = {}) => {
+  return client.get("/admin/supports", { params });
+};
+
+/**
+ * Get a single support by ID
+ * @param {string} id - Support ID
+ * @returns {Promise} - Promise with support data
+ */
+export const getSupportById = (id) => {
+  return client.get(`/admin/supports/${id}`);
+};
+
+/**
+ * Update support status
+ * @param {string} id - Support ID
+ * @param {string} status - New status (new, in_progress, responded, closed)
+ * @param {string} notes - Optional notes
+ * @returns {Promise} - Promise with update result
+ */
+export const updateSupportStatus = (id, status, notes = "") => {
+  return client.patch(`/admin/supports/${id}/status`, { status, notes });
+};
+
+/**
+ * Delete a support
+ * @param {string} id - Support ID
+ * @returns {Promise} - Promise with delete result
+ */
+export const deleteSupport = (id) => {
+  return client.delete(`/admin/supports/${id}`);
+};
+
+/**
+ * Export supports data
+ * @param {Object} params - Query parameters
+ * @param {string} params.format - Export format (json or csv)
+ * @param {Object} params.filters - Filters to apply
+ * @returns {Promise} - Promise with exported data
+ */
+export const exportSupports = (params = {}) => {
+  return client.get("/admin/supports/export", {
+    params,
+    responseType: ['csv', 'excel'].includes(params.format) ? 'blob' : 'json'
+  });
+};
+
+/**
+ * Download supports data as Excel directly from frontend
+ * @param {Array} supports - Array of support objects to export
+ * @returns {Promise} - Promise that resolves when download starts
+ */
+export const downloadSupportsDataAsExcel = async (supports) => {
+  try {
+    // Format the data for Excel export
+    const formattedData = supports.map(support => ({
+      'ID': support.id,
+      'Name': support.fullName,
+      'Email': support.email,
+      'Phone': support.phone || '',
+      'Support Reason': support.supportReason,
+      'Priority': support.priority,
+      'Status': support.status,
+      'Message': support.message?.substring(0, 100) + (support.message?.length > 100 ? '...' : ''),
+      'Submitted At': new Date(support.createdAt).toLocaleString(),
+      'Responded At': support.respondedAt ? new Date(support.respondedAt).toLocaleString() : '',
+      'Notes': support.notes || ''
+    }));
+
+    // Create a worksheet
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+    // Autosize columns
+    const cols = Object.keys(formattedData[0] || {}).map((k) => ({
+      wch: Math.max(k.length, ...formattedData.map(r => String(r[k] ?? '').length)) + 2
+    }));
+    worksheet['!cols'] = cols;
+
+    // Create a workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Supports');
+
+    // Generate XLSX file
+    const xlsxData = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+
+    // Create a blob from the XLSX data
+    const blob = new Blob([xlsxData], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    // Create a link element and trigger download
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `supports-export-${new Date().toISOString().split('T')[0]}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+
+    // Clean up
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+
+    return true;
+  } catch (error) {
+    console.error('Error creating Excel file:', error);
+    throw error;
+  }
+};

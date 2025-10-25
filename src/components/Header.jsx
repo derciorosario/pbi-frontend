@@ -7,6 +7,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useData } from "../contexts/DataContext";
 import { useSocket } from "../contexts/SocketContext";
 import LoginDialog from "./LoginDialog.jsx";
+import SupportDialog from "./SupportDialog.jsx";
 import logoImg from "../assets/logo.png";
 import { ChevronDown } from "lucide-react";
 import client from "../api/client";
@@ -42,6 +43,7 @@ function Header({ page }) {
 
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [loginDialogOpenForSignUp, setLoginDialogOpenForSignUp] = useState(false);
+  const [supportDialogOpen, setSupportDialogOpen] = useState(false);
 
   const profileMenuRef = useRef(null);
   const moreMenuRef = useRef(null);
@@ -609,6 +611,20 @@ function Header({ page }) {
                       <button
                         onClick={() => {
                           setProfileOpen(false);
+                          setSupportDialogOpen(true);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-brand-50 hover:text-brand-600 rounded-md transition-colors"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                          <path d="M12 17h.01"/>
+                        </svg>
+                        Support
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setProfileOpen(false);
                           signOut();
                         }}
                         className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
@@ -783,6 +799,16 @@ function Header({ page }) {
                   <button
                     onClick={() => {
                       setMobileOpen(false);
+                      setSupportDialogOpen(true);
+                    }}
+                    className="w-full rounded-lg px-3 py-2.5 text-sm border border-gray-200 hover:bg-gray-50 transition-colors"
+                  >
+                    Support
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setMobileOpen(false);
                       signOut();
                     }}
                     className="w-full rounded-lg px-3 py-2.5 text-sm text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
@@ -827,6 +853,12 @@ function Header({ page }) {
         isOpen={loginDialogOpenForSignUp}
         onClose={() => setLoginDialogOpenForSignUp(false)}
         initialTab="signup"
+      />
+
+      {/* Support Dialog */}
+      <SupportDialog
+        isOpen={supportDialogOpen}
+        onClose={() => setSupportDialogOpen(false)}
       />
     </>
   );
