@@ -504,7 +504,7 @@ async function onSignupSubmit(e) {
   if (!isOpen) return null;
 
   return (
-    <div style={{zIndex:99999}} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div style={{zIndex:999}} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div  ref={containerRef} className={`relative w-full ${activeTab!="signup" ? 'max-w-md':'max-w-2xl'} bg-white rounded-xl translate-y-5 shadow-xl p-6 md:p-8 max-h-[85vh]  ${showAccountTypeModal ? 'overflow-hidden':'overflow-y-auto'}`}>
         {/* Close button */}
         <button 

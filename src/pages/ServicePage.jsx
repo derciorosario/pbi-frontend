@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import client from "../api/client";
 
 import Header from "../components/Header";
@@ -15,6 +15,7 @@ import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
+import FeedErrorRetry from "../components/FeedErrorRetry";
 import { AlarmClock, Briefcase, Calendar, Pencil, PlusCircle, Rocket, Search, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
@@ -131,7 +132,9 @@ export default function ServicesPage() {
   const [items, setItems] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [totalCount, setTotalCount] = useState(0); // <-- add this
-  const [showTotalCount,setShowTotalCount] = useState(0)
+  const [showTotalCount,setShowTotalCount] = useState(0);
+  const [fetchError, setFetchError] = useState(false);
+  const retryTimeoutRef = useRef(null);
 
   // Sugestões
   const [matches, setMatches] = useState([]);
@@ -239,10 +242,21 @@ export default function ServicesPage() {
         typeof data.total === "number"
           ? data.total
           : Array.isArray(data.items) ? data.items.length : 0
-      ); 
+      );
+      setFetchError(false);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     } catch (e) {
       console.error("Failed to load feed:", e);
       setItems([]);
+      setFetchError(true);
+      // Automatic retry after 3 seconds
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = setTimeout(() => {
+        fetchFeed();
+      }, 3000);
     } finally {
       setLoadingFeed(false);
     }
@@ -277,6 +291,13 @@ export default function ServicesPage() {
   useEffect(() => {
     fetchFeed();
   }, [fetchFeed]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
+  }, []);
 
   // Fetch suggestions (sempre mostramos na direita)
   useEffect(() => {
@@ -417,102 +438,116 @@ export default function ServicesPage() {
 
   
 
-
-  const renderMiddle = () => {
-
-     {(!loadingFeed && showTotalCount) && (
-            <div className="text-sm text-gray-600">
-              {totalCount} result{totalCount === 1 ? "" : "s"}
-            </div>
-    )}
-          
-
-    if(!loadingFeed && items.length == 0){
-         return <EmptyFeedState />
-    }
-
-   
-
-    if(!loadingFeed){
-      return (
-       <div
-                 className={`grid grid-cols-1 ${
-                   view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"
-                 } gap-6`}
-       >
-       {items.map((item) => {
-         if (item.kind === "service") {
-           return (
-             <ServiceCard
-               key={item.id}
-               type={view}
-               item={item}
-               matchPercentage={item.matchPercentage}
-               currentUserId={item?.id}
-               onContact={() => alert(`${item.type} - Contact ${item.provider}`)}
-               onConnect={() => console.log(`Connect with ${item.providerUserName}`)}
-             />
-           );
-         }
-         if (item.kind === "need") {
-           return (
-             <NeedCard
-               type={view}
-               key={`need-${item.id}`}
-               matchPercentage={item.matchPercentage}
-               need={{
-                 ...item,
-                 categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
-                 subcategoryName: categories
-                   .find((c) => String(c.id) === String(item.categoryId))
-                   ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
-               }}
-             />
-           );
-         }
-         if (item.kind === "moment") {
-           return (
-             <MomentCard
-               type={view}
-               key={`moment-${item.id}`}
-               matchPercentage={item.matchPercentage}
-               moment={{
-                 ...item,
-                 categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
-                 subcategoryName: categories
-                   .find((c) => String(c.id) === String(item.categoryId))
-                   ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
-               }}
-             />
-           );
-         }
-         if (item.kind === "job") {
-           return <JobCard key={`job-${item.id}`} job={item} />;
-         }
-         if (item.kind === "event") {
-           return <EventCard key={`event-${item.id}`} e={item} />;
-         }
-         return null;
-       })}
-     </div>
-   )
-
-   }
-    
-    
-
+const renderMiddle = () => {
+  if (fetchError) {
     return (
-      <>
-
-        {loadingFeed && (
-         <div className="min-h-[160px] grid text-gray-600">
-                                <CardSkeletonLoader columns={1}/>
-          </div>
-        )}
-
-      </>
+      <FeedErrorRetry
+        onRetry={() => {
+          setFetchError(false);
+          if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+          fetchFeed();
+        }}
+        message="Failed to load feed. Trying to connect..."
+        buttonText="Try Again"
+      />
     );
-  };
+  }
+
+  {(!loadingFeed && showTotalCount) && (
+         <div className="text-sm text-gray-600">
+           {totalCount} result{totalCount === 1 ? "" : "s"}
+         </div>
+ )}
+         
+
+  if(!loadingFeed && items.length == 0){
+       return <EmptyFeedState />
+  }
+
+ 
+
+  if(!loadingFeed){
+    return (
+     <div
+               className={`grid grid-cols-1 ${
+                 view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"
+               } gap-6`}
+     >
+     {items.map((item) => {
+       if (item.kind === "service") {
+         return (
+           <ServiceCard
+             key={item.id}
+             type={view}
+             item={item}
+             matchPercentage={item.matchPercentage}
+             currentUserId={item?.id}
+             onContact={() => alert(`${item.type} - Contact ${item.provider}`)}
+             onConnect={() => console.log(`Connect with ${item.providerUserName}`)}
+           />
+         );
+       }
+       if (item.kind === "need") {
+         return (
+           <NeedCard
+             type={view}
+             key={`need-${item.id}`}
+             matchPercentage={item.matchPercentage}
+             need={{
+               ...item,
+               categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+               subcategoryName: categories
+                 .find((c) => String(c.id) === String(item.categoryId))
+                 ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+             }}
+           />
+         );
+       }
+       if (item.kind === "moment") {
+         return (
+           <MomentCard
+             type={view}
+             key={`moment-${item.id}`}
+             matchPercentage={item.matchPercentage}
+             moment={{
+               ...item,
+               categoryName: categories.find((c) => String(c.id) === String(item.categoryId))?.name,
+               subcategoryName: categories
+                 .find((c) => String(c.id) === String(item.categoryId))
+                 ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
+             }}
+           />
+         );
+       }
+       if (item.kind === "job") {
+         return <JobCard key={`job-${item.id}`} job={item} />;
+       }
+       if (item.kind === "event") {
+         return <EventCard key={`event-${item.id}`} e={item} />;
+       }
+       return null;
+     })}
+   </div>
+ )
+
+ }
+
+ 
+ 
+
+   return (
+     <>
+
+       {loadingFeed && (
+        <div className="min-h-[160px] grid text-gray-600">
+                               <CardSkeletonLoader columns={1}/>
+         </div>
+       )}
+
+     </>
+   );
+ };
     
   
 

@@ -1,5 +1,5 @@
 // src/pages/Profile.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "../lib/toast";
 
@@ -37,6 +37,7 @@ import OrganizationSelectionModal from "../components/OrganizationSelectionModal
 import { useAuth } from "../contexts/AuthContext.jsx";
 import { Camera, Download, ExternalLink, Eye, Link, Link2, MapPin } from "lucide-react";
 import ProfileModal from "../components/ProfileModal.jsx";
+import FeedErrorRetry from "../components/FeedErrorRetry";
 
 // Add these color styles near the top of the component, after the imports
 const dropdownStyles = {
@@ -98,6 +99,8 @@ export default function ProfilePage() {
   const [saving, setSaving]   = useState(false);
   const [me, setMe]           = useState(null);
   const [identities, setIdentities] = useState([]);
+  const [fetchError, setFetchError] = useState(false);
+  const retryTimeoutRef = useRef(null);
 
   // Determine if this is a company account
   const isCompany = me?.user?.accountType === "company";
@@ -1288,130 +1291,141 @@ export default function ProfilePage() {
      }
    }
 
-  useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
+  const fetchProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      setFetchError(false);
 
-        let userData;
-        const { data: catalog } = await getIdentityCatalog();
+      let userData;
+      const { data: catalog } = await getIdentityCatalog();
 
-        if (isAdminEditing && userId) {
-          // Admin editing another user
-          const { data } = await getUserById(userId);
-          userData = {
-            user: {
-              id: data.id,
-              name: data.name,
-              email: data.email,
-              phone: data.phone,
-              nationality: data.nationality,
-              country: data.country,
-              countryOfResidence: data.countryOfResidence,
-              city: data.city,
-              accountType: data.accountType,
-              avatarUrl: data.avatarUrl
-            },
-            profile: data.profile || {},
-            progress: data.progress || { percent: 0 },
-            doIdentityIds: data.identities?.map(i => i.id) || [],
-            doCategoryIds: data.categories?.map(c => c.id) || [],
-            doSubcategoryIds: data.subcategories?.map(s => s.id) || [],
-            doSubsubCategoryIds: data.subsubcategories?.map(s => s.id) || [],
-            interestIdentityIds: data.interests?.identities?.map(i => i.id) || [],
-            interestCategoryIds: data.interests?.categories?.map(c => c.id) || [],
-            interestSubcategoryIds: data.interests?.subcategories?.map(s => s.id) || [],
-            interestSubsubCategoryIds: data.interests?.subsubcategories?.map(s => s.id) || []
-          };
-        } else {
-          // User editing their own profile
-          const { data } = await getMe();
-          userData = data;
+      if (isAdminEditing && userId) {
+        // Admin editing another user
+        const { data } = await getUserById(userId);
+        userData = {
+          user: {
+            id: data.id,
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            nationality: data.nationality,
+            country: data.country,
+            countryOfResidence: data.countryOfResidence,
+            city: data.city,
+            accountType: data.accountType,
+            avatarUrl: data.avatarUrl
+          },
+          profile: data.profile || {},
+          progress: data.progress || { percent: 0 },
+          doIdentityIds: data.identities?.map(i => i.id) || [],
+          doCategoryIds: data.categories?.map(c => c.id) || [],
+          doSubcategoryIds: data.subcategories?.map(s => s.id) || [],
+          doSubsubCategoryIds: data.subsubcategories?.map(s => s.id) || [],
+          interestIdentityIds: data.interests?.identities?.map(i => i.id) || [],
+          interestCategoryIds: data.interests?.categories?.map(c => c.id) || [],
+          interestSubcategoryIds: data.interests?.subcategories?.map(s => s.id) || [],
+          interestSubsubCategoryIds: data.interests?.subsubcategories?.map(s => s.id) || []
+        };
+      } else {
+        // User editing their own profile
+        const { data } = await getMe();
+        userData = data;
 
-          // Load work samples separately
-          try {
-            const { data: workSamplesData } = await getWorkSamples();
-            setWorkSamples(Array.isArray(workSamplesData?.workSamples) ? workSamplesData.workSamples : []);
-          } catch (workSampleError) {
-            console.error("Failed to load work samples:", workSampleError);
-            setWorkSamples([]);
-          }
+        // Load work samples separately
+        try {
+          const { data: workSamplesData } = await getWorkSamples();
+          setWorkSamples(Array.isArray(workSamplesData?.workSamples) ? workSamplesData.workSamples : []);
+        } catch (workSampleError) {
+          console.error("Failed to load work samples:", workSampleError);
+          setWorkSamples([]);
         }
-
-        setMe(userData);
-        setIdentities(Array.isArray(catalog?.identities) ? catalog.identities : []);
-
-        // hydrate personal
-        const u = userData.user || {};
-        const p = userData.profile || {};
-        setPersonal({
-          name: u.name || "",
-          phone: u.phone || "",
-          nationality: u.nationality || "",
-          country: u.country || "",
-          countryOfResidence: u.countryOfResidence || "",
-          city: u.city || "",
-          address: u.address || "",
-          birthDate: p.birthDate || "",
-          professionalTitle: p.professionalTitle || "",
-          about: p.about || "",
-          avatarUrl: u.avatarUrl || p.avatarUrl || "",
-
-          coverImage: u.coverImage || p.coverImage || "",
-          // Individual fields
-          gender: u.gender || "",
-          // Company fields
-          otherCountries: Array.isArray(u.otherCountries) ? u.otherCountries : [],
-          webpage: u.webpage || "",
-        });
-
-        // hydrate professional
-        setProfessional({
-          experienceLevel: p.experienceLevel || "",
-          skills: Array.isArray(p.skills) ? p.skills : [],
-          languages: Array.isArray(p.languages) ? p.languages : [],
-        });
-
-        // hydrate portfolio
-        setPortfolio({
-          cvBase64: Array.isArray(p.cvBase64) ? p.cvBase64.map(cv => ({
-            ...cv,
-            created_at: cv.created_at || new Date().toISOString() // Add created_at for backward compatibility
-          })) : (p.cvBase64 ? [{ original_filename: p.cvFileName || "", title: "", base64: p.cvBase64, created_at: new Date().toISOString() }] : []),
-        });
-
-        // hydrate availability
-        setIsOpenToWork(Boolean(p.isOpenToWork));
-
-        // DOES
-        setDoIdentityIds(userData.doIdentityIds || []);
-        setDoCategoryIds(userData.doCategoryIds || []);
-        setDoSubcategoryIds(userData.doSubcategoryIds || []);
-        setDoSubsubCategoryIds(userData.doSubsubCategoryIds || []);
-
-        // WANTS
-        setWantIdentityIds(userData.interestIdentityIds || []);
-        setWantCategoryIds(userData.interestCategoryIds || []);
-        setWantSubcategoryIds(userData.interestSubcategoryIds || []);
-        setWantSubsubCategoryIds(userData.interestSubsubCategoryIds || []);
-
-        // INDUSTRIES
-        setIndustryCategoryIds(userData.industryCategoryIds || []);
-        setIndustrySubcategoryIds(userData.industrySubcategoryIds || []);
-        setIndustrySubsubCategoryIds(userData.industrySubsubCategoryIds || []);
-
-        // Load industry categories
-        const industryResponse = await client.get("/industry-categories/tree");
-        setIndustries(Array.isArray(industryResponse.data?.industryCategories)
-          ? industryResponse.data.industryCategories : []);
-      } catch (e) {
-        console.error(e);
-        toast.error("Failed to load profile.");
-      } finally {
-        setLoading(false);
       }
-    })();
+
+      setMe(userData);
+      setIdentities(Array.isArray(catalog?.identities) ? catalog.identities : []);
+
+      // hydrate personal
+      const u = userData.user || {};
+      const p = userData.profile || {};
+      setPersonal({
+        name: u.name || "",
+        phone: u.phone || "",
+        nationality: u.nationality || "",
+        country: u.country || "",
+        countryOfResidence: u.countryOfResidence || "",
+        city: u.city || "",
+        address: u.address || "",
+        birthDate: p.birthDate || "",
+        professionalTitle: p.professionalTitle || "",
+        about: p.about || "",
+        avatarUrl: u.avatarUrl || p.avatarUrl || "",
+
+        coverImage: u.coverImage || p.coverImage || "",
+        // Individual fields
+        gender: u.gender || "",
+        // Company fields
+        otherCountries: Array.isArray(u.otherCountries) ? u.otherCountries : [],
+        webpage: u.webpage || "",
+      });
+
+      // hydrate professional
+      setProfessional({
+        experienceLevel: p.experienceLevel || "",
+        skills: Array.isArray(p.skills) ? p.skills : [],
+        languages: Array.isArray(p.languages) ? p.languages : [],
+      });
+
+      // hydrate portfolio
+      setPortfolio({
+        cvBase64: Array.isArray(p.cvBase64) ? p.cvBase64.map(cv => ({
+          ...cv,
+          created_at: cv.created_at || new Date().toISOString() // Add created_at for backward compatibility
+        })) : (p.cvBase64 ? [{ original_filename: p.cvFileName || "", title: "", base64: p.cvBase64, created_at: new Date().toISOString() }] : []),
+      });
+
+      // hydrate availability
+      setIsOpenToWork(Boolean(p.isOpenToWork));
+
+      // DOES
+      setDoIdentityIds(userData.doIdentityIds || []);
+      setDoCategoryIds(userData.doCategoryIds || []);
+      setDoSubcategoryIds(userData.doSubcategoryIds || []);
+      setDoSubsubCategoryIds(userData.doSubsubCategoryIds || []);
+
+      // WANTS
+      setWantIdentityIds(userData.interestIdentityIds || []);
+      setWantCategoryIds(userData.interestCategoryIds || []);
+      setWantSubcategoryIds(userData.interestSubcategoryIds || []);
+      setWantSubsubCategoryIds(userData.interestSubsubCategoryIds || []);
+
+      // INDUSTRIES
+      setIndustryCategoryIds(userData.industryCategoryIds || []);
+      setIndustrySubcategoryIds(userData.industrySubcategoryIds || []);
+      setIndustrySubsubCategoryIds(userData.industrySubsubCategoryIds || []);
+
+      // Load industry categories
+      const industryResponse = await client.get("/industry-categories/tree");
+      setIndustries(Array.isArray(industryResponse.data?.industryCategories)
+        ? industryResponse.data.industryCategories : []);
+    } catch (e) {
+      console.error(e);
+      setFetchError(true);
+      // Automatic retry after 3 seconds
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = setTimeout(() => {
+        fetchProfile();
+      }, 3000);
+    } finally {
+      setLoading(false);
+    }
   }, [isAdminEditing, userId]);
+
+  useEffect(() => {
+    fetchProfile();
+    return () => {
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
+  }, [fetchProfile]);
 
   // Load industry categories if not loaded yet
   useEffect(() => {
@@ -2457,6 +2471,18 @@ const toggleIdentityWant = (identityKey) => {
   );
 
   if (loading) return <Loading />;
+  if (fetchError) return (
+    <FeedErrorRetry
+      onRetry={() => {
+        setFetchError(false);
+        if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+        fetchProfile();
+      }}
+      message="Failed to load profile. Please try again."
+      buttonText="Try Again"
+    />
+  );
   if (!me) return null;
 
   function IdentityGrid({ picked, onToggle, limit }) {

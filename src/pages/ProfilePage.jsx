@@ -1,5 +1,6 @@
 // src/pages/ProfilePage.jsx
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import FeedErrorRetry from "../components/FeedErrorRetry";
 import { useParams } from "react-router-dom";
 import {
     MapPin,
@@ -657,6 +658,8 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState("");
+  const [fetchError, setFetchError] = useState(false);
+  const retryTimeoutRef = useRef(null);
   const [crOpen, setCrOpen] = useState(false);
   const [openConfirmRemoveConnection, setOpenConfirmRemoveConnection] = useState(false);
 
@@ -1093,24 +1096,37 @@ const validImages = extractValidImages(userFeedItems);
     return profile.languages.map((l) => (typeof l === "string" ? { name: l } : l)).filter(Boolean);
   }, [profile]);
 
-  useEffect(() => {
+  const fetchProfile = useCallback(async () => {
     if (!userId) return;
     let mounted = true;
-    (async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const { data } = await client.get(`/users/${userId}/public`);
-        if (mounted) setProfile(data);
-      } catch (e) {
-        console.error(e);
-        if (mounted) setError("Failed to load profile.");
-      } finally {
-        if (mounted) setLoading(false);
+    setLoading(true);
+    setFetchError(false);
+    setError("");
+    try {
+      const { data } = await client.get(`/users/${userId}/public`);
+      if (mounted) setProfile(data);
+    } catch (e) {
+      console.error(e);
+      if (mounted) {
+        setFetchError(true);
+        // Automatic retry after 3 seconds
+        if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchProfile();
+        }, 3000);
       }
-    })();
+    } finally {
+      if (mounted) setLoading(false);
+    }
     return () => { mounted = false; };
   }, [userId]);
+
+  useEffect(() => {
+    fetchProfile();
+    return () => {
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
+  }, [fetchProfile]);
 
  
 
@@ -1751,7 +1767,18 @@ const handleVideoClick = (videoIndex) => {
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         {loading && <Loading />}
-        {error && <div className="text-sm text-red-600">{error}</div>}
+        {fetchError && (
+          <FeedErrorRetry
+            onRetry={() => {
+              setFetchError(false);
+              if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+              retryTimeoutRef.current = null;
+              fetchProfile();
+            }}
+            message="Failed to load profile. Please try again."
+            buttonText="Try Again"
+          />
+        )}
 
         {!loading && !error && profile && (
           <>

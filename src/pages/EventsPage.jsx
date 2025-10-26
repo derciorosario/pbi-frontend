@@ -14,6 +14,7 @@ import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
+import FeedErrorRetry from "../components/FeedErrorRetry";
 import { AlarmClock, Calendar, CalendarPlus, MessageSquare, Pencil, PlusCircle, Rocket, Search, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
@@ -130,6 +131,8 @@ export default function EventsPage() {
   const [showTotalCount,setShowTotalCount] = useState(0)
   const [selectedFilters,setSelectedFilters]=useState([])
   const [filterOptions,setFilterOptions]=useState([])
+  const [fetchError, setFetchError] = useState(false);
+  const retryTimeoutRef = useRef(null);
 
   // Sugestões
   const [matches, setMatches] = useState([]);
@@ -267,6 +270,11 @@ export default function EventsPage() {
             ? data.total
             : Array.isArray(data.items) ? data.items.length : 0
         );
+        setFetchError(false);
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+        }
       }
     } catch (error) {
       if (error.name === 'AbortError') {
@@ -277,6 +285,12 @@ export default function EventsPage() {
       // Only update state if this is the most recent request
       if (requestId === lastRequestIdRef.current) {
         setItems([]);
+        setFetchError(true);
+        // Automatic retry after 3 seconds
+        if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchFeed();
+        }, 3000);
       }
     } finally {
       // Only reset fetching state if this is the most recent request
@@ -384,6 +398,9 @@ export default function EventsPage() {
     return () => {
       if (fetchTimeoutRef.current) {
         clearTimeout(fetchTimeoutRef.current);
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
       }
     };
   }, [
@@ -569,6 +586,21 @@ export default function EventsPage() {
       );
     }
 
+    if (fetchError) {
+      return (
+        <FeedErrorRetry
+          onRetry={() => {
+            setFetchError(false);
+            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = null;
+            fetchFeed();
+          }}
+          message="Failed to load feed. Trying to connect..."
+          buttonText="Try Again"
+        />
+      );
+    }
+
     return (
       <>
         {loadingFeed && (
@@ -585,10 +617,10 @@ export default function EventsPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-       
+        
 
-       
-           
+        
+            
           {!loadingFeed && (
                <div
                  className={`grid grid-cols-1 ${

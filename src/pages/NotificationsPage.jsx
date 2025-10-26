@@ -285,7 +285,11 @@ export default function NotificationsPage() {
   }, [connected, socket]);
 
   const handleRespond = async (id, action) => {
+
     try {
+
+      toast.dismiss()
+  
       const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : 'Declining'} connection request...`);
       
       const relatedNotification = notifications.find(n => 
@@ -293,9 +297,11 @@ export default function NotificationsPage() {
       );
 
       if (connected && socket && 0==1) {
+
         if (relatedNotification) {
             markNotificationAsRead(relatedNotification.id);
         }
+        toast.dismiss()
 
         socket.emit("qa_respond_connection_request", { requestId: id, action }, (response) => {
           if (response?.ok) {
@@ -305,21 +311,28 @@ export default function NotificationsPage() {
             toast.error(response?.error || "Failed to update connection request", { id: toastId });
           }
         });
+
       } else {
+
         await client.post(`/connections/requests/${id}/respond`, { action });
         toast.success(`Connection request ${action === 'accept' ? 'accepted' : 'declined'} successfully`, { id: toastId });
         if (relatedNotification) {
             markNotificationAsRead(relatedNotification.id);
         }
         loadConnections();
+
       }
     } catch (e) {
+      toast.dismiss()
       toast.error(e?.response?.data?.message || "Failed to update connection request");
     }
+
   };
 
   const handleMeetingRespond = async (id, action, rejectionReason = "") => {
     try {
+
+      toast.dismiss()
       const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : 'Declining'} meeting request...`);
       
       const relatedNotification = notifications.find(n =>
@@ -335,6 +348,8 @@ export default function NotificationsPage() {
       if (relatedNotification) {
         await markNotificationAsRead(relatedNotification.id);
       }
+
+      toast.dismiss()
       
       toast.success(`Meeting request ${action === 'accept' ? 'accepted' : 'declined'} successfully`, { id: toastId });
       
@@ -343,12 +358,15 @@ export default function NotificationsPage() {
         loadNotifications()
       ]);
     } catch (e) {
+      toast.dismiss()
       toast.error(e?.response?.data?.message || "Failed to update meeting request");
     }
   };
 
   const handleParticipantRespond = async (id, action, rejectionReason = "") => {
     try {
+
+      toast.dismiss()
       const toastId = toast.loading(`${action === 'accept' ? 'Accepting' : action === 'reject' ? 'Declining' : 'Setting as tentative'} meeting invitation...`);
       
       const relatedNotification = notifications.find(n =>
@@ -364,6 +382,8 @@ export default function NotificationsPage() {
       if (relatedNotification) {
         await markNotificationAsRead(relatedNotification.id);
       }
+
+      toast.dismiss()
       
       toast.success(`Meeting invitation ${action === 'accept' ? 'accepted' : action === 'reject' ? 'declined' : 'set as tentative'} successfully`, { id: toastId });
       
@@ -372,6 +392,7 @@ export default function NotificationsPage() {
         loadNotifications()
       ]);
     } catch (e) {
+      toast.dismiss()
       toast.error(e?.response?.data?.message || "Failed to update meeting invitation");
     }
   };
@@ -443,6 +464,7 @@ export default function NotificationsPage() {
         }));
       }
     } catch (e) {
+      toast.dismiss()
       toast.error(e?.response?.data?.message || "Failed to mark notifications as read");
     }
   };
@@ -464,6 +486,7 @@ export default function NotificationsPage() {
         toast.success("Notification deleted");
       }
     } catch (e) {
+      toast.dismiss()
       toast.error(e?.response?.data?.message || "Failed to delete notification");
     }
   };
@@ -503,7 +526,6 @@ export default function NotificationsPage() {
       })),
     ];
 
-    console.log({a: meetingRequests})
 
     const meetingItems = meetingRequests
       .filter(m => m.status === "pending" && m.requester?.id !== user?.id)

@@ -1371,7 +1371,7 @@ const DownloadButton = ({ url, className = "", downloadProgress, downloadingFile
                           )}
                         </div>
                         {menuOpenMessage === m.id && (
-                          <div className="absolute top-full right-0 bg-white border rounded shadow-lg z-10 message-menu">
+                          <div className="absolute top-full -translate-y-[10px] right-0 bg-white border rounded shadow-lg z-10 message-menu">
                             {m.content && m.content.trim().length > 0 && (
                               <button
                                 onClick={(e) => {

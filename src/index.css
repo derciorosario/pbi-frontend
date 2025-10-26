@@ -134,3 +134,8 @@ input[type=number] {
   pointer-events: none !important;
   display: none !important;
 }
+
+
+[data-rht-toaster]{
+  z-index: 99999999;
+}

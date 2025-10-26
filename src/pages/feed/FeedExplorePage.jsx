@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../../api/client";
 import I from "../../lib/icons.jsx";
@@ -29,6 +29,7 @@ import CrowdfundCard from "../../components/CrowdfundCard.jsx";
 import PageTabs from "../../components/PageTabs.jsx";
 import CardSkeletonLoader from "../../components/ui/SkeletonLoader.jsx";
 import CompanyAssociationPanel from "../../components/DefaultCompanyAssociationPanel.jsx";
+import FeedErrorRetry from "../../components/FeedErrorRetry";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -64,6 +65,16 @@ export default function FeedPage() {
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [showTotalCount, setShowTotalCount] = useState(0);
+  const [fetchError, setFetchError] = useState(false);
+  const retryTimeoutRef = useRef(null);
+
+  // Request cancellation refs
+  const abortControllerRef = useRef(null);
+  const lastRequestIdRef = useRef(0);
+  const isFetchingRef = useRef(false);
+  const hasLoadedOnce = useRef(false);
+  const lastParamsRef = useRef({});
+  const fetchTimeoutRef = useRef(null);
 
   const [matches, setMatches] = useState([]);
   const [nearby, setNearby] = useState([]);
@@ -101,55 +112,163 @@ export default function FeedPage() {
     })();
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      setLoadingFeed(true);
-      try {
-        const tabParam =
-          activeTab === "Events"
-            ? "events"
-            : activeTab === "Jobs"
-            ? "jobs"
-            : activeTab === "Needs"
-            ? "needs"
-            : activeTab === "Moments"
-            ? "moments"
-            : activeTab === "Services"
-            ? "services"
-            : activeTab === "Products"
-            ? "products"
-            : activeTab === "Experiences"
-            ? "tourism"
-            : activeTab === "Funding"
-            ? "funding"
-            : "all";
+  // Fixed fetchFeed with request cancellation
+  const fetchFeed = useCallback(async () => {
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-        const params = {
-          tab: tabParam,
-          q: debouncedQ || undefined,
-          country: country || undefined,
-          city: city || undefined,
-          goalId: goalId || undefined,
-          role: role || undefined,
-          categoryId: categoryId || undefined,
-          subcategoryId: subcategoryId || undefined,
-          industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
-          limit: 20,
-          offset: 0,
-        };
+    // Create new abort controller
+    abortControllerRef.current = new AbortController();
 
-        const { data } = await client.get("/feed", { params });
-        setItems(data.items || []);
-        setTotalCount(typeof data.total === "number" ? data.total : Array.isArray(data.items) ? data.items.length : 0);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoadingFeed(false);
+    // Use a request ID to track the most recent request
+    const requestId = Date.now();
+    lastRequestIdRef.current = requestId;
+
+    if (isFetchingRef.current) {
+      console.log('Canceling previous request');
+    }
+
+    isFetchingRef.current = true;
+    setLoadingFeed(true);
+
+    try {
+      const tabParam =
+        activeTab === "Events"
+          ? "events"
+          : activeTab === "Jobs"
+          ? "jobs"
+          : activeTab === "Needs"
+          ? "needs"
+          : activeTab === "Moments"
+          ? "moments"
+          : activeTab === "Services"
+          ? "services"
+          : activeTab === "Products"
+          ? "products"
+          : activeTab === "Experiences"
+          ? "tourism"
+          : activeTab === "Funding"
+          ? "funding"
+          : "all";
+
+      const params = {
+        tab: tabParam,
+        q: debouncedQ || undefined,
+        country: country || undefined,
+        city: city || undefined,
+        goalId: goalId || undefined,
+        role: role || undefined,
+        categoryId: categoryId || undefined,
+        subcategoryId: subcategoryId || undefined,
+        industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
+        limit: 20,
+        offset: 0,
+      };
+
+      const { data } = await client.get("/feed", {
+        params,
+        signal: abortControllerRef.current.signal
+      });
+
+      // Only update state if this is the most recent request
+      if (requestId === lastRequestIdRef.current) {
+        setItems(Array.isArray(data.items) ? data.items : []);
+        setTotalCount(
+          typeof data.total === "number"
+            ? data.total
+            : Array.isArray(data.items) ? data.items.length : 0
+        );
+        setFetchError(false);
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+        }
       }
-
-      data._scrollToSection("top", true);
-    })();
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.log('Request was canceled');
+        return;
+      }
+      console.error("Failed to load feed:", error);
+      // Only update state if this is the most recent request
+      if (requestId === lastRequestIdRef.current) {
+        setItems([]);
+        setFetchError(true);
+        // Automatic retry after 3 seconds
+        if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = setTimeout(() => {
+          fetchFeed();
+        }, 3000);
+      }
+    } finally {
+      // Only reset fetching state if this is the most recent request
+      if (requestId === lastRequestIdRef.current) {
+        isFetchingRef.current = false;
+        setLoadingFeed(false);
+        abortControllerRef.current = null;
+      }
+    }
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role, selectedIndustries]);
+
+  // Improved useEffect for triggering fetches
+  useEffect(() => {
+    const currentParams = JSON.stringify({
+      activeTab,
+      debouncedQ,
+      country,
+      city,
+      categoryId,
+      subcategoryId,
+      goalId,
+      role,
+      selectedIndustries: [...selectedIndustries].sort(),
+    });
+
+    if (currentParams === lastParamsRef.current) return;
+    lastParamsRef.current = currentParams;
+
+    // Clear any pending timeout
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    if (!hasLoadedOnce.current) {
+      hasLoadedOnce.current = true;
+      fetchFeed();
+    } else {
+      fetchTimeoutRef.current = setTimeout(() => {
+        fetchFeed();
+      }, 300); // Slightly longer debounce for better UX
+    }
+
+    // Cleanup function
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, [
+    activeTab,
+    debouncedQ,
+    country,
+    city,
+    categoryId,
+    subcategoryId,
+    goalId,
+    role,
+    selectedIndustries,
+    fetchFeed,
+  ]);
 
   useEffect(() => {
     (async () => {
@@ -309,17 +428,36 @@ return (
           />
           </div>
           <section className="space-y-4 overflow-hidden">
-            {loadingFeed && <CardSkeletonLoader columns={1} />}
+            {fetchError && (
+              <FeedErrorRetry
+                onRetry={() => {
+                  setFetchError(false);
+                  if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+                  retryTimeoutRef.current = null;
+                  if (fetchTimeoutRef.current) clearTimeout(fetchTimeoutRef.current);
+                  fetchTimeoutRef.current = null;
+                  fetchFeed();
+                }}
+                message="Failed to load feed. Please try again."
+                buttonText="Try Again"
+              />
+            )}
 
-            {!loadingFeed && showTotalCount && (
+            {loadingFeed && (
+              <div className="min-h-[160px] grid text-gray-600">
+                <CardSkeletonLoader columns={1} />
+              </div>
+            )}
+
+            {!fetchError && !loadingFeed && showTotalCount && (
               <div className="text-sm text-gray-600">
                 {totalCount} result{totalCount === 1 ? "" : "s"}
               </div>
             )}
 
-            {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
+            {!fetchError && !loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
 
-            {!loadingFeed && items.length > 0 && (
+            {!fetchError && !loadingFeed && items.length > 0 && (
               <div className={`grid grid-cols-1 ${view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"} gap-6`}>
                 {items.map(renderItem)}
               </div>

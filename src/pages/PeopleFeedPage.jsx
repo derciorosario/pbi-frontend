@@ -12,6 +12,7 @@ import SuggestedMatches from "../components/SuggestedMatches";
 import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
 import EmptyFeedState from "../components/EmptyFeedState";
+import FeedErrorRetry from "../components/FeedErrorRetry";
 import { Pencil, PlusCircle, Rocket } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
@@ -121,6 +122,8 @@ export default function PeopleFeedPage() {
   const [totalCount, setTotalCount] = useState(0); // <-- add this
   const [showTotalCount, setShowTotalCount] = useState(0);
   const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  const retryTimeoutRef = useRef(null);
 
   // Sugestões
   const [matches, setMatches] = useState([]);
@@ -265,9 +268,21 @@ export default function PeopleFeedPage() {
           : 0
       );
       setHasFetchedOnce(true);
+      setFetchError(false);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     } catch (e) {
       console.error("Failed to load feed:", e);
       setItems([]);
+      setFetchError(true);
+      setHasFetchedOnce(true);
+      // Automatic retry after 3 seconds
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = setTimeout(() => {
+        fetchFeed();
+      }, 3000);
     } finally {
       isFetchingRef.current = false;
       setLoadingFeed(false);
@@ -369,6 +384,7 @@ export default function PeopleFeedPage() {
     // DO NOT flip loadingFeed to false here (that caused the blank gap).
     return () => {
       clearTimeout(fetchTimeoutRef.current);
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
     };
   }, [
     activeTab,
@@ -513,11 +529,26 @@ export default function PeopleFeedPage() {
   const renderMiddle = () => {
     const showSkeleton = loadingFeed || (!hasFetchedOnce && items.length === 0);
 
+    if (fetchError) {
+      return (
+        <FeedErrorRetry
+          onRetry={() => {
+            setFetchError(false);
+            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = null;
+            fetchFeed();
+          }}
+          message="Failed to load feed. Trying to connect..."
+          buttonText="Try Again"
+        />
+      );
+    }
+
     return (
       <>
         {showSkeleton && (
           <div className="min-h-[160px] grid text-gray-600">
-            {currentPage=="companies" ?  <CompanySkeletonLoader/> : <CardSkeletonLoader /> } 
+            {currentPage=="companies" ?  <CompanySkeletonLoader/> : <CardSkeletonLoader /> }
           </div>
         )}
 

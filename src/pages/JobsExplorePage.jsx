@@ -14,6 +14,7 @@ import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
+import FeedErrorRetry from "../components/FeedErrorRetry";
 import { Briefcase, FileText, Pencil, PlusCircle, Rocket, SearchIcon, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import DefaultLayout from "../layout/DefaultLayout";
@@ -139,7 +140,9 @@ export default function PeopleFeedPage() {
   const [items, setItems] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [totalCount, setTotalCount] = useState(0); // <-- add this
-  const [showTotalCount,setShowTotalCount] = useState(0)
+  const [showTotalCount,setShowTotalCount] = useState(0);
+  const [fetchError, setFetchError] = useState(false);
+  const retryTimeoutRef = useRef(null);
 
   // Sugestões
   const [matches, setMatches] = useState([]);
@@ -258,9 +261,20 @@ export default function PeopleFeedPage() {
           ? data.total
           : Array.isArray(data.items) ? data.items.length : 0
       );
+      setFetchError(false);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     } catch (e) {
       console.error("Failed to load feed:", e);
       setItems([]);
+      setFetchError(true);
+      // Automatic retry after 3 seconds
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = setTimeout(() => {
+        fetchFeed();
+      }, 3000);
     } finally {
       isFetchingRef.current = false;
       setLoadingFeed(false);
@@ -387,7 +401,14 @@ export default function PeopleFeedPage() {
     registrationType,
     selectedIndustries,
   jobsView,
-  selectedSubcategories]);
+  selectedSubcategories, fetchFeed]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
+  }, []);
 
   // Update audienceSelections when selectedFilters changes (but don't trigger fetch)
   useEffect(() => {
@@ -559,6 +580,21 @@ export default function PeopleFeedPage() {
       );
     }
 
+    if (fetchError) {
+      return (
+        <FeedErrorRetry
+          onRetry={() => {
+            setFetchError(false);
+            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = null;
+            fetchFeed();
+          }}
+          message="Failed to load feed. Trying to connect..."
+          buttonText="Try Again"
+        />
+      );
+    }
+
     return (
       <>
         {loadingFeed && (
@@ -626,7 +662,7 @@ export default function PeopleFeedPage() {
                         ?.subcategories?.find((s) => String(s.id) === String(item.subcategoryId))?.name,
                     }}
                   />
-                );
+            );
             }
             return null;
           })}

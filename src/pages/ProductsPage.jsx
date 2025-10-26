@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import client from "../api/client";
 
 import Header from "../components/Header";
@@ -15,6 +15,7 @@ import JobCard from "../components/JobCard";
 import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
+import FeedErrorRetry from "../components/FeedErrorRetry";
 import { AlarmClock, Calendar, Pencil, PlusCircle, Rocket, Search, Star, Tag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
@@ -136,7 +137,9 @@ export default function ProductsPage() {
   const [items, setItems] = useState([]);
   const [loadingFeed, setLoadingFeed] = useState(false);
   const [totalCount, setTotalCount] = useState(0); // <-- add this
-  const [showTotalCount,setShowTotalCount] = useState(0)
+  const [showTotalCount,setShowTotalCount] = useState(0);
+  const [fetchError, setFetchError] = useState(false);
+  const retryTimeoutRef = useRef(null);
 
   // Sugestões
   const [matches, setMatches] = useState([]);
@@ -241,10 +244,21 @@ export default function ProductsPage() {
         typeof data.total === "number"
           ? data.total
           : Array.isArray(data.items) ? data.items.length : 0
-      ); 
+      );
+      setFetchError(false);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     } catch (e) {
       console.error("Failed to load feed:", e);
       setItems([]);
+      setFetchError(true);
+      // Automatic retry after 3 seconds
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = setTimeout(() => {
+        fetchFeed();
+      }, 3000);
     } finally {
       setLoadingFeed(false);
     }
@@ -280,6 +294,13 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchFeed();
   }, [fetchFeed]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+    };
+  }, []);
 
   // Fetch suggestions (sempre mostramos na direita)
   useEffect(() => {
@@ -426,6 +447,21 @@ export default function ProductsPage() {
       );
     }
 
+    if (fetchError) {
+      return (
+        <FeedErrorRetry
+          onRetry={() => {
+            setFetchError(false);
+            if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current);
+            retryTimeoutRef.current = null;
+            fetchFeed();
+          }}
+          message="Failed to load feed. Trying to connect..."
+          buttonText="Try Again"
+        />
+      );
+    }
+
     return (
       <>
         {loadingFeed && (
@@ -442,9 +478,9 @@ export default function ProductsPage() {
 
         {!loadingFeed && items.length === 0 && <EmptyFeedState activeTab="All" />}
 
-        
+         
 
-        
+         
         
         <div
   className={`grid grid-cols-1 ${view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"} gap-6`}
