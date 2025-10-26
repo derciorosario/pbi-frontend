@@ -615,10 +615,6 @@ function Header({ page }) {
                         }}
                         className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-brand-50 hover:text-brand-600 rounded-md transition-colors"
                       >
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                          <path d="M12 17h.01"/>
-                        </svg>
                         Support
                       </button>
 
