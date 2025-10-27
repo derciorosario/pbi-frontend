@@ -2465,7 +2465,7 @@ const handleVideoClick = (videoIndex) => {
                                 <span>
                                   {showAllPosts
                                     ? `View Less`
-                                    : `View All ${feedItems.length} posts`
+                                    : `View All ${userFeedItems.length} posts`
                                   }
                                 </span>
                                 <ExternalLink size={16} className={`transition-transform duration-200 ${showAllPosts ? 'rotate-180' : ''}`} />
@@ -2646,7 +2646,7 @@ const handleVideoClick = (videoIndex) => {
 
 
             {/* Overview - Modern Card Design */}
-            {(profile.stats || profile.counts || profile.connections?.count || profile.requests?.incoming?.length || profile.requests?.outgoing?.length) && (
+            {(Object.keys(profile.stats).some(i=>profile.stats[i])) && (
               <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Star size={20} className="text-brand-600" />
@@ -2657,7 +2657,7 @@ const handleVideoClick = (videoIndex) => {
                     const parts = [];
                     const counts = profile.counts || {};
                     const add = (label, value) => {
-                      if (typeof value === "number") {
+                      if (value) { //typeof value === "number"
                         parts.push(
                           <div key={label} className="text-center p-3 bg-gray-50 rounded-lg">
                             <p className="font-bold text-brand-600 text-lg">{value}</p>
@@ -2666,15 +2666,13 @@ const handleVideoClick = (videoIndex) => {
                         );
                       }
                     };
-                    add("Jobs", counts.jobs ?? profile.recent?.jobs?.length);
-                    add("Events", counts.events ?? profile.recent?.events?.length);
-                    add("Funding", counts.funding ?? profile.recent?.funding?.length);
-                    add("Services", counts.services ?? profile.recent?.services?.length);
-                    add("Products", counts.products ?? profile.recent?.products?.length);
-                    add("Tourism posts", counts.tourism ?? profile.recent?.tourism?.length);
-                    add("Connections", profile.connections?.count);
-                    add("Incoming requests", profile.requests?.incoming?.length);
-                    add("Outgoing requests", profile.requests?.outgoing?.length);
+                    add("Jobs", counts.jobs ?? profile.stats?.jobs);
+                    add("Events", counts.events ?? profile.stats?.events);
+                    add("Funding", counts.funding ?? profile.stats?.funding);
+                    add("Services", counts.services ?? profile.stats.services);
+                    add("Products", counts.products ?? profile.stats?.products);
+                    add("Tourism posts", counts.tourism ?? profile.stats?.tourism);
+                    add("Connections", profile.stats?.connections);
                     return parts;
                   })()}
                 </div>

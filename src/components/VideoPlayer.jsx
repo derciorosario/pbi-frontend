@@ -39,6 +39,7 @@ export default   function  VideoPlayer({ src, alt }) {
   const [volumeHoverTimeout, setVolumeHoverTimeout] = useState(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [userMutedPreference, setUserMutedPreference] = useState(null); // null = auto, true = user muted, false = user unmuted
+  const [isDragging, setIsDragging] = useState(false);
 
   // Intersection Observer for auto-play/mute when video visibility changes
   useEffect(() => {
@@ -170,6 +171,22 @@ export default   function  VideoPlayer({ src, alt }) {
     };
   }, []);
 
+  // Global mouse event listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
   const togglePlay = (e) => {
     if (e) e.stopPropagation();
     
@@ -292,16 +309,52 @@ export default   function  VideoPlayer({ src, alt }) {
 
   const handleProgressClick = (e) => {
     e.stopPropagation();
-    
+
     if (!videoRef.current || !progressRef.current) return;
 
     const progressBar = progressRef.current;
     const rect = progressBar.getBoundingClientRect();
     const clickPosition = (e.clientX - rect.left) / progressBar.offsetWidth;
     const newTime = Math.max(0, Math.min(clickPosition * duration, duration));
-    
+
     videoRef.current.currentTime = newTime;
     setCurrentTime(newTime);
+  };
+
+  const handleProgressMouseDown = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    if (!videoRef.current || !progressRef.current) return;
+
+    setIsDragging(true);
+
+    // Calculate initial seek position
+    const progressBar = progressRef.current;
+    const rect = progressBar.getBoundingClientRect();
+    const clickPosition = (e.clientX - rect.left) / progressBar.offsetWidth;
+    const newTime = Math.max(0, Math.min(clickPosition * duration, duration));
+
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging || !videoRef.current || !progressRef.current) return;
+
+    const progressBar = progressRef.current;
+    const rect = progressBar.getBoundingClientRect();
+    const movePosition = (e.clientX - rect.left) / progressBar.offsetWidth;
+    const newTime = Math.max(0, Math.min(movePosition * duration, duration));
+
+    videoRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging) {
+      setIsDragging(false);
+    }
   };
 
   const handleVideoClick = (e) => {
@@ -463,14 +516,15 @@ export default   function  VideoPlayer({ src, alt }) {
 
       {/* Progress Bar - Only show when controls are visible */}
       {(showControls || isFullscreen) && (
-        <div 
+        <div
           ref={progressRef}
           className={`absolute bg-gray-600 bg-opacity-50 cursor-pointer group/progress z-40 ${
-            isFullscreen 
-              ? "bottom-16 left-4 right-4 h-3" 
+            isFullscreen
+              ? "bottom-16 left-4 right-4 h-3"
               : "bottom-12 left-0 right-0 h-2"
           }`}
           onClick={handleProgressClick}
+          onMouseDown={handleProgressMouseDown}
         >
           <div 
             className="h-full bg-brand-500 relative group-hover/progress:bg-brand-400 transition-colors"

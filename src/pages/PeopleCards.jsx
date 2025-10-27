@@ -519,6 +519,7 @@ export default function PeopleProfileCard({
   role,
   city,
   countryOfResidence,
+  country,
   email,
   about,
   lookingFor,
@@ -553,7 +554,7 @@ export default function PeopleProfileCard({
   }
 
   const isList = type === "list";
-  const location = [city, countryOfResidence].filter(Boolean).join(", ");
+  const location = [city, (countryOfResidence || country)].filter(Boolean).join(", ");
   const computedTime = useMemo(() => computeTimeAgo(timeAgo, createdAt), [timeAgo, createdAt]);
 
   const allTags = useMemo(() => {

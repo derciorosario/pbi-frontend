@@ -83,9 +83,9 @@ function Chip({ children, tone = "brand" }) {
   );
 }
 
-function Section({ title, icon: Icon, children }) {
+function Section({ title, icon: Icon, className, children }) {
   return (
-    <div className="mt-5 text-left">
+    <div className={`${className} mt-5 text-left`}>
       <div className="flex items-center gap-2 mb-2">
         {Icon ? <Icon size={16} className="text-brand-600" /> : null}
         <h3 className="font-medium text-sm">{title}</h3>
@@ -371,7 +371,7 @@ export default function JobDetails({ jobId, isOpen, onClose }) {
 
               {/* Required Skills */}
               {job.requiredSkills?.length > 0 && (
-                <Section title="Required Skills" icon={Tag}>
+                <Section className="hidden" title="Required Skills" icon={Tag}>
                   <div className="flex flex-wrap gap-2">
                     {job.requiredSkills.map((skill, index) => (
                       <Chip key={`skill-${index}`} tone="gray">

@@ -9,6 +9,7 @@ import Header from "../components/Header";
 import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
 import MediaViewer from "../components/FormMediaViewer"; // Import the MediaViewer component
+import FullPageLoader from "../components/ui/FullPageLoader";
 
 /* -------------- Shared styles (brand) -------------- */
 const styles = {
@@ -156,7 +157,7 @@ function ReadOnlyNeedView({ form, attachments, audSel, audTree }) {
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold">{form.title || "Untitled Need"}</h1>
+            {form.title && <h1 className="text-xl font-bold">{form.title || "Untitled Need"}</h1>}
             <p className="mt-1 text-sm text-gray-700">{form.description || "No description provided."}</p>
           </div>
         </div>
@@ -169,7 +170,7 @@ function ReadOnlyNeedView({ form, attachments, audSel, audTree }) {
               <div className="mt-2 text-sm text-gray-700">{form.budget}</div>
             </div>
           )}
-          <div className="rounded-xl border p-4">
+          <div className="rounded-xl border p-4 hidden">
             <div className="flex items-center gap-2 text-gray-700 font-medium"><I.tag /> Urgency</div>
             <div className="mt-2 text-sm text-gray-700">{form.urgency}</div>
           </div>
@@ -925,6 +926,10 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
   }
 
   /* ---------- UI ---------- */
+
+  if (loading && id) {
+    return <FullPageLoader message="Loading need…" tip="Fetching..." />;
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">

@@ -538,9 +538,12 @@ const [commentCount, setCommentCount] = useState(Number(job?.commentsCount || 0)
 
           {/* Description */}
           <div className="text-sm text-gray-700 mb-2">
-            <div className={showFullDescription ? "" : "line-clamp-3"}>
+           {/**  <div className={showFullDescription ? "" : "line-clamp-3"}>
               {cleanText(job?.description)}
-            </div>
+            </div>**/}
+             <div  dangerouslySetInnerHTML={{
+                    __html: (job.description.length > 150) && !showFullDescription ?  (job.description || "No description provided.").slice(0,150) : (job.description || "No description provided.")
+              }} className={showFullDescription ? "" : "line-clamp-3"}/>
             {job?.description && cleanText(job?.description).length > 150 && (
               <button
                 onClick={() => setShowFullDescription(!showFullDescription)}

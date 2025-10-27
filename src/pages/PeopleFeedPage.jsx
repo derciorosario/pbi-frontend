@@ -25,14 +25,45 @@ import PageTabs from "../components/PageTabs";
 import TopFilterButtons from "../components/TopFilterButtons";
 import CompanySkeletonLoader from "../components/ui/CompanySkeletonLoader";
 
-function useDebounce(v, ms = 400) {
+/*function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
   useEffect(() => {
     const t = setTimeout(() => setVal(v), ms);
     return () => clearTimeout(t);
   }, [v, ms]);
   return val;
+}*/
+
+function useDebounce(value, delay = 400) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  const timeoutRef = useRef();
+
+  useEffect(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Immediate update for empty values
+    if (value === '') {
+      setDebouncedValue(value);
+      return;
+    }
+
+    // Debounce for non-empty values
+    timeoutRef.current = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 }
+
 
 export default function PeopleFeedPage() {
   const { user } = useAuth();

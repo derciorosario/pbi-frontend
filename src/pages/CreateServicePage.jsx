@@ -291,7 +291,7 @@ function ReadOnlyServiceView({ form, audSel, audTree, media }) {
         ) : null}
 
         {/* Skills */}
-        <div>
+        <div className="hidden">
           <h3 className="text-sm font-semibold text-gray-700">Skills</h3>
           <div className="mt-2 flex flex-wrap gap-2">
             {skills.length

@@ -948,14 +948,16 @@ export default function NotificationsPage() {
         <div className="mt-6 space-y-6">
           {loadingConn || loadingMeetings || loadingNotifications ? (
             <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-center">
-              <div className="animate-pulse">Loading notifications...</div>
+              <div className="animate-pulse">
+                {filter === "Connections" ? "Loading connection requests..." : `Loading ${filter.toLowerCase()} notifications...`}
+              </div>
             </div>
           ) : (
             <>
               <div className="space-y-4">
                  {filteredItems.length === 0 ? (
                     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-center text-gray-500">
-                      No {filter.toLowerCase()} notifications yet
+                      {filter === "Connections" ? "No connection requests yet" : `No ${filter.toLowerCase()} notifications yet`}
                     </div>
                   ) : (
                     filteredItems.filter(i=>!i.hasApproval).map((item) => {

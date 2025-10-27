@@ -25,14 +25,48 @@ import TopFilterButtons from "../components/TopFilterButtons";
 import { useAuth } from "../contexts/AuthContext";
 import PostComposer from "../components/PostComposer";
 
-function useDebounce(v, ms = 400) {
+/*function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
   useEffect(() => {
     const t = setTimeout(() => setVal(v), ms);
     return () => clearTimeout(t);
   }, [v, ms]);
   return val;
+}*/
+
+
+
+// Replace your useDebounce hook with this:
+function useDebounce(value, delay = 400) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  const timeoutRef = useRef();
+
+  useEffect(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Immediate update for empty values
+    if (value === '') {
+      setDebouncedValue(value);
+      return;
+    }
+
+    // Debounce for non-empty values
+    timeoutRef.current = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 }
+
 
 export default function PeopleFeedPage() {
   const [activeTab, setActiveTab] = useState("Posts");

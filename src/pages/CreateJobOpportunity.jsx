@@ -790,7 +790,7 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border p-4">
+          <div className="rounded-xl border p-4 hidden">
             <div className="mt-2 text-sm text-gray-700 space-y-1">
               <div>Experience: {form.experienceLevel || "—"}</div>
               <div>Type: {form.jobType || "—"}</div>
@@ -801,13 +801,13 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
           <div className="rounded-xl border p-4">
             <div className="text-gray-700 font-medium flex items-center gap-2"><I.pin/> Location</div>
             <div className="mt-2 text-sm text-gray-700">
-              <div>{[form.city, form.country].filter(Boolean).join(", ") || "—"}</div>
-              <div className="mt-1">Salary: {fmtSalary(form.minSalary, form.maxSalary, form.currency)}</div>
-              <div className="mt-1">Benefits: {form.benefits || "—"}</div>
+              <div>{[form.city, form.country].filter(Boolean).join(", ") || "All contries"}</div>
+              <div className="mt-1 hidden">Salary: {fmtSalary(form.minSalary, form.maxSalary, form.currency)}</div>
+              <div className="mt-1 hidden">Benefits: {form.benefits || "—"}</div>
             </div>
           </div>
 
-          <div className="rounded-xl border p-4">
+          <div className="rounded-xl border p-4 hidden">
             <div className="text-gray-700 font-medium flex items-center gap-2"><I.send/> Applications</div>
             <div className="mt-2 text-sm text-gray-700 space-y-1">
               <div>Deadline: {fmtDate(form.applicationDeadline)}</div>
@@ -839,12 +839,12 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
            
         </div>
 
-        <div>
+       {/*** <div> // leave commented
           <h3 className="text-sm font-semibold text-gray-700">Required Skills</h3>
           <div className="mt-2 flex flex-wrap gap-2">
             {skills.length ? skills.map((s) => <span key={s} className={styles.chip}>{s}</span>) : <span className="text-sm text-gray-500">—</span>}
           </div>
-        </div>
+        </div> */}
 
         <div>
           <h3 className="text-sm font-semibold text-gray-700">Target Audience</h3>

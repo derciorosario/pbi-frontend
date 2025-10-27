@@ -97,7 +97,7 @@ function ReadOnlyMomentView({ form, tags, images, audSel, audTree }) {
         {/* Header */}
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold">{form.title || "Untitled Experience"}</h1>
+            {form.title && <h1 className="text-xl font-bold">{form.title || "Untitled Experience"}</h1>}
             <p className="mt-1 text-sm text-gray-700">{form.description || "No description provided."}</p>
           </div>
         </div>
