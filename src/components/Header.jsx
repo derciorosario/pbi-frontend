@@ -8,6 +8,7 @@ import { useData } from "../contexts/DataContext";
 import { useSocket } from "../contexts/SocketContext";
 import LoginDialog from "./LoginDialog.jsx";
 import SupportDialog from "./SupportDialog.jsx";
+import ContactDialog from "./ContactDialog.jsx";
 import logoImg from "../assets/logo.png";
 import { ChevronDown } from "lucide-react";
 import client from "../api/client";
@@ -44,6 +45,7 @@ function Header({ page }) {
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
   const [loginDialogOpenForSignUp, setLoginDialogOpenForSignUp] = useState(false);
   const [supportDialogOpen, setSupportDialogOpen] = useState(false);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
 
   const profileMenuRef = useRef(null);
   const moreMenuRef = useRef(null);
@@ -594,7 +596,7 @@ function Header({ page }) {
                         style={user?.accountType=="admin" ? {display:'none'}:{}}
                         className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-brand-50 hover:text-brand-600 rounded-md transition-colors"
                       >
-                        Profile
+                      My Profile
                       </button>
 
                       <button
@@ -629,10 +631,11 @@ function Header({ page }) {
                       </button>
 
                        <div className="border-t border-gray-100 mt-3 pt-2 text-[11px] text-gray-400 text-center space-x-1">
-                          <a href="/privacy" className="hover:underline">Privacy</a> ·
-                          <a href="/terms" className="hover:underline">Terms</a> ·
-                          <a href="/landing" className="hover:underline">About 54links</a>
-                      </div>
+                           <button onClick={() => setContactDialogOpen(true)} className="hover:underline">Contact us</button> ·
+                           <a href="/privacy" className="hover:underline">Privacy</a> ·
+                           <a href="/terms" className="hover:underline">Terms</a> ·
+                           <a href="/landing" className="hover:underline">About 54links</a>
+                       </div>
                     </div>
                   )}
                 </div>
@@ -813,6 +816,7 @@ function Header({ page }) {
                   </button>
 
                    <div className="border-t border-gray-100 mt-3 pt-2 text-[11px] text-gray-400 text-center space-x-1">
+                          <button onClick={() => setContactDialogOpen(true)} className="hover:underline">Contact us</button> ·
                           <a href="/privacy" className="hover:underline">Privacy</a> ·
                           <a href="/terms" className="hover:underline">Terms</a> ·
                           <a href="/landing" className="hover:underline">About 54links</a>
@@ -855,6 +859,12 @@ function Header({ page }) {
       <SupportDialog
         isOpen={supportDialogOpen}
         onClose={() => setSupportDialogOpen(false)}
+      />
+
+      {/* Contact Dialog */}
+      <ContactDialog
+        isOpen={contactDialogOpen}
+        onClose={() => setContactDialogOpen(false)}
       />
     </>
   );

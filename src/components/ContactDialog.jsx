@@ -224,7 +224,7 @@ export default function ContactDialog({ isOpen, onClose }) {
   const showPartnershipFields = formData.contactReason === "partnership";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div style={{zIndex:999}} className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div ref={containerRef} className="relative w-full max-w-2xl bg-white rounded-xl shadow-xl p-6 md:p-8 max-h-[85vh] overflow-y-auto">
         {/* Close button */}
         <button

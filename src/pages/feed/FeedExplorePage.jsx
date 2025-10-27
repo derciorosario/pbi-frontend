@@ -426,7 +426,7 @@ return (
               { label: "Add new service", Icon: Building, from: "service", hide: user?.accountType === "individual" },
               { label: "Post a tourism attraction", Icon: MapPin, from: "tourism", hide: user?.accountType === "individual" },
               { label: "Publish an opportunity", Icon: DollarSign, from: "funding", hide: user?.accountType === "individual" },
-              { label: "Share an experience", Icon: Star, from: "job", hide: user?.accountType === "individual" },
+              { label: "Share work experience", Icon: Star, from: "job", hide: user?.accountType === "individual" },
               { label: "Highlight an event", Icon: Video, from: "event", hide: user?.accountType === "individual" },
               { label: "Highlight a product", Icon: Truck, from: "product", hide: user?.accountType === "individual" },
               { label: "Highlight a service", Icon: Mail, from: "service", hide: user?.accountType === "individual" },
