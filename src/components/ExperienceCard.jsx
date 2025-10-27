@@ -8,6 +8,8 @@ import * as socialApi from "../api/social";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import LikesDialog from "./LikesDialog";
+import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
+import client, { API_URL } from "../api/client";
 
 import {
   Edit,
@@ -23,6 +25,8 @@ import {
   MoreVertical,
   Trash2,
   Globe,
+  Play,
+  Pause,
 } from "lucide-react";
 import {
   FacebookShareButton,
@@ -42,6 +46,42 @@ import {
 } from "react-share";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ExperienceDetails from "./ExperienceDetails";
+
+// Helper function to validate media URLs
+const isValidMediaUrl = (url) => {
+  if (!url || typeof url !== 'string') return false;
+  return url.startsWith("data:") || url.startsWith("http://") || url.startsWith("https://");
+};
+
+// Helper function to get file extension
+const getFileExtension = (url) => {
+  if (!url) return '';
+  const match = url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+  return match ? match[1].toLowerCase() : '';
+};
+
+// Helper function to determine media type
+const getMediaType = (url) => {
+  if (!url) return 'unknown';
+  
+  // Check data URLs
+  if (url.startsWith("data:")) {
+    if (url.startsWith("data:image")) return 'image';
+    if (url.startsWith("data:video")) return 'video';
+    return 'unknown';
+  }
+  
+  // Check file extension
+  const extension = getFileExtension(url);
+  
+  const videoExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv'];
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+  
+  if (videoExtensions.includes(extension)) return 'video';
+  if (imageExtensions.includes(extension)) return 'image';
+  
+  return 'unknown';
+};
 
 function computeTimeAgo(explicit, createdAt) {
   if (explicit) return explicit;
@@ -81,8 +121,10 @@ export default function ExperienceCard({
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
 
-  // Image slider state
+  // Media slider state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [showVideoControls, setShowVideoControls] = useState(false);
 
   // Share popover
   const [shareOpen, setShareOpen] = useState(false);
@@ -91,9 +133,76 @@ export default function ExperienceCard({
 
   // Options menu
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleted, setIsDeleted] = useState(false);
   const optionsMenuRef = useRef(null);
+
+
+  const OptionsMenu = () => (
+    <div
+      ref={optionsMenuRef}
+      className="absolute z-30 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-xl top-12 right-3"
+      role="dialog"
+      aria-label="Options menu"
+    >
+      {showDeleteConfirm ? (
+        <>
+          <div className="px-3 py-2 text-sm font-medium text-gray-900 border-b border-gray-200 mb-2">
+            Delete this experience?
+          </div>
+          <button
+            onClick={async () => {
+              try {
+                await client.delete(`/tourism/${item.id}`);
+                toast.success("Experience deleted successfully");
+                setIsDeleted(true);
+              } catch (error) {
+                console.error("Failed to delete experience:", error);
+                toast.error(error?.response?.data?.message || "Failed to delete experience");
+              }
+              setOptionsMenuOpen(false);
+              setShowDeleteConfirm(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors mb-1"
+          >
+            <Trash2 size={16} />
+            Confirm Delete
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(false)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            onClick={() => {
+              navigate(`/experience/${item.id}`);
+              setOptionsMenuOpen(false);
+            }}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
+          >
+            <Edit size={16} />
+            Edit
+          </button>
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <Trash2 size={16} />
+            Delete
+          </button>
+        </>
+      )}
+    </div>
+  );
+
+  // Video control timeout ref
+  const videoControlsTimeoutRef = useRef(null);
   
-  // Close share menu and options menu on outside click / Esc
+  // Close menus on outside click / Esc
   useEffect(() => {
     function onDown(e) {
       if (
@@ -108,12 +217,14 @@ export default function ExperienceCard({
         !optionsMenuRef.current.contains(e.target)
       ) {
         setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
       }
     }
     function onEsc(e) {
       if (e.key === "Escape") {
         setShareOpen(false);
         setOptionsMenuOpen(false);
+        setShowDeleteConfirm(false);
       }
     }
     document.addEventListener("mousedown", onDown);
@@ -121,6 +232,15 @@ export default function ExperienceCard({
     return () => {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onEsc);
+    };
+  }, []);
+
+  // Clear video controls timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (videoControlsTimeoutRef.current) {
+        clearTimeout(videoControlsTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -146,23 +266,46 @@ export default function ExperienceCard({
   const isOwner = !!user?.id && item?.authorUserId === user.id;
   const isList = type === "list";
 
-  // Get all valid images for slider
-  const getValidImages = () => {
-    const images = item?.images || [];
-    const validImages = [];
+  console.log({isOwner})
 
-    images.forEach(img => {
-      let imageUrl = img?.base64url || (typeof img === "string" ? img : null);
-      if (imageUrl) {
-        validImages.push(imageUrl);
+  // Get all valid media for slider (images and videos only, no documents)
+  const getValidMedia = () => {
+    const mediaItems = item?.images || [];
+    const validMedia = [];
+
+    mediaItems.forEach((mediaUrl, index) => {
+      let processedUrl = mediaUrl?.base64url || mediaUrl || null;
+      
+      // Process URL for external access
+      if (processedUrl && !processedUrl.startsWith("data:") && !processedUrl.startsWith("http")) {
+        processedUrl = `${API_URL}/uploads/${processedUrl}`;
+      }
+      
+      if (isValidMediaUrl(processedUrl)) {
+        const mediaType = getMediaType(processedUrl);
+        // Only include images and videos in the slider
+        if (mediaType === 'image' || mediaType === 'video') {
+          validMedia.push({
+            url: processedUrl,
+            type: mediaType,
+            name: `media-${index}`
+          });
+        }
       }
     });
 
-    return validImages;
+    // Sort: videos first, then images
+    return validMedia.sort((a, b) => {
+      if (a.type === 'video' && b.type !== 'video') return -1;
+      if (a.type !== 'video' && b.type === 'video') return 1;
+      return 0;
+    });
   };
 
-  const validImages = getValidImages();
-  const hasMultipleImages = validImages.length > 1;
+  const validMedia = getValidMedia();
+  const hasMultipleMedia = validMedia.length > 1;
+  const currentMedia = validMedia[currentImageIndex];
+  const isCurrentVideo = currentMedia?.type === 'video';
 
   // Exactly 2 tags (use the provided tags array)
   const allTags = [
@@ -182,6 +325,55 @@ export default function ExperienceCard({
     setModalOpen(false);
     setConnectionStatus("pending_outgoing");
   }
+
+  // Video control functions
+  const handleVideoPlayPause = () => {
+    setIsVideoPlaying(!isVideoPlaying);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPlay = () => {
+    setIsVideoPlaying(true);
+    setShowVideoControls(true);
+    
+    // Hide controls after 3 seconds
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+    videoControlsTimeoutRef.current = setTimeout(() => {
+      setShowVideoControls(false);
+    }, 3000);
+  };
+
+  const handleVideoPause = () => {
+    setIsVideoPlaying(false);
+    setShowVideoControls(true);
+    
+    // Keep controls visible when paused
+    if (videoControlsTimeoutRef.current) {
+      clearTimeout(videoControlsTimeoutRef.current);
+    }
+  };
+
+  const handleMediaClick = (e) => {
+    if (isCurrentVideo) {
+      // For videos, handle play/pause
+      e.stopPropagation();
+      handleVideoPlayPause();
+    } else {
+      // For images, open details modal
+      if (isOwner) navigate(`/experience/${item.id}`);
+      else setExperienceDetailsOpen(true);
+    }
+  };
 
   const containerBase =
     "group relative rounded-[15px] border border-gray-100 bg-white shadow-sm hover:shadow-xl overflow-hidden transition-all duration-300 ease-out";
@@ -219,9 +411,14 @@ export default function ExperienceCard({
     }
   };
 
+
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div
+        className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${
+          isDeleted ? "hidden" : ""
+        }`}
+      >
         {/* HEADER - Author/User Info */}
         <div className="px-4 pt-3 pb-2 flex items-start justify-between">
           <div className="flex items-center gap-3 flex-1">
@@ -278,6 +475,23 @@ export default function ExperienceCard({
               </div>
             </div>
           </div>
+
+          {/* Options Menu Toggle */}
+          <div className="relative flex-shrink-0">
+            {isOwner && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOptionsMenuOpen((s) => !s);
+                }}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="More options"
+              >
+                <MoreVertical size={20} className="text-gray-600" />
+              </button>
+            )}
+            {optionsMenuOpen && <OptionsMenu />}
+          </div>
         </div>
 
         {/* POST CONTENT */}
@@ -302,48 +516,94 @@ export default function ExperienceCard({
 
         </div>
 
-        {/* IMAGE (if exists and not in text mode) */}
-        {settings?.contentType !== "text" && validImages.length > 0 && (
+        {/* MEDIA (if exists and not in text mode) */}
+        {settings?.contentType !== "text" && validMedia.length > 0 && (
           <div className="relative">
-            {/* Image Slider */}
-            <div className="relative w-full max-h-96 overflow-hidden">
-              {hasMultipleImages ? (
+            {/* Media Slider */}
+            <div
+              onClick={handleMediaClick}
+              className="relative w-full max-h-96 overflow-hidden cursor-pointer"
+            >
+              {hasMultipleMedia ? (
                 <div
                   className="flex w-full h-full transition-transform duration-300 ease-in-out"
                   style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
                 >
-                  {validImages.map((img, index) => (
-                    <img
-                      key={index}
-                      src={img}
-                      alt={`${item?.title} - ${index + 1}`}
-                      className="flex-shrink-0 w-full max-h-96 object-cover"
-                    />
+                  {validMedia.map((media, index) => (
+                    <div key={index} className="flex-shrink-0 w-full h-96 relative">
+                      {media.type === 'video' ? (
+                        <div className="relative w-full h-full bg-black">
+                          <VideoPlayer
+                            src={media.url}
+                            className="w-full h-full object-contain"
+                            controls={false}
+                            autoPlay={false}
+                            muted
+                            isPlaying={index === currentImageIndex && isVideoPlaying}
+                            onPlay={handleVideoPlay}
+                            onPause={handleVideoPause}
+                          />
+                        </div>
+                      ) : (
+                        <img
+                          src={media.url}
+                          alt={media.name || `Media ${index + 1}`}
+                          className="w-full h-96 object-cover"
+                        />
+                      )}
+                    </div>
                   ))}
                 </div>
               ) : (
-                <img
-                  src={validImages[0]}
-                  alt={item?.title}
-                  className="w-full max-h-96 object-cover"
-                />
+                <div className="w-full h-96 relative">
+                  {currentMedia.type === 'video' ? (
+                    <div className="relative w-full h-full bg-black">
+                      <VideoPlayer
+                        src={currentMedia.url}
+                        className="w-full h-full object-contain"
+                        controls={false}
+                        autoPlay={false}
+                        muted
+                        isPlaying={isVideoPlaying}
+                        onPlay={handleVideoPlay}
+                        onPause={handleVideoPause}
+                      />
+                    </div>
+                  ) : (
+                    <img
+                      src={currentMedia.url}
+                      alt={currentMedia.name || "Media"}
+                      className="w-full h-96 object-cover"
+                    />
+                  )}
+                </div>
               )}
             </div>
 
             {/* Slider Dots */}
-            {hasMultipleImages && (
+            {hasMultipleMedia && (
               <div className="absolute bottom-3 right-3 flex gap-1">
-                {validImages.map((_, index) => (
+                {validMedia.map((media, index) => (
                   <button
                     key={index}
                     onClick={(e) => {
                       e.stopPropagation();
                       setCurrentImageIndex(index);
+                      // Reset video state when changing slides
+                      if (media.type === 'video') {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(true);
+                      } else {
+                        setIsVideoPlaying(false);
+                        setShowVideoControls(false);
+                      }
                     }}
                     className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
-                      index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                      index === currentImageIndex
+                        ? (media.type === 'video' ? 'bg-blue-500' : 'bg-white')
+                        : 'bg-white/50'
                     }`}
-                    aria-label={`Go to image ${index + 1}`}
+                    aria-label={`Go to ${media.type} ${index + 1}`}
                   />
                 ))}
               </div>
@@ -639,25 +899,7 @@ export default function ExperienceCard({
     );
   }
 
-  const OptionsMenu = () => (
-    <div
-      ref={optionsMenuRef}
-      className="absolute z-30 w-48 rounded-xl border border-gray-200 bg-white p-2 shadow-xl top-12 right-3"
-      role="dialog"
-      aria-label="Options menu"
-    >
-      <button
-        onClick={() => {
-          navigate(`/experience/${item.id}`);
-          setOptionsMenuOpen(false);
-        }}
-        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors mb-1"
-      >
-        <Edit size={16} />
-        Edit
-      </button>
-    </div>
-  );
+ 
 };
 
 // Share data and components
@@ -738,6 +980,8 @@ const ShareMenu = ({ item, shareMenuRef, setShareOpen }) => {
     </div>
   );
 };
+
+ 
 
 const CopyLinkButton = ({ shareUrl, setShareOpen }) => {
   return (

@@ -343,7 +343,7 @@ export default function FeedPage() {
                 items={[
                   { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
                   { hide: true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
-                  { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+                  { label: "Share a Job Opening", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                 ]}
               />
               <ProfileCard />
@@ -358,7 +358,7 @@ export default function FeedPage() {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 items={[
-                  { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+                  { label: "Share a Job Opening", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                   { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                   { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
                   { label: "Post a Product", Icon: PlusCircle,  onClick: () => navigate("/products/create") },

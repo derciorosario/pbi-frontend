@@ -570,10 +570,10 @@ export default function ProductsPage() {
           </div>
            <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { label: "Sell a product", Icon: PlusCircle, onClick: () => navigate("/products/create"),hide:user?.accountType=="individual" },
-            { label: "Share Your Experience", Icon: PlusCircle, onClick: () => navigate("/moment/product/create"),hide:user?.accountType=="company" },
-            { label: "Search for a Product", Icon: PlusCircle, onClick: () => navigate("/need/product/create"),hide:user?.accountType=="company" },
-          
+            { label: "Add a New Product", Icon: PlusCircle, onClick: () => navigate("/products/create"),hide:user?.accountType=="individual" },
+            { label: "Highlight a product", Icon: PlusCircle, onClick: () => navigate("/moment/product/create"),hide:user?.accountType=="company" },
+            { label: "Find products", Icon: PlusCircle, onClick: () => navigate("/need/product/create"),hide:user?.accountType=="company" },
+        
         ]} />
           <ProfileCard />
         
@@ -588,11 +588,11 @@ export default function ProductsPage() {
               <PostComposer
                 from="product"
                 typeOfPosts={[
-                  { label: "Sell a Product", Icon: Tag, hide: user?.accountType === "individual", type: "main" }, // 🏷️ Selling a product
-                  { label: "Search for a Product", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for products
-                  { label: "Share Product Experience", Icon: Star, hide: user?.accountType === "company" }, // ⭐ Sharing experience
+                  { label: "Add a New Product", Icon: Tag, hide: user?.accountType === "individual", type: "main" }, // 🏷️ Selling a product
+                  { label: "Find products", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for products
+                  { label: "Highlight a Product", Icon: Star }, // ⭐ Sharing experience
                 ]}
-              />
+              /> 
             </div>
             <section className="space-y-4 overflow-hidden">
               {renderMiddle()}

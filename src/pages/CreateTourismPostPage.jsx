@@ -12,6 +12,7 @@ import { toast } from "../lib/toast";
 import Header from "../components/Header";
 import { useAuth } from "../contexts/AuthContext";
 import FullPageLoader from "../components/ui/FullPageLoader";
+import MediaViewer from "../components/FormMediaViewer"; // Import the MediaViewer component
 
 /* ---------------- Shared styles (brand) ---------------- */
 const styles = {
@@ -38,6 +39,18 @@ const I = {
       <path d="m6 9 6 6 6-6" />
     </svg>
   ),
+  video: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <path d="m17 10.5-5-3v6l5-3Z"/><rect x="3" y="6" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+    </svg>
+  ),
+  image: () => (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+      <path d="m21 15-5-5L5 21" stroke="currentColor" strokeWidth="2"/>
+    </svg>
+  ),
 };
 
 /* File → data URL */
@@ -48,6 +61,20 @@ function fileToDataURL(file) {
     r.onload = () => resolve(r.result);
     r.readAsDataURL(file);
   });
+}
+
+function isImage(url) {
+  return typeof url === "string" && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url);
+}
+
+function isVideo(url) {
+  return typeof url === "string" && /\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/i.test(url);
+}
+
+function getFileType(file) {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  return "document";
 }
 
 /* Audience label maps */
@@ -76,7 +103,7 @@ function ReadOnlyTourismPost({ postType, form, images, audSel, audTree }) {
   const subcategories = Array.from(audSel.subcategoryIds || []).map(k => maps.subs.get(String(k))).filter(Boolean);
   const subsubs = Array.from(audSel.subsubCategoryIds || []).map(k => maps.subsubs.get(String(k))).filter(Boolean);
 
-  const hero = images?.[0] ? `${API_URL}/uploads/${images[0]}` : null;
+  const hero = images?.[0] ? `${images[0]}` : null;
   const gallery = (images || []).slice(1);
 
 
@@ -113,15 +140,15 @@ function ReadOnlyTourismPost({ postType, form, images, audSel, audTree }) {
 
         {/* Quick facts */}
         <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-xl border p-4">
+          <div className="rounded-xl border p-4 hidden">
             <div className="text-gray-700 font-medium">Season</div>
             <div className="mt-1 text-sm text-gray-700">{form.season || "—"}</div>
           </div>
-          <div className="rounded-xl border p-4">
+          <div className="rounded-xl border p-4 hidden">
             <div className="text-gray-700 font-medium">Budget Range</div>
             <div className="mt-1 text-sm text-gray-700">{form.budgetRange || "—"}</div>
           </div>
-          <div className="rounded-xl border p-4">
+          <div className="rounded-xl border p-4 hidden">
             <div className="text-gray-700 font-medium">Post Type</div>
             <div className="mt-1 text-sm text-gray-700">{postType || "—"}</div>
           </div>
@@ -153,7 +180,7 @@ function ReadOnlyTourismPost({ postType, form, images, audSel, audTree }) {
         </div>
 
         {/* Tags */}
-        <div>
+        <div className="hidden">
           <h3 className="text-sm font-semibold text-gray-700">Tags</h3>
           <div className="mt-2 flex flex-wrap gap-2">
             {tags.length ? tags.map((t, i) => <span key={`${t}-${i}`} className={styles.chip}>{t}</span>) : <span className="text-sm text-gray-500">—</span>}
@@ -174,26 +201,26 @@ function ReadOnlyTourismPost({ postType, form, images, audSel, audTree }) {
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <button type="button" className={styles.ghost} onClick={() => history.back()}>
-            Back
-          </button>
-        </div>
+       
       </div>
     </div>
   );
 }
 
-export default function CreateTourismPostPage() {
+export default function CreateTourismPostPage({ triggerImageSelection = false, hideHeader = false, onSuccess }) {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEditMode = Boolean(id);
   const { user } = useAuth();
 
-  const [loading,setLoading]=useState(true)
+  const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [uploadProgress, setUploadProgress] = useState({}); // Track progress per file
   const [ownerUserId, setOwnerUserId] = useState(null);
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+  const [showAudienceSection, setShowAudienceSection] = useState(false);
 
   const [postType, setPostType] = useState("Destination");
   const [saving, setSaving] = useState(false);
@@ -222,9 +249,14 @@ export default function CreateTourismPostPage() {
   const [tagInput, setTagInput] = useState("");
 
 
-  // Images: array of strings (filenames)
+  // Images & Videos: array of strings (filenames)
   const [images, setImages] = useState([]);
   const fileInputRef = useRef(null);
+
+  // Get all media URLs for the MediaViewer (images and videos)
+  const mediaUrls = useMemo(() => {
+    return images.filter(url => isImage(url) || isVideo(url)).map(img => img.startsWith('http') ? img : `${API_URL}/uploads/${img}`);
+  }, [images]);
 
   const readOnly = isEditMode && ownerUserId && user?.id !== ownerUserId;
 
@@ -373,24 +405,45 @@ export default function CreateTourismPostPage() {
     const arr = Array.from(files || []);
     if (!arr.length) return;
 
-    // Images only; size cap 5MB each
-    const onlyImages = arr.filter((f) => f.type.startsWith("image/"));
-    if (onlyImages.length !== arr.length) {
-      toast.error("Only image files are allowed.");
+    // Check file sizes (50MB limit for videos, 5MB for images)
+    const maxSizeBytes = {
+      video: 50 * 1024 * 1024,
+      image: 5 * 1024 * 1024
+    };
+
+    const oversizedFiles = arr.filter(file => {
+      const fileType = getFileType(file);
+      return file.size > maxSizeBytes[fileType];
+    });
+
+    if (oversizedFiles.length > 0) {
+      const fileNames = oversizedFiles.map(file => file.name).join(', ');
+      toast.error(`Files exceeding size limit: ${fileNames}`);
+      return;
     }
 
-    const sizeErrors = onlyImages.filter((f) => f.size > 5 * 1024 * 1024);
-    if (sizeErrors.length) {
-      toast.error("Each image must be ≤ 5MB.");
+    // Only allow images and videos
+    const mediaFiles = arr.filter((f) => f.type.startsWith("image/") || f.type.startsWith("video/"));
+    if (mediaFiles.length !== arr.length) {
+      toast.error("Only image and video files are allowed.");
+      return;
     }
-    const accepted = onlyImages.filter((f) => f.size <= 5 * 1024 * 1024);
 
-    const remaining = 20 - images.length;
-    const slice = accepted.slice(0, Math.max(0, remaining));
+    // Cap total attachments
+    const remainingSlots = 20 - images.length;
+    const slice = remainingSlots > 0 ? arr.slice(0, remainingSlots) : [];
 
     try {
       setUploading(true);
       setUploadingCount(slice.length);
+      
+      // Reset progress for new uploads
+      const initialProgress = {};
+      slice.forEach(file => {
+        initialProgress[file.name] = 0;
+      });
+      setUploadProgress(initialProgress);
+
       const formData = new FormData();
       slice.forEach(file => {
         formData.append('images', file);
@@ -399,15 +452,29 @@ export default function CreateTourismPostPage() {
       const response = await client.post('/tourism/upload-images', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            
+            // Update progress for all files
+            const newProgress = {};
+            slice.forEach(file => {
+              newProgress[file.name] = percentCompleted;
+            });
+            setUploadProgress(newProgress);
+          }
         }
       });
 
       const mapped = response.data.filenames.map((filename) => filename);
 
       setImages((prev) => [...prev, ...mapped]);
+      setUploadProgress({}); // Clear progress after upload
     } catch (err) {
       console.error(err);
-      toast.error("Some images could not be uploaded.");
+      toast.error("Some images/videos could not be uploaded.");
+      setUploadProgress({}); // Clear progress on error
     } finally {
       setUploading(false);
       setUploadingCount(0);
@@ -418,6 +485,15 @@ export default function CreateTourismPostPage() {
   function removeImage(idx) {
     if (readOnly) return;
     setImages((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function handleMediaClick(index) {
+    setSelectedMediaIndex(index);
+    setMediaViewerOpen(true);
+  }
+
+  function closeMediaViewer() {
+    setMediaViewerOpen(false);
   }
 
 
@@ -707,7 +783,7 @@ export default function CreateTourismPostPage() {
         season: form.season || undefined,
         budgetRange: form.budgetRange || undefined,
         tags: form.tags,
-        images: images.map(img => `${API_URL}/uploads/${img}`),
+        images: images.map(img => img.includes('http') ? img : `${API_URL}/uploads/${img}`),
         identityIds: Array.from(audSel.identityIds),
         categoryIds: Array.from(audSel.categoryIds),
         subcategoryIds: Array.from(audSel.subcategoryIds),
@@ -727,7 +803,11 @@ export default function CreateTourismPostPage() {
       } else {
         await client.post("/tourism", payload);
         toast.success("Tourism post published!");
-        navigate("/tourism");
+        if (hideHeader && onSuccess) {
+          onSuccess();
+        } else {
+          navigate("/tourism");
+        }
       }
       setLoading(true)
     } catch (error) {
@@ -750,22 +830,21 @@ export default function CreateTourismPostPage() {
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-gray-900">
       {/* ===== Header ===== */}
-      <Header page={"tourism"}/>
+      {!hideHeader && <Header page={"tourism"} />}
 
       {/* ===== Content ===== */}
-      <main className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-8">
-        <button
-          onClick={() => navigate("/tourism")}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:underline"
-          type="button"
-        >
-          ← Back
-        </button>
-        {!isEditMode && <h1 className="text-2xl font-bold mt-3">{isEditMode ? "Edit Tourism Post" : "Create Tourism Post"}</h1>}
-       {!isEditMode && <p className="text-sm text-gray-600">
-          Share amazing destinations, experiences, and cultural insights across Africa
-        </p>
-}
+      <main className={`mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 ${hideHeader ? 'py-4' : 'py-8'}`}>
+        {!hideHeader && (
+          <button
+            onClick={() => navigate("/tourism")}
+            className="flex items-center gap-2 text-sm text-gray-600 hover:underline"
+            type="button"
+          >
+            ← Back
+          </button>
+        )}
+        {(isEditMode && !readOnly) && <h1 className="text-2xl font-bold mt-3">{isEditMode ? "Edit Tourism Post" : "Create Tourism Post"}</h1>}
+       
         {/* Non-owner read-only view */}
         {readOnly ? (
           <ReadOnlyTourismPost
@@ -814,6 +893,20 @@ export default function CreateTourismPostPage() {
               />
             </section>
 
+            
+            {/* Description */}
+            <section>
+              <textarea
+                value={form.description}
+                onChange={(e) => setField("description", e.target.value)}
+                placeholder="Describe this destination, share your experience, cultural insights, and travel tips..."
+                className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
+                rows={4}
+                required
+              />
+            </section>
+
+
             {/* Location */}
             <section>
               <h2 className="font-semibold">Country & City/Location *</h2>
@@ -841,22 +934,28 @@ export default function CreateTourismPostPage() {
               </div>
             </section>
 
-            {/* Media Upload (Images Only) */}
+            {/* Media Upload (Images and Videos) */}
             <section>
-              <h2 className="font-semibold text-brand-600">Photos</h2>
+              <h2 className="font-semibold text-brand-600">Photos & Videos</h2>
               <div className="mt-2 border-2 border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-600">
-                <div className="mb-2">
-                  <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path d="M12 4v16m8-8H4" />
-                  </svg>
+                <div className="flex justify-center items-center gap-3 mb-2">
+                  <div className="flex items-center gap-1">
+                    <I.image />
+                    <span className="text-xs">Images</span>
+                  </div>
+                  <div className="h-4 w-px bg-gray-300"></div>
+                  <div className="flex items-center gap-1">
+                    <I.video />
+                    <span className="text-xs">Videos</span>
+                  </div>
                 </div>
-                Upload images to showcase your tourism post (max 5MB per file)
+                Upload images or videos to showcase your tourism post
                 <div className="mt-3">
                   <input
                     ref={fileInputRef}
                     type="file"
                     multiple
-                    accept="image/*"
+                    accept="image/*,video/*"
                     className="hidden"
                     onChange={(e) => handleFilesChosen(e.target.files)}
                   />
@@ -869,81 +968,109 @@ export default function CreateTourismPostPage() {
                   </button>
                 </div>
 
+                {/* Upload Progress Indicator */}
+                {uploading && Object.keys(uploadProgress).length > 0 && (
+                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700">
+                        Uploading {Object.keys(uploadProgress).length} file(s)...
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {Object.values(uploadProgress)[0]}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-brand-600 h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${Object.values(uploadProgress)[0] || 0}%`
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
 
                {(images.length > 0 || uploadingCount > 0) && (
-                <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
-                  {images.map((img, idx) => {
-                    const isImg = true
+                 <div className="mt-6 grid sm:grid-cols-2 gap-4 text-left">
+                   {images.map((img, idx) => {
+                     const isImg = isImage(img);
+                     const isVid = isVideo(img);
+                     const fullUrl = img.startsWith('http') ? img : `${API_URL}/uploads/${img}`;
 
-                    // Resolve URL for filenames
-                    let src = null;
-                    if (img.startsWith("data:image")) {
-                      src = img; // base64
-                    } else if (img.startsWith("http://") || img.startsWith("https://")) {
-                      src = img; // full URL
-                    } else if (isImg) {
-                      src = `${API_URL}/uploads/${img}`; // filename to full URL
-                    }
+                     return (
+                       <div key={`${img}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                         <div
+                           className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center relative cursor-pointer"
+                           onClick={() => handleMediaClick(idx)}
+                         >
+                           {isVid ? (
+                             <>
+                               <video
+                                 src={fullUrl}
+                                 className="h-full w-full object-cover"
+                               />
+                               <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                 <I.video />
+                               </div>
+                             </>
+                           ) : (
+                             <img src={fullUrl} alt={`Media ${idx + 1}`} className="h-full w-full object-cover" />
+                           )}
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <div className="truncate text-sm font-medium">
+                             {isVid ? 'Video' : 'Image'} {idx + 1}
+                           </div>
+                           <div className="text-[11px] text-gray-500 truncate">
+                             {isVid ? 'Video' : 'Image'} • Attached
+                           </div>
+                         </div>
+                         <button
+                           type="button"
+                           onClick={() => removeImage(idx)}
+                           className="p-1 rounded hover:bg-gray-100"
+                           title="Remove"
+                         >
+                           <I.trash />
+                         </button>
+                       </div>
+                     );
+                   })}
 
-                    return (
-                      <div key={`${img}-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                        <div className="h-12 w-12 rounded-md bg-gray-100 overflow-hidden grid place-items-center">
-                          {isImg ? (
-                            <img src={src} alt={img} className="h-full w-full object-cover" />
-                          ) : (
-                            <span className="text-xs text-gray-500">DOC</span>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="truncate text-sm font-medium">Image {idx+1}</div>
-                          <div className="text-[11px] text-gray-500 truncate">Attached</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeImage(idx)}
-                          className="p-1 rounded hover:bg-gray-100"
-                          title="Remove"
-                        >
-                          <I.trash />
-                        </button>
-                      </div>
-                    );
-                  })}
-
-                  {uploadingCount > 0 &&
-                    Array.from({ length: uploadingCount }).map((_, idx) => (
-                      <div key={`img-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
-                        <div className="h-12 w-12 rounded-md bg-gray-200 animate-pulse" />
-                        <div className="flex-1 min-w-0">
-                          <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
-                          <div className="h-3 bg-gray-200 rounded animate-pulse" />
-                        </div>
-                        <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
-                      </div>
-                    ))
-                  }
-                </div>
-              )}
+                   {uploadingCount > 0 &&
+                     Array.from({ length: uploadingCount }).map((_, idx) => (
+                       <div key={`img-skel-${idx}`} className="flex items-center gap-3 border rounded-lg p-3">
+                         <div className="h-12 w-12 rounded-md bg-gray-200 animate-pulse" />
+                         <div className="flex-1 min-w-0">
+                           <div className="h-4 bg-gray-200 rounded animate-pulse mb-1" />
+                           <div className="h-3 bg-gray-200 rounded animate-pulse" />
+                           {/* Upload Progress Bar */}
+                           {uploading && (
+                             <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                               <div
+                                 className="bg-brand-600 h-1.5 rounded-full transition-all duration-300"
+                                 style={{
+                                   width: `${Object.values(uploadProgress)[0] || 0}%`
+                                 }}
+                               />
+                             </div>
+                           )}
+                         </div>
+                         <div className="h-8 w-8 rounded bg-gray-200 animate-pulse" />
+                       </div>
+                     ))
+                   }
+                 </div>
+               )}
 
 
               </div>
             </section>
 
-            {/* Description */}
-            <section>
-              <h2 className="font-semibold">Description *</h2>
-              <textarea
-                value={form.description}
-                onChange={(e) => setField("description", e.target.value)}
-                placeholder="Describe this destination, share your experience, cultural insights, and travel tips..."
-                className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
-                rows={4}
-                required
-              />
-            </section>
 
             {/* Season & Budget */}
-            <section>
+            <section className="hidden">
               <h2 className="font-semibold">Best Season to Visit & Budget Range</h2>
               <div className="mt-2 grid sm:grid-cols-2 gap-4">
                 <div className="relative">
@@ -984,7 +1111,7 @@ export default function CreateTourismPostPage() {
 
             {/* Tags */}
            
-           <section>
+           <section className="hidden">
             <h2 className="font-semibold">Tags</h2>
             <div className="mt-2 flex items-center gap-2">
               <input
@@ -1038,8 +1165,8 @@ export default function CreateTourismPostPage() {
 
             {/* ===== General Classification (SEARCHABLE) ===== */}
             <section>
-              <h2 className="font-semibold text-brand-600">Classification</h2>
-              <p className="text-xs text-gray-600 mb-3">
+              <h2 className="font-semibold text-brand-600 hidden">Classification</h2>
+              <p className="text-xs text-gray-600 mb-3 hidden">
                 Search and pick the category that best describes your tourism post.
               </p>
             
@@ -1076,7 +1203,7 @@ export default function CreateTourismPostPage() {
             </section>
             
             {/* ===== Industry Classification ===== */}
-            <section>
+            <section className="hidden">
               <h2 className="font-semibold text-brand-600">Industry Classification</h2>
               <p className="text-xs text-gray-600 mb-3">
                 Select the industry category and subcategory that best describes your tourism post.
@@ -1114,22 +1241,62 @@ export default function CreateTourismPostPage() {
 
             {/* ===== Share With (Audience selection) ===== */}
             <section>
-              <h2 className="font-semibold text-brand-600">Share With (Target Audience)</h2>
-              <p className="text-xs text-gray-600 mb-3">
-                Select who should see this post. Choose multiple identities, categories, subcategories, and sub-subs.
-              </p>
-              <AudienceTree
-                tree={audTree}
-                selected={audSel}
-                onChange={(next) => setAudSel(next)}
-              />
+              <div className="mb-4">
+                {!showAudienceSection ? (
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAudienceSection(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                      Define Target Audience (optional)
+                    </button>
+                    <p className="text-xs text-gray-500">
+                      Target your post to specific audiences
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-block h-2 w-2 rounded-full bg-brand-600" />
+                        <h3 className="font-semibold text-brand-600">Share With (Target Audience)</h3>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAudienceSection(false)}
+                        className="inline-flex items-center gap-1 px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-xs hover:bg-gray-50"
+                      >
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                        Hide
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-3">
+                      Select who should see this post. Choose multiple identities, categories, subcategories, and sub-subs.
+                    </p>
+
+                    <AudienceTree
+                      tree={audTree}
+                      selected={audSel}
+                      onChange={(next) => setAudSel(next)}
+                    />
+                  </div>
+                )}
+              </div>
             </section>
 
             {/* Actions */}
             <div className="flex justify-end gap-3">
-              <button type="button" onClick={() => navigate("/tourism")} className={styles.ghost}>
-                Cancel
-              </button>
+              {!hideHeader && (
+                <button type="button" onClick={() => navigate("/tourism")} className={styles.ghost}>
+                  Cancel
+                </button>
+              )}
               <button type="submit" className={styles.primaryWide} disabled={saving}>
                 {saving ? "Saving…" : isEditMode ? "Update Post" : "Publish Post"}
               </button>
@@ -1137,6 +1304,15 @@ export default function CreateTourismPostPage() {
           </form>
         )}
       </main>
+
+      {/* Media Viewer */}
+      {mediaViewerOpen && (
+        <MediaViewer
+          urls={mediaUrls}
+          initialIndex={selectedMediaIndex}
+          onClose={closeMediaViewer}
+        />
+      )}
     </div>
   );
 }

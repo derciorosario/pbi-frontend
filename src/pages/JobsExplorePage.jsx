@@ -750,9 +750,9 @@ export default function PeopleFeedPage() {
           </div>
            <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
-              { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
-              { label: "Search for a job", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
-              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
+              { label: "Highlight a career progress", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),hide:user?.accountType=="company" },
+              { label: "Find Jobs", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),hide:user?.accountType=="company" },
+              { label: "Share a Job Opening", Icon: PlusCircle, onClick: () => navigate("/jobs/create"),hide:user?.accountType=="individual" },
            
             ]} />
            <ProfileCard />
@@ -765,7 +765,7 @@ export default function PeopleFeedPage() {
             <div className="flex items-center flex-wrap w-full justify-between mb-4">
          
 
-            <PostComposer from={'job'} typeOfPosts={[ { label: "Post Job Opportunity",short_label:'Post Job', Icon: Briefcase,hide:user?.accountType=="individual",type:'main'}, { label: "Share Job Experience", Icon: Star,hide:user?.accountType=="company"}, { label: "Search for a job", Icon: SearchIcon,hide:user?.accountType=="company"}, ]}/>
+            <PostComposer from={'job'} typeOfPosts={[ { label: "Share a Job Opening", Icon: Briefcase,hide:user?.accountType=="individual",type:'main'}, { label: "Find Jobs", Icon: SearchIcon,hide:user?.accountType=="company"}, { label: user?.accountType=="company" ? "Share an experience":  "Highlight a career progress", Icon: Star} ]}/>
             </div>
             <section className="space-y-4 overflow-hidden">
               {renderMiddle()}

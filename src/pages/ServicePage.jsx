@@ -579,9 +579,9 @@ const renderMiddle = () => {
           </div>
         <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil, path: "/profile" },
-            { label: "Share a Service", Icon: PlusCircle, onClick: () => navigate("/services/create"),hide:user?.accountType=="individual"},
-            { label: "Search for a Service", Icon: PlusCircle, onClick: () => navigate("/need/service/create"),hide:user?.accountType=="company" },
-            { label: "Share Service Experience", Icon: PlusCircle, onClick: () => navigate("/moment/service/create"),hide:user?.accountType=="company" },
+            { label: "Add a New Service", Icon: PlusCircle, onClick: () => navigate("/services/create"),hide:user?.accountType=="individual"},
+            { label: "Find Services", Icon: PlusCircle, onClick: () => navigate("/need/service/create"),hide:user?.accountType=="company" },
+            { label: "Highlight a Service ", Icon: PlusCircle, onClick: () => navigate("/moment/service/create"),hide:user?.accountType=="company" },
             
            ]} />
          
@@ -599,9 +599,9 @@ const renderMiddle = () => {
             <PostComposer
               from="service"
               typeOfPosts={[
-                { label: "Share a Service", Icon: Briefcase, hide: user?.accountType === "individual", type: "main" }, // 💼 Sharing a service
-                { label: "Search for a Service", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for services
-                { label: "Share Service Experience", Icon: Star, hide: user?.accountType === "company" }, // ⭐ Sharing feedback/experience
+                { label: "Add a New Service", Icon: Briefcase, hide: user?.accountType === "individual", type: "main" }, // 💼 Sharing a service
+                { label: "Find Services", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for services
+                { label: "Highlight a Service ", Icon: Star }, // ⭐ Sharing feedback/experience
               ]}
             />
             </div>

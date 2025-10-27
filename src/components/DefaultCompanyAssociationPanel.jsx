@@ -318,7 +318,7 @@ export default function CompanyAssociationPanel() {
   {showMore && (
     <>
       <ActionButton
-        label="Post Job Opportunity"
+        label="Share a Job Opening"
         onClick={company.onPostJob}
         icon={Briefcase}
       />

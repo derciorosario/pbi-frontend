@@ -527,7 +527,7 @@ export default function PeopleFeedPage() {
                             <li>
                               <button onClick={()=>navigate('/jobs/create')} className="w-full px-4 py-2 flex items-center gap-2 hover:bg-gray-50">
                                 <PlusCircle size={16} className="text-[#8a358a]" />
-                                Post Job Opportunity
+                                Share a Job Opening
                               </button>
                             </li>
                             <li>

@@ -16,35 +16,46 @@ export default function PostCreationDialog({ isOpen, onClose, postType, from, hi
   if (!isOpen || !postType) return null;
 
   const renderForm = () => {
-    if (postType.label == 'Post Job Opportunity') {
+    if (postType.label == 'Share a Job Opening' || postType.label == 'Share a job opening') {
       return <CreateJobOpportunity triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
-    } else if (postType.label=="Share Funding Experience" || postType.label == 'Share Job Experience' || postType.label == 'Share Event Experience' || postType.label == 'Share Product Experience' || postType.label == 'Share Service Experience' || postType.label == 'Share a Tourism Activity') {
+    } else if ( postType.label == 'Highlight an opportunity' || postType.label == 'Highlight a tourism attraction' || postType.label == 'Highlight a tourist Attraction' ||  postType.label == 'Highlight a career progress' || postType.label == 'Share an experience' || postType.label == 'Highlight an event' || postType.label == 'Highlight a product' || postType.label == 'Highlight a service' || postType.label == 'Share tourism experiences' || postType.label == 'Highlight a funding opportunity' || postType.label == 'Highlight a Product' || postType.label == 'Highlight a Service ' || postType.label == 'Share a Tourism Experience' || postType.label == 'Highlight an Opportunity' || postType.label == 'Highlight a Funding Opportunity') {
       return <CreateMomentPage type={
-        postType.label == 'Share Event Experience' ? 'event' :
-        postType.label == 'Share Product Experience' ? 'product' :
-        postType.label == 'Share Service Experience' ? 'service' :
-        postType.label == 'Share a Tourism Activity' ? 'tourism' : (postType.from || from)
-      } triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} 
+        postType.label == 'Highlight an event' ? 'event' :
+        postType.label == 'Highlight a product' ? 'product' :
+        postType.label == 'Highlight a Product' ? 'product' :
+        postType.label == 'Highlight a service' ? 'service' :
+        postType.label == 'Highlight a Service ' ? 'service' :
+        postType.label == 'Share tourism experiences' ? 'tourism' :
+        postType.label == 'Share a Tourism Experience' ? 'tourism' :
+        postType.label == 'Highlight a funding opportunity' ? 'funding' :
+        postType.label == 'Highlight a Funding Opportunity' ? 'funding' :
+        postType.label == 'Highlight an Opportunity' ? 'funding' : (postType.from || from)
+      } triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader}
         onSuccess={onClose} />;
-    } else if (postType.label == 'Search for a job' || postType.label == 'Search for an event' || postType.label == 'Search for a Product' || postType.label == 'Search for a Service' || postType.label == 'Search for Tourism Activities' || postType.label=="Search for a Fund/Sponsorship") {
+    } else if (postType.label == 'Find Jobs' || postType.label == 'Find jobs' || postType.label == 'Find events' || postType.label == 'Find Products' || postType.label == 'Find Services' || postType.label == 'Explore tourism attractions' || postType.label == 'Explore funding opportunities' || postType.label == 'Find products' || postType.label == 'Find Services' || postType.label == 'Explore Tourism Attractions' || postType.label == 'Explore funding opportunities') {
       return <CreateNeedPage type={
-        postType.label == 'Search for a job' ? 'job' :
-        postType.label == 'Search for an event' ? 'event' :
-        postType.label == 'Search for a Product' ? 'product' :
-        postType.label == 'Search for a Service' ? 'service' :
-        postType.label == 'Search for a Fund/Sponsorship' ? 'funding' :
-        postType.label == 'Search for Tourism Activities' ? 'tourism' : (postType.from || from)
+        postType.label == 'Find Jobs' ? 'job' :
+        postType.label == 'Find jobs' ? 'job' :
+        postType.label == 'Find events' ? 'event' :
+        postType.label == 'Find Products' ? 'product' :
+        postType.label == 'Find products' ? 'product' :
+        postType.label == 'Find Services' ? 'service' :
+        postType.label == 'Find Services' ? 'service' :
+        postType.label == 'Explore funding opportunities' ? 'funding' :
+        postType.label == 'Explore funding opportunities' ? 'funding' :
+        postType.label == 'Explore tourism attractions' ? 'tourism' :
+        postType.label == 'Explore Tourism Attractions' ? 'tourism' : (postType.from || from)
       } triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
-    } else if (postType.label == 'Share an event') {
+    } else if (postType.label == 'Host an Event' || postType.label == 'Host an event') {
       return <CreateEventPage type={postType.from || from} triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
-    } else if (postType.label == 'Sell a Product') {
+    } else if (postType.label == 'Add a New Product' || postType.label == 'Add new product') {
       return <CreateProductPage triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
-    } else if (postType.label == 'Share a Service') {
+    } else if (postType.label == 'Add a New Service' || postType.label == 'Add new service') {
       return <CreateServicePage triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
-    } else if (postType.label == 'Share a Funding Opportunity') {
-      return <CrowdfundForm triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
-    } else if (postType.label == '_Share a Tourism Activity') {
+    } else if (postType.label=="Post a Tourism Attraction" ||  postType.label == 'Post a tourism attraction' || postType.label == '_Share a Tourism Activity') {
       return <CreateTourismPage triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
+    } else if (postType.label == 'Publish an Opportunity' || postType.label == 'Publish an opportunity') {
+      return <CrowdfundForm triggerImageSelection={postType.triggerImageSelection} hideHeader={hideHeader} onSuccess={onClose} />;
     } else {
       return <div className="p-6 text-center text-gray-600">Form not available for this post type</div>;
     }

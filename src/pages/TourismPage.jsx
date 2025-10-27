@@ -15,7 +15,7 @@ import NeedCard from "../components/NeedCard";
 import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import FeedErrorRetry from "../components/FeedErrorRetry";
-import { AlarmClock, Calendar, MapPin, Pencil, PlusCircle, Rocket, Search } from "lucide-react";
+import { AlarmClock, Calendar, Landmark, Map, MapPin, Mountain, Pencil, PlusCircle, Rocket, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
@@ -566,8 +566,10 @@ export default function TourismPage() {
             <PostComposer
                 from="tourism"
                 typeOfPosts={[
-                  { label: "Share a Tourism Activity", Icon: MapPin, hide: user?.accountType === "company" }, // 📍 Sharing locations/activities
-                  { label: "Search for Tourism Activities", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for activities
+                  { label: "Post a Tourism Attraction", Icon:Map, hide: user?.accountType !== "company" }, // 🔍 Searching for activities
+                  { label: user?.accountType === "company" ? "Highlight a tourist Attraction" :  "Explore Tourism Attractions", Icon: Search}, // 🔍 Searching for activities
+                  { label: "Share a Tourism Experience", Icon: MapPin, hide: user?.accountType === "company" }, // 📍 Sharing locations/activities
+               
                 ]}
               />
             </div>
@@ -582,14 +584,13 @@ export default function TourismPage() {
       </main>
 
       <MobileFiltersBottomSheet
-        isOpen={mobileFiltersOpen}
-        onClose={() => setMobileFiltersOpen(false)}
-                    selectedFilters={selectedFilters}
+              isOpen={mobileFiltersOpen}
+              onClose={() => setMobileFiltersOpen(false)}
+              selectedFilters={selectedFilters}
               setSelectedFilters={setSelectedFilters}
               generalTree={generalTree}
               {...filtersProps}
               from={"tourism"}
-              
               catComponent={ <TopFilterButtons
               selected={selectedFilters}
               setSelected={setSelectedFilters}
@@ -597,7 +598,8 @@ export default function TourismPage() {
               buttonLabels={categoryIdToNameMap}
               from={from}
               loading={loadingFeed}
-            />}
+        />}
+
      />
    </DefaultLayout>
   );

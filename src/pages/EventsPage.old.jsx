@@ -519,9 +519,9 @@ export default function EventsPage() {
 
           <QuickActions title="Quick Actions" items={[
             { label: "Edit Profile", Icon: Pencil,onClick: () => navigate("/profile") },
-            { label: "Share an event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
-            { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company"},
-            { label: "Search for an event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company"},
+            { label: "Host an Event", Icon: PlusCircle, onClick: () => navigate("/events/create"),hide:user?.accountType=="individual" },
+            { label: "Highlight an event", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),hide:user?.accountType=="company"},
+            { label: "Find events", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),hide:user?.accountType=="company"},
           ]} />
 
           <ProfileCard />
@@ -535,9 +535,9 @@ export default function EventsPage() {
              <PostComposer
                 from="event"
                 typeOfPosts={[
-                  { label: "Share an event", Icon: CalendarPlus, hide: user?.accountType === "individual", type: "main" },
-                  { label: "Share Event Experience", Icon: Star, hide: user?.accountType === "company" },
-                  { label: "Search for an event", Icon: Search, hide: user?.accountType === "company" },
+                  { label: "Host an Event", Icon: CalendarPlus, hide: user?.accountType === "individual", type: "main" },
+                  { label: "Highlight an event", Icon: Star, hide: user?.accountType === "company" },
+                  { label: "Find events", Icon: Search, hide: user?.accountType === "company" },
                 ]}
               />
 

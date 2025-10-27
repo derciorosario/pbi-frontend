@@ -20,7 +20,7 @@ import { useData } from "../../contexts/DataContext.jsx";
 import { useAuth } from "../../contexts/AuthContext.jsx";
 import DefaultLayout from "../../layout/DefaultLayout.jsx";
 import QuickActions from "../../components/QuickActions.jsx";
-import { Briefcase, CalendarPlus, HelpCircle, MessageSquare, Pencil, PlusCircle, Rocket, Search, Star } from "lucide-react";
+import { Briefcase, CalendarPlus, DollarSign, HelpCircle, MapPin, MessageSquare, Pencil, PlusCircle, Rocket, Search, Star, Tag, Users, Building, Camera, FileText, Globe, Heart, Home, Mail, Phone, Settings, Shield, ShoppingCart, Truck, User, Video, Zap } from "lucide-react";
 import ProfileCard from "../../components/ProfileCard.jsx";
 import ServiceCard from "../../components/ServiceCard.jsx";
 import ProductCard from "../../components/ProductCard-1.jsx";
@@ -400,11 +400,11 @@ return (
           items={[
             { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
             { label: "Settings and Privacy", Icon: Pencil, onClick: () => navigate("/settings") },
-            { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
+            { label: "Share a Job Opening", Icon: PlusCircle, onClick: () => navigate("/jobs/create"), hide:user?.accountType=="individual"},
             { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") , hide:user?.accountType=="individual"},
-            { label: "Share Job Experience", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),from:'job',hide:user?.accountType=="company"},
-            { label: "Search for a job", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),from:'job', hide:user?.accountType=="company" },
-            { label: "Share Event Experience", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),from:'event', hide:user?.accountType=="company" },
+            { label:  user?.accountType=="company" ? "Share an experience":  "Highlight a career progress", Icon: PlusCircle, onClick: () => navigate("/moment/job/create"),from:'job',hide:user?.accountType=="company"},
+            { label: "Find Jobs", Icon: PlusCircle, onClick: () => navigate("/need/job/create"),from:'job', hide:user?.accountType=="company" },
+            { label: "Highlight an event", Icon: PlusCircle, onClick: () => navigate("/moment/event/create"),from:'event', hide:user?.accountType=="company" },
             { label: "Ask About an Event", Icon: PlusCircle, onClick: () => navigate("/need/event/create"),from:'event', hide:user?.accountType=="company" },
           ]}
         />
@@ -414,16 +414,36 @@ return (
       <div className="lg:col-span-9 grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <div className="flex items-center flex-wrap w-full justify-between mb-4">
+
+            
           
           <PostComposer
             from="feed"
             typeOfPosts={[
-              { label: "Post Job Opportunity", Icon: Briefcase, hide: user?.accountType === "individual" },
-              { label: "Share an event", Icon: CalendarPlus, hide: user?.accountType === "individual" },
-              { label: "Share Job Experience", Icon: Star, from: "job", hide: user?.accountType === "company" },
-              { label: "Search for a job", Icon: Search, from: "job", hide: user?.accountType === "company" },
-              { label: "Share Event Experience", Icon: MessageSquare, from: "event", hide: user?.accountType === "company" },
-              { label: "Search for an event", Icon: HelpCircle, from: "event", hide: user?.accountType === "company" },
+              { label: "Share a job opening", Icon: Briefcase, from: "job", hide: user?.accountType === "individual" },
+              { label: "Host an event", Icon: CalendarPlus, from: "event", hide: user?.accountType === "individual" },
+              { label: "Add new product", Icon: Tag, from: "product", hide: user?.accountType === "individual" },
+              { label: "Add new service", Icon: Building, from: "service", hide: user?.accountType === "individual" },
+              { label: "Post a tourism attraction", Icon: MapPin, from: "tourism", hide: user?.accountType === "individual" },
+              { label: "Publish an opportunity", Icon: DollarSign, from: "funding", hide: user?.accountType === "individual" },
+              { label: "Share an experience", Icon: Star, from: "job", hide: user?.accountType === "individual" },
+              { label: "Highlight an event", Icon: Video, from: "event", hide: user?.accountType === "individual" },
+              { label: "Highlight a product", Icon: Truck, from: "product", hide: user?.accountType === "individual" },
+              { label: "Highlight a service", Icon: Mail, from: "service", hide: user?.accountType === "individual" },
+              { label: "Highlight a tourism attraction", Icon: Home, from: "tourism", hide: user?.accountType === "individual" },
+              { label: "Highlight an opportunity", Icon: Zap, from: "funding", hide: user?.accountType === "individual" },
+              { label: "Find jobs", Icon: Search, from: "job", hide: user?.accountType === "company" },
+              { label: "Find events", Icon: HelpCircle, from: "event", hide: user?.accountType === "company" },
+              { label: "Find Products", Icon: ShoppingCart, from: "product", hide: user?.accountType === "company" },
+              { label: "Find Services", Icon: Settings, from: "service", hide: user?.accountType === "company" },
+              { label: "Explore tourism attractions", Icon: Globe, from: "tourism", hide: user?.accountType === "company" },
+              { label: "Explore funding opportunities", Icon: FileText, from: "funding", hide: user?.accountType === "company" },
+              { label: "Highlight a career progress", Icon: User, from: "job", hide: user?.accountType === "company" },
+              { label: "Highlight an event", Icon: MessageSquare, from: "event", hide: user?.accountType === "company" },
+              { label: "Highlight a product", Icon: Camera, from: "product", hide: user?.accountType === "company" },
+              { label: "Highlight a service", Icon: Phone, from: "service", hide: user?.accountType === "company" },
+              { label: "Share tourism experiences", Icon: Heart, from: "tourism", hide: user?.accountType === "company" },
+              { label: "Highlight a funding opportunity", Icon: Shield, from: "funding", hide: user?.accountType === "company" },
             ]}
           />
           </div>

@@ -315,7 +315,7 @@ export default function HomePage() {
              <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
               { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
-              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+              { label: "Share a Job Opening", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
             ]} />
             <ProfileCard />
             <div className="_sticky top-0 mb-2">
@@ -331,7 +331,7 @@ export default function HomePage() {
             <h3 className="font-semibold text-2xl mt-1">Connect with the World</h3>
            
               <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
-                { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+                { label: "Share a Job Opening", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                 { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                 { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
               ]} />

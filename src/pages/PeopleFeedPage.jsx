@@ -668,7 +668,7 @@ export default function PeopleFeedPage() {
           {/**   <QuickActions title="Quick Actions" items={[
               { label: "Edit Profile", Icon: Pencil, onClick: () => navigate("/profile") },
               { hide:true, label: "Boost Profile", Icon: Rocket, onClick: () => navigate("/settings") },
-              { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+              { label: "Share a Job Opening", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
               { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
               { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
              ]} />
@@ -680,7 +680,7 @@ export default function PeopleFeedPage() {
          
             <div className="flex items-center justify-end gap-x-2 flex-wrap ">
               {/**  <TabsAndAdd tabs={[]} activeTab={activeTab} setActiveTab={setActiveTab}  items={[
-                    { label: "Post Job Opportunity", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
+                    { label: "Share a Job Opening", Icon: PlusCircle, onClick: () => navigate("/jobs/create") },
                     { label: "Create an Event", Icon: PlusCircle, onClick: () => navigate("/events/create") },
                     { label: "Share an Experience", Icon: PlusCircle, onClick: () => navigate("/experiences/create") },
                   ]} /> */}

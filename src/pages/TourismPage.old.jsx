@@ -532,8 +532,8 @@ export default function TourismPage() {
             <PostComposer
                 from="tourism"
                 typeOfPosts={[
-                  { label: "Share a Tourism Activity", Icon: MapPin, hide: user?.accountType === "company" }, // 📍 Sharing locations/activities
-                  { label: "Search for Tourism Activities", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for activities
+                  { label: "Share a Tourism Experience", Icon: MapPin, hide: user?.accountType === "company" }, // 📍 Sharing locations/activities
+                  { label: "Explore Tourism Attractions", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for activities
                 ]}
               />
             </div>

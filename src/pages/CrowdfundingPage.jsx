@@ -567,12 +567,12 @@ export default function CrowdfundingPage() {
           <div className="lg:col-span-2">
             <div className="flex items-center flex-wrap w-full justify-between mb-4">
                 <PostComposer
-                  from="funding"
-                  typeOfPosts={[
-                    { label: "Share a Funding Opportunity", Icon: DollarSign, hide: user?.accountType === "individual", type: "main" }, // 💰 Sharing funding
-                    { label: "Search for a Fund/Sponsorship", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for funding
-                    { label: "Share Funding Experience", Icon: HelpCircle, onClick: () => navigate("/need/funding/create"),hide:user?.accountType=="company" },
-                  ]}
+                  from="funding" 
+                  typeOfPosts={[ 
+                    { label: "Publish an Opportunity", Icon: DollarSign, hide: user?.accountType === "individual", type: "main" }, // 💰 Sharing funding
+                    { label: "Explore funding opportunities", Icon: Search, hide: user?.accountType === "company" }, // 🔍 Searching for funding
+                    { label: user?.accountType === "company" ? "Highlight an Opportunity" : "Highlight a Funding Opportunity", Icon: HelpCircle, onClick: () => navigate("/need/funding/create") },
+                  ]} 
                 />
             </div>
             <section className="space-y-4 overflow-hidden">
