@@ -1,9 +1,10 @@
 // src/components/CommentsDialog.jsx
 import React, { useEffect, useRef, useState } from "react";
-import { X, Send, Loader2 } from "lucide-react";
+import { X, Send, Loader2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "../lib/toast";
 import * as socialApi from "../api/social";
 import { useData } from "../contexts/DataContext";
+import ConfirmDialog from "./ConfirmDialog";
 
 function computeTimeAgo(explicit, createdAt) {
   if (explicit) return explicit;
@@ -31,6 +32,12 @@ export default function CommentsDialog({
   const [sending, setSending] = useState(false);
   const [comments, setComments] = useState([]);
   const [newText, setNewText] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editingText, setEditingText] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+  const overlayRef = useRef(null);
   const panelRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -46,7 +53,8 @@ export default function CommentsDialog({
   useEffect(() => {
     function handleDown(e) {
       if (!open) return;
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
+      // Close only when clicking directly on this dialog's backdrop (not on its children or nested dialogs)
+      if (overlayRef.current && e.target === overlayRef.current) {
         onClose?.();
       }
     }
@@ -80,12 +88,14 @@ export default function CommentsDialog({
       const arr = Array.isArray(data) ? data : [];
       const formatted = arr.map((c) => ({
         id: c.id,
+        userId: c.user?.id ?? c.userId,
         userName: c.user?.name || "User",
         avatar:
           c.user?.avatarUrl ||
           `https://i.pravatar.cc/60?u=${encodeURIComponent(c.userId)}`,
         text: c.text,
         createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
       }));
       setComments(formatted);
       onCountChange?.(formatted.length);
@@ -114,16 +124,18 @@ export default function CommentsDialog({
 
     const optimistic = {
       id: "local-" + Math.random().toString(36).slice(2),
+      userId: currentUser.id,
       userName: currentUser.name || "You",
       avatar:
         currentUser.avatarUrl ||
         `https://i.pravatar.cc/60?u=${encodeURIComponent(currentUser.id)}`,
       text,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     // show instantly at the top
-    setComments((prev) => {
+   setComments((prev) => {
       const next = [optimistic, ...prev];
       onCountChange?.(next.length);
       return next;
@@ -144,6 +156,7 @@ export default function CommentsDialog({
             c.id === optimistic.id
               ? {
                   id: saved.id,
+                  userId: saved.user?.id ?? saved.userId,
                   userName: saved.user?.name || "User",
                   avatar:
                     saved.user?.avatarUrl ||
@@ -152,6 +165,7 @@ export default function CommentsDialog({
                     )}`,
                   text: saved.text,
                   createdAt: saved.createdAt,
+                  updatedAt: saved.updatedAt ?? saved.createdAt,
                 }
               : c
           )
@@ -162,7 +176,7 @@ export default function CommentsDialog({
       // (no loader flicker)
       fetchComments({ silent: true });
 
-       //onClose?.();
+      // onClose?.();
     } catch (e) {
       // remove optimistic item
       setComments((arr) => {
@@ -176,13 +190,75 @@ export default function CommentsDialog({
     }
   }
 
+  function startEdit(comment) {
+    setEditingId(comment.id);
+   setEditingText(comment.text);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditingText("");
+    setSavingEdit(false);
+  }
+
+  async function saveEdit() {
+    const text = editingText.trim();
+    if (!editingId || !text) return;
+    setSavingEdit(true);
+    try {
+      const { data: updated } = await socialApi.updateComment(editingId, text);
+      setComments((arr) =>
+        arr.map((c) =>
+          c.id === editingId
+            ? {
+                ...c,
+                text: updated?.text ?? text,
+                updatedAt: updated?.updatedAt ?? new Date().toISOString(),
+              }
+            : c
+        )
+      );
+      cancelEdit();
+    } catch (e) {
+      toast.error("Couldn't update comment. Try again.");
+      setSavingEdit(false);
+    }
+  }
+
+  function askDelete(comment) {
+    setDeleteTarget(comment);
+  }
+
+  // Confirm delete handler passed to ConfirmDialog
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await socialApi.deleteComment(deleteTarget.id);
+      setComments((arr) => {
+        const next = arr.filter((c) => c.id !== deleteTarget.id);
+        onCountChange?.(next.length);
+        return next;
+      });
+      setDeleteTarget(null);
+    } catch (e) {
+      toast.error("Couldn't delete comment. Try again.");
+      // Throw to keep dialog open as per ConfirmDialog's behavior
+      throw e;
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (!open) return null;
 
   // Whether we have a list to scroll; used to avoid giant empty region
   const hasList = comments.length > 0 || loading;
 
+  const isOwner = (c) => !!currentUser?.id && c.userId === currentUser.id;
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
+    <div ref={overlayRef} className="fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4">
       <div
         ref={panelRef}
         // Use max-height instead of fixed height so dialog shrinks when empty
@@ -210,18 +286,20 @@ export default function CommentsDialog({
         {/* Composer */}
         <div className="px-4 sm:px-5 pt-3">
           <div className="flex items-start gap-3">
-           {currentUser?.avatarUrl && <img
-              src={
-                currentUser?.avatarUrl ||
-                (currentUser?.id
-                  ? `https://i.pravatar.cc/60?u=${encodeURIComponent(
-                      currentUser.id
-                    )}`
-                  : "https://i.pravatar.cc/60?u=guest")
-              }
-              alt=""
-              className="h-9 w-9 rounded-full object-cover"
-            />}
+            {currentUser?.avatarUrl && (
+              <img
+                src={
+                  currentUser?.avatarUrl ||
+                  (currentUser?.id
+                    ? `https://i.pravatar.cc/60?u=${encodeURIComponent(
+                        currentUser.id
+                      )}`
+                    : "https://i.pravatar.cc/60?u=guest")
+                }
+                alt=""
+                className="h-9 w-9 rounded-full object-cover"
+              />
+            )}
             <div className="flex-1">
               <textarea
                 ref={textareaRef}
@@ -281,15 +359,77 @@ export default function CommentsDialog({
                       className="h-8 w-8 rounded-full object-cover"
                     />
                     <div className="flex-1">
-                      <div className="text-xs text-gray-500">
-                        <span className="font-medium text-gray-800">
-                          {c.userName || "User"}
-                        </span>{" "}
-                        • {computeTimeAgo(null, c.createdAt)}
+                      <div className="flex items-start justify-between">
+                        <div className="text-xs text-gray-500">
+                          <span className="font-medium text-gray-800">
+                            {c.userName || "User"}
+                          </span>{" "}
+                          • {computeTimeAgo(null, c.createdAt)}
+                        </div>
+                        {isOwner(c) && editingId !== c.id && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              className="text-xs text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
+                              onClick={() => startEdit(c)}
+                              aria-label="Edit comment"
+                              title="Edit"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button
+                              className="text-xs text-red-600 hover:text-red-700 inline-flex items-center gap-1"
+                              onClick={() => askDelete(c)}
+                              aria-label="Delete comment"
+                              title="Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <div className="text-sm text-gray-800 whitespace-pre-line">
-                        {c.text}
-                      </div>
+
+                      {editingId === c.id ? (
+                        <div className="mt-2">
+                          <textarea
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                                e.preventDefault();
+                                saveEdit();
+                              }
+                            }}
+                            rows={3}
+                            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand-200"
+                          />
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              onClick={saveEdit}
+                              disabled={savingEdit || !editingText.trim()}
+                              className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-60"
+                            >
+                              {savingEdit ? (
+                                <>
+                                  <Loader2 size={14} className="animate-spin" />
+                                  Saving…
+                                </>
+                              ) : (
+                                "Save"
+                              )}
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-medium border border-gray-300 text-gray-700 bg-white hover:border-gray-400"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-800 whitespace-pre-line mt-1">
+                          {c.text}
+                        </div>
+                      )}
                     </div>
                   </li>
                 ))}
@@ -298,6 +438,18 @@ export default function CommentsDialog({
           </div>
         </div>
       </div>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete comment?"
+        text="This action cannot be undone."
+        confirmText={deleting ? "Deleting…" : "Delete"}
+        cancelText="Cancel"
+        tone="danger"
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

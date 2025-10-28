@@ -1017,7 +1017,14 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
                 <textarea
                   value={form.description}
                   onChange={(e) => setField("description", e.target.value)}
-                  placeholder={form.relatedEntityType
+                     placeholder={
+                     form.relatedEntityType=="job" ? 'Share details of the position you are looking for and connect with people that can really help find it.' :
+                     form.relatedEntityType=="event" ? "Describe the type of event you are interested and connect with people that can help you find it.":
+                     form.relatedEntityType=="product" ? 'Describe the type of products you are looking for and connect with people that can help you find it.' :
+                     form.relatedEntityType=="service" ? 'Share the type or services you need and connect with people that can help you find it. ' :
+                     form.relatedEntityType=="tourism" ? 'Describe the type of experience you are looking for and connect with people that can help you find it.' :
+                     form.relatedEntityType=="funding" ? 'Describe the type of funding you are looking for and connect with people that can help you find it. ' :
+                       form.relatedEntityType
                     ? `Share what you're looking for related to ${form.relatedEntityType} and connect with people who can help.`
                      : "Share what you're looking for and connect with people who can help."
                    }

@@ -22,7 +22,16 @@ export default function ProfileCompletionDialog({ isOpen, onClose }) {
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    let next = value;
+
+    if (name === "professionalTitle" && value.length > 50) {
+      next = value.slice(0, 50);
+    }
+    if (name === "about" && value.length > 300) {
+      next = value.slice(0, 300);
+    }
+
+    setForm((prev) => ({ ...prev, [name]: next }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
@@ -107,29 +116,52 @@ export default function ProfileCompletionDialog({ isOpen, onClose }) {
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
          
-         <Input
-          name="professionalTitle"
-          label={isCompany ? "Company Area or Focus" : "Job Title or Role"}
-          placeholder={
-            isCompany
-              ? "e.g. Technology, Finance, Marketing, Logistics"
-              : "e.g. Software Engineer, Marketing Manager"
-          }
-          value={form.professionalTitle}
-          onChange={onChange}
-          error={errors.professionalTitle}
-        />
+         <div className="space-y-1">
+           <div className="flex justify-between items-center">
+             <label className="text-sm font-medium text-gray-700">
+               {isCompany ? "Company Area or Focus" : "Job Title or Role"}
+             </label>
+             <span
+               className={`text-xs ${
+                 form.professionalTitle.length > 50 ? "text-red-600" : "text-gray-500"
+               }`}
+             >
+               {form.professionalTitle.length}/50
+             </span>
+           </div>
+           <Input
+             name="professionalTitle"
+             placeholder={
+               isCompany
+                 ? "e.g. Technology, Finance, Marketing, Logistics"
+                 : "e.g. Software Engineer, Marketing Manager"
+             }
+             value={form.professionalTitle}
+             onChange={onChange}
+             error={errors.professionalTitle}
+           />
+         </div>
 
           <div className="space-y-1">
-            <label htmlFor="about" className="text-sm font-medium text-gray-700">
-              {isCompany ? "About Your Company" : "About You"}
-            </label>
+            <div className="flex justify-between items-center">
+              <label htmlFor="about" className="text-sm font-medium text-gray-700">
+                {isCompany ? "About Your Company" : "About You"}
+              </label>
+              <span
+                className={`text-xs ${
+                  form.about.length > 300 ? "text-red-600" : "text-gray-500"
+                }`}
+              >
+                {form.about.length}/300
+              </span>
+            </div>
             <textarea
               id="about"
               name="about"
-              placeholder={isCompany
-                ? "Tell us about your company, what you do, and what you're looking for"
-                : "Tell us about yourself, your experience, and what you're looking for"
+              placeholder={
+                isCompany
+                  ? "Tell us about your company, what you do, and what you're looking for"
+                  : "Tell us about yourself, your experience, and what you're looking for"
               }
               value={form.about}
               onChange={onChange}

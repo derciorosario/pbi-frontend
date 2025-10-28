@@ -12,6 +12,7 @@ import CITIES from "../../constants/cities.json";
 import GoogleCustomBtn from "../../components/GoogleBtn.jsx";
 import Logo from '../../assets/logo.png'
 import WhiteLogo from '../../assets/logo-white.png'
+import ImageCropper from "../../components/ImageCropper";
 
 
 const emailOK = (v) =>
@@ -28,6 +29,20 @@ const allCityOptions = CITIES.slice(0, 10000).map(city => ({
 const getCitiesForCountry = (country) => {
   if (!country) return [];
   return allCityOptions.filter((c) => c.country?.toLowerCase() === country.toLowerCase());
+};
+
+// Cropping configuration (toggle on/off here)
+const CROP_CONFIG = {
+  avatar: true // Set to false to disable cropping on Signup
+};
+
+// Crop aspect/min sizes
+const cropConfig = {
+  avatar: {
+    aspect: 1,
+    minWidth: 100,
+    minHeight: 100,
+  }
 };
 
 // Component for managing country-city pairs
@@ -199,6 +214,11 @@ export default function Signup() {
     webpage: ""
   });
 
+  // Image cropper state
+  const [showCropper, setShowCropper] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+ 
   // NEW: show/hide toggles
   const [showPwd1, setShowPwd1] = useState(false);
   const [showPwd2, setShowPwd2] = useState(false);
@@ -211,45 +231,98 @@ export default function Signup() {
 
  
    const onFileChange = async (name, file) => {
-  if (file) {
-    // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-    if (file.size > maxSize) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "File size must be less than 5MB"
-      }));
-      return;
-    }
-
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "Please select a valid image file (JPG, PNG, GIF)"
-      }));
-      return;
-    }
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    
+     // We only handle the 'avatar' field here (used for individual avatar or company logo)
+     if (name !== 'avatar') return;
+ 
+     if (file) {
+       // Validate file size (5MB limit)
+       const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+       if (file.size > maxSize) {
+         setErrors((prev) => ({
+           ...prev,
+           [name]: "File size must be less than 5MB"
+         }));
+         return;
+       }
+ 
+       // Validate file type
+       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+       if (!allowedTypes.includes(file.type)) {
+         setErrors((prev) => ({
+           ...prev,
+           [name]: "Please select a valid image file (JPG, PNG, GIF, WEBP)"
+         }));
+         return;
+       }
+ 
+       // If cropping enabled, open cropper with the selected image
+       if (CROP_CONFIG.avatar) {
+         const reader = new FileReader();
+         reader.onload = (e) => {
+           const img = new Image();
+           img.onload = () => {
+             setImageDimensions({
+               width: img.width,
+               height: img.height
+             });
+             setSelectedImage(e.target.result);
+             setShowCropper(true);
+           };
+           img.src = e.target.result;
+         };
+         reader.readAsDataURL(file);
+ 
+         // Clear any previous file/preview while cropping
+         setForm((f) => ({
+           ...f,
+           avatarFile: null,
+           avatarPreview: null
+         }));
+       } else {
+         // No cropping: set file and preview directly
+         const previewUrl = URL.createObjectURL(file);
+         setForm((f) => ({
+           ...f,
+           avatarFile: file,
+           avatarPreview: previewUrl
+         }));
+       }
+ 
+       setErrors((prev) => ({ ...prev, avatarUrl: "" }));
+     } else {
+       // Clear selection
+       setForm((f) => ({
+         ...f,
+         avatarFile: null,
+         avatarPreview: null
+       }));
+     }
+   };
+  // Receive cropped image and finalize selection
+  const handleCropComplete = (croppedImageBlob) => {
+    const mime = croppedImageBlob.type || 'image/jpeg';
+    const ext = mime === 'image/png' ? 'png' : (mime === 'image/webp' ? 'webp' : 'jpg');
+    const filename = `avatar-${Date.now()}.${ext}`;
+    const file = new File([croppedImageBlob], filename, { type: mime });
+    const objectUrl = URL.createObjectURL(croppedImageBlob);
+ 
     setForm((f) => ({
       ...f,
-      avatarFile: file, // Store the file object instead of base64
-      avatarPreview: previewUrl
+      avatarFile: file,
+      avatarPreview: objectUrl
     }));
-    
-    setErrors((prev) => ({ ...prev, avatarUrl: "" }));
-  } else {
-    setForm((f) => ({
-      ...f,
-      avatarFile: null,
-      avatarPreview: null
-    }));
-  }
-};
+ 
+    setShowCropper(false);
+    setSelectedImage(null);
+    setImageDimensions({ width: 0, height: 0 });
+  };
+ 
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setSelectedImage(null);
+    setImageDimensions({ width: 0, height: 0 });
+  };
+ 
   // Labels change with account type, but variable names DO NOT change
   const labelName = acct === "company" ? "Organization name" : "Name";
   const labelEmail = acct === "company" ? "Organization email" : "Email Address";
@@ -275,7 +348,7 @@ export default function Signup() {
       next.name = `${labelName} is required.`;
     } else if (form.name.trim().length < 2) {
       next.name = `${labelName} must be at least 2 characters long.`;
-   } else if (!/^[\p{L}0-9\s\-'\.]+$/u.test(signupForm.name.trim())) {
+   } else if (!/^[\p{L}0-9\s\-'\.]+$/u.test(form.name.trim())) {
       next.name = `${labelName} can only contain letters (including accents), numbers, spaces, hyphens, apostrophes, and periods.`;
     }
     if (!form.email) next.email = `${labelEmail} is required.`;
@@ -898,9 +971,20 @@ export default function Signup() {
               </button>
 
               {/* Optional Google button */}
-               <GoogleCustomBtn page="signup" /> 
+               <GoogleCustomBtn page="signup" />
             </div>
           </form>
+
+          {showCropper && selectedImage && (
+            <ImageCropper
+              image={selectedImage}
+              imageDimensions={imageDimensions}
+              onCropComplete={handleCropComplete}
+              onCancel={handleCropCancel}
+              config={cropConfig.avatar}
+              type="avatar"
+            />
+          )}
         </div>
       </div>
     </div>

@@ -19,6 +19,7 @@ import Logo from '../../assets/logo.png'
 import WhiteLogo from '../../assets/logo-white.png'
 import Demo from '../../assets/lg-main.png'
 import FeedPage from "../feed/FeedExplorePage.jsx";
+import ImageCropper from "../../components/ImageCropper";
 
 function useDebounce(v, ms = 400) {
   const [val, setVal] = useState(v);
@@ -40,6 +41,20 @@ const allCityOptions = CITIES.slice(0, 10000).map(city => ({
 const getCitiesForCountry = (country) => {
   if (!country) return [];
   return allCityOptions.filter((c) => c.country?.toLowerCase() === country.toLowerCase());
+};
+
+// Cropping configuration (toggle on/off here)
+const CROP_CONFIG = {
+  avatar: true // set to false to disable cropping in Home page signup
+};
+
+// Crop aspect/min sizes
+const cropConfig = {
+  avatar: {
+    aspect: 1,
+    minWidth: 100,
+    minHeight: 100,
+  }
 };
 
 // Component for managing country-city pairs
@@ -220,6 +235,10 @@ export default function HomePage() {
   const [showPwd1, setShowPwd1] = useState(false);
   const [showPwd2, setShowPwd2] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Image cropper state
+  const [showCropper, setShowCropper] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 
   // Authentication form handlers
   const onAuthLoginChange = (e) => {
@@ -236,46 +255,99 @@ export default function HomePage() {
 
 
    const onFileChange = async (name, file) => {
-  if (file) {
-    // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-    if (file.size > maxSize) {
-      setSignupErrors((prev) => ({
-        ...prev,
-        [name]: "File size must be less than 5MB"
-      }));
-      return;
-    }
+     // We only handle the 'avatar' field here (used for individual avatar or company logo)
+     if (name !== 'avatar') return;
+ 
+     if (file) {
+       // Validate file size (5MB limit)
+       const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+       if (file.size > maxSize) {
+         setSignupErrors((prev) => ({
+           ...prev,
+           [name]: "File size must be less than 5MB"
+         }));
+         return;
+       }
+ 
+       // Validate file type
+       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+       if (!allowedTypes.includes(file.type)) {
+         setSignupErrors((prev) => ({
+           ...prev,
+           [name]: "Please select a valid image file (JPG, PNG, GIF, WEBP)"
+         }));
+         return;
+       }
+ 
+       // If cropping enabled, open cropper with the selected image
+       if (CROP_CONFIG.avatar) {
+         const reader = new FileReader();
+         reader.onload = (e) => {
+           const img = new Image();
+           img.onload = () => {
+             setImageDimensions({
+               width: img.width,
+               height: img.height
+             });
+             setSelectedImage(e.target.result);
+             setShowCropper(true);
+           };
+           img.src = e.target.result;
+         };
+         reader.readAsDataURL(file);
+ 
+         // Clear any previous file/preview while cropping
+         setSignupForm((f) => ({
+           ...f,
+           avatarFile: null,
+           avatarPreview: null
+         }));
+       } else {
+         // No cropping: set file and preview directly
+         const previewUrl = URL.createObjectURL(file);
+         setSignupForm((f) => ({
+           ...f,
+           avatarFile: file,
+           avatarPreview: previewUrl
+         }));
+       }
+ 
+       setSignupErrors((prev) => ({ ...prev, avatarUrl: "" }));
+     } else {
+       // Clear selection
+       setSignupForm((f) => ({
+         ...f,
+         avatarFile: null,
+         avatarPreview: null
+       }));
+     }
+   };
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      setSignupErrors((prev) => ({
-        ...prev,
-        [name]: "Please select a valid image file (JPG, PNG, GIF)"
-      }));
-      return;
-    }
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    
+  // Receive cropped image and finalize selection
+  const handleCropComplete = (croppedImageBlob) => {
+    const mime = croppedImageBlob.type || 'image/jpeg';
+    const ext = mime === 'image/png' ? 'png' : (mime === 'image/webp' ? 'webp' : 'jpg');
+    const filename = `avatar-${Date.now()}.${ext}`;
+    const file = new File([croppedImageBlob], filename, { type: mime });
+    const objectUrl = URL.createObjectURL(croppedImageBlob);
+ 
     setSignupForm((f) => ({
       ...f,
-      avatarFile: file, // Store the file object instead of base64
-      avatarPreview: previewUrl
+      avatarFile: file,
+      avatarPreview: objectUrl
     }));
-    
-    setSignupErrors((prev) => ({ ...prev, avatarUrl: "" }));
-  } else {
-    setSignupForm((f) => ({
-      ...f,
-      avatarFile: null,
-      avatarPreview: null
-    }));
-  }
-};
-
+ 
+    setShowCropper(false);
+    setSelectedImage(null);
+    setImageDimensions({ width: 0, height: 0 });
+  };
+ 
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setSelectedImage(null);
+    setImageDimensions({ width: 0, height: 0 });
+  };
+ 
   // Labels change with account type, but variable names DO NOT change
   const labelName = acct === "company" ? "Company name" : "Name";
   const labelEmail = acct === "company" ? "Company email" : "Email Address";
@@ -1852,6 +1924,16 @@ export default function HomePage() {
         onClose={() => setContactDialogOpen(false)}
       />
    
+     {showCropper && selectedImage && (
+       <ImageCropper
+         image={selectedImage}
+         imageDimensions={imageDimensions}
+         onCropComplete={handleCropComplete}
+         onCancel={handleCropCancel}
+         config={cropConfig.avatar}
+         type="avatar"
+       />
+     )}
     </DefaultLayout>
   );
 }

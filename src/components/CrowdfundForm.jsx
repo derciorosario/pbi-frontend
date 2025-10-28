@@ -1048,7 +1048,7 @@ function removeTag(idx) {
                 value={form.pitch}
                 onChange={change}
                 rows={6}
-                placeholder="Pitch: We're building a mobile payment platform specifically for small businesses in rural areas. Our solution addresses the lack of banking infrastructure by enabling digital transactions through basic feature phones. Funds will be used to expand our merchant network and develop additional financial services."
+                placeholder="Describe the type of fund opportunity, including target audience and requirements, and receive the best applications for your program."
                 _placeholder="Explain the problem, your solution, market, traction, and how funds will be used."
                 required
               />

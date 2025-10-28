@@ -1014,7 +1014,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                     value={form.description}
                     onChange={(e) => setField("description", e.target.value)}
                     _placeholder="Describe your service in detail. What problems do you solve? What value do you provide?"
-                    placeholder="Describe your service in detail: I provide comprehensive digital marketing strategy consulting for small businesses. I'll analyze your current marketing efforts, identify growth opportunities..."
+                    placeholder="Describe the service you are offering and find clients or partners"
                     className="mt-1 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                     rows={4}
                     required

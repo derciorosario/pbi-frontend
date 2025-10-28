@@ -1600,7 +1600,7 @@ const onSubmit = async (e) => {
                     console.log('ReactQuill onChange - Is HTML?', value.includes('<'));
                     setForm({ ...form, description: value });
                   }}
-                  placeholder="Describe the role, responsibilities, and what you're looking for…"
+                  placeholder="Describe the roles, responsibilities and requirements of the position you are opening"
                   modules={{
                     toolbar: [
                       [{ 'header': [1, 2, 3, 4, 5, 6, false] }],

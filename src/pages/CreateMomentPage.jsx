@@ -976,7 +976,14 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
             <textarea
               value={form.description}
               onChange={(e) => setField("description", e.target.value)}
-              placeholder={form.relatedEntityType
+              placeholder={
+                 form.relatedEntityType=="job"  ? (user?.accountType!="company" ? "Share a professional experience, an achievement, milestone or learnings.": "Share a professional experience, an achievement, milestone or learnings, and inspire talents to join your organization or programs") :
+                 form.relatedEntityType=="event"  ? (user?.accountType!="company" ? "Share an experience of an event, an achievement, milestone or learning": "Share an experience of an event, an achievement, milestone or learning and inspire potential clients to experience it.") :
+                 form.relatedEntityType=="product"  ? (user?.accountType!="company" ? "Share an experience or review of a product and inspire others to experience it.":"Share an insight, achievement or experience with your products and inspire potential clients to experience it.") :
+                 form.relatedEntityType=="service"  ? (user?.accountType!="company" ? "Share an insight, achievement or experience with a service and inspire others to experience it. ":"Share an insight, achievement or experience with your services and inspire potential clients  to experience it.") :
+                 form.relatedEntityType=="tourism"  ? (user?.accountType!="company" ? "Share your experience with a tourism attraction and inspire others to experience it.":"Share an experience with your tourism services and invite potential clients to experience it.") :
+                 form.relatedEntityType=="funding"  ? (user?.accountType!="company" ? "Share an insight, learning or achievement related to funding and inspire others to experience it.":"Share an insight, learning or achievement related to your programs and inspire others to benefit from it.") :
+                  form.relatedEntityType
                   ? `Share an experience of ${form.relatedEntityType} — an achievement, milestone, or learning`
                   : "Share an experience — an achievement, milestone, or learning"
                 }
@@ -1124,27 +1131,33 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
           {/* Type */}
      
 
-<section>
-  <h2 className="text-[12px] font-medium text-gray-700">Experience Type</h2>
-  <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-    {["Achievement", "Learning", "Challenge", "Opportunity"].map((label) => (
-      <button
-        key={label}
-        type="button"
-        onClick={() => setField("type", label)}
-        className={`border rounded-xl p-3 text-center transition-colors break-words min-h-[60px] flex items-center justify-center ${
-          form.type === label
-            ? "border-brand-600 bg-brand-50"
-            : "border-gray-200 bg-white hover:border-brand-600"
-        }`}
-      >
-        <span className="text-sm font-medium leading-tight">
-          {label}{["Achievement", "Learning"].includes(label) ? " Milestone" : ""}
-        </span>
-      </button>
-    ))}
-  </div>
-</section>
+     
+              <section>
+            <h2 className="text-[12px] font-medium text-gray-700">Experience Type</h2>
+            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+              {(
+                form.relatedEntityType === "job" || form.relatedEntityType === "event"
+                  ? ['Achievement', 'Learning experience', 'Motivational', 'Article/opinion']
+                  : ["Achievement", "Recommendation", "Milestone"]
+              ).map((label) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setField("type", label)}
+                  className={`border rounded-xl p-3 text-center transition-colors break-words min-h-[60px] flex items-center justify-center ${
+                    form.type === label
+                      ? "border-brand-600 bg-brand-50"
+                      : "border-gray-200 bg-white hover:border-brand-600"
+                  }`}
+                >
+                  <span className="text-sm font-medium leading-tight">
+                    {label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
           
         
 

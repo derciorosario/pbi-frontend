@@ -166,6 +166,11 @@ export default function PeopleFeedPage() {
 
   // Selected filters for TopFilterButtons
   const [selectedFilters, setSelectedFilters] = useState([]);
+  // Infinite scroll state
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef(null);
+  const observerRef = useRef(null);
 
   // Map button labels to identity IDs
   const getIdentityIdFromLabel = useCallback(
@@ -285,7 +290,7 @@ export default function PeopleFeedPage() {
         date: date || undefined,
         registrationType: registrationType || undefined,
 
-        limit: 20,
+        limit: 10,
         offset: 0,
       };
       const { data } = await client.get("/people", { params });
@@ -297,6 +302,12 @@ export default function PeopleFeedPage() {
           : Array.isArray(data.items)
           ? data.items.length
           : 0
+      );
+      // Set whether more pages exist
+      setHasMore(
+        typeof data.total === "number"
+          ? incomingItems.length < data.total
+          : incomingItems.length === 10
       );
       setHasFetchedOnce(true);
       setFetchError(false);
@@ -352,6 +363,131 @@ export default function PeopleFeedPage() {
     selectedIndustries,
     currentPage,
     data,
+  ]);
+
+  // Infinite scroll: fetch next page
+  const fetchMore = useCallback(async () => {
+    if (isFetchingRef.current || loadingFeed || loadingMore || !hasMore) return;
+    isFetchingRef.current = true;
+    setLoadingMore(true);
+    try {
+      // Same params as initial fetch, but advance offset
+      const params = {
+        accountType: currentPage == "people" ? "individual" : "company",
+        q: debouncedQ || undefined,
+        country: country || undefined,
+        city: city || undefined,
+        categoryId: categoryId || undefined,
+        subcategoryId: subcategoryId || undefined,
+        goalId: goalId || undefined,
+        role: role || undefined,
+
+        // Add audience selections to the API request
+        identityIds:
+          Array.from(audienceSelections.identityIds).join(",") || undefined,
+        audienceCategoryIds:
+          Array.from(audienceSelections.categoryIds).join(",") || undefined,
+        audienceSubcategoryIds:
+          Array.from(audienceSelections.subcategoryIds).join(",") || undefined,
+        audienceSubsubCategoryIds:
+          Array.from(audienceSelections.subsubCategoryIds).join(",") ||
+          undefined,
+        industryIds:
+          selectedIndustries.length > 0
+            ? selectedIndustries.join(",")
+            : undefined,
+        connectionStatus:
+          activeTab == "My Connections" && showPendingRequests
+            ? "outgoing_pending,incoming_pending"
+            : activeTab == "My Connections" && !showPendingRequests
+            ? "connected"
+            : null,
+
+        // include ALL filters so backend can leverage them when needed:
+        // products
+        price: price || undefined,
+
+        viewOnlyConnections,
+        // services
+        serviceType: serviceType || undefined,
+        priceType: priceType || undefined,
+        deliveryTime: deliveryTime || undefined,
+        // shared
+        experienceLevel: experienceLevel || undefined,
+        locationType: locationType || undefined,
+        // jobs
+        jobType: jobType || undefined,
+        workMode: workMode || undefined,
+        // tourism
+        postType: postType || undefined,
+        season: season || undefined,
+        budgetRange: budgetRange || undefined,
+        // funding
+        fundingGoal: fundingGoal || undefined,
+        amountRaised: amountRaised || undefined,
+        currency: currency || undefined,
+        deadline: deadline || undefined,
+        // events
+        eventType: eventType || undefined,
+        date: date || undefined,
+        registrationType: registrationType || undefined,
+
+        limit: 10,
+        offset: items.length,
+      };
+      const { data } = await client.get("/people", { params });
+      const incomingItems = Array.isArray(data.items) ? data.items : [];
+      const prevCount = items.length;
+      setItems((prev) => [...prev, ...incomingItems]);
+      if (typeof data.total === "number") {
+        setTotalCount(data.total);
+        setHasMore(prevCount + incomingItems.length < data.total);
+      } else {
+        setHasMore(incomingItems.length === 10);
+      }
+      setFetchError(false);
+    } catch (e) {
+      console.error("Failed to load more:", e);
+    } finally {
+      isFetchingRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [
+    activeTab,
+    debouncedQ,
+    country,
+    city,
+    categoryId,
+    subcategoryId,
+    goalId,
+    role,
+    showPendingRequests,
+    audienceSelections,
+    price,
+    serviceType,
+    priceType,
+    viewOnlyConnections,
+    deliveryTime,
+    experienceLevel,
+    locationType,
+    jobType,
+    workMode,
+    postType,
+    season,
+    budgetRange,
+    fundingGoal,
+    amountRaised,
+    currency,
+    deadline,
+    eventType,
+    date,
+    registrationType,
+    selectedIndustries,
+    currentPage,
+    items.length,
+    loadingFeed,
+    loadingMore,
+    hasMore,
   ]);
 
   // Trigger fetches (initial + debounced updates)
@@ -450,6 +586,24 @@ export default function PeopleFeedPage() {
     selectedIndustries,
     fetchFeed,
   ]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+    if (!hasMore) return;
+    const el = loadMoreRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          fetchMore();
+        }
+      },
+      { root: null, rootMargin: "200px", threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMoreRef, hasMore, fetchMore]);
 
   // Update audienceSelections when selectedFilters changes (but don't trigger fetch)
   useEffect(() => {
@@ -609,6 +763,13 @@ export default function PeopleFeedPage() {
               />
             ))}
         </div>
+        {!showSkeleton && hasMore && (
+          <div ref={loadMoreRef} className="h-10 w-full">
+            {loadingMore && (
+              <div className="text-center text-sm text-gray-500 py-4">Loading more…</div>
+            )}
+          </div>
+        )}
       </>
     );
   };

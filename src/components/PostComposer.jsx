@@ -111,7 +111,15 @@ export default function PostComposer({typeOfPosts, from}) {
           </div>
           <input
             type="text"
-            placeholder="Share your thoughts, opportunities, or insights..."
+            placeholder={from=="feed" ? (user?.accountType!="company" ? 'Explore opportunities and Share insights.':'Find markets and share opportunities.') :
+                         from=="job" ? (user?.accountType!="company" ? 'Explore Top Job Opportunities and insights.':'Find top talents and share insights.') :
+                         from=="event" ? (user?.accountType!="company" ? 'Explore exciting events happening near you. ':'Create events and find the right people to attend.') :
+                         from=="product" ? (user?.accountType!="company" ? 'Explore and enjoy products designed to meet your needs.':'Find markets and promote your products.') :
+                         from=="service" ? (user?.accountType!="company" ? 'Find and explore services tailored for you.':'Find clients and promote your top services.') :
+                         from=="tourism" ? (user?.accountType!="company" ? 'Explore destinations, share stories, and connect through tourism.':'Find travellers and other tourism enthusiasts and boost your sales.') :
+                         from=="funding" ? (user?.accountType!="company" ? 'Explore funding opportunities that open doors to new possibilities.':'Find the right candidates and partners for your programs.') :
+              
+            "Share your thoughts, opportunities, or insights..."}
             value={postText}
             onChange={(e) => setPostText(e.target.value)}
             onClick={handleInputClick}

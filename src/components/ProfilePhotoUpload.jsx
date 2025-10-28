@@ -3,15 +3,38 @@ import { useRef, useState, useEffect } from "react";
 import { toast } from "../lib/toast";
 import { updateAvatarUrl, updateCoverImage } from "../api/profile";
 import { Camera } from "lucide-react";
+import ImageCropper from "./ImageCropper";
 
 export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "avatar" }) {
-
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
   const [isUploading, setIsUploading] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+
+  // Configuration for cropping
+  const CROP_CONFIG = {
+    avatar: true,  // Enable cropping for avatars
+    cover: true    // Enable cropping for cover images
+  };
+
+  // Aspect ratios based on image type
+  const cropConfig = {
+    avatar: {
+      aspect: 1,
+      minWidth: 100,
+      minHeight: 100,
+    },
+    cover: {
+      aspect: 16 / 9,
+      minWidth: 800,
+      minHeight: 450,
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -30,7 +53,7 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
     };
   }, [showOptions]);
 
-  const handleFileChange = async (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -53,9 +76,34 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
       return;
     }
 
+    // Check if cropping is enabled for this type
+    const shouldCrop = CROP_CONFIG[type];
+    
+    if (shouldCrop) {
+      // Get image dimensions before showing cropper
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          setImageDimensions({
+            width: img.width,
+            height: img.height
+          });
+          setSelectedImage(e.target.result);
+          setShowCropper(true);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Upload directly without cropping
+      handleDirectUpload(file);
+    }
+  };
+
+  const handleDirectUpload = async (file) => {
     setIsUploading(true);
     try {
-      // Create FormData for file upload
       const formData = new FormData();
       formData.append('file', file);
 
@@ -76,10 +124,57 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
       toast.error(`Failed to upload ${type === "avatar" ? "profile photo" : "cover image"}. Please try again.`);
     } finally {
       setIsUploading(false);
-      // Clear file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const handleCropComplete = async (croppedImageBlob) => {
+    setShowCropper(false);
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      const mime = croppedImageBlob.type || 'image/jpeg';
+      const ext = mime === 'image/png' ? 'png' : (mime === 'image/webp' ? 'webp' : 'jpg');
+      const prefix = type === "avatar" ? "avatar" : "cover";
+      const filename = `${prefix}-${Date.now()}.${ext}`;
+
+      // Append with a filename so the backend preserves an extension
+      formData.append('file', croppedImageBlob, filename);
+
+      if (type === "avatar") {
+        await updateAvatarUrl(formData);
+        toast.success("Profile photo updated successfully!");
+      } else if (type === "cover") {
+        await updateCoverImage(formData);
+        toast.success("Cover image updated successfully!");
+      }
+
+      // Create object URL for immediate preview
+      const objectUrl = URL.createObjectURL(croppedImageBlob);
+      onChange(objectUrl);
+
+    } catch (error) {
+      console.error(`Failed to upload ${type}:`, error);
+      toast.error(`Failed to upload ${type === "avatar" ? "profile photo" : "cover image"}. Please try again.`);
+    } finally {
+      setIsUploading(false);
+      setSelectedImage(null);
+      setImageDimensions({ width: 0, height: 0 });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setSelectedImage(null);
+    setImageDimensions({ width: 0, height: 0 });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -87,7 +182,6 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
     setIsRemoving(true);
     setShowOptions(false);
     try {
-      // Send null to remove the image
       if (type === "avatar") {
         await updateAvatarUrl({ avatarUrl: null });
         toast.success("Profile photo removed successfully!");
@@ -96,7 +190,7 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
         toast.success("Cover image removed successfully!");
       }
 
-      onChange(null); // update local state
+      onChange(null);
 
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -131,11 +225,11 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
         accept="image/*"
         ref={fileInputRef}
         className="hidden"
-        onChange={handleFileChange}
+        onChange={handleFileSelect}
         disabled={isUploading || isRemoving}
       />
 
-      {/* Camera button - position differently based on type */}
+      {/* Camera button */}
       <div
         onClick={handleButtonClick}
         className={`bg-brand-600 rounded-full p-1 flex cursor-pointer hover:opacity-60 transition-opacity ${
@@ -182,7 +276,18 @@ export default function ProfilePhoto({ avatarUrl, coverImage, onChange, type = "
           </div>
         )}
       </div>
+
+      {/* Image Cropper Modal */}
+      {showCropper && selectedImage && (
+        <ImageCropper
+          image={selectedImage}
+          imageDimensions={imageDimensions}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+          config={cropConfig[type]}
+          type={type}
+        />
+      )}
     </div>
-    
   );
 }

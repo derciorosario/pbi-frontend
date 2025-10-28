@@ -991,7 +991,7 @@ const industrySubcategoryOptions = useMemo(() => {
                 <textarea
                   value={form.description}
                   onChange={(e) => setField("description", e.target.value)}
-                   placeholder="Describe your product in detail: Handcrafted leather bag made with premium materials. Features multiple compartments, adjustable strap, and water-resistant lining. Perfect for everyday use or special occasions."
+                   placeholder="Describe the product you are launching or promoting and boost your sales and partnerships."
                   _placeholder="Describe your product in detail..."
                   className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                   rows={4}

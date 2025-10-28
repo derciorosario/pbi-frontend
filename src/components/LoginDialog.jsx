@@ -9,6 +9,7 @@ import { X } from "lucide-react";
 import COUNTRIES from "../constants/countries.js";
 import CITIES from "../constants/cities.json";
 import { useRef } from "react";
+import ImageCropper from "./ImageCropper";
 
 const emailOK = (v) =>
    /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(String(v || "").toLowerCase());
@@ -24,6 +25,20 @@ const allCityOptions = CITIES.slice(0, 10000).map(city => ({
 const getCitiesForCountry = (country) => {
   if (!country) return [];
   return allCityOptions.filter((c) => c.country?.toLowerCase() === country.toLowerCase());
+};
+
+// Cropping configuration (toggle on/off here)
+const CROP_CONFIG = {
+  avatar: true // Set to false to disable cropping in LoginDialog
+};
+
+// Crop aspect/min sizes
+const cropConfig = {
+  avatar: {
+    aspect: 1,
+    minWidth: 100,
+    minHeight: 100,
+  }
 };
 
 // Component for managing country-city pairs
@@ -208,6 +223,10 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
   });
   const [showPwd1, setShowPwd1] = useState(false);
   const [showPwd2, setShowPwd2] = useState(false);
+  // Image cropper state
+  const [showCropper, setShowCropper] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     const t = localStorage.getItem("token") || localStorage.getItem("auth_token");
@@ -228,47 +247,100 @@ export default function LoginDialog({ isOpen, onClose, initialTab = "signup" }) 
 
  
   const onFileChange = async (name, file) => {
-  if (file) {
-    // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-    if (file.size > maxSize) {
-      setSignupErrors((prev) => ({
-        ...prev,
-        [name]: "File size must be less than 5MB"
+    // We only handle the 'avatar' field here (used for individual avatar or company logo)
+    if (name !== 'avatar') return;
+
+    if (file) {
+      // Validate file size (5MB limit)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        setSignupErrors((prev) => ({
+          ...prev,
+          [name]: "File size must be less than 5MB"
+        }));
+        return;
+      }
+
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        setSignupErrors((prev) => ({
+          ...prev,
+          [name]: "Please select a valid image file (JPG, PNG, GIF, WEBP)"
+        }));
+        return;
+      }
+
+      // If cropping enabled, open cropper with the selected image
+      if (CROP_CONFIG.avatar) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            setImageDimensions({
+              width: img.width,
+              height: img.height
+            });
+            setSelectedImage(e.target.result);
+            setShowCropper(true);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        // Clear any previous file/preview while cropping
+        setSignupForm((f) => ({
+          ...f,
+          avatarFile: null,
+          avatarPreview: null
+        }));
+      } else {
+        // No cropping: set file and preview directly
+        const previewUrl = URL.createObjectURL(file);
+        setSignupForm((f) => ({
+          ...f,
+          avatarFile: file,
+          avatarPreview: previewUrl
+        }));
+      }
+
+      setSignupErrors((prev) => ({ ...prev, avatarUrl: "" }));
+    } else {
+      // Clear selection
+      setSignupForm((f) => ({
+        ...f,
+        avatarFile: null,
+        avatarPreview: null
       }));
-      return;
     }
+  };
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      setSignupErrors((prev) => ({
-        ...prev,
-        [name]: "Please select a valid image file (JPG, PNG, GIF)"
-      }));
-      return;
-    }
+ // Receive cropped image and finalize selection
+ const handleCropComplete = (croppedImageBlob) => {
+   const mime = croppedImageBlob.type || 'image/jpeg';
+   const ext = mime === 'image/png' ? 'png' : (mime === 'image/webp' ? 'webp' : 'jpg');
+   const filename = `avatar-${Date.now()}.${ext}`;
+   const file = new File([croppedImageBlob], filename, { type: mime });
+   const objectUrl = URL.createObjectURL(croppedImageBlob);
 
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    
-    setSignupForm((f) => ({
-      ...f,
-      avatarFile: file, // Store the file object instead of base64
-      avatarPreview: previewUrl
-    }));
-    
-    setSignupErrors((prev) => ({ ...prev, avatarUrl: "" }));
-  } else {
-    setSignupForm((f) => ({
-      ...f,
-      avatarFile: null,
-      avatarPreview: null
-    }));
-  }
-};
+   setSignupForm((f) => ({
+     ...f,
+     avatarFile: file,
+     avatarPreview: objectUrl
+   }));
 
-  // Labels change with account type, but variable names DO NOT change
+   setShowCropper(false);
+   setSelectedImage(null);
+   setImageDimensions({ width: 0, height: 0 });
+ };
+
+ const handleCropCancel = () => {
+   setShowCropper(false);
+   setSelectedImage(null);
+   setImageDimensions({ width: 0, height: 0 });
+ };
+
+ // Labels change with account type, but variable names DO NOT change
   const labelName = acct === "company" ? "Organization name" : "Name";
   const labelEmail = acct === "company" ? "Organization email" : "Email Address";
   const labelPhone = acct === "company" ? "Organization phone" : "Phone Number";
@@ -1121,7 +1193,18 @@ async function onSignupSubmit(e) {
             </div>
           </form>
         )}
-      </div>
-    </div>
-  );
+   
+     </div>
+       {showCropper && selectedImage && (
+       <ImageCropper
+         image={selectedImage}
+         imageDimensions={imageDimensions}
+         onCropComplete={handleCropComplete}
+         onCancel={handleCropCancel}
+         config={cropConfig.avatar}
+         type="avatar"
+       />
+     )}
+   </div>
+ );
 }

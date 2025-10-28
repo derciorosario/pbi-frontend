@@ -899,7 +899,7 @@ export default function CreateTourismPostPage({ triggerImageSelection = false, h
               <textarea
                 value={form.description}
                 onChange={(e) => setField("description", e.target.value)}
-                placeholder="Describe this destination, share your experience, cultural insights, and travel tips..."
+                placeholder="Describe the type of attraction and connect with potential clients."
                 className="mt-2 rounded-xl border border-gray-200 px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-brand-200"
                 rows={4}
                 required
