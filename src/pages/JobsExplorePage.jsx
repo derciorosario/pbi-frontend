@@ -69,10 +69,12 @@ function useDebounce(value, delay = 400) {
 
 
 export default function PeopleFeedPage() {
+  const ITEMS_PER_PAGE = 10;
+
   const [activeTab, setActiveTab] = useState("Posts");
   const tabs = useMemo(() => ["Posts", "Job Seeker","Job Offers"], []);
   let view_types=['grid','list']
-   const from = "jobs"; // Define the 'from' variable
+    const from = "jobs"; // Define the 'from' variable
 
   const [generalTree, setGeneralTree] = useState([]);
   const [selectedSubcategories, setSelectedSubcategories] = useState({});
@@ -186,6 +188,13 @@ export default function PeopleFeedPage() {
   // Mobile filters
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  // Infinite scroll state
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef(null);
+  const observerRef = useRef(null);
+  const currentOffsetRef = useRef(0);
+
   // Selected filters for TopFilterButtons
   const [selectedFilters,setSelectedFilters]=useState([])
    const [filterOptions,setFilterOptions]=useState([])
@@ -285,16 +294,24 @@ export default function PeopleFeedPage() {
           .filter(key => selectedSubcategories[key])
           .join(',') || undefined,
 
-        limit: 40,
+        limit: ITEMS_PER_PAGE,
         offset: 0,
       };
       const { data } = await client.get("/feed", { params });
-      setItems(Array.isArray(data.items) ? data.items : []);
+      const incomingItems = Array.isArray(data.items) ? data.items : [];
+      setItems(incomingItems);
       setTotalCount(
         typeof data.total === "number"
           ? data.total
-          : Array.isArray(data.items) ? data.items.length : 0
+          : incomingItems.length
       );
+      // Set whether more pages exist
+      setHasMore(
+        typeof data.total === "number"
+          ? incomingItems.length < data.total
+          : incomingItems.length === ITEMS_PER_PAGE
+      );
+      currentOffsetRef.current = incomingItems.length;
       setFetchError(false);
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
@@ -346,6 +363,125 @@ export default function PeopleFeedPage() {
     selectedIndustries,
     generalTree,
     selectedSubcategories,]);
+
+  // Infinite scroll: fetch next page
+  const fetchMore = useCallback(async () => {
+    if (isFetchingRef.current || loadingFeed || loadingMore || !hasMore) return;
+    isFetchingRef.current = true;
+    setLoadingMore(true);
+    try {
+      const params = {
+        tab: "jobs",
+        q: debouncedQ || undefined,
+        country: country || undefined,
+        city: city || undefined,
+        categoryId: categoryId || undefined,
+        subcategoryId: subcategoryId || undefined,
+        goalId: goalId || undefined,
+
+       audienceIdentityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
+       audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
+       audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
+       audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
+       industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
+
+       // include ALL filters so backend can leverage them when needed:
+        // products
+        price: price || undefined,
+        // services
+        serviceType: serviceType || undefined,
+        priceType: priceType || undefined,
+        deliveryTime: deliveryTime || undefined,
+        // shared
+        experienceLevel: experienceLevel || undefined,
+        locationType: locationType || undefined,
+        // jobs
+        jobType: jobType || undefined,
+        workMode: workMode || undefined,
+        workLocation: workLocation || undefined,
+        workSchedule: workSchedule || undefined,
+        careerLevel: careerLevel || undefined,
+        paymentType: paymentType || undefined,
+        jobsView: jobsView || undefined,
+        // tourism
+        postType: postType || undefined,
+        season: season || undefined,
+        budgetRange: budgetRange || undefined,
+        // funding
+        fundingGoal: fundingGoal || undefined,
+        amountRaised: amountRaised || undefined,
+        currency: currency || undefined,
+        deadline: deadline || undefined,
+        // events
+        eventType: eventType || undefined,
+        date: date || undefined,
+        registrationType: registrationType || undefined,
+
+
+        generalCategoryIds: selectedFilters.filter(id =>
+          generalTree.some(category => category.id === id)
+        ).join(',') || undefined,
+
+        generalSubcategoryIds: Object.keys(selectedSubcategories)
+          .filter(key => selectedSubcategories[key])
+          .join(',') || undefined,
+
+        limit: ITEMS_PER_PAGE,
+        offset: currentOffsetRef.current,
+      };
+      const { data } = await client.get("/feed", { params });
+      const incomingItems = Array.isArray(data.items) ? data.items : [];
+      setItems((prev) => [...prev, ...incomingItems]);
+      currentOffsetRef.current += incomingItems.length;
+      setHasMore(incomingItems.length === ITEMS_PER_PAGE);
+      setFetchError(false);
+    } catch (e) {
+      console.error("Failed to load more:", e);
+    } finally {
+      isFetchingRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [
+    activeTab,
+    debouncedQ,
+    country,
+    city,
+    categoryId,
+    subcategoryId,
+    goalId,
+    selectedFilters,
+    audienceSelections,
+    price,
+    serviceType,
+    priceType,
+    deliveryTime,
+    experienceLevel,
+    locationType,
+    jobType,
+    workMode,
+    workLocation,
+    workSchedule,
+    careerLevel,
+    paymentType,
+    jobsView,
+    postType,
+    season,
+    budgetRange,
+    fundingGoal,
+    amountRaised,
+    currency,
+    deadline,
+    eventType,
+    date,
+    registrationType,
+    selectedIndustries,
+    generalTree,
+    selectedSubcategories,
+    items.length,
+    loadingFeed,
+    loadingMore,
+    hasMore,
+  ]);
 
   const isFetchingRef = useRef(false);
   const hasLoadedOnce = useRef(false);
@@ -491,6 +627,24 @@ export default function PeopleFeedPage() {
       }
     })();
   }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, selectedIndustries]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+    if (!hasMore) return;
+    const el = loadMoreRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          fetchMore();
+        }
+      },
+      { root: null, rootMargin: "700px", threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMoreRef, hasMore, fetchMore]);
 
    const handleSubcategoryChange = (subcategories) => {
      setSelectedSubcategories(subcategories);
@@ -703,6 +857,14 @@ export default function PeopleFeedPage() {
 
           
 
+        </div>
+      )}
+
+      {!loadingFeed && hasMore && (
+        <div ref={loadMoreRef} className="h-10 w-full">
+          {loadingMore && (
+            <div className="text-center text-sm text-gray-500 py-4">Loading more…</div>
+          )}
         </div>
       )}
 

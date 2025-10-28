@@ -36,6 +36,8 @@ function useDebounce(v, ms = 400) {
   return val;
 }
 export default function TourismPage() {
+  const ITEMS_PER_PAGE = 10;
+
   const [activeTab, setActiveTab] = useState("Suggested for You");
   const tabs = useMemo(() => ["Suggested for You", "Events to Attend"], []);
   const navigate=useNavigate()
@@ -142,6 +144,13 @@ export default function TourismPage() {
   // Mobile filters
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
+  // Infinite scroll state
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef(null);
+  const observerRef = useRef(null);
+  const currentOffsetRef = useRef(0);
+
   // Fetch meta
   useEffect(() => {
     (async () => {
@@ -228,16 +237,24 @@ export default function TourismPage() {
         audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
         industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
 
-        limit: 20,
+        limit: ITEMS_PER_PAGE,
         offset: 0,
       };
       const { data } = await client.get("/feed", { params });
-      setItems(Array.isArray(data.items) ? data.items : []);
+      const incomingItems = Array.isArray(data.items) ? data.items : [];
+      setItems(incomingItems);
        setTotalCount(
         typeof data.total === "number"
           ? data.total
-          : Array.isArray(data.items) ? data.items.length : 0
+          : incomingItems.length
       );
+      // Set whether more pages exist
+      setHasMore(
+        typeof data.total === "number"
+          ? incomingItems.length < data.total
+          : incomingItems.length === ITEMS_PER_PAGE
+      );
+      currentOffsetRef.current = incomingItems.length;
       setFetchError(false);
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current);
@@ -255,7 +272,10 @@ export default function TourismPage() {
     } finally {
       setLoadingFeed(false);
     }
-    data._scrollToSection('top',true);
+    // Scroll to top after successful fetch
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId,role,  // NEW deps:
     tourismView,
    audienceSelections,
@@ -282,6 +302,120 @@ export default function TourismPage() {
    selectedIndustries,
    generalTree,
    data]);
+
+  // Infinite scroll: fetch next page
+  const fetchMore = useCallback(async () => {
+    if (isFetchingRef.current || loadingFeed || loadingMore || !hasMore) return;
+    isFetchingRef.current = true;
+    setLoadingMore(true);
+    try {
+      const params = {
+        tab: "tourism",
+        q: debouncedQ || undefined,
+        country: country || undefined,
+        tourismView:tourismView || undefined,
+        city: city || undefined,
+        categoryId: categoryId || undefined,
+        subcategoryId: subcategoryId || undefined,
+        goalId: goalId || undefined,
+        role:role || undefined,
+
+        // include ALL filters so backend can leverage them when needed:
+        // products
+        price: price || undefined,
+        // services
+        serviceType: serviceType || undefined,
+        priceType: priceType || undefined,
+        deliveryTime: deliveryTime || undefined,
+        // shared
+        experienceLevel: experienceLevel || undefined,
+        locationType: locationType || undefined,
+        // jobs
+        jobType: jobType || undefined,
+        workMode: workMode || undefined,
+        // tourism
+        postType: postType || undefined,
+        season: season || undefined,
+        budgetRange: budgetRange || undefined,
+        // funding
+        fundingGoal: fundingGoal || undefined,
+        amountRaised: amountRaised || undefined,
+        currency: currency || undefined,
+        deadline: deadline || undefined,
+        // events
+        eventType: eventType || undefined,
+        date: date || undefined,
+        registrationType: registrationType || undefined,
+
+        // Include selected categories as IDs
+        generalCategoryIds: selectedFilters.filter(id =>
+          generalTree.some(category => category.id === id)
+        ).join(',') || undefined,
+
+        // Include selected subcategories as IDs
+        generalSubcategoryIds: Object.keys(selectedSubcategories)
+          .filter(key => selectedSubcategories[key])
+          .join(',') || undefined,
+
+        audienceIdentityIds: Array.from(audienceSelections.identityIds).join(',') || undefined,
+        audienceCategoryIds: Array.from(audienceSelections.categoryIds).join(',') || undefined,
+        audienceSubcategoryIds: Array.from(audienceSelections.subcategoryIds).join(',') || undefined,
+        audienceSubsubCategoryIds: Array.from(audienceSelections.subsubCategoryIds).join(',') || undefined,
+        industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
+
+        limit: ITEMS_PER_PAGE,
+        offset: currentOffsetRef.current,
+      };
+      const { data } = await client.get("/feed", { params });
+      const incomingItems = Array.isArray(data.items) ? data.items : [];
+      setItems((prev) => [...prev, ...incomingItems]);
+      currentOffsetRef.current += incomingItems.length;
+      setHasMore(incomingItems.length === ITEMS_PER_PAGE);
+      setFetchError(false);
+    } catch (e) {
+      console.error("Failed to load more:", e);
+    } finally {
+      isFetchingRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [
+    activeTab,
+    debouncedQ,
+    country,
+    city,
+    categoryId,
+    subcategoryId,
+    goalId,
+    role,
+    audienceSelections,
+    tourismView,
+    price,
+    serviceType,
+    priceType,
+    deliveryTime,
+    experienceLevel,
+    locationType,
+    jobType,
+    workMode,
+    postType,
+    season,
+    budgetRange,
+    fundingGoal,
+    amountRaised,
+    currency,
+    deadline,
+    eventType,
+    date,
+    registrationType,
+    selectedSubcategories,
+    selectedFilters,
+    selectedIndustries,
+    generalTree,
+    items.length,
+    loadingFeed,
+    loadingMore,
+    hasMore,
+  ]);
 
   useEffect(() => {
     fetchFeed();
@@ -313,6 +447,24 @@ export default function TourismPage() {
       }
     })();
   }, [debouncedQ, country, city, categoryId, subcategoryId, goalId, role, selectedIndustries]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+    if (!hasMore) return;
+    const el = loadMoreRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          fetchMore();
+        }
+      },
+      { root: null, rootMargin: "700px", threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMoreRef, hasMore, fetchMore]);
 
   // Handler for subcategory changes
   const handleSubcategoryChange = (subcategories) => {
@@ -514,10 +666,16 @@ export default function TourismPage() {
                    return null;
                  })}
                       </div>
-       
 
+          {!loadingFeed && hasMore && (
+            <div ref={loadMoreRef} className="h-10 w-full">
+              {loadingMore && (
+                <div className="text-center text-sm text-gray-500 py-4">Loading more…</div>
+              )}
+            </div>
+          )}
 
-      </>
+     </>
     );
   };
         
