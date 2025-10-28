@@ -783,7 +783,7 @@ function ReadOnlyJobView({ form, audSel, audTree, media, coverImage }) {
                       <span className="ml-2 text-xs text-gray-500">(company kept private)</span>
                     ) : null}
                   </>
-                ) : "—"}
+                ) : ""}
               </div>
             </div>
           </div>

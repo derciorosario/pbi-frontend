@@ -171,6 +171,7 @@ export default function PeopleFeedPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const loadMoreRef = useRef(null);
   const observerRef = useRef(null);
+  const currentOffsetRef = useRef(0);
 
   // Map button labels to identity IDs
   const getIdentityIdFromLabel = useCallback(
@@ -309,6 +310,7 @@ export default function PeopleFeedPage() {
           ? incomingItems.length < data.total
           : incomingItems.length === 10
       );
+      currentOffsetRef.current = incomingItems.length;
       setHasFetchedOnce(true);
       setFetchError(false);
       if (retryTimeoutRef.current) {
@@ -433,18 +435,13 @@ export default function PeopleFeedPage() {
         registrationType: registrationType || undefined,
 
         limit: 10,
-        offset: items.length,
+        offset: currentOffsetRef.current,
       };
       const { data } = await client.get("/people", { params });
       const incomingItems = Array.isArray(data.items) ? data.items : [];
-      const prevCount = items.length;
       setItems((prev) => [...prev, ...incomingItems]);
-      if (typeof data.total === "number") {
-        setTotalCount(data.total);
-        setHasMore(prevCount + incomingItems.length < data.total);
-      } else {
-        setHasMore(incomingItems.length === 10);
-      }
+      currentOffsetRef.current += incomingItems.length;
+      setHasMore(incomingItems.length === 10);
       setFetchError(false);
     } catch (e) {
       console.error("Failed to load more:", e);

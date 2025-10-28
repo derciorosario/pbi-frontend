@@ -67,6 +67,12 @@ export default function FeedPage() {
   const [showTotalCount, setShowTotalCount] = useState(0);
   const [fetchError, setFetchError] = useState(false);
   const retryTimeoutRef = useRef(null);
+  // Infinite scroll state
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const loadMoreRef = useRef(null);
+  const observerRef = useRef(null);
+  const currentOffsetRef = useRef(0);
 
   // Request cancellation refs
   const abortControllerRef = useRef(null);
@@ -163,7 +169,7 @@ export default function FeedPage() {
         categoryId: categoryId || undefined,
         subcategoryId: subcategoryId || undefined,
         industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
-        limit: 20,
+        limit: 5,
         offset: 0,
       };
 
@@ -174,12 +180,20 @@ export default function FeedPage() {
 
       // Only update state if this is the most recent request
       if (requestId === lastRequestIdRef.current) {
-        setItems(Array.isArray(data.items) ? data.items : []);
+        const incomingItems = Array.isArray(data.items) ? data.items : [];
+        setItems(incomingItems);
         setTotalCount(
           typeof data.total === "number"
             ? data.total
-            : Array.isArray(data.items) ? data.items.length : 0
+            : incomingItems.length
         );
+        // Set whether more pages exist
+        setHasMore(
+          typeof data.total === "number"
+            ? incomingItems.length < data.total
+            : incomingItems.length === 5
+        );
+        currentOffsetRef.current = incomingItems.length;
         setFetchError(false);
         if (retryTimeoutRef.current) {
           clearTimeout(retryTimeoutRef.current);
@@ -211,6 +225,73 @@ export default function FeedPage() {
       }
     }
   }, [activeTab, debouncedQ, country, city, categoryId, subcategoryId, goalId, role, selectedIndustries]);
+
+  // Infinite scroll: fetch next page
+  const fetchMore = useCallback(async () => {
+    if (isFetchingRef.current || loadingFeed || loadingMore || !hasMore) return;
+    isFetchingRef.current = true;
+    setLoadingMore(true);
+    try {
+      const tabParam =
+        activeTab === "Events"
+          ? "events"
+          : activeTab === "Jobs"
+          ? "jobs"
+          : activeTab === "Needs"
+          ? "needs"
+          : activeTab === "Moments"
+          ? "moments"
+          : activeTab === "Services"
+          ? "services"
+          : activeTab === "Products"
+          ? "products"
+          : activeTab === "Experiences"
+          ? "tourism"
+          : activeTab === "Funding"
+          ? "funding"
+          : "all";
+
+      const params = {
+        tab: tabParam,
+        q: debouncedQ || undefined,
+        country: country || undefined,
+        city: city || undefined,
+        goalId: goalId || undefined,
+        role: role || undefined,
+        categoryId: categoryId || undefined,
+        subcategoryId: subcategoryId || undefined,
+        industryIds: selectedIndustries.length > 0 ? selectedIndustries.join(',') : undefined,
+        limit: 5,
+        offset: currentOffsetRef.current,
+      };
+
+      const { data } = await client.get("/feed", { params });
+      const incomingItems = Array.isArray(data.items) ? data.items : [];
+      setItems((prev) => [...prev, ...incomingItems]);
+      currentOffsetRef.current += incomingItems.length;
+      setHasMore(incomingItems.length === 5);
+      setFetchError(false);
+    } catch (error) {
+      console.error("Failed to load more:", error);
+    } finally {
+      isFetchingRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [
+    activeTab,
+    debouncedQ,
+    country,
+    city,
+    categoryId,
+    subcategoryId,
+    goalId,
+    role,
+    selectedIndustries,
+    items.length,
+    loadingFeed,
+    loadingMore,
+    hasMore,
+  ]);
 
   // Improved useEffect for triggering fetches
   useEffect(() => {
@@ -295,6 +376,24 @@ export default function FeedPage() {
       }
     })();
   }, [debouncedQ, country, city, categoryId, subcategoryId, role, goalId, selectedIndustries]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreRef.current) return;
+    if (!hasMore) return;
+    const el = loadMoreRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          fetchMore();
+        }
+      },
+      { root: null, rootMargin: "200px", threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMoreRef, hasMore, fetchMore]);
 
   const filtersProps = {
     setShowTotalCount,
@@ -478,9 +577,18 @@ return (
             {!fetchError && !loadingFeed && items.length === 0 && <EmptyFeedState activeTab={activeTab} />}
 
             {!fetchError && !loadingFeed && items.length > 0 && (
-              <div className={`grid grid-cols-1 ${view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"} gap-6`}>
-                {items.map(renderItem)}
-              </div>
+              <>
+                <div className={`grid grid-cols-1 ${view === "list" ? "sm:grid-cols-1" : "lg:grid-cols-3"} gap-6`}>
+                  {items.map(renderItem)}
+                </div>
+                {!loadingFeed && hasMore && (
+                  <div ref={loadMoreRef} className="h-10 w-full">
+                    {loadingMore && (
+                      <div className="text-center text-sm text-gray-500 py-4">Loading more…</div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>
