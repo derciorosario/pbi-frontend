@@ -5,9 +5,11 @@ import {
   getContactById,
   updateContactStatus,
   deleteContact,
-  downloadContactsDataAsExcel
+  downloadContactsDataAsExcel,
+  markContactAsRead,
+  markAllContactsAsRead
 } from "../api/admin";
-import { Search, Filter, Download, Eye, Edit, Trash2, CheckCircle, Clock, AlertCircle, XCircle, X } from "lucide-react";
+import { Search, Filter, Download, Eye, Edit, Trash2, CheckCircle, Clock, AlertCircle, XCircle, X, Mail } from "lucide-react";
 
 const CONTACT_REASONS = {
   complaint: "Complaint / Feedback",
@@ -117,6 +119,50 @@ export default function AdminContacts() {
     }
   };
 
+  // Handle mark as read
+  const handleMarkAsRead = async (contactId) => {
+    try {
+      await markContactAsRead(contactId);
+
+      // Update local state
+      setContacts(prev => prev.map(contact =>
+        contact.id === contactId
+          ? { ...contact, readAt: new Date() }
+          : contact
+      ));
+
+      // Refresh unread count in sidebar
+      if (window.refreshUnreadContactsCount) {
+        window.refreshUnreadContactsCount();
+      }
+
+      toast.success("Contact marked as read");
+    } catch (error) {
+      console.error("Error marking contact as read:", error);
+      toast.error("Failed to mark contact as read");
+    }
+  };
+
+  // Handle mark all as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllContactsAsRead();
+
+      // Update local state
+      setContacts(prev => prev.map(contact => ({ ...contact, readAt: new Date() })));
+
+      // Refresh unread count in sidebar
+      if (window.refreshUnreadContactsCount) {
+        window.refreshUnreadContactsCount();
+      }
+
+      toast.success("All contacts marked as read");
+    } catch (error) {
+      console.error("Error marking all contacts as read:", error);
+      toast.error("Failed to mark all contacts as read");
+    }
+  };
+
   // Handle contact deletion
   const handleDeleteContact = async (contactId) => {
     if (!confirm("Are you sure you want to delete this contact?")) return;
@@ -155,13 +201,22 @@ export default function AdminContacts() {
           <h1 className="text-xl md:text-2xl font-bold">Contact Management</h1>
           <p className="text-sm text-gray-500">Manage contact form submissions and inquiries</p>
         </div>
-        <button
-          onClick={handleExport}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-        >
-          <Download size={16} />
-          Export Excel
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleMarkAllAsRead}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Mail size={16} />
+            Mark All as Read
+          </button>
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Download size={16} />
+            Export Excel
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -253,21 +308,34 @@ export default function AdminContacts() {
             <tbody className="bg-white divide-y divide-gray-200">
               {contacts.map((contact) => {
                 const StatusIcon = STATUS_CONFIG[contact.status]?.icon;
+                const isUnread = !contact.readAt;
                 return (
-                  <tr key={contact.id} className="hover:bg-gray-50">
+                  <tr key={contact.id} className={`hover:bg-gray-50 ${isUnread ? 'bg-blue-50' : ''}`}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {contact.fullName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {contact.email}
-                        </div>
-                        {contact.phone && (
-                          <div className="text-sm text-gray-500">
-                            {contact.phone}
-                          </div>
+                      <div className="flex items-center gap-2">
+                        {isUnread && (
+                          <button
+                            onClick={() => handleMarkAsRead(contact.id)}
+                            className="text-blue-600 hover:text-blue-900 mr-2"
+                            title="Mark as Read"
+                          >
+                           <svg className="fill-blue-600 hover:fill-blue-900" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="24px"><path d="M480-480Zm280-160q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q28 0 55.5 4t54.5 12q-11 17-18 36.5T562-788q-20-6-40.5-9t-41.5-3q-134 0-227 93t-93 227q0 134 93 227t227 93q134 0 227-93t93-227q0-21-3-41.5t-9-40.5q20-3 39.5-10t36.5-18q8 27 12 54.5t4 55.5q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-57-216 273-273q-20-7-37.5-17.5T625-611L424-410 310-522l-56 56 169 170Z"/></svg>
+                
+                          </button>
                         )}
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {contact.fullName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {contact.email}
+                          </div>
+                          {contact.phone && (
+                            <div className="text-sm text-gray-500">
+                              {contact.phone}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

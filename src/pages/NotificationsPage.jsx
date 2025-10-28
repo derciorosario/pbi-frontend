@@ -957,7 +957,7 @@ export default function NotificationsPage() {
               <div className="space-y-4">
                  {filteredItems.length === 0 ? (
                     <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-6 text-center text-gray-500">
-                      {filter === "Connections" ? "No connection requests yet" : `No ${filter.toLowerCase()} notifications yet`}
+                      {filter === "All" ? "No notifications yet" : filter === "Connections" ? "No connection requests yet" : filter === "Meetings" ? "No meeting requests yet" : `No ${filter.toLowerCase()} notifications yet`}
                     </div>
                   ) : (
                     filteredItems.filter(i=>!i.hasApproval).map((item) => {

@@ -380,6 +380,31 @@ export const exportContacts = (params = {}) => {
 };
 
 /**
+ * Mark a contact as read
+ * @param {string} id - Contact ID
+ * @returns {Promise} - Promise with update result
+ */
+export const markContactAsRead = (id) => {
+  return client.patch(`/admin/contacts/${id}/read`);
+};
+
+/**
+ * Mark all contacts as read
+ * @returns {Promise} - Promise with update result
+ */
+export const markAllContactsAsRead = () => {
+  return client.patch("/admin/contacts/read-all");
+};
+
+/**
+ * Get unread contacts count
+ * @returns {Promise} - Promise with count data
+ */
+export const getUnreadContactsCount = () => {
+  return client.get("/admin/contacts/unread/count");
+};
+
+/**
  * Download contacts data as Excel directly from frontend
  * @param {Array} contacts - Array of contact objects to export
  * @returns {Promise} - Promise that resolves when download starts
@@ -399,6 +424,7 @@ export const downloadContactsDataAsExcel = async (contacts) => {
       'Message': contact.message?.substring(0, 100) + (contact.message?.length > 100 ? '...' : ''),
       'Submitted At': new Date(contact.createdAt).toLocaleString(),
       'Responded At': contact.respondedAt ? new Date(contact.respondedAt).toLocaleString() : '',
+      'Read At': contact.readAt ? new Date(contact.readAt).toLocaleString() : '',
       'Notes': contact.notes || ''
     }));
 
@@ -503,6 +529,31 @@ export const exportSupports = (params = {}) => {
 };
 
 /**
+ * Mark a support request as read
+ * @param {string} id - Support ID
+ * @returns {Promise} - Promise with update result
+ */
+export const markSupportAsRead = (id) => {
+  return client.patch(`/admin/supports/${id}/read`);
+};
+
+/**
+ * Mark all support requests as read
+ * @returns {Promise} - Promise with update result
+ */
+export const markAllSupportsAsRead = () => {
+  return client.patch("/admin/supports/read-all");
+};
+
+/**
+ * Get unread supports count
+ * @returns {Promise} - Promise with count data
+ */
+export const getUnreadSupportsCount = () => {
+  return client.get("/admin/supports/unread/count");
+};
+
+/**
  * Download supports data as Excel directly from frontend
  * @param {Array} supports - Array of support objects to export
  * @returns {Promise} - Promise that resolves when download starts
@@ -521,6 +572,7 @@ export const downloadSupportsDataAsExcel = async (supports) => {
       'Message': support.message?.substring(0, 100) + (support.message?.length > 100 ? '...' : ''),
       'Submitted At': new Date(support.createdAt).toLocaleString(),
       'Responded At': support.respondedAt ? new Date(support.respondedAt).toLocaleString() : '',
+      'Read At': support.readAt ? new Date(support.readAt).toLocaleString() : '',
       'Notes': support.notes || ''
     }));
 

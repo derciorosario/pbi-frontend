@@ -1,19 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import Logo from '../assets/logo-icon.png'
 import { useAuth } from "../contexts/AuthContext";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import ConfirmDialog from "../components/ConfirmDialog";
-import { useEffect } from "react";
+import { getUnreadSupportsCount, getUnreadContactsCount } from "../api/admin";
 
 
 const nav = [
-   { to: "/admin", label: "Dashboard", icon: "grid" },
-   { to: "/admin/users", label: "User Management", icon: "users" },
-   { to: "/admin/contacts", label: "Contact Management", icon: "mail" },
-   { to: "/admin/supports", label: "Support Management", icon: "help" },
-   { to: "/admin/content-moderation", label: "Content Moderation", icon: "flag" },
- //  { to: "/admin/notification", label: "Notifications", icon: "bell" },
+    { to: "/admin", label: "Dashboard", icon: "grid" },
+    { to: "/admin/users", label: "User Management", icon: "users" },
+    { to: "/admin/contacts", label: "Contact Management", icon: "mail" },
+    { to: "/admin/supports", label: "Support Management", icon: "help" },
+    { to: "/admin/content-moderation", label: "Content Moderation", icon: "flag" },
+  //  { to: "/admin/notification", label: "Notifications", icon: "bell" },
 ];
 
 const I = {
@@ -76,10 +76,40 @@ const I = {
 };
 
 export default function AdminLayout() {
-    const {user,loading, signOut} = useAuth()
-    const {pathname} = useLocation()
-    const navigate=useNavigate()
-    const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
+     const {user,loading, signOut} = useAuth()
+     const {pathname} = useLocation()
+     const navigate=useNavigate()
+     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
+     const [unreadSupportsCount, setUnreadSupportsCount] = useState(0)
+     const [unreadContactsCount, setUnreadContactsCount] = useState(0)
+
+     const nav = [
+       { to: "/admin", label: "Dashboard", icon: "grid" },
+       { to: "/admin/users", label: "User Management", icon: "users" },
+       { to: "/admin/contacts", label: "Contact Management", icon: "mail", badge: unreadContactsCount },
+       { to: "/admin/supports", label: "Support Management", icon: "help", badge: unreadSupportsCount },
+       { to: "/admin/content-moderation", label: "Content Moderation", icon: "flag" },
+     //  { to: "/admin/notification", label: "Notifications", icon: "bell" },
+     ];
+
+     // Function to refresh unread counts
+     const refreshUnreadSupportsCount = async () => {
+       try {
+         const response = await getUnreadSupportsCount();
+         setUnreadSupportsCount(response.data.count || 0);
+       } catch (error) {
+         console.error("Error fetching unread supports count:", error);
+       }
+     };
+
+     const refreshUnreadContactsCount = async () => {
+       try {
+         const response = await getUnreadContactsCount();
+         setUnreadContactsCount(response.data.count || 0);
+       } catch (error) {
+         console.error("Error fetching unread contacts count:", error);
+       }
+     };
 
    useEffect(()=>{
      if(user?.accountType!="admin" && user){
@@ -88,10 +118,43 @@ export default function AdminLayout() {
    },[user])
 
     useEffect(()=>{
-        if(!loading && !user){
-           navigate('/login')
-        }
-     },[user])
+         if(!loading && !user){
+            navigate('/login')
+         }
+      },[user])
+
+     // Fetch unread counts
+     useEffect(() => {
+       const fetchUnreadCounts = async () => {
+         try {
+           const [supportsResponse, contactsResponse] = await Promise.all([
+             getUnreadSupportsCount(),
+             getUnreadContactsCount()
+           ]);
+           setUnreadSupportsCount(supportsResponse.data.count || 0);
+           setUnreadContactsCount(contactsResponse.data.count || 0);
+         } catch (error) {
+           console.error("Error fetching unread counts:", error);
+         }
+       };
+
+       if (user?.accountType === "admin") {
+         fetchUnreadCounts();
+         // Refresh counts every 30 seconds
+         const interval = setInterval(fetchUnreadCounts, 30000);
+         return () => clearInterval(interval);
+       }
+     }, [user]);
+
+     // Expose refreshUnreadCount functions to window for AdminSupports and AdminContacts to call
+     useEffect(() => {
+       window.refreshUnreadSupportsCount = refreshUnreadSupportsCount;
+       window.refreshUnreadContactsCount = refreshUnreadContactsCount;
+       return () => {
+         delete window.refreshUnreadSupportsCount;
+         delete window.refreshUnreadContactsCount;
+       };
+     }, []);
 
      
      if((loading || user?.accountType!="admin")){
@@ -132,21 +195,26 @@ export default function AdminLayout() {
         <aside className="col-span-12 md:col-span-3 lg:col-span-2">
           <div className="rounded-2xl border border-gray-200 bg-white p-2">
             {nav.map((n) => (
-              <NavLink
-                key={n.label}
-                to={n.to}
-                className={({ isActive }) =>
-                  `flex items-center gap-2 px-3 py-2 rounded-lg text-sm mb-2 ${
-                    pathname==n.to
-                      ? "bg-brand-50 text-brand-700 font-semibold"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`
-                }
-              >
-                {React.createElement(I[n.icon])}
-                {n.label}
-              </NavLink>
-            ))}
+               <NavLink
+                 key={n.label}
+                 to={n.to}
+                 className={({ isActive }) =>
+                   `flex items-center gap-2 px-3 py-2 rounded-lg text-sm mb-2 ${
+                     pathname==n.to
+                       ? "bg-brand-50 text-brand-700 font-semibold"
+                       : "text-gray-700 hover:bg-gray-50"
+                   }`
+                 }
+               >
+                 {React.createElement(I[n.icon])}
+                 {n.label}
+                 {n.badge > 0 && (
+                   <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full ml-auto">
+                     {n.badge}
+                   </span>
+                 )}
+               </NavLink>
+             ))}
           </div>
         </aside>
 

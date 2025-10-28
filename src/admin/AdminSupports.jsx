@@ -5,9 +5,12 @@ import {
   getSupportById,
   updateSupportStatus,
   deleteSupport,
-  downloadSupportsDataAsExcel
+  downloadSupportsDataAsExcel,
+  markSupportAsRead,
+  markAllSupportsAsRead,
+  getUnreadSupportsCount
 } from "../api/admin";
-import { Search, Filter, Download, Eye, Edit, Trash2, CheckCircle, Clock, AlertCircle, XCircle, X } from "lucide-react";
+import { Search, Filter, Download, Eye, Edit, Trash2, CheckCircle, Clock, AlertCircle, XCircle, X, Mail } from "lucide-react";
 
 const SUPPORT_REASONS = {
   technical: "Technical Error / System Failure",
@@ -125,6 +128,50 @@ export default function AdminSupports() {
     }
   };
 
+  // Handle mark as read
+  const handleMarkAsRead = async (supportId) => {
+    try {
+      await markSupportAsRead(supportId);
+
+      // Update local state
+      setSupports(prev => prev.map(support =>
+        support.id === supportId
+          ? { ...support, readAt: new Date() }
+          : support
+      ));
+
+      // Refresh unread count in sidebar
+      if (window.refreshUnreadSupportsCount) {
+        window.refreshUnreadSupportsCount();
+      }
+
+      toast.success("Support marked as read");
+    } catch (error) {
+      console.error("Error marking support as read:", error);
+      toast.error("Failed to mark support as read");
+    }
+  };
+
+  // Handle mark all as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllSupportsAsRead();
+
+      // Update local state
+      setSupports(prev => prev.map(support => ({ ...support, readAt: new Date() })));
+
+      // Refresh unread count in sidebar
+      if (window.refreshUnreadSupportsCount) {
+        window.refreshUnreadSupportsCount();
+      }
+
+      toast.success("All supports marked as read");
+    } catch (error) {
+      console.error("Error marking all supports as read:", error);
+      toast.error("Failed to mark all supports as read");
+    }
+  };
+
   // Handle support deletion
   const handleDeleteSupport = async (supportId) => {
     if (!confirm("Are you sure you want to delete this support request?")) return;
@@ -163,13 +210,22 @@ export default function AdminSupports() {
           <h1 className="text-xl md:text-2xl font-bold">Support Management</h1>
           <p className="text-sm text-gray-500">Manage support requests and inquiries</p>
         </div>
-        <button
-          onClick={handleExport}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-        >
-          <Download size={16} />
-          Export Excel
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleMarkAllAsRead}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Mail size={16} />
+            Mark All as Read
+          </button>
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+          >
+            <Download size={16} />
+            Export Excel
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -278,21 +334,34 @@ export default function AdminSupports() {
             <tbody className="bg-white divide-y divide-gray-200">
               {supports.map((support) => {
                 const StatusIcon = STATUS_CONFIG[support.status]?.icon;
+                const isUnread = !support.readAt;
                 return (
-                  <tr key={support.id} className="hover:bg-gray-50">
+                  <tr key={support.id} className={`hover:bg-gray-50 ${isUnread ? 'bg-blue-50' : ''}`}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {support.fullName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {support.email}
-                        </div>
-                        {support.phone && (
-                          <div className="text-sm text-gray-500">
-                            {support.phone}
-                          </div>
+                      <div className="flex items-center gap-2">
+                        {isUnread && (
+                          <button
+                            onClick={() => handleMarkAsRead(support.id)}
+                            className="text-blue-600 hover:text-blue-900 mr-2"
+                            title="Mark as Read"
+                          >
+                                  <svg className="fill-blue-600 hover:fill-blue-900" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="24px"><path d="M480-480Zm280-160q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q28 0 55.5 4t54.5 12q-11 17-18 36.5T562-788q-20-6-40.5-9t-41.5-3q-134 0-227 93t-93 227q0 134 93 227t227 93q134 0 227-93t93-227q0-21-3-41.5t-9-40.5q20-3 39.5-10t36.5-18q8 27 12 54.5t4 55.5q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-57-216 273-273q-20-7-37.5-17.5T625-611L424-410 310-522l-56 56 169 170Z"/></svg>
+                
+                          </button>
                         )}
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {support.fullName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {support.email}
+                          </div>
+                          {support.phone && (
+                            <div className="text-sm text-gray-500">
+                              {support.phone}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
