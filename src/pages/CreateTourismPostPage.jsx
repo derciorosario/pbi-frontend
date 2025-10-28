@@ -1172,7 +1172,7 @@ export default function CreateTourismPostPage({ triggerImageSelection = false, h
             
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Category</label>
+                  <label className="text-[12px] font-medium text-gray-700">Category</label>
                   <SearchableSelect
                     ariaLabel="Category"
                     value={selectedGeneral.categoryId}
@@ -1185,7 +1185,7 @@ export default function CreateTourismPostPage({ triggerImageSelection = false, h
                 </div>
             
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+                  <label className="text-[12px] font-medium text-gray-700">Subcategory</label>
                   <SearchableSelect
                     ariaLabel="Subcategory"
                     value={selectedGeneral.subcategoryId}
@@ -1298,7 +1298,7 @@ export default function CreateTourismPostPage({ triggerImageSelection = false, h
                 </button>
               )}
               <button type="submit" className={styles.primaryWide} disabled={saving}>
-                {saving ? "Saving…" : isEditMode ? "Update Post" : "Publish Post"}
+                {saving ? "Saving…" : isEditMode ? "Update" : "Publish"}
               </button>
             </div>
           </form>

@@ -1492,7 +1492,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
               </button>
             )}
             <button type="submit" className={styles.primaryWide} disabled={saving}>
-              {saving ? "Saving…" : isEditMode ? "Update Experience" : "Publish Experience"}
+              {saving ? "Saving…" : isEditMode ? "Update" : "Publish"}
             </button>
           </div>
             </form>

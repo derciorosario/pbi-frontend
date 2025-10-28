@@ -1238,9 +1238,9 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Category <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <label className="text-[12px] font-medium text-gray-700">Category <span className="text-gray-400 font-normal">(optional)</span></label>
                   <SearchableSelect
-                    ariaLabel="General Category"
+                    ariaLabel="Category"
                     value={selectedGeneral.categoryId}
                     onChange={(val) =>
                       setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
@@ -1251,9 +1251,9 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
                 </div>
 
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Subcategory <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <label className="text-[12px] font-medium text-gray-700">Subcategory <span className="text-gray-400 font-normal">(optional)</span></label>
                   <SearchableSelect
-                    ariaLabel="General Subcategory"
+                    ariaLabel="Subcategory"
                     value={selectedGeneral.subcategoryId}
                     onChange={(val) =>
                       setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
@@ -1360,7 +1360,7 @@ export default function CreateEventPage({ triggerImageSelection = false, hideHea
                 </button>
               )}
               <button type="submit" className={styles.primary} disabled={saving}>
-                {saving ? "Saving…" : isEditMode ? "Update Event" : "Publish Event"}
+                {saving ? "Saving…" : isEditMode ? "Update" : "Publish"}
               </button>
             </div>
           </form>

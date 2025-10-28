@@ -1385,7 +1385,7 @@ const industrySubcategoryOptions = useMemo(() => {
                   </button>
                 )}
                 <button type="submit" className={styles.primaryWide} disabled={saving}>
-                  {saving ? "Saving…" : isEditMode ? "Update Product" : "Publish Product"}
+                  {saving ? "Saving…" : isEditMode ? "Update" : "Publish"}
                 </button>
               </div>
             </form>

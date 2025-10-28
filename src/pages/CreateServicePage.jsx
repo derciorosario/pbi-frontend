@@ -1224,7 +1224,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
             <section>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Category</label>
+                  <label className="text-[12px] font-medium text-gray-700">Category</label>
                   <SearchableSelect
                     ariaLabel="Category"
                     value={selectedGeneral.categoryId}
@@ -1237,7 +1237,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                 </div>
 
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+                  <label className="text-[12px] font-medium text-gray-700">Subcategory</label>
                   <SearchableSelect
                     ariaLabel="Subcategory"
                     value={selectedGeneral.subcategoryId}
@@ -1525,7 +1525,7 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
                 </button>
               )}
               <button type="submit" className={styles.primary} disabled={saving}>
-                {saving ? "Saving…" : isEditMode ? "Update Service" : "Publish Service"}
+                {saving ? "Saving…" : isEditMode ? "Update" : "Publish"}
               </button>
             </div>
           </form>

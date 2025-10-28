@@ -1504,7 +1504,7 @@ const onSubmit = async (e) => {
         {(isEditMode && !readOnly) && (
           <div>
             <h1 className="text-[20px] font-bold">
-              {isEditMode ? "Edit Job Opportunity" : "Create Job Opportunity"}
+              {isEditMode ? "Edit Job" : "Create Job Opportunity"}
             </h1>
            
           </div>
@@ -1799,9 +1799,9 @@ const onSubmit = async (e) => {
            
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Category <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <label className="text-[12px] font-medium text-gray-700">Category <span className="text-gray-400 font-normal">(optional)</span></label>
                   <SearchableSelect
-                    ariaLabel="General Category"
+                    ariaLabel="Category"
                     value={selectedGeneral.categoryId}
                     onChange={(val) =>
                       setSelectedGeneral({ categoryId: val, subcategoryId: "", subsubCategoryId: "" })
@@ -1812,9 +1812,9 @@ const onSubmit = async (e) => {
                 </div>
 
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Subcategory <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <label className="text-[12px] font-medium text-gray-700">Subcategory <span className="text-gray-400 font-normal">(optional)</span></label>
                   <SearchableSelect
-                    ariaLabel="General Subcategory"
+                    ariaLabel="Subcategory"
                     value={selectedGeneral.subcategoryId}
                     onChange={(val) =>
                       setSelectedGeneral((s) => ({ ...s, subcategoryId: val, subsubCategoryId: "" }))
@@ -1992,7 +1992,7 @@ const onSubmit = async (e) => {
                 </button>
               ) : (
                 <button type="submit" className="px-4 py-2 rounded-xl bg-brand-600 text-white hover:opacity-90">
-                  {isEditMode ? "Update Job" : "Create Job"}
+                  {isEditMode ? "Update" : "Post"}
                 </button>
               )}
             </div>

@@ -38,6 +38,7 @@ export default function SettingsPage() {
     hideMainFeed: false,
     connectionsOnly: false,
     contentType: "all", // "all", "text", "images"
+    notifyOnNewPost: true,
     bidirectionalMatch: true, // Enable/disable bidirectional matching
     bidirectionalMatchFormula: "reciprocal" // "simple" or "reciprocal"
   });
@@ -69,6 +70,7 @@ export default function SettingsPage() {
             hideMainFeed: false,
             connectionsOnly: false,
             contentType: "all",
+            notifyOnNewPost: true,
             bidirectionalMatch: true,
             bidirectionalMatchFormula: "reciprocal",
             // Override with user's saved data
@@ -158,6 +160,14 @@ export default function SettingsPage() {
     setSettings(prev => ({
       ...prev,
       contentType: contentType
+    }));
+  };
+
+  // Toggle notify on new post
+  const toggleNotifyOnNewPost = () => {
+    setSettings(prev => ({
+      ...prev,
+      notifyOnNewPost: !prev.notifyOnNewPost
     }));
   };
 
@@ -381,6 +391,27 @@ export default function SettingsPage() {
                           className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
                           checked={settings.notifications.meetingRequests.email}
                           onChange={() => toggleNotification("meetingRequests", "email")}
+                        />
+                        <span className="ml-2 text-sm">Email notifications</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* New Posts */}
+                  <div className="border-b pb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">New posts</h3>
+                        <p className="text-sm text-gray-500">Get notified when someone posts new content</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={!!settings.notifyOnNewPost}
+                          onChange={toggleNotifyOnNewPost}
                         />
                         <span className="ml-2 text-sm">Email notifications</span>
                       </label>

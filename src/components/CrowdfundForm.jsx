@@ -1371,7 +1371,7 @@ function removeTag(idx) {
             
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Category</label>
+                  <label className="text-[12px] font-medium text-gray-700">Category</label>
                   <SearchableSelect
                     ariaLabel="Category"
                     value={selectedGeneral.categoryId}
@@ -1384,7 +1384,7 @@ function removeTag(idx) {
                 </div>
             
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+                  <label className="text-[12px] font-medium text-gray-700">Subcategory</label>
                   <SearchableSelect
                     ariaLabel="Subcategory"
                     value={selectedGeneral.subcategoryId}
@@ -1398,7 +1398,7 @@ function removeTag(idx) {
                 </div>
             
                 <div className="hidden">
-                  <label className="text-[12px] font-medium text-gray-700">General Sub-subcategory</label>
+                  <label className="text-[12px] font-medium text-gray-700">Sub-subcategory</label>
                   <SearchableSelect
                     ariaLabel="General Sub-subcategory"
                     value={selectedGeneral.subsubCategoryId}
@@ -1517,7 +1517,7 @@ function removeTag(idx) {
                 disabled={saving}
                 className="rounded-xl px-4 py-2 text-sm font-semibold text-white bg-brand-500 hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-60"
               >
-                {saving ? "Publishing…" : "Publish project"}
+                {saving ? "Publishing…" : "Publish"}
               </button>
             </div>
           </div>

@@ -1325,7 +1325,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Category</label>
+                  <label className="text-[12px] font-medium text-gray-700">Category</label>
                   <SearchableSelect
                     ariaLabel="Category"
                     value={selectedGeneral.categoryId}
@@ -1338,7 +1338,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
                 </div>
 
                 <div>
-                  <label className="text-[12px] font-medium text-gray-700">General Subcategory</label>
+                  <label className="text-[12px] font-medium text-gray-700">Subcategory</label>
                   <SearchableSelect
                     ariaLabel="Subcategory"
                     value={selectedGeneral.subcategoryId}
@@ -1456,7 +1456,7 @@ export default function CreateNeedPage({ triggerImageSelection = false, type, hi
               </button>
             )}
             <button type="submit" className={styles.primary} disabled={saving}>
-              {saving ? "Saving…" : isEditMode ? "Update Need" : "Post Need"}
+              {saving ? "Saving…" : isEditMode ? "Update" : "Post"}
             </button>
           </div>
             </form>
