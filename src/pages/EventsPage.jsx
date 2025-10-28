@@ -42,7 +42,7 @@ export default function EventsPage() {
   const data=useData()
   const {user} = useAuth()
 
-  const ITEMS_PER_PAGE = 3;
+  const ITEMS_PER_PAGE = 10;
 
   // Filtros compatíveis com a Home
   const [query, setQuery] = useState("");
