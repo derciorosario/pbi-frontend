@@ -101,6 +101,124 @@ export default function NotificationsPage() {
 };
 
 
+
+// Add manual refresh function
+const handleManualRefresh = async () => {
+  try {
+    console.log("Manual refresh triggered");
+    await Promise.all([
+      loadConnections(),
+      loadMeetingRequests(),
+      loadNotifications(),
+      loadAllNotificationsForBadges()
+    ]);
+    
+    if (connected && socket) {
+      socket.emit("get_header_badge_counts", (counts) => {
+        if (counts) setBadgeCounts(prev => ({ ...prev, ...counts }));
+      });
+    }
+    
+    toast.success("Notifications updated");
+  } catch (error) {
+    console.error("Error during manual refresh:", error);
+    toast.error("Failed to refresh notifications");
+  }
+};
+
+
+
+
+  useEffect(() => {
+
+    return //return for now
+    const refreshAllData = () => {
+      console.log("Auto-refreshing notifications...");
+      loadConnections();
+      loadMeetingRequests();
+      loadNotifications();
+      loadAllNotificationsForBadges();
+      
+      // Also refresh badge counts via socket if connected
+      if (connected && socket) {
+        socket.emit("get_header_badge_counts", (counts) => {
+          if (counts) setBadgeCounts(prev => ({ ...prev, ...counts }));
+        });
+      }
+    };
+
+    // Set up interval for automatic refreshing (every 30 seconds)
+    const intervalId = setInterval(refreshAllData, 3000);
+
+    // Cleanup on unmount
+    return () => {
+      clearInterval(intervalId);
+    };
+}, [connected, socket, user?.id]); // Re-run when connection or user changes
+
+
+
+
+useEffect(() => {
+  if (!connected || !socket || !user?.id) return;
+
+  const handleNewNotification = (data) => {
+    console.log("New notification received:", data);
+    setNotifications(prev => [data.notification, ...prev]);
+    setAllNotifications(prev => [data.notification, ...prev]);
+    
+    // Trigger immediate badge count update
+    if (connected && socket) {
+      socket.emit("get_header_badge_counts", (counts) => {
+        if (counts) {
+          setBadgeCounts(prev => ({ ...prev, ...counts }));
+        }
+      });
+    }
+  };
+
+  const handleBadgeCounts = (counts) => {
+    console.log("Badge counts updated:", counts);
+    setBadgeCounts(prev => ({
+      ...prev,
+      ...counts
+    }));
+  };
+
+  // Listen for notification updates
+  const handleNotificationUpdate = (data) => {
+    console.log("Notification updated:", data);
+    if (data.notification) {
+      setNotifications(prev => prev.map(n => 
+        n.id === data.notification.id ? data.notification : n
+      ));
+      setAllNotifications(prev => prev.map(n => 
+        n.id === data.notification.id ? data.notification : n
+      ));
+    }
+  };
+
+  socket.on("new_notification", handleNewNotification);
+  socket.on("header_badge_counts", handleBadgeCounts);
+  socket.on("notification_updated", handleNotificationUpdate);
+
+  socket.emit("subscribe_to_notifications");
+
+  // Get initial badge counts
+  socket.emit("get_header_badge_counts", (counts) => {
+    if (counts) setBadgeCounts(prev => ({ ...prev, ...counts }));
+  });
+
+  return () => {
+    socket.off("new_notification", handleNewNotification);
+    socket.off("header_badge_counts", handleBadgeCounts);
+    socket.off("notification_updated", handleNotificationUpdate);
+  };
+}, [connected, socket, user?.id]);
+
+
+
+
   const [loadingConn, setLoadingConn] = useState(false);
   const [incoming, setIncoming] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
@@ -209,7 +327,7 @@ export default function NotificationsPage() {
     try {
       if (connected && socket) {
         let t=filter.toLowerCase()
-        socket.emit("qa_fetch_notifications", { type: filter === "All" ? "all" : t=="meetings" ? 'meeting' : t=="connections" ? 'connection' : t=="messages" ? 'message' : t=="jobs" ? 'job' : t=="events" ? 'event' : t=="posts" ? 'new_post' : t=="invitations" ? 'invitation' : filter.toLowerCase() }, (response) => {
+        socket.emit("qa_fetch_notifications", { type: filter === "All" ? "all" : t=="meetings" ? 'meeting' : t=="connections" ? 'connection' : t=="messages" ? 'message' : t=="jobs" ? 'job' : t=="events" ? 'event' : t=="posts" ? 'new_post' : t=="invitations" ? 'invitation' : t=="system" ? 'system' : filter.toLowerCase() }, (response) => {
           console.log(`Loading notifications for filter: ${filter}, type: ${t=="jobs" ? 'job' : filter.toLowerCase()}, response:`, response);
           if (response?.ok) {
             setNotifications(response.data.notifications || []);
@@ -283,6 +401,15 @@ export default function NotificationsPage() {
       loadAllNotificationsForBadges();
     }
   }, [connected, socket]);
+
+
+
+
+
+
+
+
+  
 
   const handleRespond = async (id, action) => {
 
@@ -499,7 +626,11 @@ export default function NotificationsPage() {
   const jobBadge = badgeCounts.jobApplicationsPending ?? allNotifications.filter(n => !n.readAt && n.type.startsWith("job.application.")).length;
   const eventBadge = badgeCounts.eventRegistrationsPending ?? allNotifications.filter(n => !n.readAt && n.type.startsWith("event.registration.")).length;
   const invitationBadge = allNotifications.filter(n => !n.readAt && (n.type.startsWith("company.") || n.type.startsWith("organization."))).length;
-  const systemBadge = badgeCounts.notificationsUnread ?? allNotifications.filter(n => !n.readAt && n.type === "system").length;
+ // const systemBadge = badgeCounts.notificationsUnread ?? allNotifications.filter(n => !n.readAt && (n.type === "system" || n.type === "custom_notification")).length + (badgeCounts.customNotificationsPending || 0);
+
+  const systemBadge = allNotifications.filter(n => 
+    !n.readAt && (n.type === "system" || n.type === "custom_notification")
+  ).length;
 
   const allItems = useMemo(() => {
     const connectionItems = [
@@ -557,8 +688,7 @@ export default function NotificationsPage() {
       let message = "";
       let meta = ""
 
-      console.log({type:n.type})
-      
+     
       switch (n.type) {
         case "connection.request":
           title = "New Connection Request";
@@ -738,6 +868,11 @@ export default function NotificationsPage() {
           }
           break;
 
+        case "custom_notification":
+          title = n.payload?.subject || "Custom Notification";
+          message = n.payload?.message || "You have a custom notification";
+          break;
+
         default:
           title = n.title || "Notification";
           message = n.message || "You have a new notification";
@@ -759,6 +894,8 @@ export default function NotificationsPage() {
         notificationType = "invitation";
       } else if (n.type === "new_post") {
         notificationType = "posts";
+      } else if (n.type === "custom_notification" || n.type === "system") {
+        notificationType = "system";
       }
 
       const hasActions = n.type === "connection.request" || n.type === "meeting_request" || n.type === "meeting_invitation";
@@ -777,9 +914,9 @@ export default function NotificationsPage() {
         }
       };
 
-      const userId = getUserIdFromNotification(n);
-
-      console.log({n})
+      const isSystemNotification = notificationType === "system";
+      const userId = isSystemNotification ? null : getUserIdFromNotification(n)
+      
 
       return {
         key: `notif-${n.id}`,
@@ -815,7 +952,7 @@ export default function NotificationsPage() {
               </button>
             </div>
             <div className="flex gap-2">
-              <ProfileButton userId={userId} />
+              {!isSystemNotification && <ProfileButton userId={userId} />}
               
               {n.type.startsWith("job.application.") && n.payload?.applicationId && (
                 <button
@@ -888,28 +1025,38 @@ export default function NotificationsPage() {
     return allItemsUnsorted;
   }, [incoming, outgoing, meetingRequests, notifications, user?.id]);
 
+ 
   const filteredItems = useMemo(() => {
-    if (filter === "All") return allItems;
+  if (filter === "All") return allItems;
 
-    const typeMap = {
-      "Connections": "connection",
-      "Meetings": "meeting",
-      "Messages": "message",
-      "Jobs": "job",
-      "Events": "event",
-      "Invitations": "invitation",
-      "Posts": "posts",
-      "System": "system"
-    };
+  const typeMap = {
+    "Connections": "connection",
+    "Meetings": "meeting", 
+    "Messages": "message",
+    "Jobs": "job",
+    "Events": "event",
+    "Invitations": "invitation",
+    "Posts": "posts",
+    "System": "system"
+  };
 
-    const filtered = allItems.filter(item => item.type === typeMap[filter]);
+  const targetType = typeMap[filter];
+  
+  // Debug logging
+  console.log(`Filtering: ${filter} -> Type: ${targetType}`);
+  console.log('All items types:', allItems.map(item => ({ type: item.type, title: item.title })));
 
-    console.log(`Filter: ${filter}, Type: ${typeMap[filter]}, Items found:`, filtered.length, filtered.map(i => ({ type: i.type, title: i.title })));
+  const filtered = allItems.filter(item => {
+    const matches = item.type === targetType;
+    console.log(`Item: ${item.title}, Type: ${item.type}, Matches: ${matches}`);
+    return matches;
+  });
 
-    return filtered;
-  }, [allItems, filter]);
+  console.log(`Filter: ${filter}, Found ${filtered.length} items`);
 
-  console.log({allItems})
+  return filtered;
+}, [allItems, filter]);
+
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -921,9 +1068,32 @@ export default function NotificationsPage() {
             <p className="text-sm text-gray-500">Stay updated with your network activities</p>  
           </div>
 
-          <button onClick={markAllAsRead} className={styles.primary}>
-            Mark All Read
-          </button>
+         
+           <div className="flex gap-2">
+              <button 
+                onClick={handleManualRefresh}
+                className={`${styles.outline} flex items-center gap-2`}
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-4 w-4" 
+                  viewBox="0 0 20 20" 
+                  fill="currentColor"
+                >
+                  <path 
+                    fillRule="evenodd" 
+                    d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" 
+                    clipRule="evenodd" 
+                  />
+                </svg>
+                Refresh
+              </button>
+              <button onClick={markAllAsRead} className={styles.primary}>
+                Mark All Read
+              </button>
+            </div>
+
+
         </div>
 
         <div className="mt-6 flex items-center justify-between">
@@ -940,7 +1110,9 @@ export default function NotificationsPage() {
               else if (tab === "Posts") badgeCount = allNotifications.filter(n => !n.readAt && n.type === "new_post").length;
               else if (tab === "Invitations") badgeCount = invitationBadge;
               else if (tab === "System") badgeCount = systemBadge;
-              else if (tab === "All") badgeCount = connBadge + meetBadge + messageBadge + jobBadge + eventBadge + invitationBadge + systemBadge + allNotifications.filter(n => !n.readAt && n.type === "new_post").length;
+              else if (tab === "All") badgeCount = 
+              connBadge + meetBadge + messageBadge + jobBadge + eventBadge + 
+              invitationBadge + systemBadge + allNotifications.filter(n => !n.readAt && n.type === "new_post").length;
 
               return (
                 <button
@@ -998,7 +1170,13 @@ export default function NotificationsPage() {
                                     <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
                                   )}
                                 </div>
-                                <p className="text-sm text-gray-600 mt-1">{connectedNotMessage || item.desc}</p>
+                                <p className="text-sm text-gray-600 mt-1 line-clamp-3">
+                                  {item.type === "system" && item.payload?.message ? (
+                                    <span dangerouslySetInnerHTML={{ __html: item.payload.message }} />
+                                  ) : (
+                                    connectedNotMessage || item.desc
+                                  )}
+                                </p>
                                 {item.meta && <p className="text-xs text-gray-500 mt-1">{item.meta}</p>}
                                 <div className="flex md:items-center max-sm:flex-col justify-between gap-x-5 gap-y-1">
                                    <div className="flex-1">

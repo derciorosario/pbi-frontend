@@ -40,7 +40,8 @@ function Header({ page }) {
     jobApplicationsPending: 0,
     eventRegistrationsPending: 0,
     companyInvitationsPending: 0,
-    postsPending: 0
+    postsPending: 0,
+    customNotificationsPending: 0
   });
 
   const [loginDialogOpen, setLoginDialogOpen] = useState(false);
@@ -244,7 +245,8 @@ function Header({ page }) {
         jobApplicationsPending: Number.isFinite(counts.jobApplicationsPending) ? counts.jobApplicationsPending : 0,
         eventRegistrationsPending: Number.isFinite(counts.eventRegistrationsPending) ? counts.eventRegistrationsPending : 0,
         companyInvitationsPending: Number.isFinite(counts.companyInvitationsPending) ? counts.companyInvitationsPending : 0,
-        postsPending: Number.isFinite(counts.postsPending) ? counts.postsPending : 0
+        postsPending: Number.isFinite(counts.postsPending) ? counts.postsPending : 0,
+        customNotificationsPending: Number.isFinite(counts.customNotificationsPending) ? counts.customNotificationsPending : 0
       });
     };
 
@@ -321,7 +323,7 @@ function Header({ page }) {
   // Calculate total badge count including message notifications from backend
   const totalBadgeCount = Math.min(
     99,
-    notifBadgeCount + (badgeCounts.messagesPending || 0) + (badgeCounts.postsPending || 0)
+    notifBadgeCount + (badgeCounts.messagesPending || 0) + (badgeCounts.postsPending || 0) + (badgeCounts.customNotificationsPending || 0)
   );
 
   const NavButton = ({ item, onClick }) => {

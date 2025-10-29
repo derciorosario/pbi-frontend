@@ -571,6 +571,17 @@ export const updateAdminSettings = (settings) => {
 };
 
 /**
+ * Send custom notification to users
+ * @param {Object} notificationData - Notification data
+ * @param {string} notificationData.message - The notification message
+ * @param {string} notificationData.subject - The notification subject
+ * @returns {Promise} - Promise with send result
+ */
+export const sendCustomNotification = (notificationData) => {
+  return client.post("/admin/notifications/send-custom", notificationData);
+};
+
+/**
  * Download supports data as Excel directly from frontend
  * @param {Array} supports - Array of support objects to export
  * @returns {Promise} - Promise that resolves when download starts

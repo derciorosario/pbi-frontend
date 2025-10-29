@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "../lib/toast";
-import { getAdminSettings, updateAdminSettings } from "../api/admin";
+import { getAdminSettings, updateAdminSettings, sendCustomNotification } from "../api/admin";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import client from "../api/client";
@@ -41,6 +41,7 @@ export default function AdminNotificationCenter() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
   const [activeTab, setActiveTab] = useState('new-posts');
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [userQuery, setUserQuery] = useState("");
@@ -135,7 +136,7 @@ export default function AdminNotificationCenter() {
         try {
           // Load user details for selected users
           const userPromises = settings.customNotificationSettings.selectedUsers.map(id =>
-            client.get(`/users/${id}`).catch(() => ({ data: { id, name: 'Unknown User' } }))
+            client.get(`/users/${id}/public/basic`).catch(() => ({ data: { id, name: 'Unknown User' } }))
           );
           const userResponses = await Promise.all(userPromises);
           const users = userResponses.map(res => res.data);
@@ -168,16 +169,44 @@ export default function AdminNotificationCenter() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSave = async (msg) => {
     try {
       setSaving(true);
       await updateAdminSettings(settings);
-      toast.success("Notification settings saved successfully");
+      if(msg!="ignore_toast")  toast.success("Notification settings saved successfully");
     } catch (error) {
       console.error("Error saving admin settings:", error);
       toast.error("Failed to save notification settings");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSendCustomNotification = async () => {
+    try {
+      if (!customNotificationSettings.message || !customNotificationSettings.emailSubject) {
+        toast.error("Please provide both message and subject");
+        return;
+      }
+
+      // First save the settings
+      await handleSave('ignore_toast');
+
+      // Then send the notification
+      setSending(true);
+      const response = await sendCustomNotification({
+        message: customNotificationSettings.message,
+        subject: customNotificationSettings.emailSubject,
+        audienceType: customNotificationSettings.audienceType,
+        selectedUsers: customNotificationSettings.selectedUsers
+      });
+
+      toast.success(`Custom notification sent to ${response.userCount} users successfully`);
+    } catch (error) {
+      console.error("Error sending custom notification:", error);
+      toast.error("Failed to send custom notification");
+    } finally {
+      setSending(false);
     }
   };
 
@@ -190,6 +219,14 @@ export default function AdminNotificationCenter() {
       newOptions = [...currentOptions, option];
     } else {
       newOptions = currentOptions.filter(opt => opt !== option);
+    }
+
+    if(option!="all" && checked){
+      newOptions=newOptions.filter(i=>i!="all")
+    }
+
+    if(option=="all" && checked){
+      newOptions=['all'];
     }
 
     // Ensure at least one option is selected
@@ -333,12 +370,12 @@ export default function AdminNotificationCenter() {
                     placeholder="New {{postType}} posted by {{authorName}} on 54Links"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Available variables: {'{postType}'}, {'{authorName}'}, {'{title}'}
+                    Available variables: {'{{postType}}'}, {'{{authorName}}'} {/** , {'{title}'} */}
                   </p>
                 </div>
 
                 {/* Email Template */}
-                <div>
+                <div className="hidden">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email Template
                   </label>
@@ -407,18 +444,22 @@ export default function AdminNotificationCenter() {
                     {CUSTOM_NOTIFICATION_AUDIENCE_OPTIONS.map((option) => (
                       <label key={option.value} className="flex items-center">
                         <input
-                          type="checkbox"
-                          className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300 rounded"
-                          checked={customNotificationSettings.audienceOptions?.includes(option.value) || false}
-                          onChange={(e) => handleAudienceOptionChange(option.value, e.target.checked, true)}
+                          type="radio"
+                          name="customNotificationAudience"
+                          className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-gray-300"
+                          checked={customNotificationSettings.audienceType === option.value}
+                          onChange={(e) => {
+                            handleSettingChange('audienceType', option.value, true);
+                            handleSettingChange('audienceOptions', [option.value], true);
+                          }}
                         />
                         <span className="ml-2 text-sm text-gray-700">{option.label}</span>
                       </label>
                     ))}
                   </div>
 
-                  {/* Selected Users Section - only show when "selectedUsers" is checked */}
-                  {customNotificationSettings.audienceOptions?.includes('selectedUsers') && (
+                  {/* Selected Users Section - only show when "selectedUsers" is selected */}
+                  {customNotificationSettings.audienceType === 'selectedUsers' && (
                     <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Select Specific Users
@@ -566,13 +607,18 @@ export default function AdminNotificationCenter() {
                 {/* Send Button */}
                 <div className="pt-4 border-t border-gray-200">
                   <button
-                    onClick={() => {
-                      // TODO: Implement send notification logic
-                      toast.success("Custom notification sent successfully!");
-                    }}
-                    className="inline-flex items-center gap-2 px-6 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                    onClick={handleSendCustomNotification}
+                    disabled={sending}
+                    className="inline-flex items-center gap-2 px-6 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Send Notification
+                    {sending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Sending...
+                      </>
+                    ) : (
+                      'Save & Send Notification'
+                    )}
                   </button>
                 </div>
               </>
