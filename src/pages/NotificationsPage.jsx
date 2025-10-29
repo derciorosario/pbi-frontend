@@ -209,7 +209,7 @@ export default function NotificationsPage() {
     try {
       if (connected && socket) {
         let t=filter.toLowerCase()
-        socket.emit("qa_fetch_notifications", { type: filter === "All" ? "all" : t=="meetings" ? 'meeting' : t=="connections" ? 'connection' : t=="messages" ? 'message' : t=="jobs" ? 'job' : t=="events" ? 'event' : t=="invitations" ? 'invitation' : filter.toLowerCase() }, (response) => {
+        socket.emit("qa_fetch_notifications", { type: filter === "All" ? "all" : t=="meetings" ? 'meeting' : t=="connections" ? 'connection' : t=="messages" ? 'message' : t=="jobs" ? 'job' : t=="events" ? 'event' : t=="posts" ? 'new_post' : t=="invitations" ? 'invitation' : filter.toLowerCase() }, (response) => {
           console.log(`Loading notifications for filter: ${filter}, type: ${t=="jobs" ? 'job' : filter.toLowerCase()}, response:`, response);
           if (response?.ok) {
             setNotifications(response.data.notifications || []);
@@ -730,6 +730,14 @@ export default function NotificationsPage() {
           message = `Your join request for ${n.payload?.organizationName || "the organization"} has been rejected`;
           break;
 
+        case "new_post":
+          title = `New ${n.payload?.postType || 'post'} posted`;
+          message = `${n.payload?.createdByName || "Someone"} posted a new ${n.payload?.postType || 'post'}: "${n.payload?.title || 'Untitled'}"`;
+          if (n.payload?.matchPercentage) {
+            message += ` (${n.payload.matchPercentage}% match)`;
+          }
+          break;
+
         default:
           title = n.title || "Notification";
           message = n.message || "You have a new notification";
@@ -749,6 +757,8 @@ export default function NotificationsPage() {
         notificationType = "event";
       } else if (n.type.startsWith("company.") || n.type.startsWith("organization.")) {
         notificationType = "invitation";
+      } else if (n.type === "new_post") {
+        notificationType = "posts";
       }
 
       const hasActions = n.type === "connection.request" || n.type === "meeting_request" || n.type === "meeting_invitation";
@@ -778,7 +788,7 @@ export default function NotificationsPage() {
         title: title,
         payload: n.payload,
         meta,
-        tab: notificationType == "connection" ? "Connections" : notificationType == "meeting" ? "Meetings" : notificationType == "message" ? "Messages" : notificationType == "job" ? "Jobs" : notificationType == "event" ? "Events" : notificationType == "invitation" ? "Invitations" : "System",
+        tab: notificationType == "connection" ? "Connections" : notificationType == "meeting" ? "Meetings" : notificationType == "message" ? "Messages" : notificationType == "job" ? "Jobs" : notificationType == "event" ? "Events" : notificationType == "invitation" ? "Invitations" : notificationType == "posts" ? "Posts" : "System",
         desc: message,
         isNotification: true,
         time: timeAgo(n.createdAt),
@@ -860,6 +870,14 @@ export default function NotificationsPage() {
                   </button>
                 </div>
               )}
+              {n.type === "new_post" && n.payload?.link && (
+                <button
+                  onClick={() => window.location.href = n.payload.link}
+                  className={styles.primary}
+                >
+                  View Post
+                </button>
+              )}
             </div>
           </div>
         ),
@@ -880,6 +898,7 @@ export default function NotificationsPage() {
       "Jobs": "job",
       "Events": "event",
       "Invitations": "invitation",
+      "Posts": "posts",
       "System": "system"
     };
 
@@ -909,7 +928,7 @@ export default function NotificationsPage() {
 
         <div className="mt-6 flex items-center justify-between">
           <div className="flex gap-2 flex-wrap">
-            {["All", "Connections", "Meetings", "Messages", "Jobs", "Events", "Invitations", "System"].map((tab) => {
+            {["All", "Connections", "Meetings", "Messages", "Jobs", "Events", "Posts", "Invitations", "System"].map((tab) => {
               const isActive = filter === tab;
               let badgeCount = 0;
 
@@ -918,9 +937,10 @@ export default function NotificationsPage() {
               else if (tab === "Messages") badgeCount = messageBadge;
               else if (tab === "Jobs") badgeCount = jobBadge;
               else if (tab === "Events") badgeCount = eventBadge;
+              else if (tab === "Posts") badgeCount = allNotifications.filter(n => !n.readAt && n.type === "new_post").length;
               else if (tab === "Invitations") badgeCount = invitationBadge;
               else if (tab === "System") badgeCount = systemBadge;
-              else if (tab === "All") badgeCount = connBadge + meetBadge + messageBadge + jobBadge + eventBadge + invitationBadge + systemBadge;
+              else if (tab === "All") badgeCount = connBadge + meetBadge + messageBadge + jobBadge + eventBadge + invitationBadge + systemBadge + allNotifications.filter(n => !n.readAt && n.type === "new_post").length;
 
               return (
                 <button

@@ -88,6 +88,7 @@ export default function AdminLayout() {
        { to: "/admin/users", label: "User Management", icon: "users" },
        { to: "/admin/contacts", label: "Contact Management", icon: "mail", badge: unreadContactsCount },
        { to: "/admin/supports", label: "Support Management", icon: "help", badge: unreadSupportsCount },
+       { to: "/admin/notification-center", label: "Notification Center", icon: "bell" },
        { to: "/admin/content-moderation", label: "Content Moderation", icon: "flag" },
      //  { to: "/admin/notification", label: "Notifications", icon: "bell" },
      ];

@@ -60,6 +60,7 @@ import AuthorizeRepresentative from './pages/AuthorizeRepresentative.jsx';
  import OrganizationJoinRequests from './pages/OrganizationJoinRequests.jsx';
 import AdminContacts from './admin/AdminContacts.jsx';
 import AdminSupports from './admin/AdminSupports.jsx';
+import AdminNotificationCenter from './admin/AdminNotificationCenter.jsx';
 
 
 
@@ -123,6 +124,7 @@ function App() {
           <Route path="content-moderation" element={<AdminModeration/>} />
           <Route path="contacts" element={<AdminContacts/>} />
           <Route path="supports" element={<AdminSupports/>} />
+          <Route path="notification-center" element={<AdminNotificationCenter/>} />
           <Route path="user-profile/:id" element={<ProfilePage />} />
         </Route>
 

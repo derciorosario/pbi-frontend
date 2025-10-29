@@ -554,6 +554,23 @@ export const getUnreadSupportsCount = () => {
 };
 
 /**
+ * Get admin settings
+ * @returns {Promise} - Promise with admin settings data
+ */
+export const getAdminSettings = () => {
+  return client.get("/admin/settings");
+};
+
+/**
+ * Update admin settings
+ * @param {Object} settings - Admin settings to update
+ * @returns {Promise} - Promise with update result
+ */
+export const updateAdminSettings = (settings) => {
+  return client.put("/admin/settings", settings);
+};
+
+/**
  * Download supports data as Excel directly from frontend
  * @param {Array} supports - Array of support objects to export
  * @returns {Promise} - Promise that resolves when download starts
