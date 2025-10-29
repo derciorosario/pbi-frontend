@@ -6,7 +6,7 @@ import { toast } from "../lib/toast";
 import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import { useNavigate } from "react-router-dom";
-import { Delete, DeleteIcon, LucideDelete } from "lucide-react";
+import { Delete, DeleteIcon, Eye, LucideDelete } from "lucide-react";
 
 const styles = {
   primary: "rounded-lg px-3 py-1.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600/30",
@@ -51,6 +51,8 @@ const getUserIdFromNotification = (notification) => {
       return user?.id || payload?.fromId || payload?.fromUserId;
     case "message.new":
       return payload?.senderId;
+    case "comment.new":
+      return payload?.commenterId;
     case "job.application.received":
       return payload?.applicantId;
     case "job.application.accepted":
@@ -861,12 +863,17 @@ useEffect(() => {
           break;
 
         case "new_post":
-          title = `New ${n.payload?.postType || 'post'} posted`;
-          message = `${n.payload?.createdByName || "Someone"} posted a new ${n.payload?.postType || 'post'}: "${n.payload?.title || 'Untitled'}"`;
-          if (n.payload?.matchPercentage) {
-            message += ` (${n.payload.matchPercentage}% match)`;
-          }
-          break;
+           title = `New ${n.payload?.postType || 'post'} posted`;
+           message = `${n.payload?.createdByName || "Someone"} posted a new ${n.payload?.postType || ''} post: "${n.payload?.title || 'Untitled'}"`;
+           if (n.payload?.matchPercentage) {
+             message += ` (${n.payload.matchPercentage}% match)`;
+           }
+           break;
+
+        case "comment.new":
+           title = "New Comment: "+n.payload?.commentText;
+           message = `${n.payload?.commenterName || "Someone"} commented on your ${n.payload?.postType || ''} post: "${n.payload?.postTitle || n.payload?.commentDescription || 'Untitled'}"`;
+           break;
 
         case "custom_notification":
           title = n.payload?.subject || "Custom Notification";
@@ -892,7 +899,7 @@ useEffect(() => {
         notificationType = "event";
       } else if (n.type.startsWith("company.") || n.type.startsWith("organization.")) {
         notificationType = "invitation";
-      } else if (n.type === "new_post") {
+      } else if (n.type === "new_post" || n.type === "comment.new") {
         notificationType = "posts";
       } else if (n.type === "custom_notification" || n.type === "system") {
         notificationType = "system";
@@ -1012,7 +1019,17 @@ useEffect(() => {
                   onClick={() => window.location.href = n.payload.link}
                   className={styles.primary}
                 >
-                  View Post
+                  <span className="max-md:hidden">View Post</span>
+                  <Eye className="md:hidden"/>
+                </button>
+              )}
+              {n.type === "comment.new" && n.payload?.link && (
+                <button
+                  onClick={() => window.location.href = n.payload.link}
+                  className={styles.primary}
+                >
+                   <span className="max-md:hidden">View Post</span>
+                    <Eye className="md:hidden"/>
                 </button>
               )}
             </div>
@@ -1086,10 +1103,13 @@ useEffect(() => {
                     clipRule="evenodd" 
                   />
                 </svg>
-                Refresh
+               <span className="max-md:hidden"> Refresh</span>
               </button>
               <button onClick={markAllAsRead} className={styles.primary}>
-                Mark All Read
+                 <span className="max-md:hidden">Mark All Read</span>
+                 <span className="md:hidden">
+                      <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#fff"><path d="M480-480Zm280-160q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q28 0 55.5 4t54.5 12q-11 17-18 36.5T562-788q-20-6-40.5-9t-41.5-3q-134 0-227 93t-93 227q0 134 93 227t227 93q134 0 227-93t93-227q0-21-3-41.5t-9-40.5q20-3 39.5-10t36.5-18q8 27 12 54.5t4 55.5q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm-57-216 273-273q-20-7-37.5-17.5T625-611L424-410 310-522l-56 56 169 170Z"/></svg>
+                 </span>
               </button>
             </div>
 
@@ -1107,12 +1127,12 @@ useEffect(() => {
               else if (tab === "Messages") badgeCount = messageBadge;
               else if (tab === "Jobs") badgeCount = jobBadge;
               else if (tab === "Events") badgeCount = eventBadge;
-              else if (tab === "Posts") badgeCount = allNotifications.filter(n => !n.readAt && n.type === "new_post").length;
+              else if (tab === "Posts") badgeCount = allNotifications.filter(n => !n.readAt && (n.type === "new_post" || n.type === "comment.new")).length;
               else if (tab === "Invitations") badgeCount = invitationBadge;
               else if (tab === "System") badgeCount = systemBadge;
-              else if (tab === "All") badgeCount = 
-              connBadge + meetBadge + messageBadge + jobBadge + eventBadge + 
-              invitationBadge + systemBadge + allNotifications.filter(n => !n.readAt && n.type === "new_post").length;
+              else if (tab === "All") badgeCount =
+              connBadge + meetBadge + messageBadge + jobBadge + eventBadge +
+              invitationBadge + systemBadge + allNotifications.filter(n => !n.readAt && (n.type === "new_post" || n.type === "comment.new")).length;
 
               return (
                 <button
@@ -1159,6 +1179,8 @@ useEffect(() => {
                         let connectedNotMeta = connectedNot?.meta
                         item.meta = connectedNotMeta || item.meta
 
+                        console.log({item})
+
                         return (
                            <div key={item.key} className={`rounded-2xl  ${item?.hasApproval  ? 'bg-gray-100':'bg-white'} border shadow-sm p-4 flex justify-between ${
                               item.readAt && !connectedNot  ? "border-gray-100 opacity-75" : "border-brand-200 bg-brand-50"
@@ -1170,7 +1192,7 @@ useEffect(() => {
                                     <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
                                   )}
                                 </div>
-                                <p className="text-sm text-gray-600 mt-1 line-clamp-3">
+                                <p className={`text-sm text-gray-600 mt-1 ${item.item=="system" ? 'line-clamp-3' : item?.payload?.commentText ? 'line-clamp-2':'' }`}>
                                   {item.type === "system" && item.payload?.message ? (
                                     <span dangerouslySetInnerHTML={{ __html: item.payload.message }} />
                                   ) : (

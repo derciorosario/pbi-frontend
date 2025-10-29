@@ -1,6 +1,6 @@
 // src/components/CommentsDialog.jsx
 import React, { useEffect, useRef, useState } from "react";
-import { X, Send, Loader2, Pencil, Trash2 } from "lucide-react";
+import { X, Send, Loader2, Pencil, Trash2, MoreVertical } from "lucide-react";
 import { toast } from "../lib/toast";
 import * as socialApi from "../api/social";
 import { useData } from "../contexts/DataContext";
@@ -37,6 +37,7 @@ export default function CommentsDialog({
   const [savingEdit, setSavingEdit] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(null);
   const overlayRef = useRef(null);
   const panelRef = useRef(null);
   const textareaRef = useRef(null);
@@ -50,25 +51,37 @@ export default function CommentsDialog({
   }, [open]);
 
   // Close on outside click + Esc
-  useEffect(() => {
-    function handleDown(e) {
-      if (!open) return;
-      // Close only when clicking directly on this dialog's backdrop (not on its children or nested dialogs)
-      if (overlayRef.current && e.target === overlayRef.current) {
-        onClose?.();
-      }
-    }
-    function handleEsc(e) {
-      if (!open) return;
-      if (e.key === "Escape") onClose?.();
-    }
-    document.addEventListener("mousedown", handleDown);
-    document.addEventListener("keydown", handleEsc);
-    return () => {
-      document.removeEventListener("mousedown", handleDown);
-      document.removeEventListener("keydown", handleEsc);
-    };
-  }, [open, onClose]);
+   useEffect(() => {
+     function handleDown(e) {
+       if (!open) return;
+       // Close only when clicking directly on this dialog's backdrop (not on its children or nested dialogs)
+       if (overlayRef.current && e.target === overlayRef.current) {
+         onClose?.();
+       }
+     }
+     function handleEsc(e) {
+       if (!open) return;
+       if (e.key === "Escape") onClose?.();
+     }
+     document.addEventListener("mousedown", handleDown);
+     document.addEventListener("keydown", handleEsc);
+     return () => {
+       document.removeEventListener("mousedown", handleDown);
+       document.removeEventListener("keydown", handleEsc);
+     };
+   }, [open, onClose]);
+
+   // Close menu when clicking outside
+   useEffect(() => {
+     const handleClickOutside = (event) => {
+       if (menuOpen && !event.target.closest('.comment-menu')) {
+         setMenuOpen(null);
+       }
+     };
+
+     document.addEventListener('mousedown', handleClickOutside);
+     return () => document.removeEventListener('mousedown', handleClickOutside);
+   }, [menuOpen]);
 
   // Autofocus textarea when opening
   useEffect(() => {
@@ -367,23 +380,42 @@ export default function CommentsDialog({
                           • {computeTimeAgo(null, c.createdAt)}
                         </div>
                         {isOwner(c) && editingId !== c.id && (
-                          <div className="flex items-center gap-2">
+                          <div className="relative">
                             <button
-                              className="text-xs text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
-                              onClick={() => startEdit(c)}
-                              aria-label="Edit comment"
-                              title="Edit"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenuOpen(menuOpen === c.id ? null : c.id);
+                              }}
+                              className="p-1 text-gray-500 hover:text-gray-700 rounded"
+                              aria-label="More options"
+                              title="More options"
                             >
-                              <Pencil size={14} />
+                              <MoreVertical size={14} />
                             </button>
-                            <button
-                              className="text-xs text-red-600 hover:text-red-700 inline-flex items-center gap-1"
-                              onClick={() => askDelete(c)}
-                              aria-label="Delete comment"
-                              title="Delete"
-                            >
-                              <Trash2 size={14} />
-                            </button>
+                            {menuOpen === c.id && (
+                              <div className="absolute right-0 top-full mt-1 bg-white border rounded shadow-lg z-10 comment-menu">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startEdit(c);
+                                    setMenuOpen(null);
+                                  }}
+                                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    askDelete(c);
+                                    setMenuOpen(null);
+                                  }}
+                                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

@@ -39,6 +39,7 @@ export default function SettingsPage() {
     connectionsOnly: false,
     contentType: "all", // "all", "text", "images"
     notifyOnNewPost: true,
+    notifyOnComments: true,
     bidirectionalMatch: true, // Enable/disable bidirectional matching
     bidirectionalMatchFormula: "reciprocal" // "simple" or "reciprocal"
   });
@@ -71,6 +72,7 @@ export default function SettingsPage() {
             connectionsOnly: false,
             contentType: "all",
             notifyOnNewPost: true,
+            notifyOnComments: true,
             bidirectionalMatch: true,
             bidirectionalMatchFormula: "reciprocal",
             // Override with user's saved data
@@ -168,6 +170,14 @@ export default function SettingsPage() {
     setSettings(prev => ({
       ...prev,
       notifyOnNewPost: !prev.notifyOnNewPost
+    }));
+  };
+
+  // Toggle notify on comments
+  const toggleNotifyOnComments = () => {
+    setSettings(prev => ({
+      ...prev,
+      notifyOnComments: !prev.notifyOnComments
     }));
   };
 
@@ -412,6 +422,27 @@ export default function SettingsPage() {
                           className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
                           checked={!!settings.notifyOnNewPost}
                           onChange={toggleNotifyOnNewPost}
+                        />
+                        <span className="ml-2 text-sm">Email notifications</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Comments */}
+                  <div className="border-b pb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">Comments on my posts</h3>
+                        <p className="text-sm text-gray-500">Get notified when someone comments on your posts</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          className="h-5 w-5 rounded text-brand-600 focus:ring-brand-500"
+                          checked={!!settings.notifyOnComments}
+                          onChange={toggleNotifyOnComments}
                         />
                         <span className="ml-2 text-sm">Email notifications</span>
                       </label>
