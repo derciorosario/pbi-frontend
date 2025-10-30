@@ -603,7 +603,7 @@ function Header({ page }) {
                         style={user?.accountType=="admin" ? {display:'none'}:{}}
                         className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-brand-50 hover:text-brand-600 rounded-md transition-colors"
                       >
-                      My Profile
+                       {user?.accountType=="company" ? 'Company Profile':'My Profile'}
                       </button>
 
                       <button

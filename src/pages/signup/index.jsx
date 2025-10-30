@@ -519,26 +519,11 @@ export default function Signup() {
        <div className="flex items-center justify-center p-6 md:p-10 overflow-y-auto">
       <div className="w-full max-w-2xl">
 
-           <div
-        className="md:hidden  mb-7 top-6 left-6 flex items-center gap-2 cursor-pointer z-10"
-        onClick={() => navigate("/")}
-      >
-        <div
-          className="h-9 w-9 rounded-xl grid place-items-center text-white font-bold"
-          style={{ background: "linear-gradient(135deg,#8A358A,#9333EA)" }}
-        >
-          P
-        </div>
-        <div className="leading-tight">
-          <div className="font-semibold text-gray-900">54Links</div>
-          <div className="text-[11px] text-gray-500 -mt-1">
-            Business Initiative
-          </div>
-        </div>
-      </div>
+        
 
-
-          <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-x-2">Join <span className="text-brand-500 font-semibold">54Links</span></h2>
+          <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-x-2 mb-4 mt-5"> 
+            <img src={Logo} width={130}/>
+          </h2>
           <p className="mt-1 text-gray-500">Join the global networking community</p>
 
           <div className="max-w-xs">

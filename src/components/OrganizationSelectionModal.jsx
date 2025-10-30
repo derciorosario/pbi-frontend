@@ -97,12 +97,12 @@ const OrganizationSelectionModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center gap-3">
+        <div className="flex md:items-center justify-between p-6 border-b">
+          <div className="flex md:items-center gap-3 max-md:flex-col">
             {showMessageForm && (
               <button
                 onClick={handleBackToList}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 md:px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors"
                 title="Back to organization list"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +125,7 @@ const OrganizationSelectionModal = ({
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-2"
+            className="text-gray-400 hover:text-gray-600 p-2 self-start"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -290,31 +290,33 @@ const OrganizationSelectionModal = ({
 
         {/* Footer */}
         <div className="flex items-center justify-between p-6 border-t bg-gray-50 rounded-b-xl">
-          <div>
-            {!showMessageForm && (
+         {!showMessageForm && ( <div>
+            
               <button
                 onClick={onClose}
                 className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Cancel
               </button>
-            )}
+           
           </div>
-          <div className="flex gap-3">
+           )}
+          <div className="flex gap-3 flex-1">
             {showMessageForm && (
               <button
                 onClick={handleBackToList}
                 disabled={submitting}
                 className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
               >
-                Back to Organizations
+                <span className="max-md:hidden">Back to Organizations</span>
+                <span className="md:hidden">Back</span>
               </button>
             )}
             {showMessageForm && (
               <button
                 onClick={handleSubmitRequest}
                 disabled={submitting}
-                className="px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 flex-1 bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <>
@@ -325,7 +327,7 @@ const OrganizationSelectionModal = ({
                     Sending Request...
                   </>
                 ) : (
-                  'Send Join Request'
+                  'Send Request'
                 )}
               </button>
             )}

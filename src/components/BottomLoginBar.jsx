@@ -4,19 +4,73 @@ import { useData } from '../contexts/DataContext';
 const BottomLoginBar = ({ user, makePublic = false }) => {
   const data = useData();
 
+  // Prevent scroll on mount/unmount using event listeners
+  React.useEffect(() => {
+    if (user || makePublic === true) return;
+
+    const preventDefault = (e) => {
+      e.preventDefault();
+    };
+
+    // Add event listeners to prevent scrolling
+    const options = { passive: false };
+    document.addEventListener('touchmove', preventDefault, options);
+    document.addEventListener('wheel', preventDefault, options);
+    document.addEventListener('scroll', preventDefault, options);
+
+    // Cleanup function
+    return () => {
+      document.removeEventListener('touchmove', preventDefault);
+      document.removeEventListener('wheel', preventDefault);
+      document.removeEventListener('scroll', preventDefault);
+    };
+  }, [user, makePublic]);
 
   // Don't render if user is authenticated or if makePublic is explicitly true
   if (user || makePublic === true) return null;
 
   return (
     <>
-      {/* CSS to prevent scrolling when bar is visible */}
+      {/* CSS to prevent scrolling - Multi-browser support */}
       {!user && makePublic !== true && (
         <style>{`
-          body {
-            overflow-y: hidden !important;
+          body, html {
+            overflow: hidden !important;
+            height: 100%;
+            position: fixed;
+            width: 100%;
+            touch-action: none;
+            overscroll-behavior: none;
+          }
+          
+          /* iOS Safari specific fixes */
+          @supports (-webkit-touch-callout: none) {
+            body, html {
+              -webkit-overflow-scrolling: none;
+              position: fixed;
+              overflow: hidden;
+            }
+          }
+          
+          /* Additional iOS 16+ specific fixes */
+          @supports (overflow: clip) {
+            body, html {
+              overflow: clip !important;
+            }
           }
         `}</style>
+      )}
+
+      {/* Additional scroll prevention overlay */}
+      {!user && makePublic !== true && (
+        <div 
+          className="fixed inset-0 z-30 bg-transparent"
+          style={{
+            touchAction: 'none',
+            overscrollBehavior: 'none',
+            WebkitOverflowScrolling: 'none'
+          }}
+        />
       )}
 
       {/* Backdrop overlay - gradient effect for visual interest */}
@@ -34,7 +88,9 @@ const BottomLoginBar = ({ user, makePublic = false }) => {
               rgba(139, 53, 139, 0.15) 100%
             )
           `,
-          backdropFilter: 'blur(1px)'
+          backdropFilter: 'blur(1px)',
+          // Additional touch prevention
+          touchAction: 'none'
         }}
       ></div>
 

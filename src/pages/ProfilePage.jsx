@@ -295,8 +295,7 @@ const ShareMenu = ({ profile, shareMenuRef, setShareOpen }) => {
   return (
     <div
       ref={shareMenuRef}
-      style={{ transform:'translate(30%,0)'}}
-      className="absolute top-0  right-0 mt-2 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
+      className="absolute top-0  max-md:left-0 md:right-0 mt-2 z-30 w-64 rounded-xl border border-gray-200 bg-white p-3 shadow-xl"
       role="dialog"
       aria-label="Share options"
     >
@@ -1073,6 +1072,7 @@ const validImages = extractValidImages(userFeedItems);
 
   // Media viewer state
   const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [coverImageOpen, setCoverImageOpen] = useState(false);
 
   // Meeting modal + list
   const [mrOpen, setMrOpen] = useState(false);
@@ -1788,7 +1788,10 @@ const handleVideoClick = (videoIndex) => {
 <div className="bg-white rounded-xl shadow-sm  mb-6">
   {/* Cover Image or Gradient Background */}
   {profile.coverImage ? (
-    <div className="h-32 relative rounded-t-xl overflow-hidden">
+    <div
+      className="h-32 relative rounded-t-xl overflow-hidden cursor-pointer"
+      onClick={() => setCoverImageOpen(true)}
+    >
       <img
         src={profile.coverImage}
         alt={`${profile.name}'s cover`}
@@ -1923,11 +1926,9 @@ const handleVideoClick = (videoIndex) => {
         </div>
       </div>
 
+
       {/* Action Buttons */}
       <div className="flex gap-3 mt-4 md:mt-0">
-        {user?.id!=profile?.id && renderConnectButton()}
-
-      
 
         {/* Share Button */}
         <div className="relative">
@@ -1967,6 +1968,9 @@ const handleVideoClick = (videoIndex) => {
             <CalendarDays size={16} />
           </button>
         )}
+         {user?.id!=profile?.id && renderConnectButton()}
+
+      
       </div>
     </div>
   </div>
@@ -3007,6 +3011,14 @@ const handleVideoClick = (videoIndex) => {
         mediaUrl={profile?.avatarUrl}
         mediaType="image"
         alt={`${profile?.name}'s profile picture`}
+      />
+
+      <MediaViewer
+        isOpen={coverImageOpen}
+        onClose={() => setCoverImageOpen(false)}
+        mediaUrl={profile?.coverImage}
+        mediaType="image"
+        alt={`${profile?.name}'s cover image`}
       />
 
       {formMediaViewerOpen && formMediaViewerUrls.length > 0 && (

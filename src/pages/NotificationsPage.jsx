@@ -1182,9 +1182,10 @@ useEffect(() => {
                         console.log({item})
 
                         return (
-                           <div key={item.key} className={`rounded-2xl  ${item?.hasApproval  ? 'bg-gray-100':'bg-white'} border shadow-sm p-4 flex justify-between ${
+                           <div key={item.key} className={`rounded-2xl  ${item?.hasApproval  ? 'bg-gray-100':'bg-white'} border shadow-sm p-4 md:flex justify-between ${
                               item.readAt && !connectedNot  ? "border-gray-100 opacity-75" : "border-brand-200 bg-brand-50"
                             }`}>
+                            
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
                                   <h3 className="font-semibold">{item.title}</h3>
@@ -1207,7 +1208,7 @@ useEffect(() => {
                                    {connectedNotActions}
                                 </div>
                               </div>
-                              <div className="text-xs text-gray-400 whitespace-nowrap ml-4">
+                              <div className="text-xs text-gray-400 whitespace-nowrap md:ml-4 max-md:mt-2">
                                 {item.time}
                               </div>
                             </div>

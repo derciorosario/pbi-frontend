@@ -35,7 +35,7 @@ import UserSelectionModal from "../components/UserSelectionModal";
 import StaffInvitationModal from "../components/StaffInvitationModal";
 import OrganizationSelectionModal from "../components/OrganizationSelectionModal";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import { Camera, Download, ExternalLink, Eye, Link, Link2, MapPin } from "lucide-react";
+import { Camera, Download, ExternalLink, Eye, Link, Link2, MapPin, Plus } from "lucide-react";
 import ProfileModal from "../components/ProfileModal.jsx";
 import FeedErrorRetry from "../components/FeedErrorRetry";
 
@@ -3156,18 +3156,19 @@ function CategoryTree({
           <button className={`px-4 py-2 rounded-full border ${active===Tab.PROFESSIONAL ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PROFESSIONAL)}>
             {isCompany ? "Company Details" : "Professional"}
           </button>
+           <button className={`px-4 py-2 rounded-full border ${active===Tab.DO ? "bg-brand-700 text-white border-brand-700" : "bg-gray-100 border-gray-300"}`} onClick={() => setActive(Tab.DO)}>
+            {isCompany ? "What We Offer" : "What I DO"}
+          </button>
+          <button className={`px-4 py-2 rounded-full border ${active===Tab.INTERESTS ? "bg-brand-700 text-white border-brand-700" : "bg-gray-100 border-gray-300"}`} onClick={() => setActive(Tab.INTERESTS)}>
+            {isCompany ? "What We're LOOKING FOR" : "What I'm LOOKING FOR"}
+          </button>
           <button className={`px-4 py-2 rounded-full border ${active===Tab.PORTFOLIO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.PORTFOLIO)}>
             {isCompany ? "Company Portfolio" : "Portfolio"}
           </button>
           <button className={`px-4 py-2 rounded-full border ${active===Tab.GALLERY ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.GALLERY)}>
             Gallery
           </button>
-          <button className={`px-4 py-2 rounded-full border ${active===Tab.DO ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.DO)}>
-            {isCompany ? "What We Offer" : "What I DO"}
-          </button>
-          <button className={`px-4 py-2 rounded-full border ${active===Tab.INTERESTS ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INTERESTS)}>
-            {isCompany ? "What We're LOOKING FOR" : "What I'm LOOKING FOR"}
-          </button>
+         
           <button className={`px-4 py-2 rounded-full border ${active===Tab.INDUSTRIES ? "bg-brand-700 text-white border-brand-700" : "bg-white border-gray-200"}`} onClick={() => setActive(Tab.INDUSTRIES)}>
             {isCompany ? "Company Industries" : "Industries"}
           </button>
@@ -3563,30 +3564,13 @@ function CategoryTree({
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  {gallery.length > 0 && (
-                    <button
-                      onClick={loadGallery}
-                      disabled={loadingGallery}
-                      className="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                      title="Refresh gallery"
-                    >
-                      {loadingGallery ? (
-                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
-                          <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
-                        </svg>
-                      ) : (
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                      )}
-                    </button>
-                  )}
+                
                   <button
                     onClick={() => setShowGalleryUpload(true)}
                     className="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800"
                   >
-                    Add Image
+                    <span className="max-md:hidden">Add Image</span>
+                    <span className="md:hidden"><Plus size={16}/></span>
                   </button>
                 </div>
               </div>
@@ -4043,7 +4027,8 @@ function CategoryTree({
                     onClick={() => setShowSampleForm(true)}
                     className="px-4 py-2 rounded-lg bg-brand-700 text-white hover:bg-brand-800 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors"
                   >
-                    Add Work Sample
+                       <span className="max-md:hidden">Add Work Sample</span>
+                       <span className="md:hidden"><Plus size={16}/></span>
                   </button>
                 </div>
 
@@ -6064,7 +6049,7 @@ function CategoryTree({
                     onClick={() => setShowOrganizationModal(true)}
                     className="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800 text-sm"
                   >
-                    {membershipStatus && membershipStatus.length > 0 ? "+ Join Another" : "Join Organization"}
+                    {membershipStatus && membershipStatus.length > 0 ? "+ Join Another" : "+ Join"}
                   </button>
                 </div>
 
