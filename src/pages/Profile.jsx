@@ -28,7 +28,6 @@ import client from "../api/client";
 import ProfilePhoto from "../components/ProfilePhotoUpload";
 import SearchableSelect from "../components/SearchableSelect.jsx";
 import COUNTRIES from "../constants/countries.js";
-import CITIES from "../constants/cities.json";
 import Header from "../components/Header.jsx";
 import MediaViewer from "../components/MediaViewer";
 import UserSelectionModal from "../components/UserSelectionModal";
@@ -378,15 +377,21 @@ export default function ProfilePage() {
         const [searchQuery, setSearchQuery] = useState('');
   
      // Profile modal state
-     const [profileModalOpen, setProfileModalOpen] = useState(false);
-     const [selectedProfileUserId, setSelectedProfileUserId] = useState(null);
+       const [profileModalOpen, setProfileModalOpen] = useState(false);
+       const [selectedProfileUserId, setSelectedProfileUserId] = useState(null);
+ 
+       // Cities state
+       const [cities, setCities] = useState([]);
+       const [citiesLoading, setCitiesLoading] = useState(true);
  
    // City options for SearchableSelect (limit to reasonable number)
-   const allCityOptions = CITIES.slice(0, 10000).map(city => ({
-     value: city.city,
-     label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
-     country: city.country
-   }));
+   const allCityOptions = useMemo(() => {
+     return cities.slice(0, 10000).map(city => ({
+       value: city.city,
+       label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
+       country: city.country
+     }));
+   }, [cities]);
  
    // Filtered cities for dropdown based on selected countryOfResidence
    const cityOptions = useMemo(() => {
@@ -406,16 +411,28 @@ export default function ProfilePage() {
    }, [personal.countryOfResidence, cityOptions, personal.city]);
  
    // Get filtered cities for a specific country
-   const getCitiesForCountry = (country) => {
+   const getCitiesForCountry = useCallback((country) => {
      if (!country) return [];
      return allCityOptions.filter((c) => c.country?.toLowerCase() === country.toLowerCase());
-   };
+   }, [allCityOptions]);
  
    // Component for managing country-city pairs
    const CountryCitySelector = ({ value, onChange, error }) => {
      const [showAddForm, setShowAddForm] = useState(false);
      const [newCountry, setNewCountry] = useState("");
      const [newCity, setNewCity] = useState("");
+
+     if (citiesLoading) {
+       return (
+         <div className="flex items-center gap-2 text-sm text-gray-500">
+           <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+             <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"/>
+             <path fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" className="opacity-75"/>
+           </svg>
+           Loading cities...
+         </div>
+       );
+     }
  
      const handleAddCountryCity = () => {
        if (newCountry && newCity) {
@@ -1419,6 +1436,29 @@ export default function ProfilePage() {
       setLoading(false);
     }
   }, [isAdminEditing, userId]);
+
+  // Fetch cities on component mount
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        setCitiesLoading(true);
+        const response = await fetch('/data/cities.json');
+        if (!response.ok) {
+          throw new Error('Failed to fetch cities');
+        }
+        const citiesData = await response.json();
+        setCities(citiesData);
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+        toast.error('Failed to load cities data');
+        setCities([]);
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+
+    fetchCities();
+  }, []);
 
   useEffect(() => {
     fetchProfile();
@@ -5115,7 +5155,7 @@ function CategoryTree({
                   <div className="space-y-4">
                     {getFilteredApplications(jobApplications).map((application, index) => (
                       <div key={application.id} className="border rounded-lg p-4 bg-white" data-application-id={application.id}>
-                        <div className="flex items-center justify-between mb-3">
+                         <div className="flex md:items-center gap-2 justify-between mb-3 max-md:flex-col">
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                               {application.applicant?.avatarUrl ? (
@@ -5395,7 +5435,7 @@ function CategoryTree({
                   <div className="space-y-4">
                     {getFilteredEventRegistrations(eventRegistrations).map((registration, index) => (
                       <div key={registration.id} className="border rounded-lg p-4 bg-white" data-registration-id={registration.id}>
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex md:items-center gap-2 justify-between mb-3 max-md:flex-col">
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                               {registration.registrant?.avatarUrl ? (
@@ -5678,7 +5718,7 @@ function CategoryTree({
                   <div className="space-y-4">
                     {getFilteredApplications(myJobApplications).map((application, index) => (
                       <div key={application.id} className="border rounded-lg p-4 bg-white" data-application-id={application.id}>
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex md:items-center gap-2 justify-between mb-3 max-md:flex-col">
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                               {application.job?.postedBy?.avatarUrl ? (
@@ -5946,7 +5986,7 @@ function CategoryTree({
                   <div className="space-y-4">
                     {getFilteredEventRegistrations(myEventRegistrations).map((registration, index) => (
                       <div key={registration.id} className="border rounded-lg p-4 bg-white" data-registration-id={registration.id}>
-                        <div className="flex items-center justify-between mb-3">
+                         <div className="flex md:items-center gap-2 justify-between mb-3 max-md:flex-col">
                           <div className="flex items-center space-x-3">
                             <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                               {registration.event?.organizer?.avatarUrl ? (

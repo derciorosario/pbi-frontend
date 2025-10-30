@@ -1,9 +1,8 @@
 // src/pages/CreateServicePage.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import client, { API_URL } from "../api/client";
 import COUNTRIES from "../constants/countries";
-import CITIES from "../constants/cities.json";
 import AudienceTree from "../components/AudienceTree";
 import Header from "../components/Header";
 import { toast } from "../lib/toast";
@@ -635,12 +634,39 @@ export default function CreateServicePage({ triggerImageSelection = false, hideH
     }))
   ];
   
-  // Create city options for SearchableSelect (limit to reasonable number)
-  const allCityOptions = CITIES.slice(0, 10000).map(city => ({
-    value: city.city,
-    label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
-    country: city.country
-  }));
+  // State for cities data
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
+
+  // Fetch cities on component mount
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await fetch('/data/cities.json');
+        if (!response.ok) {
+          throw new Error('Failed to fetch cities');
+        }
+        const data = await response.json();
+        setCities(data);
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+        toast.error('Failed to load cities data');
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+
+    fetchCities();
+  }, []);
+
+  // Memoized city options
+  const allCityOptions = useMemo(() => {
+    return cities.slice(0, 10000).map(city => ({
+      value: city.city,
+      label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
+      country: city.country
+    }));
+  }, [cities]);
 
   // Support single or multi-country (comma-separated) selection
   const selectedCountries = useMemo(() => {

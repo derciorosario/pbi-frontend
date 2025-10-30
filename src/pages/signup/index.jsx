@@ -1,5 +1,5 @@
 // src/pages/Signup.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "../../components/Input.jsx";
 import TabSwitch from "../../components/TabSwitch.jsx";
@@ -8,7 +8,6 @@ import SearchableSelect from "../../components/SearchableSelect.jsx";
 import { toast } from "../../lib/toast";
 import client from "../../api/client.js";
 import COUNTRIES from "../../constants/countries.js";
-import CITIES from "../../constants/cities.json";
 import GoogleCustomBtn from "../../components/GoogleBtn.jsx";
 import Logo from '../../assets/logo.png'
 import WhiteLogo from '../../assets/logo-white.png'
@@ -17,19 +16,6 @@ import ImageCropper from "../../components/ImageCropper";
 
 const emailOK = (v) =>
    /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(String(v || "").toLowerCase());
-
-// City options for SearchableSelect (limit to reasonable number)
-const allCityOptions = CITIES.slice(0, 10000).map(city => ({
-  value: city.city,
-  label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
-  country: city.country
-}));
-
-// Get filtered cities for a specific country
-const getCitiesForCountry = (country) => {
-  if (!country) return [];
-  return allCityOptions.filter((c) => c.country?.toLowerCase() === country.toLowerCase());
-};
 
 // Cropping configuration (toggle on/off here)
 const CROP_CONFIG = {
@@ -46,7 +32,7 @@ const cropConfig = {
 };
 
 // Component for managing country-city pairs
-const CountryCitySelector = ({ value, onChange, error }) => {
+const CountryCitySelector = ({ value, onChange, error, citiesLoading, getCitiesForCountry }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCountry, setNewCountry] = useState("");
   const [newCity, setNewCity] = useState("");
@@ -72,6 +58,24 @@ const CountryCitySelector = ({ value, onChange, error }) => {
     );
     onChange(updated);
   };
+
+  // Show loading state for cities
+  if (citiesLoading) {
+    return (
+      <div className="space-y-3">
+        <label className="block text-sm font-medium text-gray-700">
+          Other Countries of Operations (Branches) <span className="text-gray-400 font-normal">(Optional)</span>
+        </label>
+        <div className="flex items-center justify-center p-4">
+          <svg className="animate-spin h-5 w-5 text-gray-500" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <span className="ml-2 text-sm text-gray-500">Loading cities...</span>
+        </div>
+      </div>
+    );
+  }
 
  
   
@@ -178,6 +182,46 @@ export default function Signup() {
   const [acct, setAcct] = useState("individual");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // State for cities data
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
+
+  // Fetch cities on component mount
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await fetch('/data/cities.json');
+        if (!response.ok) {
+          throw new Error('Failed to fetch cities');
+        }
+        const data = await response.json();
+        setCities(data);
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+        toast.error('Failed to load cities data');
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+
+    fetchCities();
+  }, []);
+
+  // Memoized city options
+  const allCityOptions = useMemo(() => {
+    return cities.slice(0, 10000).map(city => ({
+      value: city.city,
+      label: `${city.city}${city.country ? `, ${city.country}` : ''}`,
+      country: city.country
+    }));
+  }, [cities]);
+
+  // Memoized function to get cities for a country
+  const getCitiesForCountry = useCallback((country) => {
+    if (!country) return [];
+    return allCityOptions.filter((c) => c.country?.toLowerCase() === country.toLowerCase());
+  }, [allCityOptions]);
 
   const [form, setForm] = useState({
     name: "",
@@ -816,6 +860,8 @@ export default function Signup() {
                       setErrors(prev => ({ ...prev, otherCountries: "" }));
                     }}
                     error={errors.otherCountries}
+                    citiesLoading={citiesLoading}
+                    getCitiesForCountry={getCitiesForCountry}
                   />
                 </div>
 

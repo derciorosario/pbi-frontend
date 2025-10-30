@@ -1,8 +1,7 @@
 // src/pages/CrowdfundForm.jsx
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import COUNTRIES from "../constants/countries";
-import CITIES from "../constants/cities.json";
 import client, { API_URL } from "../api/client";
 import AudienceTree from "../components/AudienceTree";
 import DefaultLayout from "../layout/DefaultLayout";
@@ -677,11 +676,38 @@ function removeTag(idx) {
     }))
   ];
   
-  // Create city options for SearchableSelect (limit to reasonable number)
-  const cityOptions = CITIES.slice(0, 1000).map(city => ({
-    value: city.city,
-    label: `${city.city}${city.country ? `, ${city.country}` : ''}`
-  }));
+  // State for cities data
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
+
+  // Fetch cities on component mount
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await fetch('/data/cities.json');
+        if (!response.ok) {
+          throw new Error('Failed to fetch cities');
+        }
+        const data = await response.json();
+        setCities(data);
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+        toast.error('Failed to load cities data');
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+
+    fetchCities();
+  }, []);
+
+  // Memoized city options
+  const cityOptions = useMemo(() => {
+    return cities.slice(0, 1000).map(city => ({
+      value: city.city,
+      label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+    }));
+  }, [cities]);
 
   // Industry taxonomy
   const [industryTree, setIndustryTree] = useState([]);

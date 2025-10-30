@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useMemo } from "react";
+import React, { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useJsApiLoader } from "@react-google-maps/api";
 import I from "../lib/icons.jsx";
 import AudienceTree from "./AudienceTree.jsx"
@@ -8,7 +8,6 @@ import ExperienceLevelSelector from "./ExperienceLevelSelector.jsx";
 import COUNTRIES from "../constants/countries";
 import { useData } from "../contexts/DataContext.jsx";
 import { useAuth } from "../contexts/AuthContext.jsx";
-import citiesData from "../constants/cities.json";
 import client from "../api/client.js";
 const libraries = ["places"];
 
@@ -148,6 +147,30 @@ export default function FiltersCard({
 
   // Individual category expand/collapse states
   const [categoryExpandedStates, setCategoryExpandedStates] = useState({});
+
+  // State for cities data
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
+
+  // Fetch cities on component mount
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await fetch('/data/cities.json');
+        if (!response.ok) {
+          throw new Error('Failed to fetch cities');
+        }
+        const data = await response.json();
+        setCities(data);
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+
+    fetchCities();
+  }, []);
 
   /** ---------- Industries ---------- */
   const [industries, setIndustries] = useState([]);
@@ -323,7 +346,7 @@ export default function FiltersCard({
 
   // Filtered cities for dropdown
   const filteredCitiesForDropdown = useMemo(() => {
-    let list = citiesData;
+    let list = cities;
 
     if (selectedCountries.length > 0) {
       const setLC = new Set(selectedCountries);
@@ -340,7 +363,7 @@ export default function FiltersCard({
     }
 
     return list.slice(0, 30);
-  }, [selectedCountries, cityQuery]);
+  }, [cities, selectedCountries, cityQuery]);
 
   // Industries summary
   const industriesSummary = useMemo(() => {

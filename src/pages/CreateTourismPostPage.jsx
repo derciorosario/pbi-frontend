@@ -1,12 +1,11 @@
 // src/pages/CreateTourismPostPage.jsx
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   Home, Users, Briefcase, Calendar, Building2, MapPin, Bell, Search, Image as ImageIcon,
 } from "lucide-react";
 import AudienceTree from "../components/AudienceTree";
 import COUNTRIES from "../constants/countries";
-import CITIES from "../constants/cities.json";
 import client, { API_URL } from "../api/client";
 import { toast } from "../lib/toast";
 import Header from "../components/Header";
@@ -514,12 +513,39 @@ export default function CreateTourismPostPage({ triggerImageSelection = false, h
     }))
   ];
   
-  // Create city options for SearchableSelect (limit to reasonable number)
-  const cityOptions = CITIES.slice(0, 1000).map(city => ({
-    value: city.city,
-    label: `${city.city}${city.country ? `, ${city.country}` : ''}`
-  }));
-  
+  // State for cities data
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
+
+  // Fetch cities on component mount
+  useEffect(() => {
+    const fetchCities = async () => {
+      try {
+        const response = await fetch('/data/cities.json');
+        if (!response.ok) {
+          throw new Error('Failed to fetch cities');
+        }
+        const data = await response.json();
+        setCities(data);
+      } catch (error) {
+        console.error('Error fetching cities:', error);
+        toast.error('Failed to load cities data');
+      } finally {
+        setCitiesLoading(false);
+      }
+    };
+
+    fetchCities();
+  }, []);
+
+  // Memoized city options
+  const cityOptions = useMemo(() => {
+    return cities.slice(0, 1000).map(city => ({
+      value: city.city,
+      label: `${city.city}${city.country ? `, ${city.country}` : ''}`
+    }));
+  }, [cities]);
+
   // Use cityOptions as locationOptions for consistency
   const locationOptions = cityOptions;
 

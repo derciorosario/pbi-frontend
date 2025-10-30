@@ -152,7 +152,7 @@ export default function PostComposer({typeOfPosts, from}) {
 
             {/* More button for remaining items */}
             {typeOfPosts && typeOfPosts?.filter(i=>!i.hide).length > 2 && (
-              <div className="relative">
+              <div className="relative w-full">
                 <button
                   ref={moreButtonRef}
                   className={`flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-all duration-200 font-medium px-3 py-2 rounded-lg hover:bg-brand-50 ${showMoreDropdown ? 'bg-brand-50 text-brand-600' : ''}`}
@@ -166,7 +166,7 @@ export default function PostComposer({typeOfPosts, from}) {
                 {showMoreDropdown && (
                   <div
                     ref={dropdownRef}
-                    className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50"
+                    className="absolute top-full left-0 mt-2 w-64 max-md:w-full bg-white border border-gray-200 rounded-xl shadow-lg py-2 z-50"
                   >
                     {typeOfPosts?.filter(i=>!i.hide).slice(2).map(item => (
                       <button
