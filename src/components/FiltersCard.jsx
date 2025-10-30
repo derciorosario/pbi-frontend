@@ -871,70 +871,6 @@ export default function FiltersCard({
         </select>
       </div>
 
-
-
-
-
-
-{/* Events View */}
-      {from === "events" && (
-        <MultiSelect
-          hide={from !== "events"}
-          value={eventsView || ""}
-          onChange={setEventsView}
-          options={["Events", "Event Experiences", "Event Seekers"]}
-          label="View"
-          placeholder="Select"
-        />
-      )}
-
-      {/* Products View */}
-      {from === "products" && (
-        <MultiSelect
-          hide={from !== "products"}
-          value={productsView || ""}
-          onChange={setProductsView}
-          options={["Products", "Product Reviews", "Product Seekers"]}
-          label="View"
-          placeholder="Select"
-        />
-      )}
-
-      {/* Services View */}
-      {isService && (
-        <MultiSelect
-          hide={!isService}
-          value={servicesView || ""}
-          onChange={setServicesView}
-          options={["Service Offers", "Service Requests", "Service Experiences"]}
-          label="View"
-          placeholder="Select"
-        />
-      )}
-
-      {/* Tourism View */}
-     {isTourism && (
-        <MultiSelect
-          hide={!isTourism}
-          value={tourismView || ""}
-          onChange={setTourismView}
-          options={["Travel Experiences","Destination Seekers"]} //"Tourism"
-          label="View"
-          placeholder="Select"
-        />
-      )}
-
-      {/* Funding View */}
-      {isFunding && (
-        <MultiSelect
-          hide={!isFunding}
-          value={fundingView || ""}
-          onChange={setFundingView}
-          options={["Funding Opportunities" , "Fund Seekers"]} //["Funding Opportunities" , "Fund Seekers","Funding Experiences"]
-          label="View"
-          placeholder="Select"
-        />
-   )}
    
 
 
@@ -2043,6 +1979,68 @@ export default function FiltersCard({
         </div>
       </div>
     )}
+
+
+    
+{/* Events View */}
+      {from === "events" && (
+        <MultiSelect
+          hide={from !== "events"}
+          value={eventsView || ""}
+          onChange={setEventsView}
+          options={["Events", "Event Experiences", "Event Seekers"]}
+          label="View"
+          placeholder="Select"
+        />
+      )}
+
+      {/* Products View */}
+      {from === "products" && (
+        <MultiSelect
+          hide={from !== "products"}
+          value={productsView || ""}
+          onChange={setProductsView}
+          options={["Products", "Product Reviews", "Product Seekers"]}
+          label="View"
+          placeholder="Select"
+        />
+      )}
+
+      {/* Services View */}
+      {isService && (
+        <MultiSelect
+          hide={!isService}
+          value={servicesView || ""}
+          onChange={setServicesView}
+          options={["Service Offers", "Service Requests", "Service Experiences"]}
+          label="View"
+          placeholder="Select"
+        />
+      )}
+
+      {/* Tourism View */}
+     {isTourism && (
+        <MultiSelect
+          hide={!isTourism}
+          value={tourismView || ""}
+          onChange={setTourismView}
+          options={["Travel Experiences","Destination Seekers"]} //"Tourism"
+          label="View"
+          placeholder="Select"
+        />
+      )}
+
+      {/* Funding View */}
+      {isFunding && (
+        <MultiSelect
+          hide={!isFunding}
+          value={fundingView || ""}
+          onChange={setFundingView}
+          options={["Funding Opportunities" , "Fund Seekers"]} //["Funding Opportunities" , "Fund Seekers","Funding Experiences"]
+          label="View"
+          placeholder="Select"
+        />
+      )}
 
 
          {/* Jobs */}

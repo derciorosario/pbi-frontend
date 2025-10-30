@@ -608,7 +608,7 @@ export default function EventsPage() {
           fetchMore();
         }
       },
-      { root: null, rootMargin: "700px", threshold: 0 }
+      { root: null, rootMargin: "3000px", threshold: 0 }
     );
     observer.observe(el);
     return () => observer.disconnect();

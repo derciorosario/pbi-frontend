@@ -1,28 +1,3 @@
 {
-    "title": "Aquashow Event",
-    "hero-title":"We turn ideas into products",
-    "menu": {
-        "home": "Home",
-        "about-us": "About us",
-        "contact": "Contact",
-        "products": "Products"
-    },
-    "ticket":{},
-    "invoice":{},
-    "titles":{},
-    "form":{},
-    "messages":{},
-    "products":{
-        "proconta-text": "A multiplatform financial management tool.",
-        "vierp-text": "An all-in-one ERP solution.",
-        "arsbeta-text": "An intelligent accounting system powered by AI.",
-        "vlms-text": "A microcredit management system."
-    },
-    "common":{
-        "get-in-touch":"Contact Us",
-        "have-question":"Have a question or want to discuss an idea?",
-        "software-development-comapny":"Software Development Company",
-        "about-text":"54Links is a software development startup dedicated to creating impactful solutions. Our goal is to transform ideas into technologies that solve real problems and drive progress. We’re passionate about turning ideas into technologies that matter.",
-        "lets-build":"Let's create something extraordinary together."
-    }
+    "title": ""
 }

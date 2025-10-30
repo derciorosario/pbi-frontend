@@ -638,7 +638,9 @@ export default function PeopleProfileCard({
   <div className="relative w-full overflow-hidden">
     {/* Cover Image or Gradient Background */}
     {coverImage ? (
-      <div className="h-32 relative">
+      <div className="h-32 relative cursor-pointer" onClick={()=>{
+         navigate(`/profile/${id}`)
+      }}>
         <img
           src={coverImage}
           alt={`${name}'s cover`}
@@ -648,7 +650,9 @@ export default function PeopleProfileCard({
         <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/60 via-black/30 to-transparent"></div>
       </div>
     ) : (
-      <div className={`h-32 ${isCompany ? 'bg-gradient-to-br from-blue-500 via-blue-400 to-blue-300' : 'bg-gradient-to-br from-brand-500 via-brand-300 to-brand-100'} relative`}>
+      <div onClick={()=>{
+         navigate(`/profile/${id}`)
+      }} className={`h-32 cursor-pointer ${isCompany ? 'bg-gradient-to-br from-blue-500 via-blue-400 to-blue-300' : 'bg-gradient-to-br from-brand-500 via-brand-300 to-brand-100'} relative`}>
         {/* Decorative pattern overlay */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{

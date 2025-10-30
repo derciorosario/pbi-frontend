@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import Home from './pages/home/index';
-import OldHome from './pages/home/index.old.jsx';
 import NotFound from './pages/404';
 import Login from './pages/login'
 import Signup from './pages/signup'
