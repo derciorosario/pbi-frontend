@@ -113,7 +113,7 @@ export default function FormMediaViewer({ urls = [], initialIndex = 0, onClose }
 
       {/* Thumbnail Strip */}
       {urls.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4 py-2">
+        <div className="absolute max-md:hidden flex-wrap bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4 py-2">
           {urls.map((url, index) => {
             const isThumbVideo = url?.toLowerCase().match(/\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/);
             const isThumbImage = url?.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp|svg)$/);

@@ -440,7 +440,7 @@ export default function ExperienceCard({
                     src={item.avatarUrl}
                     alt={item?.authorUserName || "User"}
                     className="w-full h-full"
-                    style={{ objectFit: 'contain' }}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               ) : (

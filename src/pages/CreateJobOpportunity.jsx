@@ -188,7 +188,7 @@ const CountryCitySelector = ({ value, onChange, error, citiesLoading, getCitiesF
       {value.length > 0 && (
         <div className="space-y-2">
           {value.map((item, index) => (
-            <div key={index} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+            <div key={index} className="flex items-center relative max-sm:flex-col gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
               <div className="flex-1">
                 <div className="font-medium text-sm">{item.country}</div>
                 {item.city && item.country !== "All countries" && <div className="text-xs text-gray-500">City: {item.city}</div>}
@@ -199,7 +199,7 @@ const CountryCitySelector = ({ value, onChange, error, citiesLoading, getCitiesF
                   value={item.city}
                   onChange={(city) => handleCityChange(index, city)}
                   placeholder="Select city"
-                  className="w-48"
+                  className="w-48 max-sm:w-full"
                 />
               ) : (
                 <div className="w-48 p-2 text-sm text-gray-500 italic">
@@ -209,7 +209,7 @@ const CountryCitySelector = ({ value, onChange, error, citiesLoading, getCitiesF
               <button
                 type="button"
                 onClick={() => handleRemoveCountryCity(index)}
-                className="p-1 text-red-500 hover:text-red-700"
+                className="p-1 text-red-500 hover:text-red-700 max-sm:absolute top-1 right-1"
                 title="Remove"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -224,7 +224,7 @@ const CountryCitySelector = ({ value, onChange, error, citiesLoading, getCitiesF
       {/* Add new country-city pair */}
       {showAddForm ? (
         <div className="p-3 border border-gray-200 rounded-lg bg-blue-50 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
             <SearchableSelect
               options={countryOptions}
               value={newCountry}

@@ -64,7 +64,7 @@ export default function PostCreationDialog({ isOpen, onClose, postType, from, hi
   };
   return (
     <div className="fixed z-[99] inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white z-[99] w-full max-w-2xl mx-4 rounded-2xl shadow-xl flex flex-col max-h-[80vh] overflow-hidden relative">
+      <div className="bg-white z-[99] w-full max-w-2xl mx-2 rounded-2xl shadow-xl flex flex-col max-h-[80vh] overflow-hidden relative">
         {/* Header */}
         <div className="bg-brand-500 p-4 flex justify-between items-center flex-shrink-0">
           <div className="flex items-center gap-3">

@@ -528,7 +528,7 @@ export default function NeedCard({
                     src={need.userAvatarUrl}
                     alt={need?.userName || "User"}
                     className="w-full h-full"
-                    style={{ objectFit: 'contain' }}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               ) : (

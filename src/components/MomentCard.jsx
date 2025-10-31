@@ -593,7 +593,7 @@ export default function MomentCard({
                     src={moment.user?.avatarUrl || moment.avatarUrl}
                     alt={moment?.user?.name || moment?.userName || "User"}
                     className="w-full h-full"
-                    style={{ objectFit: 'contain' }}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               ) : (

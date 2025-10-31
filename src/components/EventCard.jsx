@@ -438,7 +438,7 @@ export default function EventCard({
                     src={e.avatarUrl}
                     alt={e?.organizerUserName || "User"}
                     className="w-full h-full"
-                    style={{ objectFit: 'contain' }}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               ) : (

@@ -460,7 +460,7 @@ const [commentCount, setCommentCount] = useState(Number(job?.commentsCount || 0)
                     src={userAvatarUrl}
                     alt={job?.postedByUserName || "User"}
                     className="w-full h-full"
-                    style={{ objectFit: 'contain' }}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               ) : (

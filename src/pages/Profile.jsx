@@ -457,7 +457,7 @@ export default function ProfilePage() {
      };
  
      return (
-       <div className="space-y-3">
+       <div className="space-y-3 w-full">
          <label className="block text-sm font-medium text-gray-700">
            Other Countries of Operations (Branches) <span className="text-gray-400 font-normal">(Optional)</span>
          </label>
@@ -466,7 +466,7 @@ export default function ProfilePage() {
          {value.length > 0 && (
            <div className="space-y-2">
              {value.map((item, index) => (
-               <div key={index} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+               <div key={index} className="flex max-sm:flex-col items-center relative gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
                  <div className="flex-1">
                    <div className="font-medium text-sm">{item.country}</div>
                    <div className="text-xs text-gray-500">City: {item.city}</div>
@@ -476,12 +476,12 @@ export default function ProfilePage() {
                    value={item.city}
                    onChange={(city) => handleCityChange(index, city)}
                    placeholder="Select city"
-                   className="w-48"
+                   className="w-48 max-sm:w-full"
                  />
                  <button
                    type="button"
                    onClick={() => handleRemoveCountryCity(index)}
-                   className="p-1 text-red-500 hover:text-red-700"
+                   className="p-1 text-red-500 hover:text-red-700 max-sm:absolute right-1 top-1"
                    title="Remove"
                  >
                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -496,7 +496,7 @@ export default function ProfilePage() {
          {/* Add new country-city pair */}
          {showAddForm ? (
            <div className="p-3 border border-gray-200 rounded-lg bg-blue-50 space-y-3">
-             <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 max-sm:grid-cols-1">
                <SearchableSelect
                  options={COUNTRIES}
                  value={newCountry}
@@ -2900,9 +2900,7 @@ function CategoryTree({
                     </div>
                   
                     <div className="flex items-center gap-1">
-                      <span className="text-xs text-gray-500">
-                      {(industryCat.subcategories || []).length} 
-                    </span>
+                    
                       {_hasSubs && (
                         <button
                           type="button"
@@ -3039,7 +3037,9 @@ function CategoryTree({
       {/* Profile Image and Company Logos */}
       <div className="flex flex-col md:flex-row md:items-end gap-4">
         <div className="relative">
-          <ProfilePhoto 
+         
+          <div className="z-50">
+             <ProfilePhoto 
             type="avatar"
             onChange={(base64) => {
               setPersonal({ ...personal, avatarUrl: base64 });
@@ -3047,6 +3047,7 @@ function CategoryTree({
             }} 
             avatarUrl={personal.avatarUrl}
           />
+          </div>
           
           {personal.avatarUrl ? (
             <div
@@ -4091,7 +4092,7 @@ function CategoryTree({
                           <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                           </svg>
-                          Add Your First Work Sample
+                          Add Your First <label className="max-sm:hidden">Work Sample</label>
                         </button>
                       </div>
                     </div>
@@ -4706,383 +4707,387 @@ function CategoryTree({
             </div>
           )}
 
-          {/* COMPANY REPRESENTATIVE */}
-          {active === Tab.REPRESENTATIVE && isCompany && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-semibold mb-4">Company Representative</h3>
-                <p className="text-gray-600 mb-4">
-                  Select an individual user to act as the authorized representative for your company.
-                  They will receive an email request to authorize this relationship.
-                </p>
+         
+         {/* COMPANY REPRESENTATIVE */}
+{active === Tab.REPRESENTATIVE && isCompany && (
+  <div className="space-y-6">
+    <div>
+      <h3 className="font-semibold mb-4 text-lg sm:text-base">Company Representative</h3>
+      <p className="text-gray-600 mb-4 text-sm sm:text-base">
+        Select an individual user to act as the authorized representative for your company.
+        They will receive an email request to authorize this relationship.
+      </p>
 
-                {/* Incoming Invitations - Requests to be Representative */}
-                {incomingInvitations.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="font-medium mb-3 text-blue-700">Requests to be Representative</h4>
-                    <div className="space-y-3">
-                      {incomingInvitations.map(incomingInv => (
-                        <div key={incomingInv.id} className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-10 h-10 bg-blue-200 rounded-full flex items-center justify-center">
-                                {incomingInv.company?.avatarUrl ? (
-                                  <img
-                                    src={incomingInv.company.avatarUrl}
-                                    alt={incomingInv.company.name}
-                                    className="w-10 h-10 rounded-full object-cover"
-                                  />
-                                ) : (
-                                  <span className="text-blue-700 font-medium">
-                                    {incomingInv.company?.name?.charAt(0).toUpperCase() || '?'}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <div className="font-medium">{incomingInv.company?.name || 'Unknown Company'}</div>
-                                <div className="text-sm text-gray-600">{incomingInv.company?.email || 'No email'}</div>
-                                <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 inline-block mt-1">
-                                  📧 Request to be Representative
-                                </div>
-                                {incomingInv.createdAt && (
-                                  <div className="text-xs text-gray-500 mt-1">
-                                    Received {new Date(incomingInv.createdAt).toLocaleDateString()}
-                                  </div>
-                                )}
-                                {incomingInv.message && (
-                                  <div className="text-xs text-gray-600 mt-1 italic">
-                                    "{incomingInv.message}"
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleAcceptIncomingInvitation(incomingInv.id)}
-                                disabled={loadingInvitations}
-                                className="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50"
-                                title="Accept representative request"
-                              >
-                                {loadingInvitations ? '...' : 'Accept'}
-                              </button>
-                              <button
-                                onClick={() => handleRejectIncomingInvitation(incomingInv.id)}
-                                disabled={loadingInvitations}
-                                className="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 disabled:opacity-50"
-                                title="Reject representative request"
-                              >
-                                {loadingInvitations ? '...' : 'Reject'}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Current/Authorized Representative */}
-                {currentRepresentative && (
-                  <div className="mb-6">
-                    <h4 className="font-medium mb-3 text-green-700">Current Representative</h4>
-                    <div className="border border-green-200 rounded-lg p-4 bg-green-50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center">
-                            {currentRepresentative.representative.avatarUrl ? (
-                              <img
-                                src={currentRepresentative.representative.avatarUrl}
-                                alt={currentRepresentative.representative.name}
-                                className="w-12 h-12 rounded-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-green-700 font-medium">
-                                {currentRepresentative.representative.name.charAt(0).toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium">{currentRepresentative.representative.name}</div>
-                            <div className="text-sm text-gray-600">{currentRepresentative.representative.email}</div>
-                            {currentRepresentative.representative.professionalTitle && (
-                              <div className="text-xs text-gray-500">{currentRepresentative.representative.professionalTitle}</div>
-                            )}
-                            <div className="flex items-center gap-2 mt-1">
-                              <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800">
-                                ✓ Authorized
-                              </div>
-                              {currentRepresentative.authorizedAt && (
-                                <div className="text-xs text-gray-500">
-                                  Authorized {new Date(currentRepresentative.authorizedAt).toLocaleDateString()}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setShowRepresentativeModal(true)}
-                            disabled={sendingRepresentativeInvite}
-                            className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {sendingRepresentativeInvite ? (
-                              <>
-                                <svg className="animate-spin -ml-1 mr-2 h-3 w-3 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
-                                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
-                                </svg>
-                                Sending...
-                              </>
-                            ) : (
-                              'Replace'
-                            )}
-                          </button>
-                          <button
-                            onClick={handleRemoveRepresentative}
-                            className="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50"
-                          >
-                            Remove
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Pending Invitations */}
-                {pendingInvitations.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="font-medium mb-3 text-yellow-700">Pending Requests</h4>
-                    <div className="space-y-3">
-                      {pendingInvitations.map(pendingRep => {
-                        const user = pendingRep.representative || pendingRep.invitedUser;
-                        return (
-                          <div key={pendingRep.id} className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-yellow-200 rounded-full flex items-center justify-center">
-                                  {user?.avatarUrl ? (
-                                    <img
-                                      src={user.avatarUrl}
-                                      alt={user.name}
-                                      className="w-10 h-10 rounded-full object-cover"
-                                    />
-                                  ) : (
-                                    <span className="text-yellow-700 font-medium">
-                                      {user?.name?.charAt(0).toUpperCase() || '?'}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex-1">
-                                  <div className="font-medium">{user?.name || 'Unknown User'}</div>
-                                  <div className="text-sm text-gray-600">{user?.email || 'No email'}</div>
-                                  <div className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 inline-block mt-1">
-                                    ⏳ Awaiting Authorization
-                                  </div>
-                                  {pendingRep.createdAt && (
-                                    <div className="text-xs text-gray-500 mt-1">
-                                      Sent {new Date(pendingRep.createdAt).toLocaleDateString()}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleResendInvitation(pendingRep.id)}
-                                  disabled={loadingInvitations}
-                                  className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50 disabled:opacity-50"
-                                  title="Resend invitation"
-                                >
-                                  {loadingInvitations ? '...' : 'Resend'}
-                                </button>
-                                <button
-                                  onClick={() => handleCancelInvitation(pendingRep.id)}
-                                  disabled={loadingInvitations}
-                                  className="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50 disabled:opacity-50"
-                                  title="Cancel invitation"
-                                >
-                                  {loadingInvitations ? '...' : 'Cancel'}
-                                </button>
-                                <button
-                                  onClick={() => setShowRepresentativeModal(true)}
-                                  disabled={sendingRepresentativeInvite}
-                                  className="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {sendingRepresentativeInvite ? (
-                                    <>
-                                      <svg className="animate-spin -ml-1 mr-2 h-3 w-3 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
-                                        <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
-                                      </svg>
-                                      Sending...
-                                    </>
-                                  ) : (
-                                    'Change'
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Select Representative Button */}
-                {!currentRepresentative && pendingInvitations.length === 0 && (
-                  <div className="text-center py-8">
-                    <div className="mb-4">
-                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No Representative Selected</h3>
-                    <p className="text-gray-500 mb-4">
-                      Select an individual user to act as your company's authorized representative.
-                    </p>
-                    <button
-                      onClick={() => setShowRepresentativeModal(true)}
-                      disabled={sendingRepresentativeInvite}
-                      className="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {sendingRepresentativeInvite ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
-                            <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
-                          </svg>
-                          Sending...
-                        </>
+      {/* Incoming Invitations - Requests to be Representative */}
+      {incomingInvitations.length > 0 && (
+        <div className="mb-6">
+          <h4 className="font-medium mb-3 text-blue-700 text-sm sm:text-base">Requests to be Representative</h4>
+          <div className="space-y-3">
+            {incomingInvitations.map(incomingInv => (
+              <div key={incomingInv.id} className="border border-blue-200 rounded-lg p-3 sm:p-4 bg-blue-50">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0">
+                      {incomingInv.company?.avatarUrl ? (
+                        <img
+                          src={incomingInv.company.avatarUrl}
+                          alt={incomingInv.company.name}
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                        />
                       ) : (
-                        'Select Representative'
+                        <span className="text-blue-700 font-medium text-sm">
+                          {incomingInv.company?.name?.charAt(0).toUpperCase() || '?'}
+                        </span>
                       )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm sm:text-base truncate">{incomingInv.company?.name || 'Unknown Company'}</div>
+                      <div className="text-xs sm:text-sm text-gray-600 truncate">{incomingInv.company?.email || 'No email'}</div>
+                      <div className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800 inline-block mt-1">
+                        📧 Request to be Representative
+                      </div>
+                      {incomingInv.createdAt && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Received {new Date(incomingInv.createdAt).toLocaleDateString()}
+                        </div>
+                      )}
+                      {incomingInv.message && (
+                        <div className="text-xs text-gray-600 mt-1 italic break-words">
+                          "{incomingInv.message}"
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 self-end sm:self-auto">
+                    <button
+                      onClick={() => handleAcceptIncomingInvitation(incomingInv.id)}
+                      disabled={loadingInvitations}
+                      className="px-2 py-1 sm:px-3 bg-green-600 text-white rounded-lg text-xs sm:text-sm hover:bg-green-700 disabled:opacity-50 flex-1 sm:flex-none"
+                      title="Accept representative request"
+                    >
+                      {loadingInvitations ? '...' : 'Accept'}
+                    </button>
+                    <button
+                      onClick={() => handleRejectIncomingInvitation(incomingInv.id)}
+                      disabled={loadingInvitations}
+                      className="px-2 py-1 sm:px-3 border border-red-300 text-red-600 rounded-lg text-xs sm:text-sm hover:bg-red-50 disabled:opacity-50 flex-1 sm:flex-none"
+                      title="Reject representative request"
+                    >
+                      {loadingInvitations ? '...' : 'Reject'}
                     </button>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* COMPANY STAFF */}
-          {active === Tab.STAFF && isCompany && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-semibold">Company Staff</h3>
-                  <p className="text-gray-600 text-sm">
-                    Manage team members who have access to company features
-                  </p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Current/Authorized Representative */}
+      {currentRepresentative && (
+        <div className="mb-6">
+          <h4 className="font-medium mb-3 text-green-700 text-sm sm:text-base">Current Representative</h4>
+          <div className="border border-green-200 rounded-lg p-3 sm:p-4 bg-green-50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-200 rounded-full flex items-center justify-center flex-shrink-0">
+                  {currentRepresentative.representative.avatarUrl ? (
+                    <img
+                      src={currentRepresentative.representative.avatarUrl}
+                      alt={currentRepresentative.representative.name}
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-green-700 font-medium text-sm sm:text-base">
+                      {currentRepresentative.representative.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm sm:text-base truncate">{currentRepresentative.representative.name}</div>
+                  <div className="text-xs sm:text-sm text-gray-600 truncate">{currentRepresentative.representative.email}</div>
+                  {currentRepresentative.representative.professionalTitle && (
+                    <div className="text-xs text-gray-500 truncate">{currentRepresentative.representative.professionalTitle}</div>
+                  )}
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mt-1">
+                    <div className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-800 w-fit">
+                      ✓ Authorized
+                    </div>
+                    {currentRepresentative.authorizedAt && (
+                      <div className="text-xs text-gray-500">
+                        Authorized {new Date(currentRepresentative.authorizedAt).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2 self-end sm:self-auto">
                 <button
-                  onClick={() => setShowStaffModal(true)}
-                  disabled={sendingStaffInvite}
-                  className="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => setShowRepresentativeModal(true)}
+                  disabled={sendingRepresentativeInvite}
+                  className="px-2 py-1 sm:px-3 border border-gray-300 rounded-lg text-xs sm:text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex-1 sm:flex-none"
                 >
-                  {sendingStaffInvite ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  {sendingRepresentativeInvite ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-1 h-3 w-3 sm:mr-2 sm:h-3 sm:w-3 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
                         <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
                       </svg>
-                      Sending...
-                    </>
+                      <span className="hidden sm:inline">Sending...</span>
+                      <span className="sm:hidden">...</span>
+                    </span>
                   ) : (
-                    'Invite Staff Member'
+                    'Replace'
                   )}
                 </button>
+                <button
+                  onClick={handleRemoveRepresentative}
+                  className="px-2 py-1 sm:px-3 border border-red-300 text-red-600 rounded-lg text-xs sm:text-sm hover:bg-red-50 flex-1 sm:flex-none"
+                >
+                  Remove
+                </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-              <div className="space-y-3">
-                {staff.length === 0 ? (
-                  <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                    <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No staff members yet</h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Invite team members to join your company.
-                    </p>
-                  </div>
-                ) : (
-                  staff.map(member => (
-                    <div key={member.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                            {member.staff.avatarUrl ? (
-                              <img
-                                src={member.staff.avatarUrl}
-                                alt={member.staff.name}
-                                className="w-10 h-10 rounded-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-gray-600 font-medium">
-                                {member.staff.name.charAt(0).toUpperCase()}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium">{member.staff.name}</div>
-                            <div className="text-sm text-gray-500">{member.staff.email}</div>
-                            <div className="text-xs text-gray-400">
-                              Role: {editingStaff === member.id ? (
-                                <input
-                                  type="text"
-                                  value={editingRole}
-                                  onChange={(e) => setEditingRole(e.target.value)}
-                                  className="ml-1 px-2 py-1 border rounded text-sm"
-                                  placeholder="Enter role"
-                                />
-                              ) : (
-                                member.role
-                              )}
-                            </div>
-                            <div className="text-xs text-green-600 mt-1">
-                              Status: {member.status}
-                            </div>
-                          </div>
+      {/* Pending Invitations */}
+      {pendingInvitations.length > 0 && (
+        <div className="mb-6">
+          <h4 className="font-medium mb-3 text-yellow-700 text-sm sm:text-base">Pending Requests</h4>
+          <div className="space-y-3">
+            {pendingInvitations.map(pendingRep => {
+              const user = pendingRep.representative || pendingRep.invitedUser;
+              return (
+                <div key={pendingRep.id} className="border border-yellow-200 rounded-lg p-3 sm:p-4 bg-yellow-50">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start space-x-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-200 rounded-full flex items-center justify-center flex-shrink-0">
+                        {user?.avatarUrl ? (
+                          <img
+                            src={user.avatarUrl}
+                            alt={user.name}
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-yellow-700 font-medium text-sm">
+                            {user?.name?.charAt(0).toUpperCase() || '?'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm sm:text-base truncate">{user?.name || 'Unknown User'}</div>
+                        <div className="text-xs sm:text-sm text-gray-600 truncate">{user?.email || 'No email'}</div>
+                        <div className="text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-800 inline-block mt-1">
+                          ⏳ Awaiting Authorization
                         </div>
-                        <div className="flex gap-2">
-                          {editingStaff === member.id ? (
-                            <>
-                              <button
-                                onClick={() => handleUpdateStaffRole(member.staffId, editingRole)}
-                                className="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={cancelEditingStaff}
-                                className="px-3 py-1 border border-gray-300 text-gray-600 rounded-lg text-sm hover:bg-gray-50"
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={() => startEditingStaff(member)}
-                                className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleRemoveStaff(member.staffId)}
-                                className="px-3 py-1 border border-red-300 text-red-600 rounded-lg text-sm hover:bg-red-50"
-                              >
-                                Remove
-                              </button>
-                            </>
-                          )}
-                        </div>
+                        {pendingRep.createdAt && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Sent {new Date(pendingRep.createdAt).toLocaleDateString()}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))
+                    <div className="flex gap-2 self-end sm:self-auto">
+                      <button
+                        onClick={() => handleResendInvitation(pendingRep.id)}
+                        disabled={loadingInvitations}
+                        className="px-2 py-1 sm:px-3 border border-blue-300 text-blue-600 rounded-lg text-xs sm:text-sm hover:bg-blue-50 disabled:opacity-50 flex-1 sm:flex-none"
+                        title="Resend invitation"
+                      >
+                        {loadingInvitations ? '...' : 'Resend'}
+                      </button>
+                      <button
+                        onClick={() => handleCancelInvitation(pendingRep.id)}
+                        disabled={loadingInvitations}
+                        className="px-2 py-1 sm:px-3 border border-red-300 text-red-600 rounded-lg text-xs sm:text-sm hover:bg-red-50 disabled:opacity-50 flex-1 sm:flex-none"
+                        title="Cancel invitation"
+                      >
+                        {loadingInvitations ? '...' : 'Cancel'}
+                      </button>
+                      <button
+                        onClick={() => setShowRepresentativeModal(true)}
+                        disabled={sendingRepresentativeInvite}
+                        className="px-2 py-1 sm:px-3 border border-gray-300 rounded-lg text-xs sm:text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex-1 sm:flex-none"
+                      >
+                        {sendingRepresentativeInvite ? (
+                          <span className="flex items-center justify-center">
+                            <svg className="animate-spin -ml-1 mr-1 h-3 w-3 sm:mr-2 sm:h-3 sm:w-3 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                            </svg>
+                            <span className="hidden sm:inline">Sending...</span>
+                            <span className="sm:hidden">...</span>
+                          </span>
+                        ) : (
+                          'Change'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Select Representative Button */}
+      {!currentRepresentative && pendingInvitations.length === 0 && (
+        <div className="text-center py-6 sm:py-8">
+          <div className="mb-3 sm:mb-4">
+            <svg className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">No Representative Selected</h3>
+          <p className="text-gray-500 mb-4 text-sm sm:text-base px-2">
+            Select an individual user to act as your company's authorized representative.
+          </p>
+          <button
+            onClick={() => setShowRepresentativeModal(true)}
+            disabled={sendingRepresentativeInvite}
+            className="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base w-full sm:w-auto"
+          >
+            {sendingRepresentativeInvite ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+                  <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+                </svg>
+                Sending...
+              </span>
+            ) : (
+              'Select Representative'
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
+         
+         {/* COMPANY STAFF */}
+{active === Tab.STAFF && isCompany && (
+  <div className="space-y-6">
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      <div>
+        <h3 className="font-semibold text-lg sm:text-base">Company Staff</h3>
+        <p className="text-gray-600 text-sm mt-1">
+          Manage team members who have access to company features
+        </p>
+      </div>
+      <button
+        onClick={() => setShowStaffModal(true)}
+        disabled={sendingStaffInvite}
+        className="px-4 py-2 bg-brand-700 text-white rounded-lg hover:bg-brand-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base w-full sm:w-auto order-first sm:order-last"
+      >
+        {sendingStaffInvite ? (
+          <span className="flex items-center justify-center">
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25"></circle>
+              <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" className="opacity-75"></path>
+            </svg>
+            Sending...
+          </span>
+        ) : (
+          'Invite Staff Member'
+        )}
+      </button>
+    </div>
+
+    <div className="space-y-3">
+      {staff.length === 0 ? (
+        <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+          <svg className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No staff members yet</h3>
+          <p className="mt-1 text-sm text-gray-500 px-4">
+            Invite team members to join your company.
+          </p>
+        </div>
+      ) : (
+        staff.map(member => (
+          <div key={member.id} className="border rounded-lg p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                  {member.staff.avatarUrl ? (
+                    <img
+                      src={member.staff.avatarUrl}
+                      alt={member.staff.name}
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-gray-600 font-medium text-sm">
+                      {member.staff.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm sm:text-base truncate">{member.staff.name}</div>
+                  <div className="text-xs sm:text-sm text-gray-500 truncate">{member.staff.email}</div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    Role: {editingStaff === member.id ? (
+                      <input
+                        type="text"
+                        value={editingRole}
+                        onChange={(e) => setEditingRole(e.target.value)}
+                        className="ml-1 px-2 py-1 border rounded text-xs w-full sm:w-auto"
+                        placeholder="Enter role"
+                      />
+                    ) : (
+                      <span className="text-gray-600">{member.role}</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-green-600 mt-1">
+                    Status: {member.status}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2 self-end sm:self-auto">
+                {editingStaff === member.id ? (
+                  <>
+                    <button
+                      onClick={() => handleUpdateStaffRole(member.staffId, editingRole)}
+                      className="px-2 py-1 sm:px-3 bg-green-600 text-white rounded-lg text-xs sm:text-sm hover:bg-green-700 flex-1 sm:flex-none"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={cancelEditingStaff}
+                      className="px-2 py-1 sm:px-3 border border-gray-300 text-gray-600 rounded-lg text-xs sm:text-sm hover:bg-gray-50 flex-1 sm:flex-none"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => startEditingStaff(member)}
+                      className="px-2 py-1 sm:px-3 border border-blue-300 text-blue-600 rounded-lg text-xs sm:text-sm hover:bg-blue-50 flex-1 sm:flex-none"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleRemoveStaff(member.staffId)}
+                      className="px-2 py-1 sm:px-3 border border-red-300 text-red-600 rounded-lg text-xs sm:text-sm hover:bg-red-50 flex-1 sm:flex-none"
+                    >
+                      Remove
+                    </button>
+                  </>
                 )}
               </div>
             </div>
-          )}
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+)}
 
           {/* JOB APPLICATIONS */}
           {active === Tab.JOB_APPLICATIONS && isCompany && (
@@ -5337,11 +5342,11 @@ function CategoryTree({
                           </div>
                         )}
 
-                        <div className="flex items-center justify-between">
+                        <div className="sm:flex items-center justify-between">
                           <div className="text-xs text-gray-500">
                             Applied {new Date(application.createdAt).toLocaleDateString()}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 max-sm:mt-4">
                             <button
                               onClick={() => navigate(`/profile/${application.applicant.id}`)}
                               className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"
@@ -5515,11 +5520,11 @@ function CategoryTree({
                             </select>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="sm:flex items-center justify-between">
                           <div className="text-xs text-gray-500">
                             Registered {new Date(registration.createdAt).toLocaleDateString()}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 max-sm:mt-4">
                             <button
                               onClick={() => navigate(`/profile/${registration.registrant.id}`)}
                               className="px-3 py-1 border border-blue-300 text-blue-600 rounded-lg text-sm hover:bg-blue-50"

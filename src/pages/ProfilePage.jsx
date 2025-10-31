@@ -3101,7 +3101,7 @@ const handleVideoClick = (videoIndex) => {
 
             {/* Thumbnail strip */}
             {allImages.length > 1 && (
-              <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 flex gap-2 max-w-2xl overflow-x-auto">
+              <div className="absolute flex-wrap max-md:hidden bottom-16 left-1/2 -translate-x-1/2 z-10 flex gap-2 max-w-2xl overflow-x-auto">
                 {allImages.map((image, index) => (
                   <button
                     key={`${image.itemId}-${index}`}

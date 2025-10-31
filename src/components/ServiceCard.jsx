@@ -444,7 +444,7 @@ export default function ServiceCard({
                     src={providerAvatarUrl}
                     alt={item?.providerUserName || "User"}
                     className="w-full h-full"
-                    style={{ objectFit: 'contain' }}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               ) : (

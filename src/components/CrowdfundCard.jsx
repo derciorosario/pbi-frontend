@@ -571,7 +571,7 @@ export default function CrowdfundCard({
                     src={item.avatarUrl}
                     alt={item?.creatorUserName || "User"}
                     className="w-full h-full"
-                    style={{ objectFit: 'contain' }}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               ) : (

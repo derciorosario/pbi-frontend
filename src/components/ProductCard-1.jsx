@@ -562,7 +562,7 @@ export default function ProductCard({
                     src={sellerAvatarUrl}
                     alt={item?.sellerUserName || "User"}
                     className="w-full h-full"
-                    style={{ objectFit: 'contain' }}
+                    style={{ objectFit: 'cover' }}
                   />
                 </div>
               ) : (
