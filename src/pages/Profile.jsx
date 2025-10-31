@@ -1450,7 +1450,7 @@ export default function ProfilePage() {
         setCities(citiesData);
       } catch (error) {
         console.error('Error fetching cities:', error);
-        toast.error('Failed to load cities data');
+      //  toast.error('Failed to load cities data');
         setCities([]);
       } finally {
         setCitiesLoading(false);

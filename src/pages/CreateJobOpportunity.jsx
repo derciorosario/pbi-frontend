@@ -899,7 +899,7 @@ export default function CreateJobOpportunity({ triggerImageSelection = false, hi
         setCities(data);
       } catch (error) {
         console.error('Error fetching cities:', error);
-        toast.error('Failed to load cities data');
+       // toast.error('Failed to load cities data');
       } finally {
         setCitiesLoading(false);
       }

@@ -450,7 +450,7 @@ export default function CreateMomentPage({ triggerImageSelection = false, type, 
         setCities(data);
       } catch (error) {
         console.error('Error fetching cities:', error);
-        toast.error('Failed to load cities data');
+      //  toast.error('Failed to load cities data');
       } finally {
         setCitiesLoading(false);
       }
