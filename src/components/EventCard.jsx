@@ -68,6 +68,12 @@ export default function EventCard({
   const [postDialogOpen, setPostDialogOpen] = useState(false); // post dialog modal
   const [registrationOpen, setRegistrationOpen] = useState(false); // event registration modal
 
+  // Touch/swipe handling for mobile and PC
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+
   // Social state
   const [liked, setLiked] =  useState(!!e?.isLiked);
   const [likeCount, setLikeCount] = useState(Number(e.likesCount || 0));
@@ -90,6 +96,60 @@ export default function EventCard({
   const [isDeleted, setIsDeleted] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const optionsMenuRef = useRef(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
+
+  // Handle touch start
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  // Handle touch move
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+
+  // Handle touch end
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && mediaToDisplay) {
+      // For events, we only have one media item, so no navigation needed
+      // Could be extended if events support multiple images in the future
+    }
+    if (isRightSwipe && mediaToDisplay) {
+      // For events, we only have one media item, so no navigation needed
+      // Could be extended if events support multiple images in the future
+    }
+  };
+
+  // Handle mouse down for PC
+  const onMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart(e.clientX);
+  };
+
+  // Handle mouse move for PC
+  const onMouseMove = (e) => {
+    if (!isDragging) return;
+    const currentX = e.clientX;
+    const diff = dragStart - currentX;
+
+    if (Math.abs(diff) > minSwipeDistance) {
+      // For events, we only have one media item, so no navigation needed
+      // Could be extended if events support multiple images in the future
+      setIsDragging(false);
+    }
+  };
+
+  // Handle mouse up for PC
+  const onMouseUp = () => {
+    setIsDragging(false);
+    setDragStart(null);
+  };
   
   // Close menus on outside click / Esc
   useEffect(() => {
@@ -534,8 +594,16 @@ export default function EventCard({
               <img
                 src={mediaToDisplay.url}
                 alt="Event cover"
-                className="w-full max-h-96 object-cover cursor-pointer"
+                className="w-full max-h-96 object-cover cursor-pointer select-none"
+                style={{ userSelect: 'none' }}
                 onClick={() => setPostDialogOpen(true)}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+                onMouseDown={onMouseDown}
+                onMouseMove={onMouseMove}
+                onMouseUp={onMouseUp}
+                onMouseLeave={onMouseUp}
               />
             )}
           </div>

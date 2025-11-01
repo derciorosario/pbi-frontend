@@ -135,6 +135,12 @@ export default function ExperienceCard({
   const shareMenuRef = useRef(null);
   const cardRef = useRef(null);
 
+  // Touch/swipe handling for mobile and PC
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+
   // Options menu
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -247,6 +253,72 @@ export default function ExperienceCard({
       }
     };
   }, []);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
+
+  // Handle touch start
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  // Handle touch move
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+
+  // Handle touch end
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentImageIndex < validMedia.length - 1) {
+      setCurrentImageIndex(currentImageIndex + 1);
+      resetVideoState();
+    }
+    if (isRightSwipe && currentImageIndex > 0) {
+      setCurrentImageIndex(currentImageIndex - 1);
+      resetVideoState();
+    }
+  };
+
+  // Handle mouse down for PC
+  const onMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart(e.clientX);
+  };
+
+  // Handle mouse move for PC
+  const onMouseMove = (e) => {
+    if (!isDragging) return;
+    const currentX = e.clientX;
+    const diff = dragStart - currentX;
+
+    if (Math.abs(diff) > minSwipeDistance) {
+      if (diff > 0 && currentImageIndex < validMedia.length - 1) {
+        setCurrentImageIndex(currentImageIndex + 1);
+        resetVideoState();
+        setIsDragging(false);
+      } else if (diff < 0 && currentImageIndex > 0) {
+        setCurrentImageIndex(currentImageIndex - 1);
+        resetVideoState();
+        setIsDragging(false);
+      }
+    }
+  };
+
+  // Handle mouse up for PC
+  const onMouseUp = () => {
+    setIsDragging(false);
+    setDragStart(null);
+  };
+
+  // Reset video state when changing slides
+  const resetVideoState = () => {
+    setIsVideoPlaying(false);
+    setShowVideoControls(false);
+  };
 
   // Initial fetch for like & comments count (optional)
   useEffect(() => {
@@ -525,7 +597,15 @@ export default function ExperienceCard({
             {/* Media Slider */}
             <div
               onClick={handleMediaClick}
-              className="relative w-full max-h-96 overflow-hidden cursor-pointer"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+              onMouseDown={onMouseDown}
+              onMouseMove={onMouseMove}
+              onMouseUp={onMouseUp}
+              onMouseLeave={onMouseUp}
+              className="relative w-full max-h-96 overflow-hidden cursor-pointer select-none"
+              style={{ userSelect: 'none' }}
             >
               {hasMultipleMedia ? (
                 <div

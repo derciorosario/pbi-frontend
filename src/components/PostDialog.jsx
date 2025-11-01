@@ -176,7 +176,7 @@ const PostDialog = ({
         {/* Right Content Section */}
         <div className="md:w-1/2 w-full flex flex-col max-h-[90vh] max-md:h-auto overflow-y-auto h-full">
           {/* Header */}
-          <div className="p-4 border-b border-gray-200 flex items-center justify-between max-md:hidden">
+          <div className="p-4 border-b border-gray-200 flex items-center justify-between max-md:hidden hidden">
             <h2 className="text-lg font-semibold text-gray-900">
               {/*type === 'event' ? 'Event Details' :
                type === 'job' ? 'Job Details' :
@@ -195,7 +195,8 @@ const PostDialog = ({
           {/* Content */}
           <div className="flex-1 p-4 space-y-4">
             {/* User Info */}
-            <div className="flex items-center space-x-3 mb-4">
+            <div className="flex gap-2 justify-between border-b border-gray-200">
+               <div className="flex items-center space-x-3 mb-4">
               <img
                 src={item.avatarUrl || item.user?.avatarUrl || "https://randomuser.me/api/portraits/men/45.jpg"}
                 alt="User"
@@ -225,6 +226,17 @@ const PostDialog = ({
                   {item.timeAgo || "2 d"} •  <Globe size={12} />
                 </p>
               </div>
+            </div>
+
+            <div>
+               <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+            </div>
+
             </div>
 
             {/* Title */}

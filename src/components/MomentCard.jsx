@@ -137,6 +137,12 @@ export default function MomentCard({
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [showVideoControls, setShowVideoControls] = useState(false);
 
+  // Touch/swipe handling for mobile and PC
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+
   // Options menu and delete state
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -148,6 +154,72 @@ export default function MomentCard({
 
   // Video control timeout ref
   const videoControlsTimeoutRef = useRef(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
+
+  // Handle touch start
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  // Handle touch move
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+
+  // Handle touch end
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentMediaIndex < validMedia.length - 1) {
+      setCurrentMediaIndex(currentMediaIndex + 1);
+      resetVideoState();
+    }
+    if (isRightSwipe && currentMediaIndex > 0) {
+      setCurrentMediaIndex(currentMediaIndex - 1);
+      resetVideoState();
+    }
+  };
+
+  // Handle mouse down for PC
+  const onMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart(e.clientX);
+  };
+
+  // Handle mouse move for PC
+  const onMouseMove = (e) => {
+    if (!isDragging) return;
+    const currentX = e.clientX;
+    const diff = dragStart - currentX;
+
+    if (Math.abs(diff) > minSwipeDistance) {
+      if (diff > 0 && currentMediaIndex < validMedia.length - 1) {
+        setCurrentMediaIndex(currentMediaIndex + 1);
+        resetVideoState();
+        setIsDragging(false);
+      } else if (diff < 0 && currentMediaIndex > 0) {
+        setCurrentMediaIndex(currentMediaIndex - 1);
+        resetVideoState();
+        setIsDragging(false);
+      }
+    }
+  };
+
+  // Handle mouse up for PC
+  const onMouseUp = () => {
+    setIsDragging(false);
+    setDragStart(null);
+  };
+
+  // Reset video state when changing slides
+  const resetVideoState = () => {
+    setIsVideoPlaying(false);
+    setShowVideoControls(false);
+  };
 
   // Close share menu and options menu on outside click / Esc
   useEffect(() => {
@@ -670,9 +742,17 @@ export default function MomentCard({
         {settings?.contentType !== "text" && validMedia.length > 0 && (
           <div className="relative">
             {/* Media Slider */}
-            <div 
+            <div
               onClick={handleMediaClick}
-              className="relative w-full max-h-96 overflow-hidden cursor-pointer"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+              onMouseDown={onMouseDown}
+              onMouseMove={onMouseMove}
+              onMouseUp={onMouseUp}
+              onMouseLeave={onMouseUp}
+              className="relative w-full max-h-96 overflow-hidden cursor-pointer select-none"
+              style={{ userSelect: 'none' }}
             >
               {hasMultipleMedia ? (
                 <div
@@ -699,7 +779,7 @@ export default function MomentCard({
                         <img
                           src={media.url}
                           alt={media.name || `Media ${index + 1}`}
-                          className="w-full h-96 object-cover"
+                          className="w-full h-96 object-contain"
                         />
                       )}
                     </div>
@@ -727,7 +807,7 @@ export default function MomentCard({
                     <img
                       src={currentMedia.url}
                       alt={currentMedia.name || "Media"}
-                      className="w-full h-96 object-cover"
+                      className="w-full h-96 object-contain"
                     />
                   )}
                 </div>
@@ -743,17 +823,10 @@ export default function MomentCard({
                     onClick={(e) => {
                       e.stopPropagation();
                       setCurrentMediaIndex(index);
-                      // Reset video state when changing slides
-                      if (media.type === 'video') {
-                        setIsVideoPlaying(false);
-                        setShowVideoControls(true);
-                      } else {
-                        setIsVideoPlaying(false);
-                        setShowVideoControls(false);
-                      }
+                      resetVideoState();
                     }}
                     className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
-                      index === currentMediaIndex 
+                      index === currentMediaIndex
                         ? (media.type === 'video' ? 'bg-blue-500' : 'bg-white')
                         : 'bg-white/50'
                     }`}
@@ -762,6 +835,7 @@ export default function MomentCard({
                 ))}
               </div>
             )}
+
 
           </div>
         )}

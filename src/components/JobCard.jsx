@@ -107,6 +107,66 @@ const [commentCount, setCommentCount] = useState(Number(job?.commentsCount || 0)
   const [showFullDescription, setShowFullDescription] = useState(false);
   const optionsMenuRef = useRef(null);
 
+  // Touch/swipe handling for mobile and PC
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
+
+  // Handle touch start
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  // Handle touch move
+  const onTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+
+  // Handle touch end
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && mediaToDisplay) {
+      // For jobs, we only have one media item, so no navigation needed
+      // Could be extended if jobs support multiple images in the future
+    }
+    if (isRightSwipe && mediaToDisplay) {
+      // For jobs, we only have one media item, so no navigation needed
+      // Could be extended if jobs support multiple images in the future
+    }
+  };
+
+  // Handle mouse down for PC
+  const onMouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart(e.clientX);
+  };
+
+  // Handle mouse move for PC
+  const onMouseMove = (e) => {
+    if (!isDragging) return;
+    const currentX = e.clientX;
+    const diff = dragStart - currentX;
+
+    if (Math.abs(diff) > minSwipeDistance) {
+      // For jobs, we only have one media item, so no navigation needed
+      // Could be extended if jobs support multiple images in the future
+      setIsDragging(false);
+    }
+  };
+
+  // Handle mouse up for PC
+  const onMouseUp = () => {
+    setIsDragging(false);
+    setDragStart(null);
+  };
+
   useEffect(() => {
     function onDown(e) {
       if (shareMenuRef.current && !shareMenuRef.current.contains(e.target)) {
@@ -568,8 +628,16 @@ const [commentCount, setCommentCount] = useState(Number(job?.commentsCount || 0)
               <img
                 src={mediaToDisplay.url}
                 alt="Job cover"
-                className="w-full max-h-96 object-cover cursor-pointer"
+                className="w-full max-h-96 object-cover cursor-pointer select-none"
+                style={{ userSelect: 'none' }}
                 onClick={() => setPostDialogOpen(true)}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+                onMouseDown={onMouseDown}
+                onMouseMove={onMouseMove}
+                onMouseUp={onMouseUp}
+                onMouseLeave={onMouseUp}
               />
             )}
           </div>
