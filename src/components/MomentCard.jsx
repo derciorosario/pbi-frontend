@@ -740,7 +740,7 @@ export default function MomentCard({
 
         {/* MEDIA (if exists and not in text mode) */}
         {settings?.contentType !== "text" && validMedia.length > 0 && (
-          <div className="relative">
+          <div className="relative bg-gray-900">
             {/* Media Slider */}
             <div
               onClick={handleMediaClick}

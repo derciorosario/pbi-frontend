@@ -618,7 +618,7 @@ const [commentCount, setCommentCount] = useState(Number(job?.commentsCount || 0)
 
         {/* MEDIA - Show either VIDEO or IMAGE (Video has priority) */}
         {mediaToDisplay && (
-          <div className="relative">
+          <div className="relative bg-gray-900">
             {mediaToDisplay.type === 'video' ? (
               <VideoPlayer
                 src={mediaToDisplay.url}
@@ -628,7 +628,7 @@ const [commentCount, setCommentCount] = useState(Number(job?.commentsCount || 0)
               <img
                 src={mediaToDisplay.url}
                 alt="Job cover"
-                className="w-full max-h-96 object-cover cursor-pointer select-none"
+                className="w-full max-h-96 object-contain cursor-pointer select-none"
                 style={{ userSelect: 'none' }}
                 onClick={() => setPostDialogOpen(true)}
                 onTouchStart={onTouchStart}

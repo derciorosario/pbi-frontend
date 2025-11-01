@@ -59,13 +59,13 @@ export default function FormMediaViewer({ urls = [], initialIndex = 0, onClose,h
       isClosing ? 'bg-opacity-0' : 'bg-opacity-90'
     }`}>
       {/* Close Button */}
-      {!hideClose && <button
+     <button
         onClick={handleClose}
-        className="absolute top-4 right-4 z-10 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black bg-opacity-50"
+        className={`absolute ${hideClose ? 'md:hidden':''} top-4 right-4 z-10 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black bg-opacity-50`}
       >
         <X size={24} />
       </button>
-}
+
       {/* Navigation Arrows */}
       {urls.length > 1 && (
         <>

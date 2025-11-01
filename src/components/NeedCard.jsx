@@ -683,7 +683,7 @@ export default function NeedCard({
 
         {/* MEDIA (if exists and not in text mode) */}
         {settings?.contentType !== "text" && validMedia.length > 0 && (
-          <div className="relative">
+         <div className="relative bg-gray-900">
             {/* Media Slider */}
             <div
               onClick={handleMediaClick}
@@ -721,7 +721,7 @@ export default function NeedCard({
                         <img
                           src={media.url}
                           alt={media.name || `Media ${index + 1}`}
-                          className="w-full h-96 object-cover"
+                          className="w-full h-96 object-contain"
                         />
                       )}
                     </div>
@@ -746,7 +746,7 @@ export default function NeedCard({
                     <img
                       src={currentMedia.url}
                       alt={currentMedia.name || "Media"}
-                      className="w-full h-96 object-cover"
+                      className="w-full h-96 object-contain"
                     />
                   )}
                 </div>

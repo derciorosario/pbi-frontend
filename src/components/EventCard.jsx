@@ -584,7 +584,7 @@ export default function EventCard({
 
         {/* MEDIA - Show either VIDEO or IMAGE (Video has priority) */}
         {settings?.contentType !== "text" && mediaToDisplay && (
-          <div className="relative">
+          <div className="relative bg-gray-900">
             {mediaToDisplay.type === 'video' ? (
               <VideoPlayer
                 src={mediaToDisplay.url}
@@ -594,7 +594,7 @@ export default function EventCard({
               <img
                 src={mediaToDisplay.url}
                 alt="Event cover"
-                className="w-full max-h-96 object-cover cursor-pointer select-none"
+                className="w-full max-h-96 object-contain cursor-pointer select-none"
                 style={{ userSelect: 'none' }}
                 onClick={() => setPostDialogOpen(true)}
                 onTouchStart={onTouchStart}
