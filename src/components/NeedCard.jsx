@@ -7,6 +7,7 @@ import { toast } from "../lib/toast";
 import * as socialApi from "../api/social";
 import client, { API_URL } from "../api/client";
 import LikesDialog from "./LikesDialog";
+import PostDialog from "./PostDialog";
 
 import {
   Edit,
@@ -127,6 +128,9 @@ export default function NeedCard({
   const [shareOpen, setShareOpen] = useState(false);
   const shareMenuRef = useRef(null);
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+
+  // Post dialog modal
+  const [postDialogOpen, setPostDialogOpen] = useState(false);
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
@@ -317,8 +321,8 @@ export default function NeedCard({
       e.stopPropagation();
       handleVideoPlayPause();
     } else {
-      // For images, open details modal
-      setNeedDetailsOpen(true);
+      // For images, open PostDialog
+      setPostDialogOpen(true);
     }
   };
 
@@ -932,6 +936,18 @@ export default function NeedCard({
         currentUser={user}
         onCountChange={(n) => setCommentCount(n)}
       />
+
+      {/* Post Dialog Modal */}
+      <PostDialog
+        isOpen={postDialogOpen}
+        onClose={() => setPostDialogOpen(false)}
+        item={need}
+        type="need"
+        mediaUrls={validMedia.map(media => media.url)}
+        initialMediaIndex={0}
+        tags={allTags}
+      />
+
     </>
   );
 

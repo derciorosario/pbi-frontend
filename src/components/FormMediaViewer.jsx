@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import VideoPlayer from "./VideoPlayer";
 
-export default function FormMediaViewer({ urls = [], initialIndex = 0, onClose }) {
+export default function FormMediaViewer({ urls = [], initialIndex = 0, onClose,hideClose, notFixed,isFromCard }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isClosing, setIsClosing] = useState(false);
 
@@ -55,17 +55,17 @@ export default function FormMediaViewer({ urls = [], initialIndex = 0, onClose }
   if (!urls.length) return null;
 
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black transition-opacity duration-300 ${
+    <div className={`${notFixed ? 'absolute':'fixed'} ${isFromCard ? 'max-md:h-full':''} inset-0 z-50 flex items-center justify-center bg-black transition-opacity duration-300 ${
       isClosing ? 'bg-opacity-0' : 'bg-opacity-90'
     }`}>
       {/* Close Button */}
-      <button
+      {!hideClose && <button
         onClick={handleClose}
         className="absolute top-4 right-4 z-10 text-white hover:text-gray-300 transition-colors p-2 rounded-full bg-black bg-opacity-50"
       >
         <X size={24} />
       </button>
-
+}
       {/* Navigation Arrows */}
       {urls.length > 1 && (
         <>
@@ -85,7 +85,7 @@ export default function FormMediaViewer({ urls = [], initialIndex = 0, onClose }
       )}
 
       {/* Main Media Display */}
-      <div className={`relative w-full max-w-6xl max-h-full p-4 transition-transform duration-300 ${
+      <div className={`relative  ${isFromCard ? 'max-md:h-full':''} w-full max-w-6xl max-h-full p-4 transition-transform duration-300 ${
         isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
       }`}>
         {isVideo ? (
@@ -96,12 +96,12 @@ export default function FormMediaViewer({ urls = [], initialIndex = 0, onClose }
             autoPlay={true} // Ensure autoplay when switching
             controls={true}
           />
-        ) : isImage ? (
-          <div className="flex items-center justify-center h-full">
+        ) :isImage ? (
+              <div className="md:relative max-md:absolute left-0 top-0 w-full h-full max-md:h-full max-md:max-h-full max-h-[80vh] flex items-center justify-center">
             <img
               src={currentUrl}
               alt={`Image ${currentIndex + 1}`}
-              className="max-w-full max-h-full object-contain rounded-lg"
+              className="max-w-full relative max-md:w-auto max-h-[80vh] max-md:h-[95%] max-md:max-h-[100vh] object-contain rounded-lg"
             />
           </div>
         ) : (
@@ -113,7 +113,8 @@ export default function FormMediaViewer({ urls = [], initialIndex = 0, onClose }
 
       {/* Thumbnail Strip */}
       {urls.length > 1 && (
-        <div className="absolute max-md:hidden flex-wrap bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4 py-2">
+        
+        <div className={`${isFromCard ? 'max-md:h-[300px] max-md:relative':""} absolute  max-md:hidden flex-wrap bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 max-w-full overflow-x-auto px-4 py-2`}>
           {urls.map((url, index) => {
             const isThumbVideo = url?.toLowerCase().match(/\.(mp4|mov|avi|mkv|webm|flv|wmv|m4v|3gp|ogv)$/);
             const isThumbImage = url?.toLowerCase().match(/\.(jpg|jpeg|png|gif|bmp|webp|svg)$/);
@@ -122,7 +123,7 @@ export default function FormMediaViewer({ urls = [], initialIndex = 0, onClose }
               <button
                 key={index}
                 onClick={() => handleThumbnailClick(index)}
-                className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                className={`flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden border-2 transition-all duration-200 ${
                   index === currentIndex 
                     ? 'border-white scale-110' 
                     : 'border-gray-600 hover:border-gray-400'

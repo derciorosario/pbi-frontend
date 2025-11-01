@@ -1703,7 +1703,10 @@ const handleVideoClick = (videoIndex) => {
     } else if (profile.connectionStatus === "incoming_pending") {
       return (
         <button
-          onClick={() => navigate("/notifications")}
+          onClick={(e) => {
+             e.stopPropagation()
+             navigate("/notifications")
+          } }
           className="col-span-1 items-center flex justify-center rounded-lg px-3 py-2 text-sm font-medium bg-brand-100 text-brand-600 cursor-pointer"
         >
           <ExternalLink size={16} className="mr-1" />
@@ -1714,7 +1717,10 @@ const handleVideoClick = (videoIndex) => {
       return (
         <div className="col-span-1">
           <button
-            onClick={() => setOpenConfirmRemoveConnection(true)}
+            onClick={() => {
+                e.stopPropagation()
+              setOpenConfirmRemoveConnection(true)
+            }}
             title="Connected — click to remove"
             aria-label="Connected. Click to remove connection"
             className="group/conn w-full inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold
@@ -1806,18 +1812,24 @@ const handleVideoClick = (videoIndex) => {
 
   {/* Profile Content - Overlay on gradient/cover */}
   <div className="px-6 pb-6 relative">
-    <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 gap-4 mb-6">
+    <div className="flex flex-col md:flex-row md:items-end md:justify-between -mt-16 gap-4 mb-6" onClick={()=>setCoverImageOpen(true)}>
       {/* Profile Image and Company Logos */}
-      <div className="flex flex-col md:flex-row md:items-end gap-4 flex-1">
+      <div className="flex flex-col md:flex-row md:items-end gap-4 flex-1" onClick={(e)=>{
+        e.stopPropagation()
+      }}>
         <div className="relative">
           {profile.avatarUrl ? (
             <div
               className={`${profile.accountType === "company" ? "h-32 w-32 rounded-md" : "h-32 w-32 rounded-full"} border-4 border-white shadow-lg bg-white flex justify-center items-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity`}
-              onClick={() => setMediaViewerOpen(true)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setMediaViewerOpen(true)
+              }}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
+                   e.stopPropagation()
                   e.preventDefault();
                   setMediaViewerOpen(true);
                 }
@@ -1928,7 +1940,9 @@ const handleVideoClick = (videoIndex) => {
 
 
       {/* Action Buttons */}
-      <div className="flex gap-3 mt-4 md:mt-0">
+      <div className="flex gap-3 mt-4 md:mt-0" onClick={(e)=>{
+        e.stopPropagation()
+      }}>
 
         {/* Share Button */}
         <div className="relative">
@@ -1946,7 +1960,8 @@ const handleVideoClick = (videoIndex) => {
         </div>
 
        {user?.id!=profile?.id && <button
-          onClick={() => {
+          onClick={(e) => {
+             e.stopPropagation()
             if (!user) {
               data._showPopUp("login_prompt");
               return;
@@ -1961,8 +1976,11 @@ const handleVideoClick = (videoIndex) => {
         }
         {/* Request Meeting Button - only show when connected */}
         {(profile?.connectionStatus=="connected" &&  (!profile?.block?.iBlockedThem && !profile?.block?.theyBlockedMe)) && (
-          <button
-            onClick={openMR}
+          <button 
+            onClick={(e)=>{
+               e.stopPropagation()
+              openMR
+            }}
             className="border border-brand-200 hover:bg-brand-50 text-brand-700 px-4 py-2.5 rounded-lg flex items-center gap-2 transition font-medium"
           >
             <CalendarDays size={16} />

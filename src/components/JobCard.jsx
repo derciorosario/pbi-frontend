@@ -47,7 +47,7 @@ import {
 } from "react-share";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ProfileModal from "./ProfileModal";
-import JobDetails from "./JobDetails";
+import PostDialog from "./PostDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import JobApplicationDialog from "./JobApplicationDialog";
@@ -88,7 +88,7 @@ export default function JobCard({
   const [applicationStatus, setApplicationStatus] = useState(
     job?.applicationStatus || "not_applied"
   );
-  const [jobDetailsOpen, setJobDetailsOpen] = useState(false);
+  const [postDialogOpen, setPostDialogOpen] = useState(false);
 
   // Social state
  // Social state - initialize from job props
@@ -530,7 +530,7 @@ const [commentCount, setCommentCount] = useState(Number(job?.commentsCount || 0)
             className="font-semibold text-base text-gray-900 mb-1 hover:text-brand-600 cursor-pointer transition-colors"
             onClick={() => {
               if (isOwner) navigate(`/job/${job.id}`);
-              else setJobDetailsOpen(true);
+              else setPostDialogOpen(true);
             }}
           >
             {job?.title}
@@ -569,7 +569,7 @@ const [commentCount, setCommentCount] = useState(Number(job?.commentsCount || 0)
                 src={mediaToDisplay.url}
                 alt="Job cover"
                 className="w-full max-h-96 object-cover cursor-pointer"
-                onClick={() => setJobDetailsOpen(true)}
+                onClick={() => setPostDialogOpen(true)}
               />
             )}
           </div>
@@ -892,10 +892,14 @@ const [commentCount, setCommentCount] = useState(Number(job?.commentsCount || 0)
         onSent={onSent}
       />
 
-      <JobDetails
-        jobId={job?.id}
-        isOpen={jobDetailsOpen}
-        onClose={() => setJobDetailsOpen(false)}
+      <PostDialog
+        isOpen={postDialogOpen}
+        onClose={() => setPostDialogOpen(false)}
+        item={job}
+        type="job"
+        tags={allTags}
+        mediaUrls={mediaToDisplay ? [mediaToDisplay.url] : []}
+        initialMediaIndex={0}
       />
 
       <ConfirmDialog

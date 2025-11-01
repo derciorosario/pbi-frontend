@@ -6,6 +6,7 @@ const BottomLoginBar = ({ user, makePublic = false }) => {
 
   // Prevent scroll on mount/unmount using event listeners
   React.useEffect(() => {
+    return
     if (user || makePublic === true) return;
 
     const preventDefault = (e) => {

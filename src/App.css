@@ -25,6 +25,11 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+._login_container, ._login_container * {
+  scroll-behavior: smooth !important;
+  touch-action: auto !important;
+  -webkit-overflow-scrolling:initial !important;
+}
 
 /* Animations (add in globals.css or tailwind config if using JIT) */
 

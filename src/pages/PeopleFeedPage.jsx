@@ -3,6 +3,7 @@ import client from "../api/client";
 
 import Header from "../components/Header";
 import MobileFiltersButton from "../components/MobileFiltersButton";
+import MobileSearchBar from "../components/MobileSearchBar";
 import TabsAndAdd from "../components/TabsAndAdd";
 import MobileFiltersBottomSheet from "../components/MobileFiltersBottomSheet";
 import ProfileCard from "../components/ProfileCard";
@@ -13,7 +14,7 @@ import EventCard from "../components/EventCard";
 import JobCard from "../components/JobCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import FeedErrorRetry from "../components/FeedErrorRetry";
-import { Pencil, PlusCircle, Rocket } from "lucide-react";
+import { Pencil, PlusCircle, Rocket, Search } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import PeopleProfileCard from "./PeopleCards";
@@ -207,6 +208,7 @@ export default function PeopleFeedPage() {
 
   useEffect(() => {
     (async () => {
+
       let type = currentPage == "people" ? "individual" : "company";
       try {
         const { data } = await client.get("/public/identities", {
@@ -217,6 +219,7 @@ export default function PeopleFeedPage() {
       } catch (error) {
         console.error("Error loading identities:", error);
       }
+
     })();
   }, [currentPage]);
 
@@ -779,7 +782,12 @@ export default function PeopleFeedPage() {
           data._openPopUps.profile ? "relative z-50" : ""
         } max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}
       >
-        <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
+        <MobileSearchBar
+          query={query}
+          setQuery={setQuery}
+          placeholder={currentPage != "people" ? "Search for companies" :"Search for people..."}
+          onFilterClick={() => setMobileFiltersOpen(true)}
+        />
 
         <aside className="scrollable-container lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
           <div className="_sticky top-0 z-10 _bg-white">
@@ -788,9 +796,10 @@ export default function PeopleFeedPage() {
               selectedFilters={selectedFilters}
               from={"people"}
               showAudienceFilters={true}
-              catComponent={   <TopFilterButtons
+              isFromCompany={currentPage=="companies"}
+              catComponent={   <TopFilterButtons isFromCompany={currentPage=="companies"}
               from={"people"}
-              loading={loadingFeed}
+              loading={loadingFeed} 
               selected={selectedFilters}
               setSelected={setSelectedFilters}
               buttons={
@@ -891,9 +900,11 @@ export default function PeopleFeedPage() {
               {...filtersProps}
               selectedFilters={selectedFilters}
               from={"people"}
+              isFromCompany={currentPage=="companies"}
               showAudienceFilters={true}
               catComponent={   <TopFilterButtons
               from={"people"}
+              isFromCompany={currentPage=="companies"}
               loading={loadingFeed}
               selected={selectedFilters}
               setSelected={setSelectedFilters}

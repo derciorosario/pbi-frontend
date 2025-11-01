@@ -16,6 +16,7 @@ import MomentCard from "../components/MomentCard";
 import EmptyFeedState from "../components/EmptyFeedState";
 import FeedErrorRetry from "../components/FeedErrorRetry";
 import { AlarmClock, Calendar, Landmark, Map, MapPin, Mountain, Pencil, PlusCircle, Rocket, Search } from "lucide-react";
+import MobileSearchBar from "../components/MobileSearchBar";
 import { useNavigate } from "react-router-dom";
 import FullPageLoader from "../components/ui/FullPageLoader";
 import DefaultLayout from "../layout/DefaultLayout";
@@ -686,7 +687,12 @@ export default function TourismPage() {
      <Header />
 
       <main className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
-        <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
+        <MobileSearchBar
+          query={query}
+          setQuery={setQuery}
+          placeholder="Search for tourism activities..."
+          onFilterClick={() => setMobileFiltersOpen(true)}
+        />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
             <div className="_sticky top-0 z-10 _bg-white">

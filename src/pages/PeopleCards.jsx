@@ -564,7 +564,7 @@ export default function PeopleProfileCard({
   const visibleTags = allTags.slice(0, 1);
   const extraCount = Math.max(0, allTags.length - visibleTags.length);
 
-  const MAX_CHARS = 200;
+  const MAX_CHARS = 100;
   const isLong = !!about && about.length > MAX_CHARS;
   const displayedAbout = !about ? "" : isLong ? `${about.slice(0, MAX_CHARS)}...` : about;
 
@@ -576,7 +576,7 @@ export default function PeopleProfileCard({
   const isCompany = accountType === "company";
   
   const containerBase =
-    `group relative rounded-2xl border-2 ${isCompany ? 'border-gray-100 shadow-sm' : 'border-gray-100'} ${isCompany ? 'bg-white' : 'bg-white'}  overflow-hidden transition-all duration-300 ease-out`;
+    `group relative rounded-2xl border-2 ${isCompany ? 'border-gray-100 shadow-sm' : 'border-gray-100'} ${isCompany ? 'bg-white' : 'bg-white'}   transition-all duration-300 ease-out`;
   const containerLayout = isList
     ? "flex"
     : "flex flex-col";
@@ -635,7 +635,7 @@ export default function PeopleProfileCard({
      ) : 
 (
  /* Header Section - Bold banner design with company/profile showcase */
-  <div className="relative w-full overflow-hidden">
+  <div className="relative w-full overflow-hidden rounded-t-2xl">
     {/* Cover Image or Gradient Background */}
     {coverImage ? (
       <div className="h-32 relative cursor-pointer" onClick={()=>{
@@ -652,7 +652,7 @@ export default function PeopleProfileCard({
     ) : (
       <div onClick={()=>{
          navigate(`/profile/${id}`)
-      }} className={`h-32 cursor-pointer ${isCompany ? 'bg-gradient-to-br from-blue-500 via-blue-400 to-blue-300' : 'bg-gradient-to-br from-brand-500 via-brand-300 to-brand-100'} relative`}>
+      }} className={`h-32 rounded-t-2xl cursor-pointer ${isCompany ? 'bg-gradient-to-br from-blue-500 via-blue-400 to-blue-300' : 'bg-gradient-to-br from-brand-500 via-brand-300 to-brand-100'} relative`}>
         {/* Decorative pattern overlay */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{
@@ -824,7 +824,7 @@ export default function PeopleProfileCard({
          
           {/* Location */}
           {location && (
-            <div className={`flex mb-3 items-start text-sm text-gray-600 gap-1.5 ${isCompany  ? 'absolute bottom-1 right-4':''}`}>
+            <div className={`flex mb-3 items-start text-sm text-gray-600 gap-1.5 ${isCompany  ? 'md:absolute bottom-1 right-4':''}`}>
               <MapPin size={16} className="text-gray-400 flex-shrink-0 mt-0.5" />
               <span className="break-words text-[12px]" title={location}>{location}</span>
             </div>
@@ -836,16 +836,23 @@ export default function PeopleProfileCard({
         {about && (
           <div className="mb-4">
             <p title={about} className={`text-[14px] leading-relaxed text-gray-700 ${isList ? "line-clamp-3 md:line-clamp-3" : "line-clamp-3"}`}>
-              {displayedAbout}
+              {about /***displayedAbout */}
             </p>
-            {/*isLong && (
-              <button 
-                onClick={() => navigate(`/profile/${id}`)}
-                className="mt-2 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
-              >
-                Read more
-              </button>
-            )*/}
+            {isLong && (
+              <div className="relative group/tags">
+                <button
+                  className="mt-2 table text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                >
+                  Read more
+                </button>
+
+                {/* Tooltip with full text */}
+                <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg opacity-0 invisible transition-opacity duration-200 group-hover/tags:opacity-100 group-hover/tags:visible z-10 w-full break-words">
+                  {about}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900" />
+                </div>
+              </div>
+            )}
           </div>
         )}
 

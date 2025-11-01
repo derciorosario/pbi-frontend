@@ -9,7 +9,7 @@ import I from "../lib/icons.jsx";
 import * as socialApi from "../api/social";
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ProfileModal from "./ProfileModal";
-import EventDetails from "./EventDetails";
+import PostDialog from "./PostDialog";
 import EventRegistrationDialog from "./EventRegistrationDialog";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
@@ -65,7 +65,7 @@ export default function EventCard({
     e?.registrationStatus || "not_registered"
   );
   const [likesDialogOpen, setLikesDialogOpen] = useState(false);
-  const [eventDetailsOpen, setEventDetailsOpen] = useState(false); // event details modal
+  const [postDialogOpen, setPostDialogOpen] = useState(false); // post dialog modal
   const [registrationOpen, setRegistrationOpen] = useState(false); // event registration modal
 
   // Social state
@@ -499,7 +499,7 @@ export default function EventCard({
             className="font-semibold text-base text-gray-900 mb-1 hover:text-brand-600 cursor-pointer transition-colors"
             onClick={() => {
               if (isOwner) navigate(`/event/${e.id}`);
-              else setEventDetailsOpen(true);
+              else setPostDialogOpen(true);
             }}
           >
             {e?.title}
@@ -535,7 +535,7 @@ export default function EventCard({
                 src={mediaToDisplay.url}
                 alt="Event cover"
                 className="w-full max-h-96 object-cover cursor-pointer"
-                onClick={() => setEventDetailsOpen(true)}
+                onClick={() => setPostDialogOpen(true)}
               />
             )}
           </div>
@@ -794,12 +794,15 @@ export default function EventCard({
             entityId={e?.id}
       />
 
-      {/* Event Details Modal */}
-      <EventDetails
-        eventId={e?.id}
-        isOpen={eventDetailsOpen}
+      {/* Post Dialog Modal */}
+      <PostDialog
+        isOpen={postDialogOpen}
+        onClose={() => setPostDialogOpen(false)}
         item={e}
-        onClose={() => setEventDetailsOpen(false)}
+        type="event"
+        tags={visibleTags}
+        mediaUrls={mediaToDisplay ? [mediaToDisplay.url] : []}
+        initialMediaIndex={0}
       />
 
       {/* Event Registration Dialog */}

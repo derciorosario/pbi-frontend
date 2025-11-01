@@ -3,6 +3,7 @@ import client from "../api/client";
 
 import Header from "../components/Header";
 import MobileFiltersButton from "../components/MobileFiltersButton";
+import MobileSearchBar from "../components/MobileSearchBar";
 import TabsAndAdd from "../components/TabsAndAdd";
 import MobileFiltersBottomSheet from "../components/MobileFiltersBottomSheet";
 import ProfileCard from "../components/ProfileCard";
@@ -877,7 +878,12 @@ export default function PeopleFeedPage() {
    <DefaultLayout>
      <Header />
       <main className={`mx-auto ${data._openPopUps.profile ? 'relative z-50':''} max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-12 gap-6`}>
-        <MobileFiltersButton onClick={() => setMobileFiltersOpen(true)} />
+        <MobileSearchBar
+          query={query}
+          setQuery={setQuery}
+          placeholder="Search for jobs..."
+          onFilterClick={() => setMobileFiltersOpen(true)}
+        />
 
         <aside className="lg:col-span-3 hidden lg:flex flex-col space-y-4 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto pr-1">
          

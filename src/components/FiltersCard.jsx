@@ -19,6 +19,7 @@ export default function FiltersCard({
   setSelectedFilters,
   showAudienceFilters,
   from,
+  isFromCompany,
   query,
   setQuery,
   country,
@@ -987,26 +988,50 @@ export default function FiltersCard({
 
    
 
-      {isPeople && (
-        <>
-          {/* Existing Experience Level filter if any */}
-          
-          {/* View Only my connections checkbox - only show if user is logged in */}
-          {user && (
-            <div className="mt-3">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-brand-600"
-                  checked={viewOnlyConnections || false}
-                  onClick={(e) => setViewOnlyConnections?.(e.target.checked)}
-                />
-                <span className="text-gray-700">View my connections</span>
-              </label>
+    
+    {isPeople && (
+  <>
+    {/* Existing Experience Level filter if any */}
+    
+    {/* View Only my connections checkbox - only show if user is logged in */}
+    {user && (
+      <div className="mt-4">
+        <div 
+          className={`rounded-xl border p-4 transition-all duration-200 cursor-pointer ${
+            viewOnlyConnections 
+              ? 'border-brand-500 bg-brand-50' 
+              : 'border-gray-200 bg-white hover:border-gray-300'
+          }`}
+          onClick={() => setViewOnlyConnections?.(!viewOnlyConnections)}
+        >
+          <label className="flex items-center gap-3 cursor-pointer">
+            <div className={`relative w-5 h-5 rounded flex-shrink-0 border-2 transition-all ${
+              viewOnlyConnections 
+                ? 'bg-brand-500 border-brand-500' 
+                : 'bg-white border-gray-400'
+            }`}>
+              {viewOnlyConnections && (
+                <svg className="absolute inset-0 m-auto w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
             </div>
-          )}
-        </>
-      )}
+            <div>
+              <span className={`font-medium ${
+                viewOnlyConnections ? 'text-brand-700' : 'text-gray-800'
+              }`}>
+                View my connections
+              </span>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Only show  {isFromCompany ? 'companies' : 'people'} you're connected with
+              </p>
+            </div>
+          </label>
+        </div>
+      </div>
+    )}
+  </>
+)}
 
       {/* Events */}
       {from === "events" && (

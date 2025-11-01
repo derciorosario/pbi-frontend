@@ -46,6 +46,7 @@ import CommentsDialog from "./CommentsDialog";
 import client from "../api/client";
 import LikesDialog from "./LikesDialog";
 import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
+import PostDialog from "./PostDialog";
 
 // Helper function to validate media URLs
 const isValidMediaUrl = (url) => {
@@ -123,6 +124,9 @@ export default function ServiceCard({
 
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+
+  // Post dialog modal
+  const [postDialogOpen, setPostDialogOpen] = useState(false);
 
   // Options menu
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
@@ -356,14 +360,8 @@ export default function ServiceCard({
       e.stopPropagation();
       handleVideoPlayPause();
     } else {
-      // For images, open details modal
-      if (isOwner) {
-        if (onEdit) onEdit(item);
-        else navigate(`/service/${item.id}`);
-      } else {
-        setDetailsModalOpen(true);
-        onDetails?.(item);
-      }
+      // For images, open PostDialog
+      setPostDialogOpen(true);
     }
   };
 
@@ -1041,6 +1039,18 @@ export default function ServiceCard({
         currentUser={user}
         onCountChange={(n) => setCommentCount(n)}
       />
+
+      {/* Post Dialog Modal */}
+      <PostDialog
+        isOpen={postDialogOpen}
+        onClose={() => setPostDialogOpen(false)}
+        item={item}
+        type="service"
+        mediaUrls={validMedia.map(media => media.url)}
+        initialMediaIndex={0}
+        tags={allTags}
+      />
+
     </>
   );
   // --- helpers ---

@@ -44,7 +44,7 @@ import {
 import ConnectionRequestModal from "./ConnectionRequestModal";
 import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
-import MomentDetails from "./MomentDetails";
+import PostDialog from "./PostDialog";
 import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
 import LogoGray from '../assets/logo.png'
 
@@ -129,8 +129,8 @@ export default function MomentCard({
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
 
-  // Moment details modal
-  const [momentDetailsOpen, setMomentDetailsOpen] = useState(false);
+  // Post dialog modal
+  const [postDialogOpen, setPostDialogOpen] = useState(false);
 
   // Media slider state
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
@@ -354,8 +354,9 @@ export default function MomentCard({
       e.stopPropagation();
       handleVideoPlayPause();
     } else {
-      // For images, open details modal
-      setMomentDetailsOpen(true);
+      // For images, open post dialog
+      e.stopPropagation();
+      setPostDialogOpen(true);
     }
   };
 
@@ -991,12 +992,15 @@ export default function MomentCard({
                   entityId={moment?.id}
       />
 
-      {/* Moment Details Modal */}
-      <MomentDetails
-        momentId={moment?.id}
-        isOpen={momentDetailsOpen}
-        onClose={() => setMomentDetailsOpen(false)}
+      {/* Post Dialog Modal */}
+      <PostDialog
+        isOpen={postDialogOpen}
+        onClose={() => setPostDialogOpen(false)}
         item={moment}
+        type="moment"
+        tags={visibleTags}
+        mediaUrls={validMedia.map(media => media.url)}
+        initialMediaIndex={currentMediaIndex}
       />
     </>
   );

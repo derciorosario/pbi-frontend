@@ -11,6 +11,7 @@ import ConfirmDialog from "./ConfirmDialog";
 import CommentsDialog from "./CommentsDialog";
 import LikesDialog from "./LikesDialog";
 import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
+import PostDialog from "./PostDialog";
 
 import {
   Eye,
@@ -128,6 +129,9 @@ export default function CrowdfundCard({
 
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+
+  // Post dialog modal
+  const [postDialogOpen, setPostDialogOpen] = useState(false);
 
   // Share popover
   const [shareOpen, setShareOpen] = useState(false);
@@ -334,9 +338,8 @@ export default function CrowdfundCard({
       e.stopPropagation();
       handleVideoPlayPause();
     } else {
-      // For images, open details modal
-      if (isOwner) navigate(`/funding/${item.id}`);
-      else setCrowdfundDetailsOpen(true);
+      // For images, open PostDialog
+      setPostDialogOpen(true);
     }
   };
 
@@ -1017,6 +1020,18 @@ export default function CrowdfundCard({
         currentUser={user}
         onCountChange={(n) => setCommentCount(n)}
       />
+
+      {/* Post Dialog Modal */}
+      <PostDialog
+        isOpen={postDialogOpen}
+        onClose={() => setPostDialogOpen(false)}
+        item={item}
+        type="funding"
+        mediaUrls={validMedia.map(media => media.url)}
+        initialMediaIndex={0}
+        tags={allTags}
+      />
+
     </>
   );
 

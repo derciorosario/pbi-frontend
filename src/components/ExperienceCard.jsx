@@ -10,6 +10,7 @@ import CommentsDialog from "./CommentsDialog";
 import LikesDialog from "./LikesDialog";
 import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
 import client, { API_URL } from "../api/client";
+import PostDialog from "./PostDialog";
 
 import {
   Edit,
@@ -120,6 +121,9 @@ export default function ExperienceCard({
 
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+
+  // Post dialog modal
+  const [postDialogOpen, setPostDialogOpen] = useState(false);
 
   // Media slider state
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -369,9 +373,8 @@ export default function ExperienceCard({
       e.stopPropagation();
       handleVideoPlayPause();
     } else {
-      // For images, open details modal
-      if (isOwner) navigate(`/experience/${item.id}`);
-      else setExperienceDetailsOpen(true);
+      // For images, open PostDialog
+      setPostDialogOpen(true);
     }
   };
 
@@ -848,6 +851,18 @@ export default function ExperienceCard({
         currentUser={user}
         onCountChange={(n) => setCommentCount(n)}
       />
+
+      {/* Post Dialog Modal */}
+      <PostDialog
+        isOpen={postDialogOpen}
+        onClose={() => setPostDialogOpen(false)}
+        item={item}
+        type="experience"
+        mediaUrls={validMedia.map(media => media.url)}
+        initialMediaIndex={0}
+        tags={allTags}
+      />
+
     </>
   );
 

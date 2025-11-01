@@ -48,6 +48,7 @@ import LogoGray from '../assets/logo.png'
 import client, { API_URL } from "../api/client";
 import LikesDialog from "./LikesDialog";
 import VideoPlayer from "./VideoPlayer"; // Import VideoPlayer component
+import PostDialog from "./PostDialog";
 
 // Helper function to validate media URLs
 const isValidMediaUrl = (url) => {
@@ -129,6 +130,9 @@ export default function ProductCard({
 
   // Comments dialog
   const [commentsDialogOpen, setCommentsDialogOpen] = useState(false);
+
+  // Post dialog modal
+  const [postDialogOpen, setPostDialogOpen] = useState(false);
 
   // Options menu
   const [optionsMenuOpen, setOptionsMenuOpen] = useState(false);
@@ -328,9 +332,8 @@ export default function ProductCard({
       e.stopPropagation();
       handleVideoPlayPause();
     } else {
-      // For images, open details modal
-      if (isOwner) navigate(`/product/${item.id}`);
-      else setProductDetailsOpen(true);
+      // For images, open PostDialog
+      setPostDialogOpen(true);
     }
   };
 
@@ -1005,6 +1008,18 @@ export default function ProductCard({
         currentUser={user}
         onCountChange={(n) => setCommentCount(n)}
       />
+
+      {/* Post Dialog Modal */}
+      <PostDialog
+        isOpen={postDialogOpen}
+        onClose={() => setPostDialogOpen(false)}
+        item={item}
+        type="product"
+        mediaUrls={validMedia.map(media => media.url)}
+        initialMediaIndex={0}
+        tags={allTags}
+      />
+
     </>
   );
 
