@@ -649,5 +649,4 @@ const PostDialog = ({
 };
 
 PostDialog.displayName = 'PostDialog';
-
-export default PostDialog;
+export default PostDialog; 

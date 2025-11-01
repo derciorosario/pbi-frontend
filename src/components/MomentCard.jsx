@@ -93,6 +93,39 @@ const getMediaType = (mediaItem) => {
   return 'image';
 };
 
+// Smart image grid layout generator with video priority
+const generateMediaLayout = (mediaItems, maxDisplay = 4) => {
+  const items = mediaItems.slice(0, maxDisplay);
+  const remainingCount = Math.max(0, mediaItems.length - maxDisplay);
+  
+  if (items.length === 0) return { layout: 'none', items: [], remainingCount: 0 };
+  
+  // Check if there are any videos
+  const hasVideos = items.some(item => item.type === 'video');
+  const firstVideoIndex = items.findIndex(item => item.type === 'video');
+  
+  if (hasVideos && firstVideoIndex >= 0) {
+    // Video priority layout - show first video full, others as overlay
+    const videoItem = items[firstVideoIndex];
+    const otherItems = items.filter((_, index) => index !== firstVideoIndex);
+    const otherItemsCount = otherItems.length + remainingCount;
+    
+    return { 
+      layout: 'video-priority', 
+      videoItem,
+      otherItems,
+      remainingCount: otherItemsCount,
+      hasVideos: true
+    };
+  }
+  
+  // No videos - use normal grid layout
+  if (items.length === 1) return { layout: 'single', items, remainingCount, hasVideos: false };
+  if (items.length === 2) return { layout: 'double', items, remainingCount, hasVideos: false };
+  if (items.length === 3) return { layout: 'triple', items, remainingCount, hasVideos: false };
+  if (items.length >= 4) return { layout: 'quad', items: items.slice(0, 4), remainingCount, hasVideos: false };
+};
+
 export default function MomentCard({
   moment,
   onEdit,
@@ -110,15 +143,12 @@ export default function MomentCard({
   );
 
   // Social state
-     const [liked, setLiked] =  useState(!!moment?.isLiked);
-    const [likeCount, setLikeCount] = useState(Number(moment?.likesCount || 0));
-      const [commentCount, setCommentCount] = useState(Number(moment?.commentsCount || 0));
-    
+  const [liked, setLiked] = useState(!!moment?.isLiked);
+  const [likeCount, setLikeCount] = useState(Number(moment?.likesCount || 0));
+  const [commentCount, setCommentCount] = useState(Number(moment?.commentsCount || 0));
   
-
   // Report dialog
   const [reportOpen, setReportOpen] = useState(false);
-
   const [likesDialogOpen, setLikesDialogOpen] = useState(false);
 
   // Share popover
@@ -132,7 +162,7 @@ export default function MomentCard({
   // Post dialog modal
   const [postDialogOpen, setPostDialogOpen] = useState(false);
 
-  // Media slider state
+  // Media state
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [showVideoControls, setShowVideoControls] = useState(false);
@@ -329,19 +359,19 @@ export default function MomentCard({
   };
 
   const validMedia = getValidMedia();
+  const mediaLayout = generateMediaLayout(validMedia);
   const hasMultipleMedia = validMedia.length > 1;
   const currentMedia = validMedia[currentMediaIndex];
   const isCurrentVideo = currentMedia?.type === 'video';
 
   const locationLabel = useMemo(() => {
-      const city = moment?.city?.trim();
-      const country = moment?.country?.trim();
-      if (city && country) return `${city}, ${country}`;
-      if (country) return country;
-      if (city) return city;
-      return "";
+    const city = moment?.city?.trim();
+    const country = moment?.country?.trim();
+    if (city && country) return `${city}, ${country}`;
+    if (country) return country;
+    if (city) return city;
+    return "";
   }, [moment?.city, moment?.country]);
-  
 
   const allTags = useMemo(() => {
     const apiTags = Array.isArray(moment?.tags) ? moment.tags : [];
@@ -420,16 +450,10 @@ export default function MomentCard({
     }
   };
 
-  const handleMediaClick = (e) => {
-    if (isCurrentVideo) {
-      // For videos, handle play/pause
-      e.stopPropagation();
-      handleVideoPlayPause();
-    } else {
-      // For images, open post dialog
-      e.stopPropagation();
-      setPostDialogOpen(true);
-    }
+  const handleMediaClick = (e, mediaIndex = 0) => {
+    e.stopPropagation();
+    setCurrentMediaIndex(mediaIndex);
+    setPostDialogOpen(true);
   };
 
   const containerBase =
@@ -640,6 +664,146 @@ export default function MomentCard({
 
   /* -------------------------------------------------------------- */
 
+  // Render media grid based on layout
+  const renderMediaGrid = () => {
+    if (mediaLayout.layout === 'none') return null;
+
+    // Video priority layout - show first video full, others as overlay
+    if (mediaLayout.layout === 'video-priority') {
+      return (
+        <div className="w-full h-96 relative bg-black">
+          {/* Main video */}
+          <div className="w-full h-full">
+            <VideoPlayer
+              src={mediaLayout.videoItem.url}
+              className="w-full h-full object-contain"
+              controls={false}
+              autoPlay={false}
+              muted
+              isPlaying={isVideoPlaying}
+              onPlay={handleVideoPlay}
+              onPause={handleVideoPause}
+            />
+          </div>
+          
+          {/* Overlay for remaining items - floating in bottom right */}
+          {mediaLayout.remainingCount > 0 && (
+            <div 
+              className="absolute bottom-4 right-4 z-20 cursor-pointer"
+              onClick={(e) => handleMediaClick(e, 1)} // Start from second item (first is the video)
+            >
+              <div className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+                {/* Background from the second item if available, otherwise use default */}
+                {mediaLayout.otherItems[0] ? (
+                  mediaLayout.otherItems[0].type === 'video' ? (
+                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                      <Play size={16} className="text-white" />
+                    </div>
+                  ) : (
+                    <img
+                      src={mediaLayout.otherItems[0].url}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  )
+                ) : (
+                  <div className="w-full h-full bg-gray-600 flex items-center justify-center" />
+                )}
+                
+                {/* Overlay with count */}
+                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                  <span className="text-white text-lg font-bold">
+                    +{mediaLayout.remainingCount}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Normal grid layouts (no videos or videos not prioritized)
+    if (mediaLayout.layout === 'single') {
+      return (
+        <div className="w-full h-96 relative">
+          {mediaLayout.items[0].type === 'video' ? (
+            <div className="relative w-full h-full bg-black">
+              <VideoPlayer
+                src={mediaLayout.items[0].url}
+                className="w-full h-full object-contain"
+                controls={false}
+                autoPlay={false}
+                muted
+                isPlaying={isVideoPlaying}
+                onPlay={handleVideoPlay}
+                onPause={handleVideoPause}
+              />
+            </div>
+          ) : (
+            <img
+              src={mediaLayout.items[0].url}
+              alt={mediaLayout.items[0].name || "Media"}
+              className="w-full h-96 object-contain cursor-pointer"
+              onClick={(e) => handleMediaClick(e, 0)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // Grid layouts for images only
+    return (
+      <div className={`grid gap-0.5 bg-black ${
+        mediaLayout.layout === 'double' ? 'grid-cols-2 h-96' :
+        mediaLayout.layout === 'triple' ? 'grid-cols-2 grid-rows-2 h-96' :
+        'grid-cols-2 grid-rows-2 h-96'
+      }`}>
+        {mediaLayout.items.map((media, index) => {
+          // Special handling for triple layout - first image takes full left column
+          if (mediaLayout.layout === 'triple' && index === 0) {
+            return (
+              <div key={index} className="row-span-2 relative">
+                <img
+                  src={media.url}
+                  alt={media.name || `Media ${index + 1}`}
+                  className="w-full h-full object-cover cursor-pointer  object-[50%_30%]"
+                  onClick={(e) => handleMediaClick(e, index)}
+                />
+              </div>
+            );
+          }
+
+          // For quad layout or remaining items in triple layout
+          const isLastWithOverlay = index === 3 && mediaLayout.remainingCount > 0;
+          
+          return (
+            <div key={index} className="relative">
+              <img
+                src={media.url}
+                alt={media.name || `Media ${index + 1}`}
+                className="w-full h-full object-cover cursor-pointer  object-[50%_30%]"
+                onClick={(e) => handleMediaClick(e, index)}
+              />
+              
+              {/* Overlay for last item when there are remaining images */}
+              {isLastWithOverlay && (
+                <div 
+                  className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center cursor-pointer"
+                  onClick={(e) => handleMediaClick(e, index)}
+                >
+                  <span className="text-white text-2xl font-bold">
+                    +{mediaLayout.remainingCount}
+                  </span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <>
       <div className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${
@@ -738,105 +902,10 @@ export default function MomentCard({
           </div>
         </div>
 
-        {/* MEDIA (if exists and not in text mode) */}
+        {/* MEDIA GRID (if exists and not in text mode) */}
         {settings?.contentType !== "text" && validMedia.length > 0 && (
           <div className="relative bg-gray-900">
-            {/* Media Slider */}
-            <div
-              onClick={handleMediaClick}
-              onTouchStart={onTouchStart}
-              onTouchMove={onTouchMove}
-              onTouchEnd={onTouchEnd}
-              onMouseDown={onMouseDown}
-              onMouseMove={onMouseMove}
-              onMouseUp={onMouseUp}
-              onMouseLeave={onMouseUp}
-              className="relative w-full max-h-96 overflow-hidden cursor-pointer select-none"
-              style={{ userSelect: 'none' }}
-            >
-              {hasMultipleMedia ? (
-                <div
-                  className="flex w-full h-full transition-transform duration-300 ease-in-out"
-                  style={{ transform: `translateX(-${currentMediaIndex * 100}%)` }}
-                >
-                  {validMedia.map((media, index) => (
-                    <div key={index} className="flex-shrink-0 w-full h-96 relative">
-                      {media.type === 'video' ? (
-                        <div className="relative w-full h-full bg-black">
-                          <VideoPlayer
-                            src={media.url}
-                            className="w-full h-full object-contain"
-                            controls={false}
-                            autoPlay={false}
-                            muted
-                            isPlaying={index === currentMediaIndex && isVideoPlaying}
-                            onPlay={handleVideoPlay}
-                            onPause={handleVideoPause}
-                          />
-                         
-                        </div>
-                      ) : (
-                        <img
-                          src={media.url}
-                          alt={media.name || `Media ${index + 1}`}
-                          className="w-full h-96 object-contain"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="w-full h-96 relative">
-
-                  {currentMedia.type === 'video' ? (
-                    <div className="relative w-full h-full bg-black">
-                      <VideoPlayer
-                        src={currentMedia.url}
-                        className="w-full h-full object-contain"
-                        controls={false}
-                        autoPlay={false}
-                        muted
-                        isPlaying={isVideoPlaying}
-                        onPlay={handleVideoPlay}
-                        onPause={handleVideoPause}
-                      />
-                
-                    
-                    </div>
-                  ) : (
-                    <img
-                      src={currentMedia.url}
-                      alt={currentMedia.name || "Media"}
-                      className="w-full h-96 object-contain"
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Slider Dots */}
-            {hasMultipleMedia && (
-              <div className="absolute bottom-3 right-3 flex gap-1">
-                {validMedia.map((media, index) => (
-                  <button
-                    key={index}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setCurrentMediaIndex(index);
-                      resetVideoState();
-                    }}
-                    className={`w-[10px] h-[10px] rounded-full border border-gray-300 transition-colors ${
-                      index === currentMediaIndex
-                        ? (media.type === 'video' ? 'bg-blue-500' : 'bg-white')
-                        : 'bg-white/50'
-                    }`}
-                    aria-label={`Go to ${media.type} ${index + 1}`}
-                  />
-                ))}
-              </div>
-            )}
-
-
+            {renderMediaGrid()}
           </div>
         )}
 
@@ -899,39 +968,38 @@ export default function MomentCard({
           </div>
         </div>
 
-       
-          {(likeCount > 0 || commentCount > 0) && (
-             <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
-               <div className="flex items-center gap-1">
-                 {likeCount > 0 && (
-                   <div className="flex items-center gap-1">
-                     <div className="flex -space-x-1">
-                       <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
-                         <Heart size={10} className="text-white fill-white" />
-                       </div>
-                     </div>
-                     <button
-                       onClick={() => setLikesDialogOpen(true)}
-                       className="hover:underline cursor-pointer"
-                     >
-                       {likeCount} {likeCount === 1 ? 'like' : 'likes'}
-                     </button>
-                   </div>
-                 )}
-               </div>
-       
-               <div className="flex items-center gap-3">
-                 {commentCount > 0 && (
-                   <button
-                     onClick={() => setCommentsDialogOpen(true)}
-                     className="hover:underline"
-                   >
-                     {commentCount} comment{commentCount !== 1 ? "s" : ""}
-                   </button>
-                 )}
-               </div>
-             </div>
-           )}
+        {(likeCount > 0 || commentCount > 0) && (
+          <div className="px-4 py-2 flex items-center justify-between text-xs text-gray-500 border-t border-gray-100">
+            <div className="flex items-center gap-1">
+              {likeCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <div className="flex -space-x-1">
+                    <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
+                      <Heart size={10} className="text-white fill-white" />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setLikesDialogOpen(true)}
+                    className="hover:underline cursor-pointer"
+                  >
+                    {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              {commentCount > 0 && (
+                <button
+                  onClick={() => setCommentsDialogOpen(true)}
+                  className="hover:underline"
+                >
+                  {commentCount} comment{commentCount !== 1 ? "s" : ""}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ACTION BUTTONS */}
         <div className="px-2 py-1 border-t border-gray-100 grid grid-cols-4 gap-1">
@@ -987,20 +1055,19 @@ export default function MomentCard({
         </div>
 
         {/* BOTTOM SECTION - Message and Connect */}
-      
-          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
-            <div className="flex items-center gap-3">
-              {/* Location */}
-              <div className="flex items-center gap-1 text-sm text-gray-600">
-                <MapPin size={14} />
-                <span>
-                  {locationLabel}
-                </span>
-              </div>
+        <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-3">
+            {/* Location */}
+            <div className="flex items-center gap-1 text-sm text-gray-600">
+              <MapPin size={14} />
+              <span>
+                {locationLabel}
+              </span>
             </div>
+          </div>
 
-            {/* Action buttons */}
-              {!isOwner && (
+          {/* Action buttons */}
+          {!isOwner && (
             <div className="flex items-center gap-2 mt-3">
               <button
                 onClick={() => {
@@ -1020,8 +1087,9 @@ export default function MomentCard({
               </button>
 
               {connectionStatus !== "connected" && renderConnectButton()}
-            </div>  )}
-          </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Modals */}
@@ -1059,11 +1127,11 @@ export default function MomentCard({
         onCountChange={(n) => setCommentCount(n)}
       />
 
-       <LikesDialog
-                  open={likesDialogOpen}
-                  onClose={() => setLikesDialogOpen(false)}
-                  entityType="moment"
-                  entityId={moment?.id}
+      <LikesDialog
+        open={likesDialogOpen}
+        onClose={() => setLikesDialogOpen(false)}
+        entityType="moment"
+        entityId={moment?.id}
       />
 
       {/* Post Dialog Modal */}
